@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+    <style>*{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial;
+    }
+    body{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: black;
+        animation-name: bg;
+        animation-duration: 6s;
+        animation-fill-mode: forwards;
+    }
+    #box{
+        width: 100%;
+        height: 100%;
+        display: inline;
+    }
+    #cmd{
+        color: #fff;
+        position: absolute;
+        top: 80%;
+        left: 30%;
+        letter-spacing: 5px;
+        font-weight: bold;
+        font-size: 20px;
+        font-family: 'Nanum Gothic', sans-serif;
+        transform: translate(-50%, -50%);
+    }
+    #c2{
+        color: #fff;
+        position: absolute;
+        top: 80%;
+        left: 30%;
+        letter-spacing: 5px;
+        font-weight: bold;
+        font-size: 20px;
+        font-family: 'Nanum Gothic', sans-serif;
+        transform: translate(-50%, -50%);
+    }
+    #cmd{
+        color: #fff;
+        position: absolute;
+        top: 80%;
+        left: 50%;
+        letter-spacing: 5px;
+        font-weight: bold;
+        font-size: 20px;
+        font-family: 'Nanum Gothic', sans-serif;
+        transform: translate(-50%, -50%);
+    }
+    #s1, #s2, #s3, #s4, #s5, #s6, #s8, #s9, #s10, #s11{
+        position: relative;
+        font-size: 60px;
+        
+        padding: 40px;
+        padding-bottom: 28px;
+        margin: 5px;
+        color: #0e3742;
+        width: 20px;
+        text-align: left;
+        -webkit-box-reflect: below 8px linear-gradient(transparent, #0008);
+        line-height: 0.07em;
+        outline: none;
+    }
+    #s6{
+        padding-right: 40px;
+    }
+    #s1{
+        animation-name: animate1;
+        animation-fill-mode: forwards;
+        animation-duration: 3s;
+        animation-timing-function: linear;
+    }
+    #s2{
+        animation-name: animate2;
+        animation-fill-mode: forwards;
+        animation-duration: 3s;
+        animation-timing-function: linear;
+    }
+    #s5{
+        animation-name: animate6;
+        animation-fill-mode: forwards;
+        animation-duration: 5s;
+        animation-timing-function: linear;
+    }
+    #s3{
+        animation-name: animate3;
+        animation-fill-mode: forwards;
+        animation-duration: 4s;
+        animation-timing-function: linear;
+    }
+    #s4,#s9{
+        animation-name: animate4;
+        animation-fill-mode: forwards;
+        animation-duration: 3s;
+        animation-timing-function: linear;
+    }
+    #s8, #s6, #s10, #s11{
+        animation-name: animate5;
+        animation-fill-mode: forwards;
+        animation-duration: 3s;
+        animation-timing-function: linear;
+    }
+    #t{
+        color: #fff;
+        position: absolute;
+        top: 70%;
+        left: 50%;
+        letter-spacing: 12px;
+        font-size: 36px;
+        font-family: 'Electrolize', sans-serif;
+        transform: translate(-50%, -50%);
+        /* animation-name: texttrans;
+        animation-duration: 1s;
+        animation-timing-function: linear; */
+    }
+    @keyframes animate1{
+        2%,5%,7%,15%, 50%, 60%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        1%, 3%, 8%, 16%, 63%, 70%, 100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes animate2{
+        2%, 20%, 30%, 50%, 60%, 70%, 75%, 80%, 95%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        1%, 3%, 25%, 61%, 99%,100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes animate3{
+        1%, 5%, 7%, 30%,50%, 65%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        2%, 4% ,3%, 6%, 8%, 60%, 75%, 80%, 100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes animate4{
+        2%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        1%, 3%, 100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes animate5{
+        2%, 10%, 30%, 50%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        1%, 3%, 11%, 34%, 55%, 100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes animate6{
+        2%, 7%, 40%, 57%, 61%, 70%, 78%, 82%, 84%, 86%, 99%{
+            color: #0e3742;
+            text-shadow: none;
+        }
+        1%, 5%, 43%, 61.5%, 81%, 83%, 85%,100%{
+            color: #fff;
+            text-shadow: 0 0 10px #03bcf4,
+                        0 0 20px #03bcf4,
+                        0 0 40px #03bcf4,
+                        0 0 80px #03bcf4,
+                        0 0 160px #03bcf4;
+    
+        }
+    }
+    @keyframes bg {
+        1%{
+            background-color: #cc0000;
+        }
+        10%{
+            background-color: blueviolet;
+        }
+        40%{
+            background-color: aqua;
+        }
+        50%{
+            background-color: #162be7;
+        }
+        55% ,57%, 60%{
+            background-color: #fff;
+        }
+        3%, 11%, 45%, 52%, 56%, 58%, 61%, 69%{
+            background-color: black;
+        }
+    }
+    @keyframes texttrans {
+        1%{
+            transform: translate(0, 0);
+        }
+        2%{
+            transform: translate(2em,0);
+        }
+        3%{
+            transform: translate(0,0);
+        }
+    }
+    </style>
+    <title>Nhan hAnDsOmE</title>
+    <iframe src="https://www.nhaccuatui.com/bai-hat/dream-it-possible-delacey.Nzi54FWY76D3.html" width="0" height="0" frameborder="0" allowfullscreen="" __idm_id__="339180545"></iframe>
+</head>
+<body>
+        <p id="s1">N </p>
+        <p id="s2">g </p>
+        <p id="s3">u </p>
+        <p id="s4">y </p>
+        <p id="s5">e </p>
+        <p id="s6">n </p> 
+        <p id="s8">N </p>
+        <p id="s9">h </p>
+        <p id="s10">a </p>
+        <p id="s11">n </p>
+        <div id='t'></div>
+        <div id='load'></div>
+        <div id='cmd'>Password cracking</div>
+        <div id='c2'></div>
+</body>
+<script>
+    let st = 0;
+    let change_title = ()=>{
+        st++;
+        switch(st){
+            case 1:
+                document.title = 'C*******R';
+                break;
+            case 2:
+                document.title = '*r*****e*';
+                break;
+            case 3:
+                document.title = '**o***v**';
+                break;
+            case 4:
+                document.title = '***s*o***';
+                break;
+            case 5:
+                document.title = '****s****';
+                break;
+            case 6:
+                document.title = '***s*o***';
+                break;
+            case 7:
+                document.title = '**o***v**';
+                break;
+            case 8:
+                document.title = '*r*****e*';
+                break;
+            case 9:
+                document.title = 'C*******R';
+                st = 1;
+                break;
+            default:
+                break;
+        }
+        setTimeout(change_title, 270);
+    }
+    change_title();
+    let msg = ['who are you?'];
+    let t = document.getElementById('t');
+    let loadt = document.getElementById('cmd');
+    let cmd = document.getElementById('load');
+    let c2 = document.getElementById('c2');
+    var k = 0;
+    let randomText = (msg, delay) => {
+        
+        let interval = setInterval(()=>{
+            t.innerHTML = '';
+            for(let i=0;i<msg.length;i++){            
+            t.innerHTML += Math.random().toString(36).charAt(2);
+            
+        }
+        k++;
+        if(k >= 1200){
+        clearInterval(interval);
+            t.innerHTML = msg;
+            let cmk = 0;
+            let is = 1;
+            let iss = 1;
+            setInterval(()=>{
+            cmk++;
+            if(cmk % 10 == 0){
+                    if(is == 1){
+                        cmd.innerHTML = '___';
+                        is++;
+                    }else{
+                        cmd.innerHTML = '____dmm';
+                        is--;
+                    }
+                }
+            if(cmk % 150 == 0){
+                    if(iss == 1){
+                        c2.innerHTML = 'C:&#8250;Users&#8250;CrossOver&#8250;_';
+                        iss++;
+                    }else{
+                        c2.innerHTML = 'C:&#8250;Users&#8250;CrossOver&#8250; ';
+                        iss--;
+                    }
+            }
+            });
+        }
+        
+
+    });
+    }
+    let per = 0;
+    let io = 1;
+    randomText('ACCESS GRANTED', 140);
+    let loading = setInterval(()=>{
+        per++;
+        if(per>=100 && per <=900){
+            if(per % 100 == 0){
+                if(io == 1){
+                    loadt.innerHTML = 'Password cracking.';
+                    io++;
+                }else if(io == 2){
+                    loadt.innerHTML = 'Password cracking..';
+                    io++;
+                }else{
+                    loadt.innerHTML = 'Password cracking...';
+                    io = 1;
+                }
+            }
+        } 
+        if(per > 1200){
+        clearInterval(loadt);
+        loadt.style.display = 'none';
+        }
+    });
+    
+</script>
+</html>

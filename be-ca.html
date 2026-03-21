@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🐟 Gửi Bé Cá 🐟</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700&family=Pacifico&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --pink:    #ffb3c6;
+      --pink2:   #ff85a1;
+      --purple:  #c8b6e2;
+      --purple2: #a78bca;
+      --blue:    #a8d8f0;
+      --blue2:   #6cbde8;
+      --teal:    #b2edd8;
+      --yellow:  #fff0a0;
+      --white:   #fffafb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg,
+        #cce8ff 0%,
+        #d9f0ff 25%,
+        #e8f8ff 50%,
+        #d0f0e8 75%,
+        #c2e8ff 100%
+      );
+      font-family: 'Nunito', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ─── OCEAN WAVES ─── */
+    .wave-layer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 220px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wave-layer svg { width: 200%; animation: waveScroll 8s linear infinite; }
+    .wave-layer.wave2 svg { animation: waveScroll 12s linear infinite reverse; opacity: .55; }
+    .wave-layer.wave3 svg { animation: waveScroll 16s linear infinite; opacity: .35; }
+    @keyframes waveScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ─── BUBBLES ─── */
+    .bubbles-container {
+      position: fixed;
+      bottom: 0; left: 0; right: 0; top: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .bubble {
+      position: absolute;
+      bottom: -60px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.75), rgba(180,220,255,.25));
+      border: 1.5px solid rgba(255,255,255,.6);
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) scale(1); opacity: .85; }
+      80%  { opacity: .6; }
+      100% { transform: translateY(-110vh) scale(.7); opacity: 0; }
+    }
+
+    /* ─── SPARKLES ─── */
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2;
+      animation: sparklePop .7s ease-out forwards;
+    }
+    @keyframes sparklePop {
+      0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+      60%  { transform: scale(1.4) rotate(180deg); opacity: 1; }
+      100% { transform: scale(0) rotate(360deg); opacity: 0; }
+    }
+
+    /* ─── FLOATING STARS (bg decoration) ─── */
+    .star {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1;
+      animation: twinkle 2.5s ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: .2; transform: scale(.8); }
+      50%      { opacity: 1;  transform: scale(1.3); }
+    }
+
+    /* ─── FISH CANVAS ─── */
+    #fishCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .content {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem 8rem;
+      gap: 2rem;
+    }
+
+    /* ─── HERO TITLE ─── */
+    .hero {
+      text-align: center;
+      animation: fadeDown .8s ease both;
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero .subtitle {
+      font-size: clamp(.9rem, 2.5vw, 1.1rem);
+      color: var(--purple2);
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+      animation: fadeDown .8s .1s ease both;
+    }
+
+    .hero h1 {
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(3.5rem, 12vw, 7rem);
+      background: linear-gradient(135deg, var(--pink2) 0%, var(--purple2) 40%, var(--blue2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 4px 16px rgba(200,150,220,.45));
+      line-height: 1.1;
+      animation: titleBounce 1s .2s ease both;
+    }
+    @keyframes titleBounce {
+      0%   { opacity: 0; transform: scale(.5) rotate(-5deg); }
+      70%  { transform: scale(1.08) rotate(2deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    .fish-emoji-row {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      margin-top: .4rem;
+      animation: swimEmoji 2.5s ease-in-out infinite alternate;
+    }
+    @keyframes swimEmoji {
+      from { transform: translateX(-6px) rotate(-4deg); }
+      to   { transform: translateX(6px) rotate(4deg); }
+    }
+
+    /* ─── CARDS ─── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 860px;
+      animation: fadeUp .8s .4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(14px);
+      border-radius: 24px;
+      padding: 1.5rem 1.6rem;
+      border: 2px solid rgba(255,255,255,.85);
+      box-shadow: 0 8px 32px rgba(160,140,220,.18);
+      transition: transform .25s ease, box-shadow .25s ease;
+      cursor: default;
+    }
+    .card:hover {
+      transform: translateY(-6px) rotate(.4deg);
+      box-shadow: 0 18px 42px rgba(160,140,220,.28);
+    }
+
+    .card-icon {
+      font-size: 2.4rem;
+      margin-bottom: .6rem;
+      display: block;
+      animation: iconWiggle 3s ease-in-out infinite;
+    }
+    @keyframes iconWiggle {
+      0%,100% { transform: rotate(0deg); }
+      25%      { transform: rotate(-10deg) scale(1.1); }
+      75%      { transform: rotate(10deg) scale(1.1); }
+    }
+    .card:nth-child(2) .card-icon { animation-delay: .4s; }
+    .card:nth-child(3) .card-icon { animation-delay: .8s; }
+
+    .card h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #6b4fa0;
+      margin-bottom: .4rem;
+    }
+    .card p {
+      font-size: .95rem;
+      color: #555;
+      line-height: 1.65;
+    }
+
+    /* ─── MESSAGE BOX ─── */
+    .message-box {
+      max-width: 680px;
+      width: 100%;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      border-radius: 28px;
+      padding: 2rem 2.2rem;
+      border: 2px solid rgba(255,255,255,.9);
+      box-shadow: 0 8px 36px rgba(170,140,230,.2);
+      text-align: center;
+      animation: fadeUp .8s .55s ease both;
+    }
+
+    .message-box .quote {
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      color: #555;
+      line-height: 1.8;
+      font-style: italic;
+      margin-bottom: 1.2rem;
+    }
+    .message-box .quote strong {
+      color: var(--purple2);
+      font-style: normal;
+      font-weight: 800;
+    }
+
+    .message-box .author {
+      font-size: .9rem;
+      color: #999;
+      font-weight: 700;
+    }
+
+    /* ─── BIG BUTTON ─── */
+    .btn-wrapper {
+      animation: fadeUp .8s .7s ease both;
+    }
+    .big-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: .65rem;
+      background: linear-gradient(135deg, var(--pink2), var(--purple2), var(--blue2));
+      background-size: 200% 200%;
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      padding: 1rem 2.4rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 28px rgba(180,120,210,.45);
+      animation: btnGradient 4s ease infinite;
+      transition: transform .2s ease, box-shadow .2s ease;
+      overflow: hidden;
+    }
+    .big-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.18);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .big-btn:hover { transform: scale(1.05); box-shadow: 0 10px 38px rgba(180,120,210,.55); }
+    .big-btn:hover::before { opacity: 1; }
+    .big-btn:active { transform: scale(.97); }
+    @keyframes btnGradient {
+      0%,100% { background-position: 0% 50%; }
+      50%      { background-position: 100% 50%; }
+    }
+
+    .btn-fish {
+      font-size: 1.4rem;
+      animation: swimEmoji 1.4s ease-in-out infinite alternate;
+    }
+
+    /* ─── HEART RAIN (on button click) ─── */
+    .heart-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      font-size: 1.6rem;
+      animation: heartRain 1.4s ease-out forwards;
+    }
+    @keyframes heartRain {
+      0%   { transform: translateY(0) scale(0) rotate(0deg); opacity: 1; }
+      40%  { transform: translateY(-90px) scale(1.2) rotate(-20deg); opacity: 1; }
+      100% { transform: translateY(-200px) scale(.4) rotate(30deg); opacity: 0; }
+    }
+
+    /* ─── CUTE FACT PILL ─── */
+    .fact-pill {
+      background: linear-gradient(90deg, rgba(255,179,198,.55), rgba(200,182,226,.55));
+      border-radius: 50px;
+      padding: .55rem 1.4rem;
+      font-size: .88rem;
+      font-weight: 700;
+      color: #7a4fa0;
+      border: 1.5px solid rgba(255,255,255,.75);
+      backdrop-filter: blur(8px);
+      animation: fadeUp .8s .85s ease both;
+      text-align: center;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      font-size: .82rem;
+      color: rgba(100,80,140,.6);
+      font-weight: 600;
+      animation: fadeUp .8s 1s ease both;
+      text-align: center;
+    }
+
+    /* ─── RIBBON BANNER ─── */
+    .ribbon {
+      position: fixed;
+      top: 1.2rem; right: -3.5rem;
+      background: linear-gradient(90deg, var(--pink2), var(--purple2));
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 900;
+      padding: .4rem 4.5rem;
+      transform: rotate(35deg);
+      z-index: 20;
+      letter-spacing: .08em;
+      box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    }
+
+    @media (max-width: 480px) {
+      .cards { grid-template-columns: 1fr; }
+      .ribbon { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Ribbon -->
+<div class="ribbon">✦ CHỈ DÀNH CHO BÉ CÁ ✦</div>
+
+<!-- Ocean waves (bottom) -->
+<div class="wave-layer wave1">
+  <svg viewBox="0 0 1440 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="height:220px;">
+    <path fill="rgba(168,216,240,0.55)" d="M0,120 C240,180 480,60 720,120 C960,180 1200,60 1440,120 L1440,220 L0,220 Z"/>
+    <path fill="rgba(168,216,240,0.55)" d="M1440,120 C1200,180 960,60 720,120 C480,180 240,60 0,120 L0,220 L1440,220 Z"/>
+  </svg>
+</div>
+<div class="wave-layer wave2">
+  <svg viewBox="0 0 1440 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="height:220px;">
+    <path fill="rgba(178,237,216,0.45)" d="M0,100 C300,160 600,40 900,100 C1200,160 1320,80 1440,100 L1440,220 L0,220 Z"/>
+    <path fill="rgba(178,237,216,0.45)" d="M1440,100 C1140,160 840,40 540,100 C240,160 120,80 0,100 L0,220 L1440,220 Z"/>
+  </svg>
+</div>
+<div class="wave-layer wave3">
+  <svg viewBox="0 0 1440 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="height:220px;">
+    <path fill="rgba(200,182,226,0.35)" d="M0,140 C360,80 720,200 1080,140 C1260,110 1380,160 1440,140 L1440,220 L0,220 Z"/>
+    <path fill="rgba(200,182,226,0.35)" d="M1440,140 C1080,80 720,200 360,140 C180,110 60,160 0,140 L0,220 L1440,220 Z"/>
+  </svg>
+</div>
+
+<!-- Bubble container -->
+<div class="bubbles-container" id="bubblesContainer"></div>
+
+<!-- Fish canvas -->
+<canvas id="fishCanvas"></canvas>
+
+<!-- Main content -->
+<main class="content">
+
+  <div class="hero">
+    <p class="subtitle">✦ một trang web nhỏ xinh gửi tới ✦</p>
+    <h1>Bé Cá</h1>
+    <div class="fish-emoji-row">🐟 🫧 🐠 🫧 🐡</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <span class="card-icon">🐟</span>
+      <h3>Bé cá là gì?</h3>
+      <p>Bé cá là sinh vật dễ thương nhất trong đại dương tâm trí mình — bơi vào ký ức rồi không chịu bơi ra nữa 😤🫧</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🫧</span>
+      <h3>Tại sao lại là cá?</h3>
+      <p>Vì cá thì… xinh, mềm mại, lấp lánh, và thi thoảng ngó mình một cái rồi bơi đi làm tim mình loạn hết 💜</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🌊</span>
+      <h3>Khoa học ngớ ngẩn</h3>
+      <p>Các nhà khoa học phát hiện: mỗi lần bé cá cười, đâu đó trong vũ trụ có một ngôi sao sáng hơn 0.01% ✨</p>
+    </div>
+  </div>
+
+  <div class="message-box">
+    <p class="quote">
+      Này <strong>bé cá</strong> ơi — mình không biết bơi, nhưng mình sẵn sàng học
+      chỉ để được ở cùng cái đại dương mà bé đang bơi trong đó. 🌊<br /><br />
+      (Oke thực ra mình sợ nước, nhưng… ý nghĩa mà đúng không? 🫠)
+    </p>
+    <p class="author">— người đã mất ngủ để làm cái trang web này 🌙</p>
+  </div>
+
+  <div class="btn-wrapper">
+    <button class="big-btn" id="magicBtn" onclick="triggerHearts(event)">
+      <span class="btn-fish">🐟</span>
+      Bấm vào đây đi bé cá ơi!
+      <span class="btn-fish" style="animation-delay:.3s">🐠</span>
+    </button>
+  </div>
+
+  <div class="fact-pill" id="factPill">
+    🐟 Fun fact: Cá có trí nhớ 3 giây, nhưng mình nhớ bé cá mãi mãi 💜
+  </div>
+
+  <p class="footer">made with 💜 &amp; bong bóng &amp; một chút liều lĩnh</p>
+
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════
+   BUBBLES
+═══════════════════════════════════════════════ */
+(function spawnBubbles() {
+  const cont = document.getElementById('bubblesContainer');
+  const sizes = [10,14,18,22,26,32,40];
+  const colors = [
+    'rgba(255,200,220,.55)',
+    'rgba(200,182,226,.5)',
+    'rgba(168,216,240,.55)',
+    'rgba(178,237,216,.5)',
+    'rgba(255,240,160,.5)',
+  ];
+
+  function makeBubble() {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const sz = sizes[Math.floor(Math.random() * sizes.length)];
+    const dur = 6 + Math.random() * 10;
+    const delay = Math.random() * 8;
+    const left = Math.random() * 96;
+    const col = colors[Math.floor(Math.random() * colors.length)];
+    b.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${left}%;
+      animation-duration:${dur}s;
+      animation-delay:${delay}s;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.75), ${col});
+    `;
+    cont.appendChild(b);
+    setTimeout(() => b.remove(), (dur + delay) * 1000 + 500);
+  }
+
+  for (let i = 0; i < 22; i++) makeBubble();
+  setInterval(makeBubble, 900);
+})();
+
+/* ═══════════════════════════════════════════════
+   BACKGROUND STARS
+═══════════════════════════════════════════════ */
+(function spawnStars() {
+  const starChars = ['✦','✧','⋆','✩','★','✿','❀','♡'];
+  const colors = ['#ffb3c6','#c8b6e2','#a8d8f0','#b2edd8','#fff0a0'];
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.textContent = starChars[Math.floor(Math.random() * starChars.length)];
+    s.style.cssText = `
+      left:${Math.random()*96}%;
+      top:${Math.random()*85}%;
+      font-size:${10 + Math.random()*16}px;
+      color:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay:${Math.random()*3}s;
+      animation-duration:${2 + Math.random()*2}s;
+    `;
+    document.body.appendChild(s);
+  }
+})();
+
+/* ═══════════════════════════════════════════════
+   FISH CANVAS
+═══════════════════════════════════════════════ */
+(function fishCanvas() {
+  const canvas = document.getElementById('fishCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Fish SVG paths drawn via canvas
+  const fishPalettes = [
+    ['#ffb3c6','#ff85a1'],
+    ['#c8b6e2','#a78bca'],
+    ['#a8d8f0','#6cbde8'],
+    ['#b2edd8','#6ecfae'],
+    ['#ffdeaa','#ffa060'],
+  ];
+
+  class Fish {
+    constructor() { this.reset(true); }
+
+    reset(initial = false) {
+      this.palette = fishPalettes[Math.floor(Math.random() * fishPalettes.length)];
+      this.size = 18 + Math.random() * 28;
+      this.speed = (.4 + Math.random() * .9) * (Math.random() < .5 ? 1 : -1);
+      this.y = Math.random() * canvas.height * .82;
+      this.x = initial
+        ? Math.random() * canvas.width
+        : (this.speed > 0 ? -this.size * 3 : canvas.width + this.size * 3);
+      this.wy = 0;        // wave offset
+      this.wySpeed = .018 + Math.random() * .022;
+      this.wyAmp = 10 + Math.random() * 18;
+      this.tailPhase = Math.random() * Math.PI * 2;
+      this.tailSpeed = .08 + Math.random() * .06;
+      this.baseY = this.y;
+    }
+
+    update() {
+      this.x += this.speed;
+      this.wy += this.wySpeed;
+      this.y = this.baseY + Math.sin(this.wy) * this.wyAmp;
+      this.tailPhase += this.tailSpeed;
+
+      const ow = canvas.width + this.size * 4;
+      if (this.speed > 0 && this.x > ow) this.reset();
+      if (this.speed < 0 && this.x < -this.size * 3) this.reset();
+    }
+
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      if (this.speed < 0) ctx.scale(-1, 1);
+
+      const s = this.size;
+      const [c1, c2] = this.palette;
+      const tailWag = Math.sin(this.tailPhase) * .35;
+
+      // Body
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s, s * .48, 0, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(-s * .15, -s * .15, s * .1, 0, 0, s);
+      grad.addColorStop(0, 'rgba(255,255,255,.55)');
+      grad.addColorStop(.4, c1);
+      grad.addColorStop(1, c2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Tail
+      ctx.save();
+      ctx.translate(-s * .85, 0);
+      ctx.rotate(tailWag);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(-s * .55, -s * .55, -s * .1, 0);
+      ctx.quadraticCurveTo(-s * .55, s * .55, 0, 0);
+      ctx.fillStyle = c2;
+      ctx.globalAlpha = .85;
+      ctx.fill();
+      ctx.restore();
+
+      // Fin (top)
+      ctx.beginPath();
+      ctx.moveTo(-s * .1, -s * .42);
+      ctx.quadraticCurveTo(s * .2, -s * .85, s * .55, -s * .38);
+      ctx.quadraticCurveTo(s * .25, -s * .38, -s * .1, -s * .42);
+      ctx.fillStyle = c1;
+      ctx.globalAlpha = .7;
+      ctx.fill();
+
+      // Eye
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(s * .42, -s * .1, s * .13, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(s * .44, -s * .1, s * .07, 0, Math.PI * 2);
+      ctx.fillStyle = '#3a2560';
+      ctx.fill();
+      // eye shine
+      ctx.beginPath();
+      ctx.arc(s * .47, -s * .13, s * .03, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+
+      // Mouth (cute small curve)
+      ctx.beginPath();
+      ctx.arc(s * .62, s * .1, s * .1, -.1, Math.PI * .6);
+      ctx.strokeStyle = c2;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Scales (2 dots)
+      ctx.globalAlpha = .25;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(s * .05, s * .05, s * .1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-s * .25, s * .1, s * .08, 0, Math.PI * 2); ctx.fill();
+
+      ctx.restore();
+    }
+  }
+
+  // Spawn fish
+  const fishes = Array.from({ length: 12 }, () => new Fish());
+
+  // Occasional heart above fish
+  const hearts = [];
+  class HeartParticle {
+    constructor(x, y) {
+      this.x = x; this.y = y;
+      this.vy = -(1.2 + Math.random() * .8);
+      this.alpha = 1;
+      this.size = 10 + Math.random() * 10;
+    }
+    update() { this.y += this.vy; this.alpha -= .016; }
+    draw() {
+      if (this.alpha <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.font = `${this.size}px serif`;
+      ctx.fillText('💜', this.x, this.y);
+      ctx.restore();
+    }
+  }
+
+  setInterval(() => {
+    const f = fishes[Math.floor(Math.random() * fishes.length)];
+    if (Math.random() < .35) hearts.push(new HeartParticle(f.x, f.y - f.size - 5));
+  }, 1800);
+
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fishes.forEach(f => { f.update(); f.draw(); });
+    for (let i = hearts.length - 1; i >= 0; i--) {
+      hearts[i].update();
+      hearts[i].draw();
+      if (hearts[i].alpha <= 0) hearts.splice(i, 1);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ═══════════════════════════════════════════════
+   HEART BURST (button click)
+═══════════════════════════════════════════════ */
+const heartEmojis = ['💜','🩷','💙','🩵','💗','🐟','🐠','🐡','🫧','⭐','✨','🌊','💫'];
+const funFacts = [
+  '🐟 Fun fact: Cá có trí nhớ 3 giây, nhưng mình nhớ bé cá mãi mãi 💜',
+  '🫧 Mỗi bong bóng mình thổi ra đều mang tên bé cá đấy 🤫',
+  '🌊 Khoảng cách giữa mình và bé cá = 1 lần dũng cảm 💪🐟',
+  '✨ Bé cá lấp lánh hơn cả ánh đèn dưới đáy biển 🌟',
+  '💜 Khoa học chứng minh: nhìn bé cá sẽ tăng chỉ số hạnh phúc lên 999%',
+  '🐠 Bé cá là loài cá quý hiếm — cực kỳ khó gặp, dễ thương vô cùng',
+  '🌊 Nước biển mặn vì có quá nhiều người crush bé cá rồi 😭',
+];
+let factIdx = 0;
+
+function triggerHearts(e) {
+  const cx = e.clientX || window.innerWidth / 2;
+  const cy = e.clientY || window.innerHeight / 2;
+  const count = 20;
+
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'heart-particle';
+      const angle = (Math.PI * 2 / count) * i;
+      const dist = 30 + Math.random() * 50;
+      el.style.cssText = `
+        left:${cx + Math.cos(angle) * dist - 10}px;
+        top:${cy + Math.sin(angle) * dist - 10}px;
+        animation-delay:${Math.random() * .3}s;
+      `;
+      el.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1800);
+    }, i * 30);
+  }
+
+  // Also show sparkles
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const sp = document.createElement('div');
+      sp.className = 'sparkle';
+      sp.style.cssText = `
+        left:${cx + (Math.random() - .5) * 160}px;
+        top:${cy + (Math.random() - .5) * 160}px;
+        font-size:${16 + Math.random() * 18}px;
+      `;
+      sp.textContent = ['✨','💫','⭐','✦','🌟'][Math.floor(Math.random() * 5)];
+      document.body.appendChild(sp);
+      setTimeout(() => sp.remove(), 800);
+    }, i * 60);
+  }
+
+  // Cycle fun facts
+  factIdx = (factIdx + 1) % funFacts.length;
+  const pill = document.getElementById('factPill');
+  pill.style.transition = 'opacity .3s';
+  pill.style.opacity = '0';
+  setTimeout(() => {
+    pill.textContent = funFacts[factIdx];
+    pill.style.opacity = '1';
+  }, 320);
+}
+
+/* ═══════════════════════════════════════════════
+   CURSOR SPARKLE TRAIL
+═══════════════════════════════════════════════ */
+document.addEventListener('mousemove', (e) => {
+  if (Math.random() > .25) return;
+  const sp = document.createElement('div');
+  sp.className = 'sparkle';
+  sp.style.cssText = `
+    left:${e.clientX - 8}px;
+    top:${e.clientY - 8}px;
+    font-size:${10 + Math.random() * 10}px;
+    pointer-events:none;
+  `;
+  sp.textContent = ['✦','✧','⋆','✩','💜','🐟'][Math.floor(Math.random() * 6)];
+  document.body.appendChild(sp);
+  setTimeout(() => sp.remove(), 750);
+});
+
+/* touch trail for mobile */
+document.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (Math.random() > .3) return;
+  const sp = document.createElement('div');
+  sp.className = 'sparkle';
+  sp.style.cssText = `left:${t.clientX-8}px;top:${t.clientY-8}px;font-size:${12+Math.random()*10}px;`;
+  sp.textContent = ['💜','🐟','✨','🫧','💗'][Math.floor(Math.random()*5)];
+  document.body.appendChild(sp);
+  setTimeout(()=>sp.remove(),750);
+}, { passive: true });
+</script>
+</body>
+</html>

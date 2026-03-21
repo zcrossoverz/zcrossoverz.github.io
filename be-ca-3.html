@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>✦ Bé Cá III — Đại Dương Ký Ức ✦</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Nunito:wght@400;700;800;900&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --c: #00ffcc; --m: #ff0080; --p: #b044ff; --g: #ffd700;
+  --deep: #020b18;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--deep);
+  font-family: 'Nunito', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+  color: #fff;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cur {
+  position: fixed; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 14px var(--c), 0 0 28px var(--c);
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width .12s, height .12s;
+  mix-blend-mode: screen;
+}
+#cur2 {
+  position: fixed; width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid rgba(0,255,204,.3);
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%, -50%);
+}
+
+/* ── INTRO ── */
+#intro {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.4rem; background: var(--deep);
+  transition: opacity 1s ease, visibility 1s;
+}
+#intro.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+.i-fish { font-size: 3.5rem; animation: iSwim 1.2s ease-in-out infinite alternate; }
+@keyframes iSwim { from { transform: translateX(-35px); } to { transform: translateX(35px); } }
+.i-bar-wrap { width: 160px; height: 3px; background: rgba(255,255,255,.08); border-radius: 9px; overflow: hidden; }
+.i-bar { height: 100%; background: linear-gradient(90deg, var(--c), var(--p)); animation: iLoad 2s ease forwards; }
+@keyframes iLoad { from { width: 0; } to { width: 100%; } }
+.i-txt { font-size: .68rem; letter-spacing: .3em; color: rgba(255,255,255,.3); font-weight: 700; animation: iPulse 1s ease infinite; }
+@keyframes iPulse { 0%,100% { opacity: .3; } 50% { opacity: .9; } }
+
+/* ── FIXED CANVASES ── */
+#bgCanvas, #ripCanvas {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+#ripCanvas { z-index: 1; }
+
+/* ── APP WRAPPER ── */
+#app { position: relative; z-index: 10; }
+
+/* ═══════════════════════════
+   SECTIONS
+═══════════════════════════ */
+.sec {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 6rem 1.5rem;
+  position: relative;
+}
+
+/* ── S1 HERO ── */
+.h-eye {
+  font-size: .7rem; letter-spacing: .35em; text-transform: uppercase;
+  color: rgba(0,255,204,.5); font-weight: 700; margin-bottom: 1.2rem;
+  opacity: 0; animation: fromTop .6s .4s ease forwards;
+}
+@keyframes fromTop { from { opacity:0; transform: translateY(-14px); } to { opacity:1; transform: translateY(0); } }
+
+.h-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(4rem, 14vw, 9.5rem);
+  font-weight: 300; font-style: italic;
+  line-height: .92; text-align: center;
+  opacity: 0; animation: hReveal 1s .6s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes hReveal {
+  from { opacity:0; transform: scale(.5) rotate(-8deg); }
+  to   { opacity:1; transform: scale(1) rotate(0deg); }
+}
+.h-title .t1 {
+  background: linear-gradient(135deg, #fff 0%, var(--c) 55%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 35px rgba(0,255,204,.45));
+}
+.h-title .t2 {
+  display: block; font-size: .38em; letter-spacing: .08em;
+  background: linear-gradient(90deg, var(--p), var(--m));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(176,68,255,.5));
+  margin-top: .4em;
+}
+
+.h-bar {
+  width: 1px; height: 55px;
+  background: linear-gradient(to bottom, var(--c), transparent);
+  margin: 1.8rem auto;
+  opacity: 0; animation: fromTop .6s 1s ease forwards;
+}
+.h-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem; letter-spacing: .18em; color: rgba(255,255,255,.3);
+  opacity: 0; animation: fromTop .6s 1.1s ease forwards;
+}
+.h-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--m); box-shadow: 0 0 8px var(--m); vertical-align: middle; margin: 0 .5rem; }
+
+.h-scroll {
+  position: absolute; bottom: 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: .45rem;
+  opacity: 0; animation: fromTop .6s 1.5s ease forwards;
+}
+.h-scroll span { font-size: .62rem; letter-spacing: .25em; color: rgba(255,255,255,.2); font-weight: 700; }
+.h-scroll-line { width: 1px; background: linear-gradient(to bottom, rgba(0,255,204,.4), transparent); animation: scrollGrow 1.5s ease-in-out infinite; }
+@keyframes scrollGrow { 0%,100% { height: 22px; opacity: .3; } 50% { height: 44px; opacity: .8; } }
+
+/* ── S2 POEM ── */
+#sec2 { background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(176,68,255,.06) 0%, transparent 70%); }
+
+.poem-line {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.15rem, 3.5vw, 1.65rem);
+  line-height: 1.9; color: rgba(255,255,255,.8);
+  text-align: center;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.poem-line.show { opacity: 1 !important; transform: translateY(0) !important; }
+.poem-line.accent {
+  font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: 600;
+  background: linear-gradient(90deg, var(--c), var(--p));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.poem-line em { color: var(--m); font-style: italic; -webkit-text-fill-color: var(--m); }
+.poem-gap { height: 1.4rem; }
+.poem-sig {
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem; color: rgba(255,255,255,.25);
+  letter-spacing: .2em; margin-top: 1.8rem; text-align: center;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.poem-sig.show { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* ── S3 REASONS ── */
+#sec3 { background: radial-gradient(ellipse 80% 70% at 50% 40%, rgba(0,255,204,.04) 0%, transparent 65%); }
+
+.sec-eyebrow {
+  font-size: .7rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--c); font-weight: 700; margin-bottom: .8rem; text-align: center;
+}
+.sec-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  font-weight: 300; text-align: center; margin-bottom: 3rem;
+  color: rgba(255,255,255,.9);
+}
+.sec-title em { font-style: italic; color: var(--c); }
+
+.reasons { display: flex; flex-direction: column; gap: 0; width: 100%; max-width: 680px; }
+.r-item {
+  display: flex; align-items: flex-start; gap: 1.2rem;
+  padding: 1.4rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  opacity: 0; transform: translateX(-28px);
+  transition: opacity .55s ease, transform .55s ease, border-color .25s;
+}
+.r-item.show { opacity: 1 !important; transform: translateX(0) !important; }
+.r-item:hover { border-bottom-color: rgba(0,255,204,.15); }
+.r-num {
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem; color: rgba(255,255,255,.2);
+  padding-top: .15rem; flex-shrink: 0; width: 26px;
+  transition: color .25s;
+}
+.r-item:hover .r-num { color: var(--c); }
+.r-head { font-size: 1rem; font-weight: 800; color: rgba(255,255,255,.85); margin-bottom: .3rem; }
+.r-body { font-size: .88rem; color: rgba(255,255,255,.4); line-height: 1.7; transition: color .25s; }
+.r-item:hover .r-body { color: rgba(255,255,255,.65); }
+
+/* ── S4 AQUARIUM ── */
+#sec4 { background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(255,0,128,.05) 0%, transparent 65%); }
+
+#deepCanvas {
+  display: block;
+  width: min(720px, 92vw); height: 360px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,255,204,.14);
+  box-shadow: 0 0 80px rgba(0,255,204,.07), 0 0 0 1px rgba(0,255,204,.04) inset;
+  cursor: crosshair;
+}
+.c-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: .65rem; color: rgba(255,255,255,.2);
+  letter-spacing: .1em; margin-top: .9rem; text-align: center;
+}
+
+/* ── S5 LETTER ── */
+#sec5 { background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(255,215,0,.04) 0%, transparent 60%); }
+
+.letter {
+  max-width: 600px; width: 100%;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 28px; padding: 3rem 2.5rem;
+  backdrop-filter: blur(18px);
+  position: relative;
+}
+.letter::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--g), transparent);
+}
+.l-to {
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem; color: rgba(255,215,0,.5);
+  letter-spacing: .2em; margin-bottom: 1.8rem;
+}
+.l-body {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.05rem, 2.5vw, 1.22rem);
+  line-height: 1.92; color: rgba(255,255,255,.78);
+  min-height: 6rem;
+  white-space: pre-wrap;
+}
+.l-body .hl { color: var(--c); font-style: italic; }
+.l-body .hl2 { color: var(--m); text-shadow: 0 0 18px rgba(255,0,128,.4); }
+.l-cursor { display: inline-block; width: 2px; height: 1.1em; background: var(--p); vertical-align: text-bottom; animation: blink .7s step-end infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.l-from {
+  margin-top: 1.8rem; padding-top: 1.2rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: .95rem; font-style: italic; color: rgba(255,255,255,.3);
+}
+.l-from strong { display: block; font-size: 1.25rem; font-weight: 600; color: rgba(255,255,255,.6); margin-top: .2rem; }
+
+/* ── S6 FINALE ── */
+#sec6 {
+  min-height: 70vh;
+  background: radial-gradient(ellipse 80% 80% at 50% 60%, rgba(176,68,255,.07) 0%, transparent 60%);
+}
+.finale-q {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.9rem, 6vw, 4.2rem);
+  text-align: center; line-height: 1.25;
+  color: rgba(255,255,255,.88);
+  opacity: 0; transform: scale(.9);
+  transition: opacity .9s ease, transform .9s ease;
+}
+.finale-q.show { opacity: 1 !important; transform: scale(1) !important; }
+.finale-q em {
+  font-style: italic;
+  background: linear-gradient(90deg, var(--c), var(--p), var(--m));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 18px rgba(176,68,255,.4));
+}
+.finale-sub {
+  margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: .8rem;
+  opacity: 0; transition: opacity .7s .3s ease;
+}
+.finale-sub.show { opacity: 1 !important; }
+
+.btn-g {
+  position: relative; display: inline-flex; align-items: center; gap: .65rem;
+  font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900;
+  color: #000; padding: .9rem 2.3rem;
+  border: none; border-radius: 50px; cursor: pointer;
+  background: linear-gradient(90deg, var(--c), var(--p), var(--m), var(--c));
+  background-size: 300%;
+  box-shadow: 0 0 28px rgba(0,255,204,.3);
+  animation: hueShift 4s linear infinite;
+  transition: transform .2s, box-shadow .2s;
+  overflow: hidden;
+}
+.btn-g:hover { transform: scale(1.06); box-shadow: 0 0 50px rgba(0,255,204,.5); }
+.btn-g:active { transform: scale(.97); }
+@keyframes hueShift { 0%,100% { background-position: 0%; } 50% { background-position: 100%; } }
+
+.credits {
+  margin-top: 3rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(255,255,255,.13);
+  letter-spacing: .15em; text-align: center; line-height: 2.2;
+}
+
+/* ── REVEAL util (generic) ── */
+.rv {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.rv.show { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* ── PARTICLE ── */
+.pt { position: fixed; pointer-events: none; z-index: 9500; border-radius: 50%; }
+.fe { position: fixed; pointer-events: none; z-index: 9501; font-size: 1.6rem; }
+
+@media (max-width: 500px) {
+  .letter { padding: 2rem 1.4rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="i-fish">🐟</div>
+  <div class="i-bar-wrap"><div class="i-bar"></div></div>
+  <div class="i-txt">ĐANG LẶN XUỐNG ĐÁY ĐẠI DƯƠNG...</div>
+</div>
+
+<!-- CURSORS -->
+<div id="cur"></div>
+<div id="cur2"></div>
+
+<!-- BACKGROUND -->
+<canvas id="bgCanvas"></canvas>
+<canvas id="ripCanvas"></canvas>
+
+<div id="app">
+
+<!-- ══ S1: HERO ══ -->
+<section class="sec" id="sec1">
+  <p class="h-eye">✦ đại dương · ký ức · bé cá ✦</p>
+  <h1 class="h-title">
+    <span class="t1">Bé Cá</span>
+    <span class="t2">III — Đại Dương Ký Ức</span>
+  </h1>
+  <div class="h-bar"></div>
+  <p class="h-meta"><span class="h-dot"></span> Nhân → Quỳnh <span class="h-dot"></span></p>
+  <div class="h-scroll">
+    <span>CUỘN XUỐNG</span>
+    <div class="h-scroll-line"></div>
+  </div>
+</section>
+
+<!-- ══ S2: POEM ══ -->
+<section class="sec" id="sec2">
+  <div id="poemWrap" style="max-width:560px;width:100%;text-align:center">
+    <div class="poem-line" data-d="0">Ở dưới đáy đại dương,</div>
+    <div class="poem-line" data-d="150">nơi ánh sáng không chạm tới —</div>
+    <div class="poem-line accent" data-d="300">vẫn có thứ gì đó <em>lấp lánh</em>.</div>
+    <div class="poem-gap"></div>
+    <div class="poem-line" data-d="500">Mình không biết gọi nó là gì,</div>
+    <div class="poem-line" data-d="650">chỉ biết rằng nó có hình dạng</div>
+    <div class="poem-line accent" data-d="800">của <em>một con cá rất nhỏ</em>.</div>
+    <div class="poem-sig" data-d="1000">— nhân, 03/2026</div>
+  </div>
+</section>
+
+<!-- ══ S3: REASONS ══ -->
+<section class="sec" id="sec3">
+  <p class="sec-eyebrow rv">✦ phân tích nghiêm túc</p>
+  <h2 class="sec-title rv" style="transition-delay:.1s">Tại sao lại là <em>Quỳnh?</em></h2>
+  <div class="reasons">
+    <div class="r-item" data-d="0">
+      <span class="r-num">01</span>
+      <div>
+        <div class="r-head">Cười là xong</div>
+        <div class="r-body">Quỳnh cười một cái là mọi lý do buồn đều trở nên vô nghĩa một cách bất công. Khoa học chưa giải thích được.</div>
+      </div>
+    </div>
+    <div class="r-item" data-d="100">
+      <span class="r-num">02</span>
+      <div>
+        <div class="r-head">Hiếm như cá mặt trăng</div>
+        <div class="r-body">Mình đã gặp rất nhiều người, nhưng Quỳnh là loài chưa có trong danh mục — cần được bảo tồn đặc biệt.</div>
+      </div>
+    </div>
+    <div class="r-item" data-d="200">
+      <span class="r-num">03</span>
+      <div>
+        <div class="r-head">Sóng não đồng bộ</div>
+        <div class="r-body">Có những câu chuyện không cần giải thích, những im lặng không cần lấp đầy — với Quỳnh mình hiểu hết. Kỳ lạ lắm.</div>
+      </div>
+    </div>
+    <div class="r-item" data-d="300">
+      <span class="r-num">04</span>
+      <div>
+        <div class="r-head">Hệ miễn dịch tâm trạng</div>
+        <div class="r-body">Ngày xấu + nghĩ đến Quỳnh = ngày đỡ xấu hơn 73%. Mình đã làm thực nghiệm và số liệu không biết nói dối.</div>
+      </div>
+    </div>
+    <div class="r-item" data-d="400">
+      <span class="r-num">05</span>
+      <div>
+        <div class="r-head">Bug chưa fix được</div>
+        <div class="r-body">Mình đã cố "gỡ" Quỳnh ra khỏi đầu nhiều lần. Lỗi vẫn còn đó. Lúc này mình nghĩ đây không phải bug — đây là feature.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S4: DEEP OCEAN ══ -->
+<section class="sec" id="sec4">
+  <p class="sec-eyebrow rv">🌊 vùng biển sâu tương tác</p>
+  <h2 class="sec-title rv" style="transition-delay:.1s">Di chuột &amp; Click <em>để tạo sự sống</em></h2>
+  <canvas id="deepCanvas" class="rv" style="transition-delay:.2s"></canvas>
+  <p class="c-hint rv" style="transition-delay:.3s">click = vụ nổ bioluminescent · di chuột = thu hút sinh vật · bé cá luôn bơi ở đây</p>
+</section>
+
+<!-- ══ S5: LETTER ══ -->
+<section class="sec" id="sec5">
+  <div class="letter rv">
+    <div class="l-to">TO: BÉ CÁ / QUỲNH — 22.03.2026</div>
+    <div class="l-body" id="lbody"></div>
+    <div class="l-from">
+      Người gửi,
+      <strong>Nhân</strong>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S6: FINALE ══ -->
+<section class="sec" id="sec6">
+  <h2 class="finale-q">
+    Đại dương có <em>hàng triệu con cá</em>,<br/>
+    nhưng mình chỉ muốn bắt<br/>
+    <em>một con thôi</em>.
+  </h2>
+  <div class="finale-sub">
+    <button class="btn-g" onclick="bigBoom(event)">✦ Bé cá ơi, bấm vào đây ✦</button>
+    <button class="btn-g" style="background:linear-gradient(90deg,var(--m),var(--p),var(--m));background-size:300%;animation:hueShift 4s linear infinite" onclick="fishRain()">🌧️ Mưa Cá !</button>
+  </div>
+  <div class="credits">
+    MADE WITH ∞ BY NHÂN · GỬI QUỲNH<br/>
+    BÉ CÁ III — ĐẠI DƯƠNG KÝ ỨC · 2026
+  </div>
+</section>
+
+</div><!-- /#app -->
+
+<script>
+/* ═══════════════════════════════════════
+   INTRO
+═══════════════════════════════════════ */
+setTimeout(() => document.getElementById('intro').classList.add('gone'), 2200);
+
+/* ═══════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════ */
+const cur = document.getElementById('cur');
+const cur2 = document.getElementById('cur2');
+let mx = -200, my = -200, lx = -200, ly = -200;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+cur.style.left = '-200px'; cur.style.top = '-200px';
+
+setInterval(() => {
+  lx += (mx - lx) * .2; ly += (my - ly) * .2;
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  cur2.style.left = lx + 'px'; cur2.style.top = ly + 'px';
+}, 16);
+
+document.addEventListener('mousedown', () => { cur.style.width = '5px'; cur.style.height = '5px'; });
+document.addEventListener('mouseup', () => { cur.style.width = '12px'; cur.style.height = '12px'; });
+
+/* ═══════════════════════════════════════
+   BG CANVAS — Stars + Nebula + Motes
+═══════════════════════════════════════ */
+(function () {
+  const c = document.getElementById('bgCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = innerWidth; c.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const stars = Array.from({ length: 200 }, () => ({
+    x: Math.random(), y: Math.random(),
+    r: .4 + Math.random() * 1.8,
+    a: .05 + Math.random() * .4,
+    spd: .001 + Math.random() * .004,
+    ph: Math.random() * Math.PI * 2,
+    col: ['#00ffcc', '#b044ff', '#ffffff', '#ff0080', '#ffd700'][~~(Math.random() * 5)]
+  }));
+
+  const nebulae = [
+    { x: .18, y: .25, r: 320, col: 'rgba(176,68,255,' },
+    { x: .82, y: .55, r: 260, col: 'rgba(0,255,204,' },
+    { x: .5,  y: .8,  r: 290, col: 'rgba(255,0,128,' },
+    { x: .08, y: .7,  r: 210, col: 'rgba(0,180,255,' },
+  ];
+
+  const motes = Array.from({ length: 45 }, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - .5) * .00022, vy: -.00008 - Math.random() * .0003,
+    r: .6 + Math.random() * 2.2,
+    col: ['rgba(0,255,204,.6)', 'rgba(176,68,255,.55)', 'rgba(255,0,128,.45)'][~~(Math.random() * 3)]
+  }));
+
+  let t = 0;
+  (function draw() {
+    t += .007;
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    nebulae.forEach(n => {
+      const g = ctx.createRadialGradient(n.x * c.width, n.y * c.height, 0, n.x * c.width, n.y * c.height, n.r);
+      g.addColorStop(0, n.col + '.038)');
+      g.addColorStop(1, n.col + '0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, c.width, c.height);
+    });
+
+    stars.forEach(s => {
+      const a = s.a + Math.sin(t * s.spd * 120 + s.ph) * .18;
+      ctx.beginPath(); ctx.arc(s.x * c.width, s.y * c.height, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = s.col; ctx.globalAlpha = Math.max(0, a); ctx.fill();
+    });
+
+    motes.forEach(m => {
+      m.x += m.vx; m.y += m.vy;
+      if (m.y < -.01) { m.y = 1.01; m.x = Math.random(); }
+      if (m.x < 0) m.x = 1; if (m.x > 1) m.x = 0;
+      ctx.beginPath(); ctx.arc(m.x * c.width, m.y * c.height, m.r, 0, Math.PI * 2);
+      ctx.fillStyle = m.col; ctx.globalAlpha = .35 + Math.sin(t * 2.5 + m.x * 12) * .28; ctx.fill();
+    });
+
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ═══════════════════════════════════════
+   RIPPLE CANVAS
+═══════════════════════════════════════ */
+(function () {
+  const c = document.getElementById('ripCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = innerWidth; c.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const rips = [];
+  const cols = ['rgba(0,255,204,', 'rgba(176,68,255,', 'rgba(255,0,128,'];
+  document.addEventListener('click', e => {
+    rips.push({ x: e.clientX, y: e.clientY, r: 0, a: 1, col: cols[~~(Math.random() * 3)] });
+  });
+
+  (function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    for (let i = rips.length - 1; i >= 0; i--) {
+      const rp = rips[i];
+      rp.r += 3.5; rp.a -= .028;
+      if (rp.a <= 0) { rips.splice(i, 1); continue; }
+      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+      ctx.strokeStyle = rp.col + rp.a + ')'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r * .55, 0, Math.PI * 2);
+      ctx.strokeStyle = rp.col + rp.a * .35 + ')'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ═══════════════════════════════════════
+   DEEP CANVAS — Bioluminescent Ocean
+═══════════════════════════════════════ */
+(function () {
+  const el = document.getElementById('deepCanvas');
+  const ctx = el.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    el.width = w * DPR; el.height = h * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  // Delay resize until element is painted
+  setTimeout(resize, 100);
+  window.addEventListener('resize', resize);
+
+  const W = () => el.offsetWidth;
+  const H = () => el.offsetHeight;
+
+  let emx = 360, emy = 180;
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    emx = (e.clientX - r.left) * (W() / r.width);
+    emy = (e.clientY - r.top) * (H() / r.height);
+  });
+  el.addEventListener('mouseleave', () => { emx = W() / 2; emy = H() / 2; });
+
+  const bursts = [];
+  el.addEventListener('click', e => {
+    const r = el.getBoundingClientRect();
+    const bx = (e.clientX - r.left) * (W() / r.width);
+    const by = (e.clientY - r.top) * (H() / r.height);
+    const cols = ['#00ffcc', '#b044ff', '#ff0080', '#ffd700', '#00d4ff'];
+    for (let i = 0; i < 40; i++) {
+      const a = Math.random() * Math.PI * 2, spd = .8 + Math.random() * 4.5;
+      bursts.push({
+        x: bx, y: by, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        r: 1.2 + Math.random() * 3, life: 1,
+        col: cols[~~(Math.random() * cols.length)],
+        trail: []
+      });
+    }
+  });
+
+  /* ── Jellyfish ── */
+  class Jelly {
+    constructor(init = false) { this.spawn(init); }
+    spawn(init = false) {
+      this.x = 50 + Math.random() * (W() - 100);
+      this.y = init ? Math.random() * H() : H() + 80;
+      this.vy = -(0.12 + Math.random() * .28);
+      this.vx = (Math.random() - .5) * .18;
+      this.r = 12 + Math.random() * 24;
+      this.ph = Math.random() * Math.PI * 2;
+      this.pSpd = .022 + Math.random() * .02;
+      this.tentN = 4 + ~~(Math.random() * 4);
+      const cs = [
+        ['rgba(176,68,255,', [176, 68, 255]],
+        ['rgba(0,255,204,', [0, 255, 204]],
+        ['rgba(255,0,128,', [255, 0, 128]],
+        ['rgba(0,180,255,', [0, 180, 255]],
+      ][~~(Math.random() * 4)];
+      this.col = cs[0]; this.rgb = cs[1];
+    }
+    update() {
+      this.ph += this.pSpd;
+      const dx = emx - this.x, dy = emy - this.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 100) { this.vx += dx / d * .006; this.vy += dy / d * .006; }
+      this.vx *= .98; this.vy = Math.min(-.04, this.vy * .99);
+      this.x += this.vx; this.y += this.vy;
+      if (this.y < -90 || this.x < -70 || this.x > W() + 70) this.spawn();
+    }
+    draw() {
+      const pulse = .82 + Math.sin(this.ph) * .18;
+      const cr = this.r * pulse;
+      const a = .5 + Math.sin(this.ph) * .18;
+      ctx.save(); ctx.translate(this.x, this.y);
+      // outer glow
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, cr * 2);
+      g.addColorStop(0, this.col + a * .8 + ')');
+      g.addColorStop(.5, this.col + a * .2 + ')');
+      g.addColorStop(1, this.col + '0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, cr * 2, 0, Math.PI * 2); ctx.fill();
+      // bell
+      ctx.beginPath();
+      ctx.arc(0, 0, cr, Math.PI, 0);
+      ctx.quadraticCurveTo(cr * .35, cr * .45, 0, cr * .28);
+      ctx.quadraticCurveTo(-cr * .35, cr * .45, -cr, 0);
+      ctx.closePath();
+      ctx.fillStyle = this.col + a * .65 + ')'; ctx.fill();
+      ctx.strokeStyle = this.col + a * .9 + ')'; ctx.lineWidth = 1; ctx.stroke();
+      // tentacles
+      for (let i = 0; i < this.tentN; i++) {
+        const tx = (i / (this.tentN - 1) * 2 - 1) * cr * .75;
+        const tw = Math.sin(this.ph + i * .9) * 9;
+        ctx.beginPath(); ctx.moveTo(tx, cr * .25);
+        ctx.bezierCurveTo(tx + tw, cr * 1.1, tx - tw, cr * 1.9, tx + tw * .6, cr * 2.8);
+        ctx.strokeStyle = this.col + a * .35 + ')'; ctx.lineWidth = 1; ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ── Bioluminescent Fish ── */
+  class BioFish {
+    constructor(init = false) { this.spawn(init); }
+    spawn(init = false) {
+      this.size = 9 + Math.random() * 14;
+      this.dir = Math.random() > .5 ? 1 : -1;
+      this.x = this.dir > 0 ? -60 : W() + 60;
+      this.y = 30 + Math.random() * (H() - 60);
+      this.baseY = this.y;
+      this.spd = (.4 + Math.random() * 1.1) * this.dir;
+      this.wob = Math.random() * Math.PI * 2;
+      this.wobSpd = .022 + Math.random() * .025;
+      this.wobAmp = 6 + Math.random() * 14;
+      this.tailPh = Math.random() * Math.PI * 2;
+      this.trail = [];
+      const colIdx = ~~(Math.random() * 5);
+      this.col = ['#00ffcc', '#b044ff', '#ff0080', '#00d4ff', '#ffd700'][colIdx];
+      if (init) { this.x = Math.random() * W(); this.dir = Math.random() > .5 ? 1 : -1; this.spd = Math.abs(this.spd) * this.dir; }
+    }
+    update() {
+      this.wob += this.wobSpd; this.tailPh += .12;
+      // attract to mouse
+      const dx = emx - this.x, dy = emy - this.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 110 && d > 22) { this.x += dx / d * .25; this.baseY += dy / d * .12; }
+      this.y = this.baseY + Math.sin(this.wob) * this.wobAmp;
+      this.x += this.spd;
+      this.trail.push({ x: this.x, y: this.y });
+      if (this.trail.length > 14) this.trail.shift();
+      if (this.x > W() + 80 || this.x < -80) this.spawn();
+    }
+    draw() {
+      const s = this.size;
+      // trail
+      this.trail.forEach((pt, i) => {
+        const a = (i / this.trail.length) * .35;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, s * .28 * (i / this.trail.length), 0, Math.PI * 2);
+        ctx.fillStyle = this.col; ctx.globalAlpha = a; ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.save(); ctx.translate(this.x, this.y); ctx.scale(this.dir, 1);
+      // glow halo
+      const glo = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 2.2);
+      glo.addColorStop(0, this.col + '30'); glo.addColorStop(1, 'transparent');
+      ctx.fillStyle = glo; ctx.globalAlpha = .4;
+      ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      // body
+      ctx.shadowColor = this.col; ctx.shadowBlur = s * 1.5;
+      ctx.beginPath(); ctx.ellipse(0, 0, s, s * .42, 0, 0, Math.PI * 2);
+      ctx.fillStyle = this.col; ctx.fill();
+      // tail
+      const tw = Math.sin(this.tailPh) * .5;
+      ctx.save(); ctx.translate(-s * .8, 0); ctx.rotate(tw);
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(-s * .55, -s * .55, -s * .05, 0);
+      ctx.quadraticCurveTo(-s * .55, s * .55, 0, 0);
+      ctx.fillStyle = this.col; ctx.globalAlpha = .7; ctx.fill(); ctx.restore();
+      // eye
+      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(s * .38, -s * .06, s * .12, 0, Math.PI * 2);
+      ctx.fillStyle = '#001a1a'; ctx.fill();
+      ctx.beginPath(); ctx.arc(s * .41, -s * .08, s * .05, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /* ── Plankton ── */
+  class Plankton {
+    constructor() {
+      this.x = Math.random() * (W() || 720);
+      this.y = Math.random() * (H() || 360);
+      this.vx = (Math.random() - .5) * .14; this.vy = (Math.random() - .5) * .14;
+      this.r = .8 + Math.random() * 2;
+      this.col = ['#00ffcc', '#b044ff', '#ff0080'][~~(Math.random() * 3)];
+      this.ph = Math.random() * Math.PI * 2; this.spd = .018 + Math.random() * .04;
+    }
+    update() {
+      this.ph += this.spd;
+      this.x += this.vx + Math.sin(this.ph) * .28;
+      this.y += this.vy + Math.cos(this.ph * .7) * .2;
+      const w = W() || 720, h = H() || 360;
+      if (this.x < 0) this.x = w; if (this.x > w) this.x = 0;
+      if (this.y < 0) this.y = h; if (this.y > h) this.y = 0;
+    }
+    draw() {
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = this.col;
+      ctx.globalAlpha = .25 + Math.sin(this.ph) * .22;
+      ctx.shadowColor = this.col; ctx.shadowBlur = this.r * 3; ctx.fill();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+  }
+
+  const jellies = Array.from({ length: 5 }, () => new Jelly(true));
+  const fishes = Array.from({ length: 8 }, () => new BioFish(true));
+  const planktons = Array.from({ length: 65 }, () => new Plankton());
+
+  let ft = 0;
+  (function draw() {
+    ft += .012;
+    const w = W(), h = H();
+    ctx.clearRect(0, 0, w, h);
+
+    // background
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, '#020c1a'); bg.addColorStop(1, '#010810');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+
+    // caustic rays
+    for (let i = 0; i < 5; i++) {
+      const lx = w * .18 * i + w * .04 + Math.sin(ft * .28 + i) * 28;
+      const lg = ctx.createLinearGradient(lx, 0, lx + 55, h);
+      lg.addColorStop(0, `rgba(0,255,204,${.022 + Math.sin(ft + i) * .01})`);
+      lg.addColorStop(1, 'transparent');
+      ctx.fillStyle = lg;
+      ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx + 65, h); ctx.lineTo(lx, h); ctx.lineTo(lx - 38, 0); ctx.fill();
+    }
+
+    planktons.forEach(p => { p.update(); p.draw(); });
+    jellies.forEach(j => { j.update(); j.draw(); });
+    fishes.forEach(f => { f.update(); f.draw(); });
+
+    // bursts
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i];
+      b.trail.push({ x: b.x, y: b.y });
+      if (b.trail.length > 7) b.trail.shift();
+      b.x += b.vx; b.y += b.vy; b.vx *= .93; b.vy *= .93; b.life -= .022;
+      if (b.life <= 0) { bursts.splice(i, 1); continue; }
+      b.trail.forEach((pt, ti) => {
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, b.r * (ti / b.trail.length), 0, Math.PI * 2);
+        ctx.fillStyle = b.col; ctx.globalAlpha = (ti / b.trail.length) * b.life * .5; ctx.fill();
+      });
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = b.col; ctx.globalAlpha = b.life;
+      ctx.shadowColor = b.col; ctx.shadowBlur = b.r * 5; ctx.fill();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+
+    // surface shimmer
+    for (let i = 0; i < 5; i++) {
+      const sx = (w / 4) * i + Math.sin(ft * .45 + i) * 18;
+      ctx.beginPath(); ctx.moveTo(sx, 4); ctx.quadraticCurveTo(sx + 32, 1, sx + 64, 4);
+      ctx.strokeStyle = `rgba(0,255,204,${.07 + Math.sin(ft * 1.5 + i) * .04})`;
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════ */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const delay = +(el.dataset.d || 0);
+    setTimeout(() => el.classList.add('show'), delay);
+    io.unobserve(el);
+  });
+}, { threshold: 0.15 });
+
+// Observe poem lines & sig
+document.querySelectorAll('.poem-line, .poem-sig').forEach(el => io.observe(el));
+// Observe reason items
+document.querySelectorAll('.r-item').forEach(el => io.observe(el));
+// Observe generic rv elements
+document.querySelectorAll('.rv').forEach(el => io.observe(el));
+// Observe finale
+document.querySelectorAll('.finale-q, .finale-sub').forEach(el => io.observe(el));
+
+/* ═══════════════════════════════════════
+   LETTER TYPEWRITER
+═══════════════════════════════════════ */
+const LETTER = `Bé cá của mình ơi,
+
+Mình không phải người giỏi nói chuyện bằng lời. Lời mình hay ra sai thứ tự, hay thiếu dấu phẩy, hay nói xong rồi mới nghĩ. Nên mình dùng code — vì code thì ít nhất còn có thể debug được.
+
+Nhưng với Quỳnh, mình không muốn debug gì hết. Mọi thứ — kể cả những lúc lúng túng, những lúc không biết nói gì — đều cảm thấy đúng theo một cách kỳ lạ.
+
+Bé cá bơi vào đầu mình lúc nào mình không hay. Và mình cũng không chắc mình muốn bé cá bơi ra.`;
+
+let letterStarted = false;
+const letterIO = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !letterStarted) {
+    letterStarted = true;
+    typewriter();
+    letterIO.disconnect();
+  }
+}, { threshold: 0.3 });
+letterIO.observe(document.querySelector('.letter'));
+
+function typewriter() {
+  const el = document.getElementById('lbody');
+  const cursor = document.createElement('span');
+  cursor.className = 'l-cursor';
+  el.appendChild(cursor);
+
+  let i = 0;
+  function next() {
+    if (i >= LETTER.length) { cursor.remove(); return; }
+    const ch = LETTER[i++];
+    const txt = document.createTextNode(ch);
+    el.insertBefore(txt, cursor);
+    const delay = ch === '\n' ? 180 : '.!?,'.includes(ch) ? 80 : 26;
+    setTimeout(next, delay);
+  }
+  next();
+}
+
+/* ═══════════════════════════════════════
+   FINALE EFFECTS
+═══════════════════════════════════════ */
+const EMOJIS = ['🐟','🐠','🐡','💜','🩷','✨','💫','⭐','🌊','🫧','💙','💝','🌟','🎉','🎊'];
+const PT_COLS = ['#00ffcc','#b044ff','#ff0080','#ffd700','#00d4ff','#fff'];
+
+window.bigBoom = function(e) {
+  const cx = e.clientX, cy = e.clientY;
+  // particles
+  for (let i = 0; i < 65; i++) {
+    const pt = document.createElement('div');
+    pt.className = 'pt';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 170;
+    const size = 3 + Math.random() * 7;
+    const dur = 800 + Math.random() * 900;
+    const col = PT_COLS[~~(Math.random() * PT_COLS.length)];
+    pt.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${col};box-shadow:0 0 ${size*2}px ${col};`;
+    document.body.appendChild(pt);
+    pt.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px)) scale(0)`, opacity: 0 }
+    ], { duration: dur, easing: 'ease-out', fill: 'forwards' });
+    setTimeout(() => pt.remove(), dur + 100);
+  }
+  // floating emojis
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      const fe = document.createElement('div');
+      fe.className = 'fe';
+      const ox = (Math.random() - .5) * 130;
+      fe.style.cssText = `left:${cx + ox}px;top:${cy}px;`;
+      fe.textContent = EMOJIS[~~(Math.random() * EMOJIS.length)];
+      document.body.appendChild(fe);
+      fe.animate([
+        { transform: 'translateY(0) scale(0) rotate(0deg)', opacity: 1 },
+        { transform: 'translateY(-50px) scale(1.3) rotate(-15deg)', opacity: 1, offset: .4 },
+        { transform: 'translateY(-200px) scale(.3) rotate(25deg)', opacity: 0 }
+      ], { duration: 1700, delay: Math.random() * 350, easing: 'ease-out', fill: 'forwards' });
+      setTimeout(() => fe.remove(), 2300);
+    }, i * 55);
+  }
+  // flash
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:rgba(0,255,204,.05);pointer-events:none;z-index:8800;';
+  document.body.appendChild(flash);
+  flash.animate([{opacity:1},{opacity:0}],{duration:500,fill:'forwards'});
+  setTimeout(()=>flash.remove(),600);
+};
+
+window.fishRain = function() {
+  const RAIN = ['🐟','🐠','🐡','🦑','🐙','🦐','🐬','🌊','🫧','🐚','🦀'];
+  for (let i = 0; i < 40; i++) {
+    setTimeout(() => {
+      const fe = document.createElement('div');
+      fe.className = 'fe';
+      fe.style.cssText = `left:${Math.random()*98}vw;top:-50px;font-size:${1.3+Math.random()*1.2}rem;`;
+      fe.textContent = RAIN[~~(Math.random() * RAIN.length)];
+      document.body.appendChild(fe);
+      fe.animate([
+        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+        { transform: `translateY(110vh) rotate(${(Math.random()-.5)*60}deg)`, opacity: .5 }
+      ], { duration: 2000 + Math.random() * 1800, delay: Math.random() * 800, easing: 'linear', fill: 'forwards' });
+      setTimeout(() => fe.remove(), 4000);
+    }, i * 70);
+  }
+};
+
+/* mobile touch particles */
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  for (let i = 0; i < 3; i++) {
+    const fe = document.createElement('div');
+    fe.className = 'fe'; fe.style.cssText = `left:${t.clientX+(Math.random()-.5)*30}px;top:${t.clientY}px;font-size:1.2rem`;
+    fe.textContent = ['🐟','💜','✨','🫧','🌊'][~~(Math.random()*5)];
+    document.body.appendChild(fe);
+    fe.animate([{transform:'translateY(0) scale(0)',opacity:1},{transform:'translateY(-120px) scale(1)',opacity:1,offset:.5},{transform:'translateY(-220px) scale(.2)',opacity:0}],{duration:1600,easing:'ease-out',fill:'forwards'});
+    setTimeout(()=>fe.remove(),1800);
+  }
+}, { passive: true });
+</script>
+</body>
+</html>

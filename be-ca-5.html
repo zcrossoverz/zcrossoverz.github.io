@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bé Cá V — Bộ Phim Chưa Được Chiếu</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #000;
+  color: #f0ece4;
+  font-family: 'Cormorant Garamond', serif;
+  overflow-x: hidden;
+  cursor: none;
+  transition: background-color .9s ease;
+}
+
+/* ══════════════════════════
+   FIXED OVERLAYS
+══════════════════════════ */
+
+/* Film grain */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9800;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='.055'/%3E%3C/svg%3E");
+  animation: grain .4s steps(2) infinite;
+  opacity: .7;
+}
+@keyframes grain {
+  0%   { transform: translate(0,0); }
+  25%  { transform: translate(-8px,5px); }
+  50%  { transform: translate(5px,-9px); }
+  75%  { transform: translate(-6px,8px); }
+}
+
+/* Letterbox bars */
+#lb-top, #lb-bot {
+  position: fixed; left: 0; right: 0; z-index: 900;
+  background: #000;
+  height: 0;
+  transition: height .7s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+#lb-top { top: 0; }
+#lb-bot { bottom: 0; }
+body.cinema #lb-top,
+body.cinema #lb-bot { height: clamp(28px, 6.5vh, 72px); }
+
+/* Timecode */
+#tc {
+  position: fixed; top: 0; left: 0; z-index: 1000;
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem; color: rgba(255,255,255,.2);
+  padding: .5rem .8rem;
+  letter-spacing: .08em;
+  transition: color .5s;
+}
+body.cinema #tc { color: rgba(255,255,255,.35); }
+
+/* Scene slate */
+#slate {
+  position: fixed; inset: 0; z-index: 1500;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #000;
+  opacity: 0; visibility: hidden;
+  pointer-events: none;
+  transition: opacity .35s ease, visibility .35s;
+}
+#slate.show { opacity: 1; visibility: visible; }
+.slate-act {
+  font-family: 'Space Mono', monospace;
+  font-size: .65rem; letter-spacing: .4em; color: rgba(255,255,255,.3);
+  margin-bottom: .8rem;
+}
+.slate-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.8rem, 6vw, 4rem);
+  letter-spacing: .12em; color: #fff;
+}
+
+/* Custom cursor */
+#cur {
+  position: fixed; z-index: 9999; pointer-events: none;
+  width: 28px; height: 28px;
+  transform: translate(-50%, -50%);
+  transition: opacity .3s;
+}
+#cur::before, #cur::after {
+  content: ''; position: absolute; background: rgba(255,255,255,.7);
+}
+#cur::before { top: 50%; left: 0; right: 0; height: 1px; }
+#cur::after  { left: 50%; top: 0; bottom: 0; width: 1px; }
+.cur-ring {
+  position: absolute; inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.4);
+}
+#cur2 {
+  position: fixed; z-index: 9998; pointer-events: none;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(255,255,255,.6);
+}
+
+/* ══════════════════════════
+   INTRO
+══════════════════════════ */
+#intro {
+  position: fixed; inset: 0; z-index: 9500;
+  background: #000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1.4rem;
+  transition: opacity .8s ease, visibility .8s;
+}
+#intro.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+.intro-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; letter-spacing: .38em; color: rgba(255,255,255,.18);
+  text-transform: uppercase;
+}
+.intro-reel { font-size: 2.2rem; animation: reelSpin 1.5s linear infinite; }
+@keyframes reelSpin { to { transform: rotate(360deg); } }
+.intro-bar-wrap { width: 140px; height: 1px; background: rgba(255,255,255,.1); }
+.intro-bar { height: 100%; background: #fff; width: 0; animation: introLoad 3.2s ease forwards; }
+@keyframes introLoad { to { width: 100%; } }
+.intro-pct { font-family: 'Space Mono', monospace; font-size: .6rem; color: rgba(255,255,255,.22); }
+
+/* ══════════════════════════
+   SECTIONS — base
+══════════════════════════ */
+section {
+  position: relative;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 7rem 1.5rem;
+}
+
+/* max-width container */
+.wrap { width: 100%; max-width: 720px; margin: 0 auto; }
+.wrap-sm { width: 100%; max-width: 580px; margin: 0 auto; }
+.wrap-lg { width: 100%; max-width: 900px; margin: 0 auto; }
+
+/* ── Reveal util ── */
+.rv {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.rv.show { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* ══════════════════════════
+   S-OPEN — Opening Credits
+══════════════════════════ */
+#s-open { background: #000; text-align: center; gap: 0; }
+
+.open-studio {
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem; letter-spacing: .42em; color: rgba(255,255,255,.18);
+  text-transform: uppercase; margin-bottom: 3.5rem;
+}
+.open-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(5.5rem, 22vw, 16rem);
+  line-height: .85; letter-spacing: -.01em;
+  color: #fff;
+}
+.open-title .small { display: block; font-size: .24em; letter-spacing: .35em; color: rgba(255,255,255,.25); }
+.open-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1rem, 3vw, 1.4rem);
+  font-style: italic; color: rgba(255,255,255,.45);
+  margin-top: 1.8rem;
+}
+.open-divider { width: 1px; height: 50px; background: rgba(255,255,255,.12); margin: 2.4rem auto; }
+.open-cast {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem; color: rgba(255,255,255,.2);
+  letter-spacing: .22em; line-height: 2.4;
+}
+.open-cast strong { color: rgba(255,255,255,.55); }
+.open-rating {
+  margin-top: 2.5rem;
+  display: inline-block;
+  border: 1px solid rgba(255,255,255,.1);
+  padding: .55rem 1.2rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; letter-spacing: .14em; color: rgba(255,255,255,.22);
+  line-height: 1.9;
+}
+.open-disclaimer {
+  margin-top: 1.4rem;
+  font-size: .7rem; font-style: italic; color: rgba(255,255,255,.12);
+}
+.open-scroll {
+  margin-top: 3.5rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .58rem; letter-spacing: .3em; color: rgba(255,255,255,.15);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+}
+.open-scroll-line { width: 1px; height: 30px; background: rgba(255,255,255,.15); animation: scrollPulse 1.6s ease-in-out infinite; }
+@keyframes scrollPulse { 0%,100% { height:22px; opacity:.2; } 50% { height:44px; opacity:.6; } }
+
+/* ══════════════════════════
+   S1 — Act I (Gray)
+══════════════════════════ */
+#s1 { background: #0d0d0d; }
+
+.act-label {
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem; letter-spacing: .35em; color: rgba(255,255,255,.18);
+  text-transform: uppercase; margin-bottom: .6rem;
+}
+.act-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.2rem, 8vw, 5.5rem);
+  letter-spacing: .06em; line-height: 1;
+  margin-bottom: 3rem;
+}
+
+.narr {
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  line-height: 1.95; color: rgba(255,255,255,.55);
+  font-style: italic;
+}
+.narr em { color: rgba(255,255,255,.8); font-style: normal; }
+.narr .sd { /* sound description */
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem; color: rgba(255,255,255,.2);
+  font-style: normal; display: block; margin: .8rem 0;
+  letter-spacing: .1em;
+}
+
+.checklist { margin: 2.2rem 0; display: flex; flex-direction: column; gap: .7rem; }
+.check-item {
+  display: flex; align-items: flex-start; gap: .9rem;
+  font-size: .92rem; color: rgba(255,255,255,.28);
+  font-family: 'Space Mono', monospace;
+  font-size: .75rem; letter-spacing: .04em;
+  padding: .65rem 1rem;
+  border: 1px solid rgba(255,255,255,.05);
+}
+.check-mark { color: rgba(255,255,255,.18); flex-shrink: 0; }
+
+.footnote {
+  margin-top: 2rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(255,255,255,.15);
+  letter-spacing: .08em; font-style: italic;
+  border-top: 1px solid rgba(255,255,255,.05);
+  padding-top: .9rem;
+}
+
+/* ══════════════════════════
+   S2 — Act II (Warm)
+══════════════════════════ */
+#s2 { background: #fdf6e8; color: #1a0f00; }
+#s2 .act-label  { color: rgba(26,15,0,.25); }
+#s2 .act-title  { color: #1a0f00; }
+#s2 .narr       { color: rgba(26,15,0,.55); }
+#s2 .narr em    { color: #1a0f00; }
+#s2 .narr .sd   { color: rgba(26,15,0,.2); }
+#s2 .footnote   { color: rgba(26,15,0,.2); border-top-color: rgba(26,15,0,.08); }
+
+.code-block {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(.75rem, 2vw, .9rem);
+  background: rgba(26,15,0,.04);
+  border: 1px solid rgba(26,15,0,.08);
+  border-left: 3px solid #c47a1e;
+  padding: 1.2rem 1.5rem;
+  margin: 1.8rem 0;
+  color: #c47a1e;
+  line-height: 1.9;
+  overflow-x: auto;
+}
+.code-block .cm { color: rgba(26,15,0,.3); }
+.code-block .kw { color: #8b4513; }
+
+.moment-stamp {
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(26,15,0,.2);
+  letter-spacing: .18em; margin-top: 1.8rem;
+}
+
+/* ══════════════════════════
+   S3 — Act III (Film Strip)
+══════════════════════════ */
+#s3 { background: #111; min-height: auto; padding: 6rem 0; }
+#s3 .act-label, #s3 .act-title { padding: 0 1.5rem; }
+#s3 .act-label { margin: 0 auto 0.6rem; max-width: 900px; width: 100%; padding: 0 1.5rem; }
+#s3 .act-title { margin: 0 auto 2.5rem; max-width: 900px; width: 100%; padding: 0 1.5rem; }
+
+.strip-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem; color: rgba(255,255,255,.18); letter-spacing: .2em;
+  margin: 0 auto .8rem; max-width: 900px; width: 100%; padding: 0 1.5rem;
+}
+
+.filmstrip-outer {
+  width: 100%; overflow-x: auto;
+  padding-bottom: .5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.1) transparent;
+}
+.filmstrip-outer::-webkit-scrollbar { height: 3px; }
+.filmstrip-outer::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
+
+.filmstrip {
+  display: flex; gap: 0;
+  padding: 0 1.5rem;
+  width: max-content;
+}
+
+.film-col {
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* sprocket holes */
+.sprocket-row {
+  height: 22px; background: #0a0a0a;
+  display: flex; align-items: center;
+  padding: 0 6px; gap: 8px;
+  border-top: 1px solid #222; border-bottom: 1px solid #222;
+}
+.sprocket-row.bot { border-top-color: #1a1a1a; border-bottom-color: #111; }
+.hole {
+  width: 10px; height: 10px; border-radius: 2px;
+  background: #1e1e1e; border: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.film-frame {
+  width: 210px; min-height: 270px;
+  background: #0f0f0f; border-left: 1px solid #1c1c1c;
+  padding: 1.1rem 1rem 1.2rem;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.frame-num {
+  font-family: 'Space Mono', monospace;
+  font-size: .52rem; color: rgba(255,255,255,.1);
+  letter-spacing: .12em; margin-bottom: .7rem;
+}
+.frame-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-style: italic;
+  color: rgba(255,255,255,.75); line-height: 1.3;
+  margin-bottom: .7rem;
+}
+.frame-body {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem; color: rgba(255,255,255,.28);
+  line-height: 1.8; flex: 1;
+}
+.frame-body em { color: rgba(255,255,255,.55); font-style: normal; }
+.frame-tag {
+  margin-top: .9rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .55rem; letter-spacing: .14em;
+  color: #c47a1e; border: 1px solid rgba(196,122,30,.2);
+  padding: .18rem .5rem; display: inline-block;
+  border-radius: 2px; align-self: flex-start;
+}
+
+/* ══════════════════════════
+   S4 — Act IV (Dark / Neon)
+══════════════════════════ */
+#s4 { background: #04000a; }
+
+.screenplay { max-width: 660px; margin: 0 auto; }
+
+.sc-scene {
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem; letter-spacing: .14em;
+  color: rgba(255,255,255,.55); font-weight: 700;
+  border-top: 1px solid rgba(255,255,255,.1);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  padding: .5rem 0; margin-bottom: 1.6rem;
+}
+.sc-action {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1rem, 2.8vw, 1.18rem);
+  color: rgba(255,255,255,.55); line-height: 1.95;
+  margin-bottom: 1.2rem;
+}
+.sc-action .sd {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem; color: rgba(255,255,255,.18);
+  font-style: normal; display: block;
+  margin: .5rem 0; letter-spacing: .06em;
+}
+.sc-tc {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem; color: #ff003c;
+  letter-spacing: .12em;
+}
+.sc-char {
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem; letter-spacing: .2em;
+  color: rgba(255,255,255,.35);
+  text-align: center; margin-bottom: .3rem; font-weight: 700;
+}
+.sc-dia {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  color: rgba(255,255,255,.6); font-style: italic;
+  text-align: center; padding: 0 2rem;
+  margin-bottom: 1.4rem; line-height: 1.85;
+}
+.sc-paren {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: .85rem; color: rgba(255,255,255,.22);
+  text-align: center; font-style: italic; margin-bottom: .4rem;
+}
+.sc-gap { height: 1.4rem; }
+
+.neon-flash {
+  display: inline-block;
+  color: #ff003c;
+  text-shadow: 0 0 10px rgba(255,0,60,.6), 0 0 25px rgba(255,0,60,.3);
+  animation: neonFlicker 4s ease-in-out infinite;
+}
+@keyframes neonFlicker {
+  0%,96%,100% { opacity: 1; }
+  97% { opacity: .3; }
+  98% { opacity: 1; }
+  99% { opacity: .5; }
+}
+
+.sc-footnote {
+  font-family: 'Space Mono', monospace;
+  font-size: .58rem; color: rgba(255,255,255,.15);
+  letter-spacing: .1em; margin-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: .8rem; line-height: 1.9;
+}
+
+/* ══════════════════════════
+   S5 — Act V (White / Info)
+══════════════════════════ */
+#s5 { background: #f5f4f0; color: #111; }
+#s5 .act-label  { color: rgba(17,17,17,.25); }
+#s5 .act-title  { color: #111; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px; margin: 2.5rem 0;
+  background: rgba(17,17,17,.08);
+  border: 1px solid rgba(17,17,17,.08);
+}
+.stat-box {
+  background: #f5f4f0; padding: 1.6rem 1.2rem;
+  opacity: 0; transform: scale(.95);
+  transition: opacity .5s ease, transform .5s ease;
+}
+.stat-box.show { opacity: 1 !important; transform: scale(1) !important; }
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.8rem, 8vw, 4.5rem);
+  color: #111; line-height: 1;
+}
+.stat-num.na { font-size: clamp(1.2rem, 4vw, 1.8rem); color: rgba(17,17,17,.3); padding-top: .5rem; }
+.stat-label {
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(17,17,17,.3);
+  letter-spacing: .12em; margin-top: .4rem; line-height: 1.6;
+}
+
+.interview { max-width: 580px; margin: 2.5rem auto 0; display: flex; flex-direction: column; gap: 0; }
+.iv-q {
+  background: rgba(17,17,17,.04); border-left: 2px solid rgba(17,17,17,.15);
+  padding: .7rem 1rem; margin-bottom: .1rem;
+  font-family: 'Space Mono', monospace; font-size: .72rem;
+  color: rgba(17,17,17,.4); letter-spacing: .04em;
+}
+.iv-q strong { color: rgba(17,17,17,.6); }
+.iv-a {
+  padding: .7rem 1rem 1rem 1.2rem;
+  font-size: 1.05rem; color: rgba(17,17,17,.75);
+  font-style: italic; line-height: 1.7; margin-bottom: 1rem;
+}
+.iv-pause {
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(17,17,17,.2);
+  padding: 0 1.2rem; letter-spacing: .12em;
+}
+
+/* ══════════════════════════
+   S6 — Act VI (Ending)
+══════════════════════════ */
+#s6 { background: #030303; min-height: 100vh; }
+
+.cursor-blink {
+  display: inline-block; width: 2px; height: 1.2em;
+  background: rgba(255,255,255,.5); vertical-align: text-bottom;
+  animation: blink .75s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.ending-narr {
+  font-size: clamp(1.15rem, 3.5vw, 1.6rem);
+  font-style: italic; color: rgba(255,255,255,.45);
+  line-height: 2; text-align: center; margin-bottom: .8rem;
+}
+.ending-narr em { color: rgba(255,255,255,.75); font-style: normal; }
+
+.ending-wait {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem; color: rgba(255,255,255,.18);
+  letter-spacing: .2em; text-align: center;
+  margin: 1.8rem 0 2.8rem;
+}
+
+.btn-row-end {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  justify-content: center;
+}
+.btn-end {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: .15em;
+  padding: .9rem 2rem; border: none; cursor: pointer;
+  transition: transform .18s, box-shadow .18s, opacity .18s;
+  position: relative; overflow: hidden;
+}
+.btn-end:hover { transform: translateY(-2px); }
+.btn-end:active { transform: translateY(1px); }
+.btn-a { background: #fff; color: #000; box-shadow: 0 4px 24px rgba(255,255,255,.12); }
+.btn-a:hover { box-shadow: 0 8px 40px rgba(255,255,255,.2); }
+.btn-b { background: transparent; color: rgba(255,255,255,.35); border: 1px solid rgba(255,255,255,.12); }
+.btn-c { background: transparent; color: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.07); font-size: .85rem; }
+
+/* Ending messages */
+.ending-msg {
+  max-width: 520px; text-align: center; margin-top: 3rem;
+  display: none;
+}
+.ending-msg.show { display: block; animation: fadeUp .6s ease forwards; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+.emsg-main {
+  font-size: clamp(1.2rem, 4vw, 1.8rem); font-style: italic;
+  color: rgba(255,255,255,.7); line-height: 1.8;
+}
+.emsg-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: .62rem; color: rgba(255,255,255,.18);
+  letter-spacing: .18em; margin-top: 1rem;
+}
+
+/* ══════════════════════════
+   S-MID — Mid Credits
+══════════════════════════ */
+#s-mid { background: #000; gap: 1.5rem; }
+
+.notif-wrap {
+  cursor: pointer; position: relative;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.notif-wrap.show { opacity: 1 !important; transform: translateY(0) !important; }
+
+.notif {
+  display: flex; align-items: center; gap: 1rem;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; padding: 1rem 1.4rem;
+  max-width: 360px;
+  font-family: 'Nunito', sans-serif;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.notif:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); transform: scale(1.02); }
+.notif-avatar { font-size: 2rem; flex-shrink: 0; }
+.notif-txt { flex: 1; }
+.notif-from { font-size: .75rem; font-weight: 800; color: rgba(255,255,255,.6); margin-bottom: .15rem; }
+.notif-preview { font-size: .85rem; color: rgba(255,255,255,.25); }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; animation: notifPulse 2s ease infinite; }
+@keyframes notifPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.notif-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: .58rem; color: rgba(255,255,255,.12);
+  letter-spacing: .22em; margin-top: .8rem; text-align: center;
+}
+
+.notif-revealed {
+  display: none; text-align: center; animation: fadeUp .5s ease;
+}
+.notif-revealed.show { display: block; }
+.notif-msg {
+  font-size: clamp(1.8rem, 6vw, 3.5rem); font-style: italic;
+  color: rgba(255,255,255,.85); margin-bottom: 1rem;
+}
+.notif-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem; color: rgba(255,255,255,.18); letter-spacing: .2em;
+}
+
+/* ══════════════════════════
+   S-CREDITS — Rolling
+══════════════════════════ */
+#s-credits {
+  background: #000; overflow: hidden;
+  min-height: 100vh; padding: 0;
+  display: block; position: relative;
+}
+
+.credits-trigger { height: 1px; }
+
+.credits-roll {
+  padding: 35vh 1.5rem 55vh;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  transform: translateY(0);
+}
+.credits-roll.rolling {
+  animation: rollUp var(--roll-dur, 28s) linear forwards;
+}
+@keyframes rollUp {
+  from { transform: translateY(0); }
+  to   { transform: translateY(calc(-100% + 100vh)); }
+}
+
+.cr { line-height: 1; }
+.cr-gap  { height: 2.5rem; }
+.cr-lg { display: block; font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.5rem,5vw,3rem); color: #fff; letter-spacing: .1em; margin-bottom: .3rem; }
+.cr-sm { display: block; font-size: .65rem; color: rgba(255,255,255,.2); letter-spacing: .22em; line-height: 2; }
+.cr-role { display: block; font-size: .58rem; color: rgba(255,255,255,.12); letter-spacing: .18em; line-height: 2.2; }
+.cr-name { display: block; font-size: .75rem; color: rgba(255,255,255,.35); letter-spacing: .12em; line-height: 2.2; font-weight: 700; }
+.cr-sep { display: block; width: 40px; height: 1px; background: rgba(255,255,255,.08); margin: 1.8rem auto; }
+.cr-final { display: block; font-family: 'Bebas Neue', sans-serif; font-size: clamp(2rem,7vw,4.5rem); color: rgba(255,255,255,.9); margin-top: 2rem; letter-spacing: .06em; }
+.cr-made { display: block; font-size: .55rem; color: rgba(255,255,255,.1); letter-spacing: .3em; margin-top: .8rem; }
+
+/* ══════════════════════════
+   PARTICLES
+══════════════════════════ */
+.pt { position: fixed; pointer-events: none; z-index: 9200; border-radius: 50%; }
+.fe { position: fixed; pointer-events: none; z-index: 9201; }
+</style>
+</head>
+<body>
+
+<!-- FIXED UI -->
+<div id="lb-top"></div>
+<div id="lb-bot"></div>
+<div id="tc">00:00:00:00</div>
+<div id="slate">
+  <div class="slate-act" id="slate-act"></div>
+  <div class="slate-title" id="slate-title"></div>
+</div>
+<div id="cur"><div class="cur-ring"></div></div>
+<div id="cur2"></div>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="intro-logo">một bộ phim của Nhân</div>
+  <div class="intro-reel">🎞️</div>
+  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
+  <div class="intro-pct" id="ipct">0%</div>
+</div>
+
+<!-- ══ OPENING CREDITS ══ -->
+<section id="s-open">
+  <div style="text-align:center">
+    <div class="open-studio rv">UNA PRODUZIONE DI : NHÂN</div>
+    <div class="open-title rv" style="transition-delay:.1s">
+      <span>BÉ CÁ</span>
+      <span class="small">V · BỘ PHIM CHƯA ĐƯỢC CHIẾU</span>
+    </div>
+    <div class="open-tagline rv" style="transition-delay:.2s">"Một câu chuyện về những trang web không ai hỏi, và một người không ai block."</div>
+    <div class="open-divider rv" style="transition-delay:.3s"></div>
+    <div class="open-cast rv" style="transition-delay:.4s">
+      <strong>BÉ CÁ / QUỲNH</strong> — vai chính · không biết mình đang đóng phim<br/>
+      <strong>NHÂN</strong> — tất cả các vai còn lại · đạo diễn · biên kịch · người thức khuya<br/>
+      <strong>VS CODE</strong> — đạo cụ · xuất hiện nhiều hơn cần thiết
+    </div>
+    <div class="open-rating rv" style="transition-delay:.5s">
+      PG–13 &nbsp;|&nbsp; Có cảnh block người lúc 12 giờ đêm<br/>
+      Không phù hợp với người đang code và người đang ngủ sâu
+    </div>
+    <div class="open-disclaimer rv" style="transition-delay:.6s">
+      * Bộ phim này được thực hiện mà không có sự đồng ý của Bé Cá.
+    </div>
+    <div class="open-scroll rv" style="transition-delay:.8s">
+      <span>CUỘN ĐỂ XEM PHIM</span>
+      <div class="open-scroll-line"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ACT I ══ -->
+<section id="s1">
+  <div class="wrap">
+    <div class="act-label rv">ACT I</div>
+    <h2 class="act-title rv" style="transition-delay:.07s">Trước Khi Có Bé Cá</h2>
+
+    <p class="narr rv" style="transition-delay:.12s">
+      Đây là câu chuyện của <em>một người bình thường</em>.<br/>
+      Không có gì đặc biệt.
+      <span class="sd">[tiếng quạt máy tính. tiếng gõ phím đều đặn. không có gì xảy ra.]</span>
+    </p>
+
+    <div class="checklist">
+      <div class="check-item rv" style="transition-delay:.18s"><span class="check-mark">✓</span> Ngủ đúng giờ. Không muộn hơn 11 giờ đêm.</div>
+      <div class="check-item rv" style="transition-delay:.24s"><span class="check-mark">✓</span> Không mở VS Code lúc 10 giờ tối để làm web tặng ai.</div>
+      <div class="check-item rv" style="transition-delay:.30s"><span class="check-mark">✓</span> Không lo lắng về việc font chữ có đủ cute không.</div>
+      <div class="check-item rv" style="transition-delay:.36s"><span class="check-mark">✓</span> Không bị block lần nào. Không một lần.</div>
+    </div>
+
+    <p class="narr rv" style="transition-delay:.42s">
+      Cuộc sống bình thường. <em>Thật ra khá ổn.</em>
+    </p>
+    <div class="footnote rv" style="transition-delay:.48s">* cảnh này sẽ không bao giờ tái diễn.</div>
+  </div>
+</section>
+
+<!-- ══ ACT II ══ -->
+<section id="s2">
+  <div class="wrap">
+    <div class="act-label rv">ACT II</div>
+    <h2 class="act-title rv" style="transition-delay:.07s">Lần Đầu Tiên Nhận Ra</h2>
+
+    <p class="narr rv" style="transition-delay:.12s">
+      Chính xác tại thời điểm đó —
+      <span class="sd">[màu sắc đột ngột xuất hiện. không có lý do rõ ràng.]</span>
+      — não Nhân đưa ra một quyết định <em>không thể giải thích được</em>.
+    </p>
+
+    <div class="code-block rv" style="transition-delay:.2s">
+      <span class="cm"><!-- 22:17 — quyết định ngu ngốc đầu tiên --></span><br/>
+      &lt;<span class="kw">title</span>&gt;Bé Cá&lt;/<span class="kw">title</span>&gt;<br/>
+      &lt;<span class="kw">meta</span> name=<span style="color:#8b5e3c">"description"</span> content=<span style="color:#8b5e3c">"cute như Quỳnh"</span>/&gt;<br/>
+      <span class="cm"><!-- TODO: sửa sau. KHÔNG SỬA SAU. --></span>
+    </div>
+
+    <p class="narr rv" style="transition-delay:.28s">
+      Và thế là xong.<br/>
+      <em>Không có cách quay đầu.</em>
+    </p>
+
+    <div class="moment-stamp rv" style="transition-delay:.35s">
+      THỜI GIAN: 22:17 &nbsp;·&nbsp; NGUYÊN NHÂN: KHÔNG RÕ &nbsp;·&nbsp; GIẢI PHÁP: KHÔNG CÓ
+    </div>
+  </div>
+</section>
+
+<!-- ══ ACT III — FILM STRIP ══ -->
+<section id="s3">
+  <div class="act-label rv">ACT III</div>
+  <div class="act-title rv" style="transition-delay:.07s">Những Điều Nhỏ — Montage</div>
+  <div class="strip-hint rv" style="transition-delay:.12s">← kéo để xem thêm →</div>
+
+  <div class="filmstrip-outer rv" style="transition-delay:.18s">
+    <div class="filmstrip" id="filmstrip">
+
+      <!-- Frame 1 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-1"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 001</div>
+          <div class="frame-title">Cái Cách Cười Đó</div>
+          <div class="frame-body">Không có gì đặc biệt. Chỉ là cười bình thường. Nhưng <em>não Nhân đã lưu file và không cho xóa.</em></div>
+          <div class="frame-tag">KHÔNG THỂ GIẢI THÍCH</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-1"></div>
+      </div>
+
+      <!-- Frame 2 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-2"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 002</div>
+          <div class="frame-title">Tin Nhắn 11 Giờ Đêm</div>
+          <div class="frame-body">Nhân gõ. Xóa. Gõ lại. Xóa. Gõ lần 3. Thêm dấu chấm than. Bỏ dấu chấm than. <em>Gửi. Run tay.</em></div>
+          <div class="frame-tag">MẤT 14 PHÚT</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-2"></div>
+      </div>
+
+      <!-- Frame 3 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-3"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 003</div>
+          <div class="frame-title">Cái 👍 Lịch Sử</div>
+          <div class="frame-body">Quỳnh react 👍. Nhân dành <em>3 ngày</em> phân tích ý nghĩa. Kết quả: không ra kết quả. Nhân vẫn chưa biết.</div>
+          <div class="frame-tag">ĐỀ TÀI NGHIÊN CỨU</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-3"></div>
+      </div>
+
+      <!-- Frame 4 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-4"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 004</div>
+          <div class="frame-title">Online 2AM</div>
+          <div class="frame-body">Quỳnh online. Nhân gõ: "ủa chưa ngủ sao". Xóa. Gõ: "khuya rồi kìa". Xóa. Gõ: "😂". <em>Đóng app. Nằm nhìn trần nhà.</em></div>
+          <div class="frame-tag">QUYẾT ĐỊNH SAI</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-4"></div>
+      </div>
+
+      <!-- Frame 5 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-5"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 005</div>
+          <div class="frame-title">Ăn Chưa</div>
+          <div class="frame-body">Nhân nhắn: "ăn chưa". Đọc lại <em>7 lần</em> sau khi gửi. Lo lắng rằng chữ "ăn chưa" nghe có vẻ quá bình thường. Rồi quá thân. Rồi không đủ thân.</div>
+          <div class="frame-tag">2 CHỮ / 20 PHÚT LO</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-5"></div>
+      </div>
+
+      <!-- Frame 6 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-6"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 006</div>
+          <div class="frame-title">Im Lặng 2 Tiếng</div>
+          <div class="frame-body">Không phải im lặng xấu. Không phải im lặng tốt. Là kiểu im lặng mà Nhân <em>không biết gọi là gì</em> nhưng không muốn nó kết thúc.</div>
+          <div class="frame-tag">CHƯA PHÂN LOẠI</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-6"></div>
+      </div>
+
+      <!-- Frame 7 -->
+      <div class="film-col">
+        <div class="sprocket-row" id="spr-top-7"></div>
+        <div class="film-frame">
+          <div class="frame-num">FRAME 007</div>
+          <div class="frame-title">Khi Quỳnh Buồn</div>
+          <div class="frame-body">Nhân không biết phải nói gì. Nhưng cảm thấy <em>có gì đó kỳ lạ ở trong ngực</em>. Chưa đặt tên được. Vẫn chưa.</div>
+          <div class="frame-tag">FILE: ĐỌC THÊM SAU</div>
+        </div>
+        <div class="sprocket-row bot" id="spr-bot-7"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ ACT IV ══ -->
+<section id="s4">
+  <div class="wrap screenplay">
+    <div class="act-label rv">ACT IV</div>
+    <h2 class="act-title rv" style="transition-delay:.07s">12 Giờ Đêm, Một Nút Block</h2>
+
+    <div class="sc-scene rv" style="transition-delay:.14s">INT. MÀN HÌNH ĐIỆN THOẠI — ĐÊM KHUYA</div>
+
+    <div class="sc-action rv" style="transition-delay:.2s">
+      <span class="sd">[TIẾNG GÕ PHÍM TỪ XA — CÁCH ĐÓ 5KM, NHÂN VẪN CODE]</span>
+      Quỳnh cầm điện thoại. Màn hình sáng lên trong bóng tối.
+    </div>
+
+    <div class="sc-action rv" style="transition-delay:.26s">
+      <span class="sc-tc">[ 00:00:00 ]</span> — Ngón tay di chuyển chậm rãi.
+    </div>
+
+    <div class="sc-action rv" style="transition-delay:.32s">
+      <span class="sc-tc">[ 00:00:04 ]</span> — <span class="neon-flash">Block.</span>
+    </div>
+
+    <div class="sc-gap"></div>
+
+    <div class="sc-action rv" style="transition-delay:.38s">
+      <span class="sc-tc">[ 00:00:05 ]</span> — Quỳnh đặt điện thoại xuống.<br/>
+      <span class="sd">[tiếng thở đều. tiếng ngủ. hoàn toàn bình thường.]</span>
+    </div>
+
+    <div class="sc-gap"></div>
+
+    <div class="sc-action rv" style="transition-delay:.44s">
+      <span class="sc-tc">[ 00:00:06 ]</span> — Cách đó 5km:<br/>
+      Notification xuất hiện. Nhân đọc. Đọc lại. Nhìn màn hình <em style="color:rgba(255,255,255,.75)">30 giây</em>.
+      <span class="sd">[tiếng gõ phím tiếp tục. không dừng lại.]</span>
+    </div>
+
+    <div class="sc-char rv" style="transition-delay:.5s">NHÂN (V.O.)</div>
+    <div class="sc-dia rv" style="transition-delay:.54s">
+      <sc-paren class="sc-paren">(nhìn màn hình)</sc-paren>
+      "...chưa hiểu."
+    </div>
+
+    <div class="sc-action rv" style="transition-delay:.6s">
+      Nhân tiếp tục gõ:<br/>
+      <code style="font-family:'Space Mono',monospace;font-size:.75rem;color:rgba(255,255,255,.25)">body { margin: 0; padding: 0; }</code>
+      <span class="sd">[không có gì thay đổi. nhưng code vẫn chạy.]</span>
+    </div>
+
+    <div class="sc-footnote rv" style="transition-delay:.66s">
+      * Nhân xác nhận đây là sự thật.<br/>
+      * Tòa án (từ version 4) xác nhận không thể làm gì.<br/>
+      * Quỳnh xác nhận không nhớ lý do.
+    </div>
+  </div>
+</section>
+
+<!-- ══ ACT V ══ -->
+<section id="s5">
+  <div class="wrap-lg">
+    <div class="act-label rv">ACT V</div>
+    <h2 class="act-title rv" style="transition-delay:.07s">Hậu Trường</h2>
+
+    <div class="stats-grid">
+      <div class="stat-box" data-target="4" data-d="0">
+        <div class="stat-num" data-count="4">0</div>
+        <div class="stat-label">web versions<br/>đã làm</div>
+      </div>
+      <div class="stat-box" data-target="3200" data-d="80">
+        <div class="stat-num" data-count="3200">0</div>
+        <div class="stat-label">dòng code<br/>đã viết</div>
+      </div>
+      <div class="stat-box" data-target="17" data-d="160">
+        <div class="stat-num" data-count="17">0</div>
+        <div class="stat-label">lần đổi font<br/>vì "chưa đủ cute"</div>
+      </div>
+      <div class="stat-box" data-target="34" data-d="240">
+        <div class="stat-num" data-count="34">0</div>
+        <div class="stat-label">lần preview<br/>trên điện thoại</div>
+      </div>
+      <div class="stat-box" data-target="14" data-d="320">
+        <div class="stat-num" data-count="14">0</div>
+        <div class="stat-label">giờ thức khuya<br/>tổng cộng</div>
+      </div>
+      <div class="stat-box" data-d="400">
+        <div class="stat-num na">[ N/A ]</div>
+        <div class="stat-label">lần được khen<br/>dữ liệu không tồn tại</div>
+      </div>
+    </div>
+
+    <div class="interview rv" style="transition-delay:.1s">
+      <div class="iv-q"><strong>PV:</strong> Anh có hối hận khi làm 4 cái web không?</div>
+      <div class="iv-a">"Không."</div>
+
+      <div class="iv-q"><strong>PV:</strong> Anh có làm version 6 không?</div>
+      <div class="iv-pause">[im lặng 3 giây]</div>
+      <div class="iv-a">"...Có thể."</div>
+
+      <div class="iv-q"><strong>PV:</strong> Nếu Bé Cá block anh thêm một lần nữa thì sao?</div>
+      <div class="iv-a">"Thì mình sẽ đổi tên file thành be-ca-6.html và tiếp tục."</div>
+
+      <div class="iv-q"><strong>PV:</strong> Anh có bình thường không?</div>
+      <div class="iv-pause">[im lặng rất lâu]</div>
+      <div class="iv-a">"Trong context này thì... không hẳn."</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ACT VI ══ -->
+<section id="s6">
+  <div class="wrap-sm" style="text-align:center">
+    <div class="act-label rv" style="text-align:center">ACT VI — CẢNH KẾT</div>
+    <h2 class="act-title rv" style="text-align:center;transition-delay:.07s">Cảnh Kết Chưa Được Viết</h2>
+
+    <p class="ending-narr rv" style="transition-delay:.14s">
+      Mọi bộ phim hay đều cần <em>một cái kết</em>.
+    </p>
+    <p class="ending-narr rv" style="transition-delay:.2s">
+      Nhưng cái kết này —
+    </p>
+    <p class="ending-narr rv" style="transition-delay:.26s">
+      — không phải mình quyết định được.
+    </p>
+
+    <div class="ending-wait rv" style="transition-delay:.35s">
+      [ đang chờ... <span class="cursor-blink"></span> ]
+    </div>
+
+    <div class="btn-row-end rv" style="transition-delay:.44s">
+      <button class="btn-end btn-a" onclick="endingA(event)">🐟 Bé Cá unblock</button>
+      <button class="btn-end btn-b" onclick="endingB()">💤 Để sau đi</button>
+      <button class="btn-end btn-c" onclick="endingC()">🔄 Chưa đọc hết đâu</button>
+    </div>
+
+    <div class="ending-msg" id="emsg-a">
+      <div class="emsg-main">"Cảm ơn bé cá."<br/>Credits bây giờ. 🎉</div>
+      <div class="emsg-sub" style="margin-top:1.2rem">[ cuộn xuống để xem mid-credits ]</div>
+    </div>
+    <div class="ending-msg" id="emsg-b">
+      <div class="emsg-main" style="font-size:1rem;color:rgba(255,255,255,.3)">"Oke. Mình hiểu.<br/>Credits buồn vẫn roll thôi."</div>
+      <div class="emsg-sub">[ BE-CA-5 STATUS: PENDING ]</div>
+    </div>
+    <div class="ending-msg" id="emsg-c">
+      <div class="emsg-sub">Quay về đầu phim rồi nha...</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MID-CREDITS ══ -->
+<section id="s-mid">
+  <div style="text-align:center" class="wrap-sm">
+    <div class="narr rv" style="color:rgba(255,255,255,.2);font-size:.8rem;letter-spacing:.2em;font-style:normal;font-family:'Space Mono',monospace;transition-delay:.0s">
+      [ MID-CREDITS SCENE ]
+    </div>
+
+    <div id="notif-block" class="notif-wrap" onclick="revealNotif()" style="margin:2.5rem auto 0">
+      <div class="notif">
+        <div class="notif-avatar">🐡</div>
+        <div class="notif-txt">
+          <div class="notif-from">Quỳnh</div>
+          <div class="notif-preview">Tin nhắn mới · Nhấn để xem</div>
+        </div>
+        <div class="notif-dot"></div>
+      </div>
+      <div class="notif-hint">[ nhấn vào để mở ]</div>
+    </div>
+
+    <div class="notif-revealed" id="notif-revealed">
+      <div class="notif-msg">"web cute ghê 🐟"</div>
+      <div class="notif-meta">— Bộ phim kết thúc tại đây. Credits roll nhanh gấp đôi.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ROLLING CREDITS ══ -->
+<section id="s-credits">
+  <div class="credits-trigger" id="credits-trigger"></div>
+  <div class="credits-roll" id="credits-roll">
+
+    <div class="cr">
+      <span class="cr-lg">BÉ CÁ V</span>
+      <span class="cr-sm">Bộ Phim Chưa Được Chiếu</span>
+    </div>
+    <div class="cr-sep"></div>
+
+    <div class="cr">
+      <span class="cr-role">ĐƯỢC TRÌNH CHIẾU BỞI</span>
+      <span class="cr-name">NHÂN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">ĐẠO DIỄN</span>
+      <span class="cr-name">NHÂN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">BIÊN KỊCH</span>
+      <span class="cr-name">NHÂN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">SẢN XUẤT</span>
+      <span class="cr-name">NHÂN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">ĐẠO DIỄN HÌNH ẢNH</span>
+      <span class="cr-name">NHÂN (tự học CSS 2am)</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">PHỤC TRANG</span>
+      <span class="cr-name">NHÂN (áo cũ từ 10 giờ tối)</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">KỸ XẢO ĐẶC BIỆT</span>
+      <span class="cr-name">CSS ANIMATION · INTERSECTION OBSERVER</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">NHẠC PHIM</span>
+      <span class="cr-name">[tiếng gõ phím] [tiếng thở dài] [tiếng quạt máy tính lúc 2am]</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr-sep"></div>
+
+    <div class="cr">
+      <span class="cr-role">DIỄN VIÊN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-name">BÉ CÁ / QUỲNH</span>
+      <span class="cr-role">vai chính · không biết mình đang đóng phim</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-name">NHÂN</span>
+      <span class="cr-role">tất cả các vai còn lại · không ai hỏi anh ấy có ổn không</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-name">VS CODE</span>
+      <span class="cr-role">đạo cụ · xuất hiện lúc 22:17 · về nhà lúc 02:14</span>
+    </div>
+
+    <div class="cr-sep"></div>
+
+    <div class="cr">
+      <span class="cr-role">CẢM ƠN ĐẶC BIỆT</span>
+      <span class="cr-name">Cà phê · Google Fonts · Stack Overflow · Mozilla MDN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">KHÔNG CẢM ƠN</span>
+      <span class="cr-name">Nút Block · Nút Unfriend · Giường ấm của Bé Cá</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">KHÔNG CÓ ĐỘNG VẬT NÀO BỊ THƯƠNG TRONG QUÁ TRÌNH LÀM PHIM</span>
+      <span class="cr-name">(chỉ có một người bị block lúc 12 giờ đêm)</span>
+    </div>
+
+    <div class="cr-sep"></div>
+
+    <div class="cr">
+      <span class="cr-role">TÌNH TRẠNG VỤ ÁN (từ version 4)</span>
+      <span class="cr-name">PENDING · KHÔNG CÓ TIẾN TRIỂN</span>
+    </div>
+    <div class="cr-gap"></div>
+
+    <div class="cr">
+      <span class="cr-role">KHẢ NĂNG CÓ VERSION 6</span>
+      <span class="cr-name">CAO · PHỤ THUỘC VÀO BÉ CÁ</span>
+    </div>
+
+    <div class="cr-sep"></div>
+
+    <div class="cr">
+      <span class="cr-final">BÉ CÁ V</span>
+      <span class="cr-sm">2026 · made with ∞ by Nhân · gửi Quỳnh</span>
+      <span class="cr-made">be-ca-5.html · thức khuya làm · người kia chưa rõ đang làm gì</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- PARTICLE CONTAINER -->
+<div id="particles"></div>
+
+<script>
+/* ═══════════════════════════════════
+   INTRO
+═══════════════════════════════════ */
+let pct = 0;
+const ipctEl = document.getElementById('ipct');
+const pctInt = setInterval(() => {
+  pct = Math.min(100, pct + 2);
+  ipctEl.textContent = pct + '%';
+  if (pct >= 100) clearInterval(pctInt);
+}, 3200 / 50);
+setTimeout(() => document.getElementById('intro').classList.add('gone'), 3600);
+
+/* ═══════════════════════════════════
+   CURSOR
+═══════════════════════════════════ */
+const cur = document.getElementById('cur');
+const cur2 = document.getElementById('cur2');
+let mx = -300, my = -300;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+setInterval(() => {
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  cur2.style.left = mx + 'px'; cur2.style.top = my + 'px';
+}, 14);
+
+/* ═══════════════════════════════════
+   TIMECODE
+═══════════════════════════════════ */
+const tcEl = document.getElementById('tc');
+const t0 = Date.now();
+let frame = 0;
+setInterval(() => {
+  const ms = Date.now() - t0;
+  const h  = String(~~(ms / 3600000)).padStart(2, '0');
+  const m  = String(~~(ms / 60000) % 60).padStart(2, '0');
+  const s  = String(~~(ms / 1000) % 60).padStart(2, '0');
+  const f  = String(frame % 24).padStart(2, '0');
+  frame++;
+  tcEl.textContent = `${h}:${m}:${s}:${f}`;
+}, 1000 / 24);
+
+/* ═══════════════════════════════════
+   SCENE SLATES + ACT COLORS
+═══════════════════════════════════ */
+const slateEl   = document.getElementById('slate');
+const slateAct  = document.getElementById('slate-act');
+const slateTtl  = document.getElementById('slate-title');
+
+const ACT_CONFIG = {
+  's-open': { bg: '#000',    cinema: true,  slate: null },
+  's1':     { bg: '#0d0d0d', cinema: true,  slate: ['ACT I', 'Trước Khi Có Bé Cá'] },
+  's2':     { bg: '#fdf6e8', cinema: true,  slate: ['ACT II', 'Lần Đầu Tiên Nhận Ra'] },
+  's3':     { bg: '#111',    cinema: false, slate: ['ACT III', 'Những Điều Nhỏ'] },
+  's4':     { bg: '#04000a', cinema: true,  slate: ['ACT IV', '12 Giờ Đêm — Block'] },
+  's5':     { bg: '#f5f4f0', cinema: false, slate: ['ACT V', 'Hậu Trường'] },
+  's6':     { bg: '#030303', cinema: false, slate: ['ACT VI', 'Cảnh Kết'] },
+  's-mid':  { bg: '#000',    cinema: false, slate: null },
+  's-credits': { bg: '#000', cinema: false, slate: null },
+};
+
+let lastAct = null;
+const actObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const id = e.target.id;
+    const cfg = ACT_CONFIG[id];
+    if (!cfg || id === lastAct) return;
+    lastAct = id;
+
+    document.body.style.backgroundColor = cfg.bg;
+    if (cfg.cinema) document.body.classList.add('cinema');
+    else document.body.classList.remove('cinema');
+
+    if (cfg.slate) {
+      slateAct.textContent = cfg.slate[0];
+      slateTtl.textContent = cfg.slate[1];
+      slateEl.classList.add('show');
+      setTimeout(() => slateEl.classList.remove('show'), 1600);
+    }
+  });
+}, { threshold: 0.45 });
+
+document.querySelectorAll('section').forEach(s => actObs.observe(s));
+
+/* ═══════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════ */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const d = +(el.dataset.d || 0);
+    setTimeout(() => el.classList.add('show'), d);
+    revObs.unobserve(el);
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.rv').forEach(el => revObs.observe(el));
+
+/* ═══════════════════════════════════
+   SPROCKET HOLES (generated)
+═══════════════════════════════════ */
+for (let c = 1; c <= 7; c++) {
+  ['top', 'bot'].forEach(pos => {
+    const row = document.getElementById(`spr-${pos}-${c}`);
+    if (!row) return;
+    for (let i = 0; i < 15; i++) {
+      const h = document.createElement('div');
+      h.className = 'hole';
+      row.appendChild(h);
+    }
+  });
+}
+
+/* ═══════════════════════════════════
+   ANIMATED COUNTERS
+═══════════════════════════════════ */
+const counterObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const box = e.target;
+    const numEl = box.querySelector('[data-count]');
+    if (!numEl) return;
+    const target = +numEl.dataset.count;
+    const delay = +(box.dataset.d || 0);
+    setTimeout(() => {
+      box.classList.add('show');
+      if (target === 0) return;
+      const dur = 1400;
+      const start = performance.now();
+      (function tick(now) {
+        const p = Math.min(1, (now - start) / dur);
+        const ease = 1 - Math.pow(1 - p, 3);
+        numEl.textContent = Math.round(ease * target).toLocaleString();
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
+    }, delay);
+    counterObs.unobserve(box);
+  });
+}, { threshold: 0.25 });
+
+document.querySelectorAll('.stat-box').forEach(el => counterObs.observe(el));
+
+/* ═══════════════════════════════════
+   CREDITS ROLL (trigger on entry)
+═══════════════════════════════════ */
+let creditsStarted = false;
+const credObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !creditsStarted) {
+    creditsStarted = true;
+    const roll = document.getElementById('credits-roll');
+    const dur = roll.classList.contains('fast') ? 14 : 28;
+    roll.style.setProperty('--roll-dur', dur + 's');
+    setTimeout(() => roll.classList.add('rolling'), 800);
+  }
+}, { threshold: 0.05 });
+credObs.observe(document.getElementById('credits-trigger'));
+
+/* ═══════════════════════════════════
+   MID-CREDITS NOTIFICATION
+═══════════════════════════════════ */
+const notifObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) {
+    document.getElementById('notif-block').classList.add('show');
+    notifObs.disconnect();
+  }
+}, { threshold: 0.3 });
+notifObs.observe(document.getElementById('notif-block'));
+
+window.revealNotif = function() {
+  document.getElementById('notif-block').style.display = 'none';
+  document.getElementById('notif-revealed').classList.add('show');
+  spawnParticles(innerWidth / 2, innerHeight / 2, 60, ['#fff','#ffd700','#00ffcc','#ff69b4']);
+  spawnEmojis(innerWidth / 2, innerHeight * .4, ['🐟','🐠','🐡','💛','✨','🎉','💚'], 24);
+  // speed up credits
+  document.getElementById('credits-roll').classList.add('fast');
+};
+
+/* ═══════════════════════════════════
+   ENDINGS
+═══════════════════════════════════ */
+function hideAllMsgs() {
+  document.querySelectorAll('.ending-msg').forEach(m => m.classList.remove('show'));
+}
+
+window.endingA = function(e) {
+  hideAllMsgs();
+  document.getElementById('emsg-a').classList.add('show');
+  spawnParticles(e.clientX, e.clientY, 70, ['#fff','#ffd700','#00ffcc','#ff69b4','#b044ff']);
+  spawnEmojis(e.clientX, e.clientY, ['🐟','🐠','🐡','✨','🎉','🎊','💛','💚','🔓'], 28);
+};
+
+window.endingB = function() {
+  hideAllMsgs();
+  document.getElementById('emsg-b').classList.add('show');
+};
+
+window.endingC = function() {
+  hideAllMsgs();
+  document.getElementById('emsg-c').classList.add('show');
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('emsg-c').classList.remove('show');
+  }, 900);
+};
+
+/* ═══════════════════════════════════
+   PARTICLES
+═══════════════════════════════════ */
+function spawnParticles(cx, cy, n, cols) {
+  for (let i = 0; i < n; i++) {
+    const pt = document.createElement('div');
+    pt.className = 'pt';
+    const a = Math.random() * Math.PI * 2;
+    const d = 40 + Math.random() * 190;
+    const s = 2 + Math.random() * 6;
+    const col = cols[~~(Math.random() * cols.length)];
+    const dur = 700 + Math.random() * 900;
+    pt.style.cssText = `left:${cx}px;top:${cy}px;width:${s}px;height:${s}px;background:${col};box-shadow:0 0 ${s*2}px ${col}`;
+    document.body.appendChild(pt);
+    pt.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(a)*d}px),calc(-50% + ${Math.sin(a)*d}px)) scale(0)`, opacity: 0 }
+    ], { duration: dur, easing: 'ease-out', fill: 'forwards' });
+    setTimeout(() => pt.remove(), dur + 100);
+  }
+}
+
+function spawnEmojis(cx, cy, list, n) {
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const fe = document.createElement('div');
+      fe.className = 'fe';
+      const ox = (Math.random() - .5) * 160;
+      fe.style.cssText = `left:${cx+ox}px;top:${cy}px;font-size:${1.2+Math.random()*1.1}rem;`;
+      fe.textContent = list[~~(Math.random() * list.length)];
+      document.body.appendChild(fe);
+      fe.animate([
+        { transform: 'translateY(0) scale(0)', opacity: 1 },
+        { transform: 'translateY(-60px) scale(1.3)', opacity: 1, offset: .4 },
+        { transform: 'translateY(-220px) scale(.2)', opacity: 0 }
+      ], { duration: 1800, delay: Math.random() * 380, easing: 'ease-out', fill: 'forwards' });
+      setTimeout(() => fe.remove(), 2400);
+    }, i * 55);
+  }
+}
+
+/* click ripple */
+(function(){
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5';
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d');
+  const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+  resize(); window.addEventListener('resize', resize);
+  const rips = [];
+  document.addEventListener('click', e => {
+    rips.push({ x: e.clientX, y: e.clientY, r: 0, a: .5 });
+  });
+  (function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    for (let i = rips.length-1; i >= 0; i--) {
+      const rp = rips[i]; rp.r += 2.8; rp.a -= .02;
+      if (rp.a <= 0) { rips.splice(i,1); continue; }
+      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(255,255,255,${rp.a})`; ctx.lineWidth = 1; ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+</script>
+</body>
+</html>

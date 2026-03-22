@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BÉ CÁ IV — Hồ Sơ Vụ Án Trái Tim</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=Nunito:wght@400;700;800;900;1000&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --pk: #ff006e; --ye: #ffdd00; --gr: #00ff88;
+  --bg: #0a0a0a; --paper: #111318; --dim: #1c1c24;
+  --txt: #f0ece4; --muted: rgba(240,236,228,.35);
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--txt);
+  font-family: 'Courier Prime', monospace;
+  overflow-x: hidden; cursor: none;
+  line-height: 1.6;
+}
+
+/* ── CURSOR ── */
+#cur {
+  position: fixed; width: 14px; height: 14px;
+  border: 2px solid var(--ye); border-radius: 0;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%) rotate(45deg);
+  transition: width .1s, height .1s, border-color .2s;
+  box-shadow: 0 0 10px var(--ye);
+}
+#cur2 {
+  position: fixed; width: 36px; height: 36px;
+  border: 1px solid rgba(255,221,0,.2); border-radius: 0;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+}
+
+/* ── SCANLINES ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9990;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,.12) 0px, rgba(0,0,0,.12) 1px,
+    transparent 1px, transparent 3px
+  );
+  pointer-events: none;
+}
+
+/* ── GRAIN ── */
+body::before {
+  content: '';
+  position: fixed; inset: -100%;
+  width: 300%; height: 300%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  opacity: .5; pointer-events: none; z-index: 0;
+  animation: grainShift 3s steps(2) infinite;
+}
+@keyframes grainShift {
+  0%   { transform: translate(0,0); }
+  25%  { transform: translate(-12px,8px); }
+  50%  { transform: translate(6px,-14px); }
+  75%  { transform: translate(-8px,12px); }
+  100% { transform: translate(0,0); }
+}
+
+/* ── INTRO ── */
+#intro {
+  position: fixed; inset: 0; z-index: 9500;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.2rem;
+  transition: opacity .8s ease, visibility .8s;
+}
+#intro.gone { opacity:0; visibility:hidden; pointer-events:none; }
+.intro-case {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: .45em;
+  color: var(--pk); margin-bottom: .4rem;
+}
+.intro-log { font-size: .78rem; color: var(--muted); height: 1.2rem; }
+.intro-progress { width: 220px; height: 2px; background: #222; }
+.intro-fill { height: 100%; background: var(--ye); width: 0; animation: iFill 2.4s ease forwards; }
+@keyframes iFill { to { width: 100%; } }
+.intro-pct { font-size: .7rem; color: var(--ye); margin-top: .3rem; }
+
+/* ── GLITCH TEXT ── */
+.glitch {
+  position: relative;
+  animation: glitchMain 6s ease-in-out infinite;
+}
+.glitch::before, .glitch::after {
+  content: attr(data-txt);
+  position: absolute; top: 0; left: 0; width: 100%;
+  clip-path: inset(0);
+}
+.glitch::before {
+  color: var(--pk); animation: glB 6s ease-in-out infinite;
+  text-shadow: 2px 0 var(--pk);
+}
+.glitch::after {
+  color: #00ccff; animation: glA 6s ease-in-out infinite;
+  text-shadow: -2px 0 #00ccff;
+}
+@keyframes glitchMain {
+  0%,92%,100% { transform: none; }
+  93%  { transform: skewX(-2deg) translateX(2px); }
+  94%  { transform: skewX(1.5deg) translateX(-3px); }
+  95%  { transform: none; }
+  97%  { transform: skewX(-1deg) translateX(1px); }
+}
+@keyframes glB {
+  0%,91%,100% { opacity:0; transform:none; }
+  92%  { opacity:1; transform: translateX(-4px) skewX(-3deg); clip-path: inset(10% 0 55% 0); }
+  93%  { clip-path: inset(65% 0 10% 0); transform: translateX(3px); }
+  95%  { opacity:0; }
+}
+@keyframes glA {
+  0%,91%,100% { opacity:0; transform:none; }
+  92%  { opacity:1; transform: translateX(4px); clip-path: inset(50% 0 20% 0); }
+  93%  { clip-path: inset(20% 0 55% 0); transform: translateX(-3px) skewX(2deg); }
+  95%  { opacity:0; }
+}
+
+/* ═══ SECTIONS ═══ */
+section { position: relative; z-index: 1; }
+
+/* ── HERO ── */
+#s1 {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 3rem 1.5rem;
+  background: radial-gradient(ellipse 90% 70% at 50% 50%, rgba(255,0,110,.05) 0%, transparent 60%);
+  text-align: center;
+}
+.case-num {
+  font-size: .7rem; letter-spacing: .4em; color: var(--pk); font-weight: 700;
+  border: 1px solid rgba(255,0,110,.25); display: inline-block;
+  padding: .3rem .9rem; margin-bottom: 2rem;
+  opacity:0; animation: fadeUp .5s .3s ease forwards;
+}
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(4.5rem, 18vw, 14rem);
+  line-height: .88; color: var(--txt);
+  letter-spacing: -.01em;
+  opacity:0; animation: fadeUp .7s .5s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.hero-title .pk { color: var(--pk); }
+.hero-title .ye { color: var(--ye); }
+.hero-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(.7rem, 2.2vw, .92rem);
+  letter-spacing: .22em; color: var(--muted); text-transform: uppercase;
+  margin-top: 1.2rem;
+  opacity:0; animation: fadeUp .5s .8s ease forwards;
+}
+.hero-stamp {
+  margin-top: 2.5rem;
+  display: inline-block;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; letter-spacing: .2em;
+  color: var(--ye); border: 3px solid var(--ye);
+  padding: .4rem 1.4rem;
+  transform: rotate(-4deg);
+  box-shadow: 4px 4px 0 var(--pk);
+  opacity:0; animation: stampIn .4s 1.1s cubic-bezier(.17,.67,.83,.67) forwards;
+  text-shadow: 2px 2px 0 rgba(255,0,110,.4);
+}
+@keyframes stampIn {
+  from { opacity:0; transform:rotate(-4deg) scale(2.2); }
+  to   { opacity:1; transform:rotate(-4deg) scale(1); }
+}
+.scroll-hint {
+  position: absolute; bottom: 2.5rem;
+  font-size: .65rem; letter-spacing: .3em; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  opacity:0; animation: fadeUp .5s 1.5s ease forwards;
+}
+.scroll-tick { width: 1px; height: 36px; background: linear-gradient(to bottom, var(--ye), transparent); animation: tickPulse 1.5s ease-in-out infinite; }
+@keyframes tickPulse { 0%,100%{opacity:.2;height:22px} 50%{opacity:.9;height:44px} }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(20px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── INCIDENT LOG ── */
+#s2 { padding: 7rem 1.5rem; }
+.section-tag {
+  font-family: 'Bebas Neue', sans-serif; font-size: .9rem;
+  letter-spacing: .35em; color: var(--pk); margin-bottom: .5rem;
+}
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.2rem, 7vw, 5rem);
+  line-height: 1; margin-bottom: 3rem; color: var(--txt);
+}
+.section-title em { color: var(--ye); font-style: normal; }
+
+.timeline { max-width: 700px; margin: 0 auto; position: relative; }
+.timeline::before {
+  content: '';
+  position: absolute; left: 5.5rem; top: 0; bottom: 0;
+  width: 1px; background: rgba(255,221,0,.12);
+}
+.tl-item {
+  display: flex; gap: 1.8rem; margin-bottom: 2rem;
+  opacity:0; transform: translateX(-22px);
+  transition: opacity .5s ease, transform .5s ease;
+}
+.tl-item.show { opacity:1 !important; transform: translateX(0) !important; }
+.tl-time {
+  flex-shrink: 0; width: 4.5rem; text-align: right;
+  font-size: .72rem; color: var(--ye); font-weight: 700;
+  padding-top: .15rem; letter-spacing: .04em;
+}
+.tl-dot-wrap {
+  flex-shrink: 0; display: flex; align-items: flex-start;
+  padding-top: .25rem;
+}
+.tl-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--muted);
+  position: relative; z-index: 1; flex-shrink: 0;
+  transition: border-color .3s, box-shadow .3s;
+}
+.tl-item.show .tl-dot { border-color: var(--ye); box-shadow: 0 0 10px rgba(255,221,0,.4); }
+.tl-item.crime .tl-dot { border-color: var(--pk); box-shadow: 0 0 10px rgba(255,0,110,.5); }
+.tl-content { flex: 1; }
+.tl-label {
+  font-size: .65rem; letter-spacing: .2em; text-transform: uppercase;
+  margin-bottom: .3rem;
+}
+.tl-label.normal { color: var(--muted); }
+.tl-label.bad { color: var(--pk); }
+.tl-label.good { color: var(--gr); }
+.tl-main {
+  font-family: 'Courier Prime', monospace;
+  font-size: .95rem; color: var(--txt); line-height: 1.6;
+}
+.tl-main .tag {
+  display: inline-block; font-size: .65rem; letter-spacing: .12em;
+  padding: .1rem .5rem; margin-left: .5rem; vertical-align: middle;
+  font-weight: 700; border-radius: 2px;
+}
+.tag-red { background: rgba(255,0,110,.15); color: var(--pk); border: 1px solid rgba(255,0,110,.3); }
+.tag-ye  { background: rgba(255,221,0,.1);  color: var(--ye); border: 1px solid rgba(255,221,0,.25); }
+.tag-gr  { background: rgba(0,255,136,.08); color: var(--gr); border: 1px solid rgba(0,255,136,.2); }
+.redacted {
+  background: var(--txt); color: transparent; border-radius: 2px;
+  cursor: default; transition: background .3s, color .3s;
+  user-select: none; padding: 0 .15rem;
+}
+.redacted:hover { background: rgba(255,0,110,.15); color: var(--pk); }
+
+/* ── CHARGES ── */
+#s3 {
+  padding: 6rem 1.5rem;
+  background: var(--paper);
+  border-top: 1px solid rgba(255,221,0,.07);
+  border-bottom: 1px solid rgba(255,221,0,.07);
+}
+.charges-wrap { max-width: 700px; margin: 0 auto; }
+.charge-card {
+  border: 1px solid rgba(255,221,0,.1);
+  border-left: 3px solid var(--pk);
+  padding: 1.5rem 1.8rem; margin-bottom: 1.2rem;
+  background: rgba(255,0,110,.02);
+  position: relative;
+  opacity:0; transform: translateY(18px);
+  transition: opacity .5s ease, transform .5s ease, border-color .25s, background .25s;
+}
+.charge-card.show { opacity:1 !important; transform:translateY(0) !important; }
+.charge-card:hover { background: rgba(255,0,110,.05); border-color: rgba(255,221,0,.22); }
+.charge-card::after {
+  content: attr(data-status);
+  position: absolute; top: 1rem; right: 1.2rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .8rem; letter-spacing: .15em;
+  padding: .2rem .7rem; border-radius: 2px;
+}
+.charge-card[data-status="GUILTY"]::after { background: rgba(255,0,110,.12); color: var(--pk); border: 1px solid rgba(255,0,110,.3); }
+.charge-card[data-status="NO COMMENT"]::after { background: rgba(255,221,0,.08); color: var(--ye); border: 1px solid rgba(255,221,0,.2); }
+.charge-n { font-size: .62rem; letter-spacing: .22em; color: var(--pk); font-weight: 700; margin-bottom: .4rem; }
+.charge-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--txt); letter-spacing: .08em; margin-bottom: .5rem; }
+.charge-desc { font-size: .88rem; color: rgba(240,236,228,.55); line-height: 1.75; }
+.charge-desc strong { color: var(--ye); font-weight: 700; }
+.charge-desc .snark { color: var(--gr); font-style: italic; }
+
+/* ── EVIDENCE ── */
+#s4 { padding: 6rem 1.5rem; }
+.evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1.4rem; max-width: 780px; margin: 0 auto; }
+.ev-card {
+  background: var(--paper);
+  border: 1px solid rgba(255,255,255,.06);
+  padding: 1.6rem 1.4rem;
+  position: relative;
+  opacity:0; transform: scale(.93) translateY(12px);
+  transition: opacity .5s ease, transform .5s ease, border-color .25s;
+}
+.ev-card.show { opacity:1 !important; transform:scale(1) translateY(0) !important; }
+.ev-card:hover { border-color: rgba(255,0,110,.22); }
+.ev-card::before {
+  content: 'EXHIBIT ' attr(data-ex);
+  position: absolute; top: -1px; left: -1px;
+  font-size: .6rem; letter-spacing: .18em; font-weight: 700;
+  padding: .25rem .7rem;
+  background: var(--pk); color: #000;
+}
+.ev-icon { font-size: 2.4rem; margin: 1.2rem 0 .8rem; display: block; }
+.ev-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: .08em; margin-bottom: .45rem; }
+.ev-desc { font-size: .82rem; color: rgba(240,236,228,.45); line-height: 1.7; }
+.ev-verdict {
+  margin-top: .9rem; font-size: .65rem; letter-spacing: .18em; font-weight: 700;
+  padding: .25rem .6rem; display: inline-block; border-radius: 2px;
+}
+.verd-rejected { background: rgba(255,0,110,.1); color: var(--pk); border: 1px solid rgba(255,0,110,.25); }
+.verd-ignored  { background: rgba(255,221,0,.08); color: var(--ye); border: 1px solid rgba(255,221,0,.2); }
+.verd-ok       { background: rgba(0,255,136,.06); color: var(--gr); border: 1px solid rgba(0,255,136,.18); }
+
+/* ── DEFENDANT ── */
+#s5 {
+  padding: 6rem 1.5rem;
+  background: var(--paper);
+  border-top: 1px solid rgba(255,221,0,.06);
+}
+.speech-bubble {
+  max-width: 580px; margin: 0 auto;
+  background: rgba(255,221,0,.04);
+  border: 1px solid rgba(255,221,0,.15);
+  border-radius: 4px; padding: 2rem 2.2rem;
+  position: relative;
+  opacity:0; transform: translateY(22px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.speech-bubble.show { opacity:1 !important; transform:translateY(0) !important; }
+.speech-bubble::before {
+  content: '« LỜI KHAI CỦA BỊ CÁO »';
+  position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+  background: var(--paper);
+  font-size: .62rem; letter-spacing: .22em; color: var(--ye);
+  padding: 0 .8rem; white-space: nowrap;
+}
+.speech-avatar { font-size: 3rem; text-align: center; margin-bottom: .8rem; }
+.speech-name { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: .2em; color: var(--ye); text-align: center; margin-bottom: 1.2rem; }
+.speech-lines { display: flex; flex-direction: column; gap: .9rem; }
+.speech-q {
+  background: rgba(255,0,110,.05); border-left: 2px solid var(--pk);
+  padding: .6rem .9rem; font-size: .84rem; color: var(--muted);
+}
+.speech-q strong { color: var(--pk); }
+.speech-a {
+  padding: .6rem .9rem .6rem 1.1rem;
+  font-size: .88rem; color: var(--txt); font-style: italic;
+}
+.speech-a em { color: var(--ye); font-style: normal; }
+
+/* ── REAL FEELINGS ── */
+#s6 {
+  padding: 7rem 1.5rem;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255,0,110,.04) 0%, transparent 65%);
+}
+.feels-card {
+  max-width: 620px; margin: 0 auto;
+  border: 1px solid rgba(255,255,255,.06);
+  padding: 3rem 2.8rem; position: relative;
+  background: rgba(255,255,255,.013);
+  opacity:0; transform: scale(.96);
+  transition: opacity .8s ease, transform .8s ease;
+}
+.feels-card.show { opacity:1 !important; transform:scale(1) !important; }
+.feels-card::before {
+  content: '';
+  position: absolute; top:0; left:0; right:0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pk) 40%, var(--ye) 60%, transparent);
+}
+.feels-intro {
+  font-size: .68rem; letter-spacing: .28em; color: var(--pk); margin-bottom: 1.5rem;
+  text-transform: uppercase;
+}
+.feels-body {
+  font-size: clamp(1rem, 2.5vw, 1.18rem);
+  line-height: 2; color: rgba(240,236,228,.78);
+}
+.feels-body .hl { color: var(--ye); }
+.feels-body .hl2 { color: var(--pk); }
+.feels-sig {
+  margin-top: 2rem; padding-top: 1.2rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .82rem; color: var(--muted);
+}
+.feels-sig strong { color: rgba(240,236,228,.7); display: block; font-size: 1rem; margin-top: .2rem; }
+
+/* ── VERDICT ── */
+#s7 {
+  padding: 6rem 1.5rem;
+  background: var(--paper);
+  border-top: 1px solid rgba(255,221,0,.06);
+  text-align: center;
+}
+.verdict-stamp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 14vw, 9rem);
+  letter-spacing: .05em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--gr);
+  line-height: 1;
+  opacity:0; transform: scale(1.8) rotate(6deg);
+  transition: opacity .7s ease, transform .7s cubic-bezier(.17,.67,.83,.67);
+  text-shadow: 0 0 60px rgba(0,255,136,.2);
+}
+.verdict-stamp.show { opacity:1 !important; transform:scale(1) rotate(-2deg) !important; }
+.verdict-sub {
+  font-size: .88rem; color: var(--muted);
+  margin-top: 1.8rem; line-height: 1.9;
+  opacity:0; transition: opacity .7s .25s ease;
+}
+.verdict-sub.show { opacity:1 !important; }
+.verdict-sub strong { color: var(--ye); font-size: 1rem; }
+
+/* ── FINALE ── */
+#s8 {
+  min-height: 70vh;
+  padding: 6rem 1.5rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem;
+  text-align: center;
+}
+.finale-q {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.8rem, 6vw, 4rem);
+  line-height: 1.2; color: var(--txt);
+  opacity:0; transition: opacity .8s ease, transform .8s ease;
+  transform: translateY(22px);
+}
+.finale-q.show { opacity:1 !important; transform:translateY(0) !important; }
+.finale-q .pk { color: var(--pk); }
+.finale-q .ye { color: var(--ye); }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1rem; opacity:0; transition: opacity .7s .3s ease; }
+.btn-row.show { opacity:1 !important; }
+
+.btn {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: .18em;
+  padding: .85rem 2.2rem; border: none; cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+.btn:hover { transform: translate(-2px,-2px); }
+.btn:active { transform: translate(1px,1px); }
+.btn-pk {
+  background: var(--pk); color: #fff;
+  box-shadow: 4px 4px 0 var(--ye);
+}
+.btn-pk:hover { box-shadow: 6px 6px 0 var(--ye); }
+.btn-ye {
+  background: var(--ye); color: #000;
+  box-shadow: 4px 4px 0 var(--pk);
+}
+.btn-ye:hover { box-shadow: 6px 6px 0 var(--pk); }
+.btn-gr {
+  background: transparent; color: var(--gr);
+  border: 2px solid var(--gr);
+  box-shadow: 4px 4px 0 rgba(0,255,136,.3);
+}
+.btn-gr:hover { box-shadow: 6px 6px 0 rgba(0,255,136,.4); }
+
+.credits-bar {
+  margin-top: 3rem; padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .65rem; color: rgba(240,236,228,.12);
+  letter-spacing: .2em; line-height: 2.4;
+}
+
+/* ── REVEAL util ── */
+.rv {
+  opacity:0; transform: translateY(22px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.rv.show { opacity:1 !important; transform:translateY(0) !important; }
+
+/* ── PARTICLE ── */
+.pt { position:fixed; pointer-events:none; z-index:9900; border-radius:0; }
+.fe { position:fixed; pointer-events:none; z-index:9901; font-size:1.6rem; }
+
+@media (max-width:500px) {
+  .feels-card { padding:2rem 1.4rem; }
+  .tl-time { width:3rem; font-size:.65rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="intro-case">BÉ CÁ CASE FILE #004</div>
+  <div class="intro-log" id="ilog"></div>
+  <div class="intro-progress"><div class="intro-fill" id="ifill"></div></div>
+  <div class="intro-pct" id="ipct">0%</div>
+</div>
+
+<!-- CURSOR -->
+<div id="cur"></div>
+<div id="cur2"></div>
+
+<!-- ══ S1: HERO ══ -->
+<section id="s1">
+  <div class="case-num">CASE NO. BÉ–CÁ–2026–004 · CLASSIFIED</div>
+  <h1 class="hero-title">
+    <span class="glitch pk" data-txt="BÉ">BÉ</span><span class="ye"> CÁ</span>
+    <br/><span style="font-size:.42em;color:var(--txt)">IV</span>
+  </h1>
+  <p class="hero-sub">Hồ Sơ Vụ Án Trái Tim · Nhân vs. Quỳnh · 2026</p>
+  <div class="hero-stamp">ĐANG XỬ LÝ</div>
+  <div class="scroll-hint">
+    <span>CUỘN ĐỂ XEM BẰNG CHỨNG</span>
+    <div class="scroll-tick"></div>
+  </div>
+</section>
+
+<!-- ══ S2: INCIDENT LOG ══ -->
+<section id="s2" style="max-width:900px;margin:0 auto">
+  <p class="section-tag rv">// NHẬT KÝ SỰ VIỆC</p>
+  <h2 class="section-title rv" style="transition-delay:.08s">Diễn Biến <em>Vụ Án</em></h2>
+
+  <div class="timeline">
+    <div class="tl-item" data-d="0">
+      <div class="tl-time">20:00</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label normal">BÌNH THƯỜNG</div>
+        <div class="tl-main">Nhân mở VS Code. "Làm cái web cute tặng Quỳnh, chắc xong nhanh thôi."<span class="tag tag-ye">DỰ ĐOÁN SAI</span></div>
+      </div>
+    </div>
+    <div class="tl-item" data-d="100">
+      <div class="tl-time">23:30</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label normal">CÒN BÌNH THƯỜNG</div>
+        <div class="tl-main">Nhân vẫn code. Đã refactor lần 3. Bộ đếm cà phê: 2. <span class="redacted" title="hover để xem">bắt đầu nghi ngờ cuộc đời</span></div>
+      </div>
+    </div>
+    <div class="tl-item" data-d="200">
+      <div class="tl-time">02:14</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label good">THÀNH CÔNG</div>
+        <div class="tl-main">Web v1 hoàn thành. Đẹp trai. Lung linh. Đầy tâm huyết.<span class="tag tag-gr">ĐỈnh</span></div>
+      </div>
+    </div>
+    <div class="tl-item crime" data-d="300">
+      <div class="tl-time">00:00</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label bad">⚠ INCIDENT #001</div>
+        <div class="tl-main">Bé cá thức dậy. Thấy web. <strong style="color:var(--pk)">Unfriend.</strong> Ngủ tiếp.<span class="tag tag-red">KHÔNG GIẢI THÍCH</span></div>
+      </div>
+    </div>
+    <div class="tl-item" data-d="400">
+      <div class="tl-time">Sau đó</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label normal">GIAI ĐOẠN PHỤC HỒI</div>
+        <div class="tl-main">Nhân làm web v2, v3 với niềm tin không rõ nguồn gốc. Mỗi lần xong là mỗi lần <span class="redacted">đau một chút</span>. Nhưng vẫn làm.</div>
+      </div>
+    </div>
+    <div class="tl-item crime" data-d="500">
+      <div class="tl-time">Nhiều lần</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label bad">⚠ INCIDENT #002–003</div>
+        <div class="tl-main">Block. Unblock. Block lại. Nhân <span class="redacted">không hiểu gì hết</span> nhưng vẫn ở đây.<span class="tag tag-red">ĐÃ XÁC NHẬN</span></div>
+      </div>
+    </div>
+    <div class="tl-item" data-d="600">
+      <div class="tl-time">Hôm nay</div>
+      <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-label good">VERSION 4</div>
+        <div class="tl-main">Web v4 ra đời. Theme: hồ sơ tòa án. Vì sau 3 lần bị từ chối, mình nghĩ nên <em>kiện</em>.<span class="tag tag-gr">HỢP LÝ</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S3: CHARGES ══ -->
+<section id="s3">
+  <div style="max-width:780px;margin:0 auto">
+    <p class="section-tag rv">// CÁO TRẠNG CHÍNH THỨC</p>
+    <h2 class="section-title rv" style="transition-delay:.08s">Các <em>Tội Danh</em></h2>
+    <div class="charges-wrap">
+
+      <div class="charge-card" data-status="GUILTY" data-d="0">
+        <div class="charge-n">CHARGE 01 / CRIMINAL CODE: UF-001</div>
+        <div class="charge-title">Tội Unfriend Không Lý Do</div>
+        <div class="charge-desc">Bị cáo đã bấm nút <strong>Block</strong> vào đúng <strong>12 giờ đêm</strong> — trong khi bên nguyên đơn vẫn đang thức để làm web tặng, cách đó đúng 2 tiếng. Hành vi này được các chuyên gia pháp lý mô tả là <span class="snark">"tàn nhẫn đến mức hài hước"</span>. Bị cáo không có lời giải thích. Bị cáo ngủ thẳng cẳng.</div>
+      </div>
+
+      <div class="charge-card" data-status="GUILTY" data-d="100">
+        <div class="charge-n">CHARGE 02 / CRIMINAL CODE: BL-002</div>
+        <div class="charge-title">Tội Block Có Hệ Thống</div>
+        <div class="charge-desc">Block, unblock, rồi block lại — một chu kỳ lặp đi lặp lại đủ để cấu thành tội <strong>"tra tấn tâm lý theo lịch trình"</strong>. Nhân hiện đã <strong>quen với notification "Bạn không thể nhắn tin cho người này"</strong> đến mức coi đó là lời chào buổi sáng. <span class="snark">Điều này là không ổn.</span></div>
+      </div>
+
+      <div class="charge-card" data-status="GUILTY" data-d="200">
+        <div class="charge-n">CHARGE 03 / CRIMINAL CODE: SLP-003</div>
+        <div class="charge-title">Tội Ngủ Thẳng Cẳng Trong Khi Người Kia Thức Khuya</div>
+        <div class="charge-desc">Trong khi bị cáo <strong>ngủ ngon lành</strong>, nguyên đơn đã viết hàng trăm dòng CSS, sửa animation 11 lần, và tự hỏi liệu font chữ có đủ cute chưa. Tòa án ghi nhận đây là <span class="snark">sự chênh lệch tâm lý nghiêm trọng giữa hai bên</span> và đề nghị bị cáo cảm thấy có lỗi ít nhất 7 giây.</div>
+      </div>
+
+      <div class="charge-card" data-status="NO COMMENT" data-d="300">
+        <div class="charge-n">CHARGE 04 / CRIMINAL CODE: CT-004</div>
+        <div class="charge-title">Tội Cute Quá Mức Cho Phép</div>
+        <div class="charge-desc">Bị cáo đã <strong>cười một cái</strong> khiến nguyên đơn quên mất rằng mình đang bị unfriend. Hành vi này bị tòa xem xét là nguy hiểm vì nó khiến nguyên đơn <span class="snark">tiếp tục làm web thay vì làm người bình thường</span>. Đây là phiên bản thứ 4. Bằng chứng là đây.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ S4: EVIDENCE ══ -->
+<section id="s4" style="max-width:900px;margin:0 auto;padding:6rem 1.5rem">
+  <p class="section-tag rv">// BẰNG CHỨNG VẬT CHẤT</p>
+  <h2 class="section-title rv" style="transition-delay:.08s">Tang Vật <em>Nộp Tòa</em></h2>
+  <div class="evidence-grid">
+    <div class="ev-card" data-ex="A" data-d="0">
+      <span class="ev-icon">🌊</span>
+      <div class="ev-name">Web Bé Cá v1</div>
+      <div class="ev-desc">Trang web đầu tiên. Ocean theme. Đẹp, lung linh, nhiều tâm huyết. Được tiếp nhận bằng nút Unfriend.</div>
+      <span class="ev-verdict verd-rejected">PHẢN HỒI: UNFRIEND</span>
+    </div>
+    <div class="ev-card" data-ex="B" data-d="120">
+      <span class="ev-icon">🎮</span>
+      <div class="ev-name">Web Bé Cá v2</div>
+      <div class="ev-desc">Version 2. Nhiều animation hơn. JS phức tạp hơn. Nhân nghĩ "lần này chắc được." Lần này không được.</div>
+      <span class="ev-verdict verd-ignored">PHẢN HỒI: BLOCK</span>
+    </div>
+    <div class="ev-card" data-ex="C" data-d="240">
+      <span class="ev-icon">🐟</span>
+      <div class="ev-name">Web Bé Cá v3</div>
+      <div class="ev-desc">Bioluminescent ocean, sứa phát sáng, cá bơi theo chuột. Đỉnh cao kỹ thuật. Số phận chưa rõ.</div>
+      <span class="ev-verdict verd-ok">PHẢN HỒI: ?????</span>
+    </div>
+    <div class="ev-card" data-ex="D" data-d="360">
+      <span class="ev-icon">⚖️</span>
+      <div class="ev-name">Web Bé Cá v4</div>
+      <div class="ev-desc">Đây. Cái này. Trang bạn đang đọc. Nhân đã hết ý tưởng nên làm hồ sơ tòa án. Đây là triệu chứng của một người đã làm web đến version 4 mà chưa được unblock.</div>
+      <span class="ev-verdict verd-ok">PHẢN HỒI: ĐANG CHỜ</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S5: DEFENDANT ══ -->
+<section id="s5">
+  <div style="max-width:900px;margin:0 auto;padding:6rem 1.5rem">
+    <p class="section-tag rv">// LỜI KHAI TẠI TÒA</p>
+    <h2 class="section-title rv" style="transition-delay:.08s">Phiên <em>Thẩm Vấn</em></h2>
+    <div class="speech-bubble">
+      <div class="speech-avatar">🐡</div>
+      <div class="speech-name">BỊ CÁO: QUỲNH A.K.A. BÉ CÁ</div>
+      <div class="speech-lines">
+        <div class="speech-q"><strong>Thẩm phán:</strong> Bị cáo có thừa nhận tội unfriend không?</div>
+        <div class="speech-a">"Tòa ơi... tòa phải hiểu là lúc đó em <em>đang buồn ngủ</em> lắm."</div>
+        <div class="speech-q"><strong>Thẩm phán:</strong> Nhưng bị cáo đã block nguyên đơn bao nhiêu lần?</div>
+        <div class="speech-a">"<em>Không nhớ.</em> Nhưng mỗi lần block là có lý do. Lý do là... <em>em không nhớ lý do.</em>"</div>
+        <div class="speech-q"><strong>Thẩm phán:</strong> Bị cáo có biết nguyên đơn thức đến 2 giờ sáng làm web tặng không?</div>
+        <div class="speech-a">"Biết. <em>Nhưng giường ấm lắm tòa ơi.</em>"</div>
+        <div class="speech-q"><strong>Thẩm phán:</strong> Bị cáo có gì để nói với nguyên đơn không?</div>
+        <div class="speech-a" style="color:var(--ye)">"... <em>Đừng làm web nữa. Nhắn tin thôi. Thôi để em unblock trước.</em>"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S6: REAL FEELINGS ══ -->
+<section id="s6">
+  <div style="max-width:900px;margin:0 auto">
+    <p class="section-tag rv">// TUYÊN BỐ NGOÀI TÒA ÁN</p>
+    <h2 class="section-title rv" style="transition-delay:.08s">Thật Ra <em>Là Thế Này</em></h2>
+    <div class="feels-card">
+      <div class="feels-intro">✦ lời tự bào chữa của nguyên đơn ✦</div>
+      <div class="feels-body">
+        Mình biết làm đến version 4 nghe có vẻ <span class="hl">không bình thường</span>.<br/><br/>
+        Và thật ra nó đúng là không bình thường thật. Người ta thức khuya để code, rồi bị unfriend, rồi code tiếp — theo định nghĩa thông thường thì đây là <span class="hl2">bug</span>, không phải feature.<br/><br/>
+        Nhưng Quỳnh ơi — mỗi lần mình ngồi làm mấy cái web này, mình nghĩ đến Quỳnh nhiều hơn mình nghĩ đến việc code. Mình tự hỏi Quỳnh sẽ cười không, Quỳnh sẽ thấy cái này dở hay ok, Quỳnh có đọc hết không.<br/><br/>
+        Mình không đòi gì nhiều đâu. Chỉ cần <span class="hl">lần sau đừng block lúc 12 giờ đêm</span> — mình đang code dở, giật mình lắm.
+      </div>
+      <div class="feels-sig">
+        Nguyên đơn,
+        <strong>Nhân — người đã làm 4 trang web và vẫn chưa bỏ cuộc</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ S7: VERDICT ══ -->
+<section id="s7">
+  <div style="max-width:700px;margin:0 auto;padding:6rem 1.5rem">
+    <p class="section-tag rv">// PHÁN QUYẾT CUỐI CÙNG</p>
+    <h2 class="section-title rv" style="transition-delay:.08s">Kết <em>Quả Xét Xử</em></h2>
+    <div class="verdict-stamp">KHÔNG KHAI</div>
+    <p class="verdict-sub">
+      Tòa nhận thấy:<br/>
+      <strong>Bị cáo cute quá mức nguyên đơn có thể kháng cự.</strong><br/><br/>
+      Nguyên đơn bị kết tội <strong>làm web bị block mà không chịu dừng lại</strong> và tự nguyện chịu mọi hình phạt.<br/>
+      Bao gồm: tiếp tục thức khuya, tiếp tục code, và <strong>tiếp tục bị block thêm vài lần nữa</strong>.<br/><br/>
+      Tòa bác toàn bộ kháng cáo. Phiên xử kết thúc.
+    </p>
+  </div>
+</section>
+
+<!-- ══ S8: FINALE ══ -->
+<section id="s8">
+  <h2 class="finale-q">
+    <span class="pk">Lần Sau</span> Đừng Unfriend Nữa Nha<br/>
+    <span class="ye">(Và Đừng Block Nữa)</span><br/>
+    <span style="font-size:.5em;color:var(--muted)">xin tòa ghi vào biên bản</span>
+  </h2>
+  <div class="btn-row">
+    <button class="btn btn-pk" onclick="boom(event)">⚖️ ĐÓNG DẤU VỤ ÁN</button>
+    <button class="btn btn-ye" onclick="fishRain()">🐟 MƯA CÁ CHIẾN THẮNG</button>
+    <button class="btn btn-gr" onclick="unblock()">✅ EM UNBLOCK ANH RỒI</button>
+  </div>
+  <div class="credits-bar">
+    MADE WITH ∞ HOURS OF OVERTIME BY NHÂN<br/>
+    GỬI QUỲNH — BÉ CÁ IV — HỒ SƠ VỤ ÁN TRÁI TIM — 2026<br/>
+    CASE #004 · STATUS: PENDING · THỨC KHUYA LÀM · ANH MỆT LẮM RỒI
+  </div>
+</section>
+
+<script>
+/* ═══ INTRO ═══ */
+const LOGS = [
+  'Đang mở hồ sơ...',
+  'Tải bằng chứng unfriend...',
+  'Xác minh incident #001...',
+  'Phân tích hành vi block...',
+  'Gọi nhân chứng: Bé Cá...',
+  'Chuẩn bị phiên tòa...',
+  'Sẵn sàng.',
+];
+let li = 0;
+const ilog = document.getElementById('ilog');
+const ipct = document.getElementById('ipct');
+const TOTAL = 2200;
+const logInterval = setInterval(() => {
+  if (li < LOGS.length) { ilog.textContent = LOGS[li++]; }
+  else clearInterval(logInterval);
+}, TOTAL / LOGS.length);
+let pct = 0;
+const pctInt = setInterval(() => {
+  pct = Math.min(100, pct + 2);
+  ipct.textContent = pct + '%';
+  if (pct >= 100) clearInterval(pctInt);
+}, TOTAL / 50);
+setTimeout(() => document.getElementById('intro').classList.add('gone'), TOTAL + 200);
+
+/* ═══ CURSOR ═══ */
+const cur = document.getElementById('cur');
+const cur2 = document.getElementById('cur2');
+let mx = -200, my = -200, lx = -200, ly = -200;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+setInterval(() => {
+  lx += (mx - lx) * .14; ly += (my - ly) * .14;
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  cur2.style.left = lx + 'px'; cur2.style.top = ly + 'px';
+}, 16);
+document.addEventListener('mousedown', () => { cur.style.transform = 'translate(-50%,-50%) rotate(45deg) scale(.6)'; });
+document.addEventListener('mouseup', () => { cur.style.transform = 'translate(-50%,-50%) rotate(45deg) scale(1)'; });
+
+/* ═══ SCROLL REVEAL ═══ */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const d = +(el.dataset.d || 0);
+    setTimeout(() => el.classList.add('show'), d);
+    io.unobserve(el);
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.rv, .tl-item, .charge-card, .ev-card, .speech-bubble, .feels-card, .verdict-stamp, .verdict-sub, .finale-q, .btn-row').forEach(el => io.observe(el));
+
+/* ═══ PARTICLES ═══ */
+const COLS = ['#ff006e','#ffdd00','#00ff88','#fff','#ff6bb5','#00d4ff'];
+const EMOJIS = ['🐟','🐠','⚖️','📋','💔','💛','✨','😤','🐡','📁'];
+
+function spawnPts(cx, cy, n = 55) {
+  for (let i = 0; i < n; i++) {
+    const pt = document.createElement('div');
+    pt.className = 'pt';
+    const a = Math.random() * Math.PI * 2;
+    const d = 40 + Math.random() * 180;
+    const s = 2 + Math.random() * 6;
+    const col = COLS[~~(Math.random() * COLS.length)];
+    const dur = 700 + Math.random() * 900;
+    pt.style.cssText = `left:${cx}px;top:${cy}px;width:${s}px;height:${s}px;background:${col};box-shadow:0 0 ${s*2}px ${col}`;
+    document.body.appendChild(pt);
+    pt.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(a)*d}px), calc(-50% + ${Math.sin(a)*d}px)) scale(0)`, opacity: 0 }
+    ], { duration: dur, easing: 'ease-out', fill: 'forwards' });
+    setTimeout(() => pt.remove(), dur + 100);
+  }
+}
+
+function spawnEmojis(cx, cy, list, n = 18) {
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const fe = document.createElement('div');
+      fe.className = 'fe';
+      const ox = (Math.random() - .5) * 150;
+      fe.style.cssText = `left:${cx + ox}px;top:${cy}px;font-size:${1.2+Math.random()*1.1}rem`;
+      fe.textContent = list[~~(Math.random() * list.length)];
+      document.body.appendChild(fe);
+      fe.animate([
+        { transform: 'translateY(0) scale(0) rotate(0deg)', opacity: 1 },
+        { transform: 'translateY(-70px) scale(1.3) rotate(-10deg)', opacity: 1, offset: .4 },
+        { transform: 'translateY(-240px) scale(.2) rotate(20deg)', opacity: 0 }
+      ], { duration: 1800, delay: Math.random() * 400, easing: 'ease-out', fill: 'forwards' });
+      setTimeout(() => fe.remove(), 2500);
+    }, i * 60);
+  }
+}
+
+window.boom = function(e) {
+  spawnPts(e.clientX, e.clientY, 65);
+  spawnEmojis(e.clientX, e.clientY, ['⚖️','📋','🔨','✅','🎉','🎊','💛','🐟']);
+  // flash
+  const f = document.createElement('div');
+  f.style.cssText = 'position:fixed;inset:0;background:rgba(255,221,0,.06);pointer-events:none;z-index:8800';
+  document.body.appendChild(f);
+  f.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'});
+  setTimeout(()=>f.remove(),500);
+};
+
+window.fishRain = function() {
+  const rain = ['🐟','🐠','🐡','⚖️','📋','💔','💛','🌊','🫧','🐙','🦑','🎉'];
+  for (let i = 0; i < 45; i++) {
+    setTimeout(() => {
+      const fe = document.createElement('div');
+      fe.className = 'fe';
+      fe.style.cssText = `left:${Math.random()*96}vw;top:-60px;font-size:${1.2+Math.random()*1.4}rem`;
+      fe.textContent = rain[~~(Math.random()*rain.length)];
+      document.body.appendChild(fe);
+      const dur = 2200 + Math.random()*1800;
+      fe.animate([
+        { transform: `translateY(0) rotate(${(Math.random()-.5)*20}deg)`, opacity:1 },
+        { transform: `translateY(115vh) rotate(${(Math.random()-.5)*40}deg)`, opacity:.6 }
+      ], { duration: dur, delay: Math.random()*600, easing:'linear', fill:'forwards' });
+      setTimeout(() => fe.remove(), dur + 800);
+    }, i * 80);
+  }
+};
+
+window.unblock = function() {
+  // big celebration
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  spawnPts(cx, cy, 80);
+  spawnEmojis(cx, cy, ['✅','🎉','🎊','🥳','💚','💛','🐟','❤️','🔓'], 25);
+
+  // toast
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+    background:var(--gr); color:#000;
+    font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:.15em;
+    padding:.9rem 2.4rem; z-index:9800;
+    box-shadow: 6px 6px 0 var(--ye);
+  `;
+  toast.textContent = '🔓 UNBLOCK THÀNH CÔNG — CẢM ƠN BÉ CÁ!';
+  document.body.appendChild(toast);
+  toast.animate([{opacity:0,transform:'translateX(-50%) translateY(20px)'},{opacity:1,transform:'translateX(-50%) translateY(0)'}],{duration:350,fill:'forwards'});
+  setTimeout(() => {
+    toast.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'});
+    setTimeout(()=>toast.remove(),500);
+  }, 3500);
+};
+
+/* ═══ CLICK RIPPLE ═══ */
+(function(){
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2';
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d');
+  function resize(){ c.width = innerWidth; c.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const rips = [];
+  document.addEventListener('click', e => {
+    rips.push({ x:e.clientX, y:e.clientY, r:0, a:.7, col:['rgba(255,0,110,','rgba(255,221,0,','rgba(0,255,136,'][~~(Math.random()*3)] });
+  });
+  (function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    for(let i=rips.length-1;i>=0;i--){
+      const rp=rips[i]; rp.r+=3; rp.a-=.022;
+      if(rp.a<=0){rips.splice(i,1);continue;}
+      ctx.beginPath(); ctx.arc(rp.x,rp.y,rp.r,0,Math.PI*2);
+      ctx.strokeStyle=rp.col+rp.a+')'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ═══ TOUCH PARTICLES ═══ */
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  spawnEmojis(t.clientX, t.clientY, ['🐟','⚖️','💛','✨'], 4);
+}, { passive: true });
+</script>
+</body>
+</html>

@@ -12,9 +12,9 @@ html{scroll-behavior:smooth}
 :root{
   --ink:#030818; --ink2:#060f2a;
   --gold:#d4a84b; --gold2:#ffd077; --gold3:#a87830;
-  --cream:#fff8ee; --cream2:rgba(255,248,238,.88); --cream3:rgba(255,248,238,.55);
+  --cream:#fff8ee; --cream2:rgba(255,248,238,.94); --cream3:rgba(255,248,238,.92);
   --frame:#1c1005; --frame2:#2e1e08;
-  --red:#e05540; --grn:#2a9a52;
+  --red:#ff6b58; --grn:#4dc87a;
   --wall:rgba(4,8,26,.82);
 }
 
@@ -67,7 +67,7 @@ body::after{
 #tc{
   position:fixed;top:0;left:0;z-index:9500;
   font-family:'Space Mono',monospace;
-  font-size:.55rem;color:rgba(200,151,62,.25);
+  font-size:.55rem;color:rgba(200,151,62,.55);
   padding:.45rem .75rem;letter-spacing:.08em;
 }
 
@@ -106,7 +106,7 @@ body::after{
 #intro-inner.show{opacity:1}
 .ii-label{
   font-family:'Space Mono',monospace;
-  font-size:.6rem;letter-spacing:.4em;color:rgba(200,151,62,.3);
+  font-size:.6rem;letter-spacing:.4em;color:rgba(200,151,62,.65);
   text-transform:uppercase;
 }
 .ii-reel{font-size:2.5rem;animation:reelSpin 1.2s linear infinite}
@@ -116,7 +116,7 @@ body::after{
 @keyframes ibar{to{width:100%}}
 .ii-pct{
   font-family:'Space Mono',monospace;
-  font-size:.58rem;color:rgba(200,151,62,.2);
+  font-size:.58rem;color:rgba(200,151,62,.55);
 }
 #intro.open .door-l{transform:perspective(900px) rotateY(-88deg)}
 #intro.open .door-r{transform:perspective(900px) rotateY(88deg)}
@@ -189,7 +189,7 @@ section{
   margin-top:.9rem;padding-top:.7rem;
   border-top:1px solid rgba(200,151,62,.1);
   font-family:'Space Mono',monospace;
-  font-size:.6rem;color:rgba(200,151,62,.35);
+  font-size:.6rem;color:rgba(200,151,62,.60);
   letter-spacing:.06em;line-height:1.8;
   font-style:italic;
 }
@@ -230,7 +230,7 @@ section{
 }
 .ent-welcome{
   font-family:'Space Mono',monospace;
-  font-size:.6rem;letter-spacing:.42em;color:rgba(200,151,62,.3);
+  font-size:.6rem;letter-spacing:.42em;color:rgba(200,151,62,.58);
   margin-bottom:1.5rem;
 }
 .ent-logo{
@@ -253,13 +253,13 @@ section{
   border:1px solid rgba(200,151,62,.15);
   padding:.7rem 1.6rem;
   font-family:'Space Mono',monospace;
-  font-size:.62rem;color:rgba(200,151,62,.3);
+  font-size:.62rem;color:rgba(200,151,62,.58);
   letter-spacing:.14em;line-height:2;
 }
 .ent-open{
   font-family:'Space Mono',monospace;
   font-size:.55rem;letter-spacing:.25em;
-  color:rgba(200,151,62,.15);margin-top:2rem;
+  color:rgba(200,151,62,.45);margin-top:2rem;
 }
 .ent-line{
   width:1px;height:40px;background:linear-gradient(to bottom,var(--gold3),transparent);
@@ -323,7 +323,7 @@ section{
 .map-note{
   margin-top:1.4rem;
   font-family:'Space Mono',monospace;
-  font-size:.6rem;color:rgba(200,151,62,.2);
+  font-size:.6rem;color:rgba(200,151,62,.50);
   letter-spacing:.06em;font-style:italic;
   line-height:1.9;
   border-top:1px solid rgba(200,151,62,.07);
@@ -679,11 +679,11 @@ section{
   font-style:italic;color:var(--cream);
   display:block;margin-bottom:.5rem;
 }
-.cr-sub{display:block;font-size:.6rem;color:rgba(200,151,62,.2);letter-spacing:.3em;line-height:2.5}
-.cr-role{display:block;font-size:.55rem;color:rgba(200,151,62,.18);letter-spacing:.25em;line-height:2.5}
-.cr-name{display:block;font-size:.72rem;color:rgba(245,230,200,.3);letter-spacing:.15em;line-height:2}
+.cr-sub{display:block;font-size:.6rem;color:rgba(200,151,62,.55);letter-spacing:.3em;line-height:2.5}
+.cr-role{display:block;font-size:.55rem;color:rgba(200,151,62,.50);letter-spacing:.25em;line-height:2.5}
+.cr-name{display:block;font-size:.72rem;color:rgba(245,230,200,.62);letter-spacing:.15em;line-height:2}
 .cr-sep{display:block;width:50px;height:1px;background:rgba(200,151,62,.1);margin:2rem auto}
-.cr-small{display:block;font-size:.55rem;color:rgba(245,230,200,.1);letter-spacing:.18em;line-height:2.8}
+.cr-small{display:block;font-size:.55rem;color:rgba(245,230,200,.38);letter-spacing:.18em;line-height:2.8}
 
 /* ── PARTICLES ── */
 .pt{position:fixed;pointer-events:none;z-index:9200;border-radius:50%}

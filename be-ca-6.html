@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bé Cá VI — Bảo Tàng Những Sự Cố Không Ai Yêu Cầu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+:root{
+  --ink:#030818; --ink2:#060f2a;
+  --gold:#d4a84b; --gold2:#ffd077; --gold3:#a87830;
+  --cream:#fff8ee; --cream2:rgba(255,248,238,.88); --cream3:rgba(255,248,238,.55);
+  --frame:#1c1005; --frame2:#2e1e08;
+  --red:#e05540; --grn:#2a9a52;
+  --wall:rgba(4,8,26,.82);
+}
+
+body{
+  background:var(--ink);
+  font-family:'Cormorant Garamond',serif;
+  color:var(--cream); overflow-x:hidden; cursor:none;
+  transition:background-color .8s ease;
+}
+
+/* ── VAN GOGH CANVAS ── */
+#vgc{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;
+  opacity:1;
+}
+
+/* ── FILM GRAIN ── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:9600;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23g)' opacity='.05'/%3E%3C/svg%3E");
+  animation:grain .5s steps(2) infinite;
+  mix-blend-mode:overlay;opacity:.5;
+}
+@keyframes grain{
+  0%{transform:translate(0,0)} 25%{transform:translate(-7px,4px)}
+  50%{transform:translate(4px,-8px)} 75%{transform:translate(-5px,7px)}
+}
+
+/* ── CURSOR ── */
+#cur{
+  position:fixed;z-index:9900;pointer-events:none;
+  width:32px;height:32px;transform:translate(-50%,-50%);
+}
+#cur::before,#cur::after{
+  content:'';position:absolute;background:rgba(200,151,62,.7);
+}
+#cur::before{top:50%;left:0;right:0;height:1px}
+#cur::after{left:50%;top:0;bottom:0;width:1px}
+.cur-o{position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(200,151,62,.35)}
+#cur2{
+  position:fixed;z-index:9899;pointer-events:none;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 8px var(--gold);
+  transform:translate(-50%,-50%);
+}
+
+/* ── TIMECODE ── */
+#tc{
+  position:fixed;top:0;left:0;z-index:9500;
+  font-family:'Space Mono',monospace;
+  font-size:.55rem;color:rgba(200,151,62,.25);
+  padding:.45rem .75rem;letter-spacing:.08em;
+}
+
+/* ── INTRO DOORS ── */
+#intro{position:fixed;inset:0;z-index:9400;perspective:900px}
+.door{
+  position:absolute;top:0;bottom:0;width:50%;
+  background:var(--frame);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform 1.4s cubic-bezier(.7,0,.3,1);
+  will-change:transform;
+}
+.door-l{left:0;transform-origin:left center;border-right:2px solid var(--gold3)}
+.door-r{right:0;transform-origin:right center;border-left:2px solid var(--gold3)}
+.door-ornament{
+  font-size:2.5rem;
+  opacity:.25;
+  position:absolute;
+}
+.door-l .door-ornament{right:1.5rem}
+.door-r .door-ornament{left:1.5rem}
+.door-stripe{
+  position:absolute;top:0;bottom:0;width:3px;
+  background:linear-gradient(to bottom,transparent,var(--gold3),transparent);
+  opacity:.3;
+}
+.door-l .door-stripe{right:20px}
+.door-r .door-stripe{left:20px}
+
+/* Intro content (behind doors, centered) */
+#intro-inner{
+  position:absolute;inset:0;z-index:-1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1.2rem;opacity:0;transition:opacity .8s ease;
+}
+#intro-inner.show{opacity:1}
+.ii-label{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;letter-spacing:.4em;color:rgba(200,151,62,.3);
+  text-transform:uppercase;
+}
+.ii-reel{font-size:2.5rem;animation:reelSpin 1.2s linear infinite}
+@keyframes reelSpin{to{transform:rotate(360deg)}}
+.ii-bar-w{width:130px;height:1px;background:rgba(200,151,62,.1)}
+.ii-bar{height:100%;width:0;background:var(--gold);animation:ibar 3.5s ease forwards}
+@keyframes ibar{to{width:100%}}
+.ii-pct{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:rgba(200,151,62,.2);
+}
+#intro.open .door-l{transform:perspective(900px) rotateY(-88deg)}
+#intro.open .door-r{transform:perspective(900px) rotateY(88deg)}
+#intro.gone{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .6s .2s, visibility .6s .2s}
+
+/* ── APP ── */
+#app{position:relative;z-index:10}
+
+/* ── SECTION BASE ── */
+section{
+  position:relative;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:7rem 1.5rem;
+}
+
+/* ── MUSEUM WALL TEXTURE ── */
+.room{
+  background:
+    repeating-linear-gradient(
+      90deg,rgba(200,151,62,.012) 0,rgba(200,151,62,.012) 1px,transparent 1px,transparent 60px
+    ),
+    repeating-linear-gradient(
+      0deg,rgba(200,151,62,.012) 0,rgba(200,151,62,.012) 1px,transparent 1px,transparent 60px
+    ),
+    var(--wall);
+}
+
+/* ── REVEAL ── */
+.rv{
+  opacity:0;transform:translateY(24px);
+  transition:opacity .7s ease,transform .7s ease;
+}
+.rv.show{opacity:1!important;transform:translateY(0)!important}
+
+/* ── MUSEUM PLATE (exhibit labels) ── */
+.plate{
+  border:1px solid rgba(200,151,62,.2);
+  background:rgba(4,6,18,.6);
+  padding:1.4rem 1.8rem;
+  backdrop-filter:blur(6px);
+  position:relative;
+}
+.plate::before{
+  content:'';position:absolute;top:5px;left:5px;right:5px;bottom:5px;
+  border:1px solid rgba(200,151,62,.08);pointer-events:none;
+}
+.plate-room{
+  font-family:'Space Mono',monospace;
+  font-size:.55rem;letter-spacing:.35em;color:var(--gold3);
+  margin-bottom:.5rem;
+}
+.plate-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(1rem,3vw,1.4rem);
+  font-style:italic;color:var(--cream);
+  line-height:1.3;margin-bottom:.65rem;
+}
+.plate-medium{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--cream3);
+  letter-spacing:.12em;margin-bottom:.9rem;
+}
+.plate-body{
+  font-size:clamp(.88rem,2.2vw,1rem);
+  color:var(--cream2);line-height:1.85;
+}
+.plate-curator{
+  margin-top:.9rem;padding-top:.7rem;
+  border-top:1px solid rgba(200,151,62,.1);
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;color:rgba(200,151,62,.35);
+  letter-spacing:.06em;line-height:1.8;
+  font-style:italic;
+}
+
+/* ── WRAP ── */
+.wrap{width:100%;max-width:760px;margin:0 auto}
+.wrap-sm{width:100%;max-width:580px;margin:0 auto}
+.wrap-lg{width:100%;max-width:1000px;margin:0 auto}
+
+/* ── ROOM HEADING ── */
+.room-number{
+  font-family:'Space Mono',monospace;
+  font-size:.62rem;letter-spacing:.4em;color:var(--gold3);
+  margin-bottom:.5rem;
+}
+.room-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.2rem,8vw,5.5rem);
+  font-weight:700;line-height:.95;
+  color:var(--cream);margin-bottom:2.8rem;
+}
+.room-title em{font-style:italic;color:var(--gold)}
+
+/* ── SECTION DIVIDER ── */
+.corridor{
+  height:100px;
+  background:linear-gradient(to bottom,var(--wall),rgba(3,8,24,.4),var(--wall));
+  width:100%;
+}
+
+/* ═══════════════════════════
+   S-ENTRANCE
+═══════════════════════════ */
+#s-entrance{
+  background:rgba(3,5,18,.5);
+  text-align:center;gap:1.2rem;
+  perspective:800px;
+}
+.ent-welcome{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;letter-spacing:.42em;color:rgba(200,151,62,.3);
+  margin-bottom:1.5rem;
+}
+.ent-logo{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.5rem,10vw,7rem);
+  font-weight:700;color:var(--cream);
+  line-height:.9;
+  text-shadow:0 0 80px rgba(200,151,62,.15);
+}
+.ent-logo span{
+  display:block;font-size:.22em;font-weight:400;font-style:italic;
+  color:var(--gold3);letter-spacing:.2em;margin-top:.8rem;
+}
+.ent-tagline{
+  font-size:clamp(.9rem,2.5vw,1.1rem);font-style:italic;
+  color:var(--cream3);margin:1.8rem 0;line-height:1.9;
+}
+.ent-plate{
+  display:inline-block;
+  border:1px solid rgba(200,151,62,.15);
+  padding:.7rem 1.6rem;
+  font-family:'Space Mono',monospace;
+  font-size:.62rem;color:rgba(200,151,62,.3);
+  letter-spacing:.14em;line-height:2;
+}
+.ent-open{
+  font-family:'Space Mono',monospace;
+  font-size:.55rem;letter-spacing:.25em;
+  color:rgba(200,151,62,.15);margin-top:2rem;
+}
+.ent-line{
+  width:1px;height:40px;background:linear-gradient(to bottom,var(--gold3),transparent);
+  margin:1.5rem auto;animation:entPulse 2s ease-in-out infinite;
+}
+@keyframes entPulse{0%,100%{height:30px;opacity:.2}50%{height:52px;opacity:.5}}
+
+/* ═══════════════════════════
+   S-MAP
+═══════════════════════════ */
+#s-map{background:var(--wall)}
+
+.museum-map{
+  border:1px solid rgba(200,151,62,.18);
+  background:rgba(3,6,20,.7);
+  padding:2.5rem;max-width:680px;width:100%;
+  backdrop-filter:blur(8px);
+  position:relative;
+}
+.museum-map::before{
+  content:'';position:absolute;
+  top:8px;left:8px;right:8px;bottom:8px;
+  border:1px solid rgba(200,151,62,.07);
+  pointer-events:none;
+}
+.map-header{
+  text-align:center;
+  font-family:'Playfair Display',serif;
+  font-size:1.3rem;font-style:italic;
+  color:var(--cream);margin-bottom:.3rem;
+}
+.map-sub{
+  text-align:center;
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--cream3);
+  letter-spacing:.18em;margin-bottom:2rem;
+}
+.map-floor{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;letter-spacing:.3em;color:var(--gold3);
+  margin-bottom:.9rem;padding-bottom:.4rem;
+  border-bottom:1px solid rgba(200,151,62,.12);
+}
+.map-room{
+  display:flex;align-items:baseline;gap:.8rem;
+  padding:.55rem 0;border-bottom:1px solid rgba(200,151,62,.06);
+  font-size:.9rem;color:var(--cream2);
+  transition:color .2s,padding-left .2s;
+  cursor:default;
+}
+.map-room:hover{color:var(--cream);padding-left:.5rem}
+.map-room-num{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--gold3);
+  flex-shrink:0;width:42px;
+}
+.map-room-dot{
+  height:1px;flex:1;
+  background:repeating-linear-gradient(90deg,rgba(200,151,62,.18) 0,rgba(200,151,62,.18) 3px,transparent 3px,transparent 8px);
+}
+.map-note{
+  margin-top:1.4rem;
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;color:rgba(200,151,62,.2);
+  letter-spacing:.06em;font-style:italic;
+  line-height:1.9;
+  border-top:1px solid rgba(200,151,62,.07);
+  padding-top:.9rem;
+}
+
+/* ═══════════════════════════
+   EXHIBIT FRAMES (3D flip)
+═══════════════════════════ */
+.frame-3d{
+  perspective:900px;
+  width:100%;max-width:620px;
+  margin:0 auto;
+}
+.frame-inner{
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .8s cubic-bezier(.4,0,.2,1);
+  border:8px solid var(--frame2);
+  box-shadow:
+    0 0 0 1px var(--gold3),
+    8px 8px 0 rgba(0,0,0,.5),
+    inset 0 0 60px rgba(0,0,0,.3);
+}
+.frame-3d:hover .frame-inner{transform:rotateY(180deg)}
+.frame-front,.frame-back{
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  min-height:320px;
+}
+.frame-back{
+  position:absolute;inset:0;
+  transform:rotateY(180deg);
+  background:rgba(3,6,18,.96);
+  display:flex;align-items:center;justify-content:center;
+  padding:2rem;
+}
+.frame-hint{
+  text-align:center;
+  font-family:'Space Mono',monospace;
+  font-size:.55rem;color:var(--cream3);
+  letter-spacing:.2em;margin-top:.8rem;
+}
+
+/* Painting canvas inside frame */
+.painting{
+  width:100%;min-height:320px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 40% 60%,#0d2a6e,#030818 70%);
+}
+
+/* ═══════════════════════════
+   TIMELINE (P103)
+═══════════════════════════ */
+.timeline{display:flex;flex-direction:column;gap:0;max-width:560px;width:100%}
+.tl-item{
+  display:grid;grid-template-columns:80px 1fr;
+  gap:0 1.4rem;padding:.7rem 0;
+  border-bottom:1px solid rgba(200,151,62,.07);
+  opacity:0;transform:translateX(-20px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.tl-item.show{opacity:1!important;transform:translateX(0)!important}
+.tl-time{
+  font-family:'Space Mono',monospace;
+  font-size:.65rem;color:var(--gold3);
+  letter-spacing:.06em;padding-top:.1rem;
+  flex-shrink:0;
+}
+.tl-time.red{color:var(--red)}
+.tl-time.grn{color:var(--grn)}
+.tl-text{
+  font-size:.95rem;color:var(--cream2);line-height:1.75;
+}
+.tl-text em{color:var(--cream);font-style:normal}
+.tl-text small{
+  display:block;
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--cream3);
+  letter-spacing:.07em;margin-top:.25rem;
+}
+
+/* ═══════════════════════════
+   STATS GRID (P104)
+═══════════════════════════ */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1px;background:rgba(200,151,62,.08);
+  border:1px solid rgba(200,151,62,.08);
+  width:100%;
+}
+.stat-box{
+  background:rgba(3,6,20,.85);padding:1.5rem 1.2rem;
+  opacity:0;transform:scale(.93);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.stat-box.show{opacity:1!important;transform:scale(1)!important}
+.stat-n{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(2.5rem,7vw,4rem);
+  color:var(--cream);line-height:1;
+}
+.stat-n.na{font-size:clamp(1rem,3vw,1.3rem);color:var(--cream3);padding-top:.6rem}
+.stat-l{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--cream3);
+  letter-spacing:.1em;margin-top:.4rem;line-height:1.7;
+}
+
+/* ═══════════════════════════
+   3D ARTIFACTS (P201)
+═══════════════════════════ */
+.artifacts-stage{
+  display:flex;flex-wrap:wrap;
+  gap:3rem;justify-content:center;
+  width:100%;max-width:800px;margin:0 auto;
+}
+.artifact-wrap{
+  display:flex;flex-direction:column;
+  align-items:center;gap:1.2rem;
+  cursor:pointer;
+}
+.artifact{
+  width:90px;height:90px;
+  transform-style:preserve-3d;
+  animation:floatSpin 8s linear infinite;
+  position:relative;
+}
+.artifact:nth-child(1){animation-delay:0s}
+.artifact-wrap:nth-child(2) .artifact{animation-duration:11s;animation-delay:-2s}
+.artifact-wrap:nth-child(3) .artifact{animation-duration:9s;animation-delay:-4s}
+.artifact-wrap:nth-child(4) .artifact{animation-duration:13s;animation-delay:-1s}
+.artifact-wrap:nth-child(5) .artifact{animation-duration:10s;animation-delay:-3s}
+
+@keyframes floatSpin{
+  0%  {transform:rotateY(0deg)   rotateX(12deg) translateY(0)}
+  25% {transform:rotateY(90deg)  rotateX(8deg)  translateY(-10px)}
+  50% {transform:rotateY(180deg) rotateX(12deg) translateY(0)}
+  75% {transform:rotateY(270deg) rotateX(15deg) translateY(-8px)}
+  100%{transform:rotateY(360deg) rotateX(12deg) translateY(0)}
+}
+.artifact-face{
+  position:absolute;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.5rem;
+  width:90px;height:90px;
+  border:1px solid rgba(200,151,62,.2);
+  background:rgba(4,8,24,.85);
+  backface-visibility:hidden;
+}
+.af-front{transform:translateZ(45px)}
+.af-back {transform:rotateY(180deg) translateZ(45px)}
+.af-left {transform:rotateY(-90deg) translateZ(45px)}
+.af-right{transform:rotateY(90deg)  translateZ(45px)}
+
+.artifact-label{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;color:var(--cream3);
+  letter-spacing:.12em;text-align:center;
+}
+.artifact-popup{
+  display:none;position:fixed;z-index:8000;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  max-width:360px;width:90%;
+  background:rgba(4,6,22,.96);
+  border:1px solid rgba(200,151,62,.25);
+  padding:2rem;text-align:center;
+  backdrop-filter:blur(16px);
+  animation:popIn .3s ease;
+}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.artifact-popup.show{display:block}
+.ap-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;font-style:italic;
+  color:var(--cream);margin-bottom:.8rem;
+}
+.ap-body{
+  font-size:.92rem;color:var(--cream2);line-height:1.85;margin-bottom:1.2rem;
+}
+.ap-close{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;letter-spacing:.2em;color:var(--gold3);
+  background:none;border:1px solid rgba(200,151,62,.2);
+  padding:.45rem 1.1rem;cursor:pointer;color:var(--cream3);
+  transition:border-color .2s,color .2s;
+}
+.ap-close:hover{border-color:rgba(200,151,62,.5);color:var(--cream)}
+
+/* ═══════════════════════════
+   PROFILE CARDS (P202)
+═══════════════════════════ */
+.profiles{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1px;background:rgba(200,151,62,.08);
+  border:1px solid rgba(200,151,62,.08);
+  max-width:680px;width:100%;
+}
+@media(max-width:500px){.profiles{grid-template-columns:1fr}}
+.profile{
+  background:rgba(3,6,20,.88);
+  padding:2rem 1.5rem;
+}
+.pf-tag{
+  font-family:'Space Mono',monospace;
+  font-size:.55rem;letter-spacing:.3em;color:var(--gold3);
+  margin-bottom:.7rem;
+}
+.pf-name{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-style:italic;
+  color:var(--cream);margin-bottom:1.2rem;
+}
+.pf-row{
+  display:flex;justify-content:space-between;
+  padding:.4rem 0;border-bottom:1px solid rgba(200,151,62,.06);
+  font-size:.82rem;
+}
+.pf-key{color:var(--cream3);font-family:'Space Mono',monospace;font-size:.62rem;letter-spacing:.06em}
+.pf-val{color:var(--cream2)}
+.pf-status{
+  margin-top:1rem;
+  font-family:'Space Mono',monospace;
+  font-size:.62rem;letter-spacing:.14em;
+  color:var(--gold3);
+}
+
+/* ═══════════════════════════
+   GIFT SHOP
+═══════════════════════════ */
+#s-shop{background:var(--wall)}
+
+.shop-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1px;background:rgba(200,151,62,.07);
+  border:1px solid rgba(200,151,62,.07);
+  max-width:900px;width:100%;
+}
+.shop-item{
+  background:rgba(3,6,20,.9);padding:1.6rem 1.3rem;
+  transition:background .2s;cursor:default;
+  opacity:0;transform:translateY(18px);
+  transition:opacity .5s ease,transform .5s ease,background .2s;
+}
+.shop-item.show{opacity:1!important;transform:translateY(0)!important}
+.shop-item:hover{background:rgba(8,14,35,.95)}
+.shop-emoji{font-size:2rem;margin-bottom:.7rem}
+.shop-name{
+  font-family:'Playfair Display',serif;
+  font-size:1rem;font-style:italic;
+  color:var(--cream);margin-bottom:.4rem;
+}
+.shop-desc{
+  font-size:.82rem;color:var(--cream3);line-height:1.75;margin-bottom:.7rem;
+}
+.shop-price{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;color:var(--gold3);letter-spacing:.12em;
+}
+
+/* ═══════════════════════════
+   EXIT / GUESTBOOK
+═══════════════════════════ */
+#s-exit{background:rgba(3,5,18,.6)}
+
+.guestbook{
+  max-width:580px;width:100%;
+  border:1px solid rgba(200,151,62,.18);
+  background:rgba(3,6,20,.8);
+  backdrop-filter:blur(12px);padding:2.5rem;
+  position:relative;
+}
+.guestbook::before{
+  content:'';position:absolute;
+  top:7px;left:7px;right:7px;bottom:7px;
+  border:1px solid rgba(200,151,62,.06);
+  pointer-events:none;
+}
+.gb-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.5rem;font-style:italic;
+  color:var(--cream);margin-bottom:.3rem;
+}
+.gb-sub{
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;color:var(--cream3);
+  letter-spacing:.15em;margin-bottom:1.8rem;
+}
+.gb-textarea{
+  width:100%;resize:vertical;min-height:100px;
+  background:rgba(200,151,62,.04);
+  border:1px solid rgba(200,151,62,.12);
+  color:var(--cream);font-family:'Cormorant Garamond',serif;
+  font-size:1rem;padding:.9rem 1rem;
+  outline:none;margin-bottom:.9rem;
+  transition:border-color .2s;
+}
+.gb-textarea:focus{border-color:rgba(200,151,62,.3)}
+.gb-textarea::placeholder{color:rgba(200,151,62,.2)}
+.gb-btn{
+  font-family:'Space Mono',monospace;
+  font-size:.65rem;letter-spacing:.2em;
+  background:none;border:1px solid rgba(200,151,62,.25);
+  color:var(--cream3);padding:.55rem 1.4rem;
+  cursor:pointer;transition:border-color .2s,color .2s;
+}
+.gb-btn:hover{border-color:rgba(200,151,62,.6);color:var(--cream)}
+.gb-entries{
+  margin-top:1.4rem;display:flex;flex-direction:column;gap:.6rem;
+  max-height:200px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(200,151,62,.1) transparent;
+}
+.gb-entry{
+  font-size:.9rem;color:var(--cream2);line-height:1.7;
+  padding:.7rem .9rem;
+  background:rgba(200,151,62,.04);
+  border-left:2px solid rgba(200,151,62,.15);
+  font-style:italic;
+}
+.gb-entry-ts{
+  font-family:'Space Mono',monospace;
+  font-size:.52rem;color:var(--cream3);
+  letter-spacing:.08em;margin-bottom:.25rem;display:block;
+}
+
+/* ═══════════════════════════
+   CREDITS
+═══════════════════════════ */
+#s-credits{
+  background:#000;
+  min-height:100vh;overflow:hidden;
+  display:block;padding:0;position:relative;
+}
+.cr-trigger{height:1px}
+.cr-roll{
+  text-align:center;padding:40vh 1.5rem 60vh;
+  font-family:'Space Mono',monospace;
+}
+.cr-roll.rolling{
+  animation:rollUp var(--dur,30s) linear forwards;
+}
+@keyframes rollUp{
+  from{transform:translateY(0)}
+  to  {transform:translateY(calc(-100% + 100vh))}
+}
+.cr-gap{height:2.8rem}
+.cr-bigtitle{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(3rem,10vw,7rem);
+  font-style:italic;color:var(--cream);
+  display:block;margin-bottom:.5rem;
+}
+.cr-sub{display:block;font-size:.6rem;color:rgba(200,151,62,.2);letter-spacing:.3em;line-height:2.5}
+.cr-role{display:block;font-size:.55rem;color:rgba(200,151,62,.18);letter-spacing:.25em;line-height:2.5}
+.cr-name{display:block;font-size:.72rem;color:rgba(245,230,200,.3);letter-spacing:.15em;line-height:2}
+.cr-sep{display:block;width:50px;height:1px;background:rgba(200,151,62,.1);margin:2rem auto}
+.cr-small{display:block;font-size:.55rem;color:rgba(245,230,200,.1);letter-spacing:.18em;line-height:2.8}
+
+/* ── PARTICLES ── */
+.pt{position:fixed;pointer-events:none;z-index:9200;border-radius:50%}
+.fe{position:fixed;pointer-events:none;z-index:9201;font-size:1.5rem}
+
+/* ── RIPPLE CANVAS ── */
+#ripc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+
+/* ── ROOM SLATE ── */
+#room-slate{
+  position:fixed;inset:0;z-index:1800;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:.7rem;
+  background:rgba(2,4,14,.92);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .3s ease,visibility .3s;
+  backdrop-filter:blur(4px);
+}
+#room-slate.show{opacity:1;visibility:visible}
+.rs-num{
+  font-family:'Space Mono',monospace;
+  font-size:.6rem;letter-spacing:.5em;color:rgba(200,151,62,.35);
+}
+.rs-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(1.8rem,6vw,4rem);
+  font-style:italic;color:var(--cream);
+  text-align:center;line-height:1.1;
+}
+.rs-bar{
+  width:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:rsBar .8s ease forwards;
+}
+@keyframes rsBar{to{width:min(280px,60vw)}}
+
+/* ── ROOM FLASH ── */
+#room-flash{
+  position:fixed;inset:0;z-index:1600;
+  pointer-events:none;opacity:0;
+  transition:opacity .15s ease;
+}
+#room-flash.pop{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- VAN GOGH CANVAS -->
+<canvas id="vgc"></canvas>
+<canvas id="ripc"></canvas>
+
+<!-- ROOM SLATE + FLASH -->
+<div id="room-slate">
+  <div class="rs-num" id="rs-num"></div>
+  <div class="rs-title" id="rs-title"></div>
+  <div class="rs-bar"></div>
+</div>
+<div id="room-flash"></div>
+
+<!-- FIXED UI -->
+<div id="tc">00:00:00:00</div>
+<div id="cur"><div class="cur-o"></div></div>
+<div id="cur2"></div>
+
+<!-- ARTIFACT POPUP -->
+<div class="artifact-popup" id="art-popup">
+  <div class="ap-title" id="ap-title"></div>
+  <div class="ap-body"  id="ap-body"></div>
+  <button class="ap-close" onclick="closeArtifact()">[ ĐÓNG ]</button>
+</div>
+
+<!-- INTRO DOORS -->
+<div id="intro">
+  <div id="intro-inner">
+    <div class="ii-label">bảo tàng những sự cố không ai yêu cầu</div>
+    <div class="ii-reel">🎞️</div>
+    <div class="ii-bar-w"><div class="ii-bar"></div></div>
+    <div class="ii-pct" id="ipct">0%</div>
+  </div>
+  <div class="door door-l">
+    <div class="door-ornament">⚜</div>
+    <div class="door-stripe"></div>
+  </div>
+  <div class="door door-r">
+    <div class="door-ornament">⚜</div>
+    <div class="door-stripe"></div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ══ ENTRANCE ══ -->
+<section id="s-entrance">
+  <div class="ent-welcome rv">KHAI TRƯƠNG 2026 · TRIỂN LÃM THƯỜNG TRỰC</div>
+  <div class="ent-logo rv" style="transition-delay:.1s">
+    Bảo Tàng
+    <span>Những Sự Cố Không Ai Yêu Cầu</span>
+  </div>
+  <div class="ent-tagline rv" style="transition-delay:.2s">
+    "Nơi lưu giữ những khoảnh khắc không thể giải thích,<br/>
+    được tái hiện với đầy đủ bằng chứng và không có lý do chính đáng."
+  </div>
+  <div class="ent-plate rv" style="transition-delay:.3s">
+    GIỜ MỞ CỬA: Thứ 2 – Chủ Nhật · 09:00 – 02:00<br/>
+    (trừ khi Bé Cá block, khi đó bảo tàng đóng cửa giữa chừng)<br/>
+    Bảo tàng không chịu trách nhiệm về bất kỳ cảm xúc nào phát sinh trong quá trình tham quan.
+  </div>
+  <div class="ent-line rv" style="transition-delay:.45s"></div>
+  <div class="ent-open rv" style="transition-delay:.5s">▼ BẮT ĐẦU THAM QUAN ▼</div>
+</section>
+
+<!-- ══ MAP ══ -->
+<section id="s-map" class="room">
+  <div class="museum-map rv">
+    <div class="map-header">Bản Đồ Bảo Tàng</div>
+    <div class="map-sub">TẦNG DUY NHẤT · KHÔNG CÓ THANG MÁY</div>
+
+    <div class="map-floor">TẦNG 1 — CÁC PHÒNG CHÍNH</div>
+    <div class="map-room"><span class="map-room-num">101</span><span>Sự Cố Emoji — Khi Thẩm Mỹ Thắng Lý Trí</span><span class="map-room-dot"></span></div>
+    <div class="map-room"><span class="map-room-num">102</span><span>Vụ Trượt Tay Lịch Sử — Bất Khả Kháng</span><span class="map-room-dot"></span></div>
+    <div class="map-room"><span class="map-room-num">103</span><span>9h Sáng Và Nửa Ngày Năn Nỉ</span><span class="map-room-dot"></span></div>
+    <div class="map-room"><span class="map-room-num">104</span><span>Bộ Sưu Tập Web v1–v5</span><span class="map-room-dot"></span></div>
+
+    <div class="map-floor" style="margin-top:1.4rem">TẦNG 1 — PHÒNG ĐẶC BIỆT</div>
+    <div class="map-room"><span class="map-room-num">201</span><span>Hiện Vật Phục Hồi — Interactive</span><span class="map-room-dot"></span></div>
+    <div class="map-room"><span class="map-room-num">202</span><span>Hồ Sơ Nhân Vật</span><span class="map-room-dot"></span></div>
+
+    <div class="map-floor" style="margin-top:1.4rem">TIỆN ÍCH</div>
+    <div class="map-room"><span class="map-room-num">G01</span><span>Quầy Lưu Niệm</span><span class="map-room-dot"></span></div>
+    <div class="map-room"><span class="map-room-num">G02</span><span>Sổ Lưu Bút · Lối Ra</span><span class="map-room-dot"></span></div>
+
+    <div class="map-note">
+      * Phòng 103 đang trong quá trình trùng tu do nhân chứng chính từ chối hợp tác.<br/>
+      * Vui lòng không chụp ảnh trong Phòng 101 — ngược lại với những gì đã dẫn đến Phòng 101.
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 101: EMOJI ══ -->
+<section id="s101" class="room">
+  <div class="wrap">
+    <div class="room-number rv">PHÒNG 101</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">Khi Thẩm Mỹ<br/><em>Thắng Lý Trí</em></h2>
+
+    <div class="frame-3d rv" style="transition-delay:.12s">
+      <div class="frame-inner">
+        <div class="frame-front">
+          <div class="painting" style="background:radial-gradient(ellipse at 35% 55%,#1a3a8f 0%,#030818 65%);min-height:340px">
+            <!-- Van Gogh style swirl painted in JS on this -->
+            <canvas id="p101c" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+            <div style="position:relative;z-index:2;text-align:center;padding:2rem">
+              <div style="font-size:4rem;margin-bottom:1rem">📱✨</div>
+              <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.4rem;color:var(--cream)">
+                "Không kìm lòng được"
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:.6rem;color:rgba(200,151,62,.4);margin-top:.6rem;letter-spacing:.15em">
+                2026 · chất liệu: bốc đồng và điện thoại
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="frame-back">
+          <div class="plate" style="border:none;background:none;text-align:left">
+            <div class="plate-room">CHÚ THÍCH CỦA CURATOR</div>
+            <div class="plate-title">"Không Kìm Lòng Được" — Chi Tiết</div>
+            <div class="plate-body">
+              Nhân phát hiện một tấm ảnh của Bé Cá.<br/><br/>
+              Nhân biết đây là việc không nên làm.<br/>
+              Nhân vẫn làm.<br/><br/>
+              Lý do: ảnh đẹp quá. Tay nó tự thêm vào emoji pack trước khi não kịp phản đối. Não đến nơi thì việc đã xong.
+            </div>
+            <div class="plate-curator">
+              * Hiện vật gốc (ảnh gốc) không được trưng bày<br/>
+              vì lý do pháp lý và vì Bé Cá sẽ block thêm một<br/>
+              lần nữa nếu trưng bày.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="frame-hint rv" style="transition-delay:.2s">↑ Hover để xem chú thích curator</div>
+    </div>
+
+    <div class="plate rv" style="margin-top:2rem;max-width:620px;width:100%;transition-delay:.25s">
+      <div class="plate-room">PHÒNG 101 · NHÃN TRƯNG BÀY</div>
+      <div class="plate-title">Sự Cố Emoji — Khi Thẩm Mỹ Thắng Lý Trí</div>
+      <div class="plate-medium">2026 · Sự kiện đơn lẻ · Hậu quả kéo dài</div>
+      <div class="plate-body">
+        Vào một sáng bình thường, Nhân phát hiện ảnh của Bé Cá. Thay vì làm những việc bình thường, Nhân quyết định thêm ảnh đó vào emoji pack cá nhân. Lý do chính thức được ghi nhận: <em style="color:var(--cream)">"ảnh đẹp gái quá, không kìm lòng được."</em><br/><br/>
+        Bé Cá phát hiện. Tức giận. Block từ 9 giờ sáng.
+      </div>
+      <div class="plate-curator">
+        Ghi chú bổ sung: đây không phải lần đầu Nhân đưa ra quyết định như vậy. Và có thể sẽ không phải lần cuối.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 102: TRƯỢT TAY ══ -->
+<section id="s102" class="room">
+  <div class="wrap">
+    <div class="room-number rv">PHÒNG 102</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">Vụ Trượt Tay<br/><em>Lịch Sử</em></h2>
+
+    <div class="plate rv" style="max-width:620px;width:100%;transition-delay:.14s">
+      <div class="plate-room">PHÒNG 102 · NHÃN TRƯNG BÀY</div>
+      <div class="plate-title">Bất Khả Kháng — Không Được Bảo Hiểm</div>
+      <div class="plate-medium">2026 · Tai nạn · Chưa được xác nhận bởi cả hai bên</div>
+      <div class="plate-body">
+        Tay Nhân bị trơn vào đúng thời điểm sai nhất có thể.<br/><br/>
+        Nhân không có ý định react vào tin nhắn đó. Tin nhắn đó là gì? — dữ liệu đã bị xóa. Nhân cũng không nhớ. Bé Cá tức. Lý do cụ thể vẫn đang được điều tra.
+      </div>
+    </div>
+
+    <div class="frame-3d rv" style="margin-top:2rem;transition-delay:.2s">
+      <div class="frame-inner">
+        <div class="frame-front">
+          <div class="painting" style="background:radial-gradient(ellipse at 60% 40%,#3a1a0a,#030818 70%);min-height:280px">
+            <canvas id="p102c" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+            <div style="position:relative;z-index:2;text-align:center;padding:2rem">
+              <div style="font-size:3.5rem;margin-bottom:.8rem">👆💥</div>
+              <div style="font-family:'Space Mono',monospace;font-size:.7rem;color:rgba(200,151,62,.5);letter-spacing:.15em">
+                MOMENT OF IMPACT
+              </div>
+              <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream2);margin-top:.5rem;font-style:italic">
+                "Tay trơn. Không kịp phản ứng."
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="frame-back">
+          <div class="plate" style="border:none;background:none">
+            <div class="plate-room">PHÂN TÍCH KHOA HỌC</div>
+            <div class="plate-title">Báo Cáo Chuyên Gia</div>
+            <div class="plate-body">
+              Một chuyên gia về tay trơn (ẩn danh theo yêu cầu) cho biết:<br/><br/>
+              <em style="color:var(--cream)">"Đây là trường hợp hiếm gặp. Xác suất xảy ra: 1/47. Hậu quả: không thể tính bằng đơn vị thông thường."</em><br/><br/>
+              Chú thích: chuyên gia này là Nhân tự phịa.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="frame-hint">↑ Hover để xem phân tích khoa học</div>
+    </div>
+
+    <div class="plate rv" style="margin-top:2rem;max-width:620px;width:100%;background:rgba(192,57,43,.04);border-color:rgba(192,57,43,.15);transition-delay:.28s">
+      <div class="plate-room" style="color:rgba(192,57,43,.5)">CẢNH BÁO · PHÒNG 102</div>
+      <div class="plate-body">
+        Bảo tàng lưu ý: hiện tượng "tay trơn" được ghi nhận xảy ra nhiều hơn ở những người đang cầm điện thoại và nghĩ về người khác cùng lúc. Đây là giả thuyết chưa được kiểm chứng. Nhân cũng không xác nhận.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 103: BLOCK + NĂN NỈ ══ -->
+<section id="s103" class="room">
+  <div class="wrap">
+    <div class="room-number rv">PHÒNG 103</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">9h Sáng &amp;<br/><em>Nửa Ngày Năn Nỉ</em></h2>
+
+    <div class="plate rv" style="max-width:620px;width:100%;margin-bottom:2rem;transition-delay:.14s">
+      <div class="plate-room">PHÒNG 103 · ĐÃ ĐÓNG CỬA TRÙNG TU TỪNG PHẦN</div>
+      <div class="plate-title">Quá Trình Ngoại Giao Khẩn Cấp</div>
+      <div class="plate-medium">9:00 — ?? · Thời gian thực · Không có biên bản</div>
+      <div class="plate-body">
+        Sự kiện bắt đầu sau khi Bé Cá phát hiện sự cố emoji (xem Phòng 101). Block xảy ra lúc 9 giờ sáng. Quá trình năn nỉ bắt đầu ngay sau đó và kéo dài nửa ngày.
+      </div>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item" data-d="0">
+        <div class="tl-time red">09:00</div>
+        <div class="tl-text"><em>Block.</em><small>Không có cảnh báo. Không có phiên điều trần.</small></div>
+      </div>
+      <div class="tl-item" data-d="100">
+        <div class="tl-time">09:01</div>
+        <div class="tl-text">Nhân nhận ra. Nhìn màn hình.<small>Thời gian nhìn: không rõ. Có thể rất lâu.</small></div>
+      </div>
+      <div class="tl-item" data-d="200">
+        <div class="tl-time">09:02</div>
+        <div class="tl-text">Bắt đầu năn nỉ qua mọi kênh còn lại.<small>Kênh nào còn? — chưa được liệt kê trong hồ sơ.</small></div>
+      </div>
+      <div class="tl-item" data-d="300">
+        <div class="tl-time">09:24</div>
+        <div class="tl-text">Năn nỉ lần 2. Chuyên nghiệp hơn.<small>Có thêm lý lẽ. Lý lẽ có thuyết phục không? — không rõ.</small></div>
+      </div>
+      <div class="tl-item" data-d="400">
+        <div class="tl-time">10:11</div>
+        <div class="tl-text">Năn nỉ lần 3. Có dẫn chứng.<small>"Dẫn chứng" là gì? — nội dung bị xóa.</small></div>
+      </div>
+      <div class="tl-item" data-d="500">
+        <div class="tl-time" style="color:rgba(200,151,62,.2)">...</div>
+        <div class="tl-text" style="color:var(--cream3);font-style:italic"><em style="color:var(--cream3)">[nội dung bị xóa]</em><small>Lưu trữ viên không thể phục hồi. Nhân từ chối tái hiện.</small></div>
+      </div>
+      <div class="tl-item" data-d="600">
+        <div class="tl-time" style="color:rgba(200,151,62,.2)">...</div>
+        <div class="tl-text" style="color:var(--cream3);font-style:italic"><em style="color:var(--cream3)">[nội dung bị xóa]</em><small>Bé Cá không nhớ. Có thể chưa đọc.</small></div>
+      </div>
+      <div class="tl-item" data-d="700">
+        <div class="tl-time grn">13:??</div>
+        <div class="tl-text"><em>Unblock.</em><small>Lý do: không rõ. Nhân không hỏi để tránh làm hỏng tình hình.</small></div>
+      </div>
+    </div>
+
+    <div class="plate rv" style="margin-top:2rem;max-width:620px;width:100%;transition-delay:.2s">
+      <div class="plate-curator">
+        Ghi chú của lưu trữ viên: Đây là khoảng trống lớn nhất trong lịch sử bảo tàng. Nội dung năn nỉ được đánh giá là "có giá trị nghiên cứu cao" nhưng không thể phục hồi vì cả hai bên đều không giữ lại bằng chứng — hoặc cố tình không giữ.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 104: WEBSITES ══ -->
+<section id="s104" class="room">
+  <div class="wrap-lg">
+    <div class="room-number rv">PHÒNG 104</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">Bộ Sưu Tập<br/><em>Kỹ Thuật Số</em></h2>
+
+    <div class="stat-grid rv" style="transition-delay:.12s">
+      <div class="stat-box" data-target="5" data-d="0">
+        <div class="stat-n" data-count="5">0</div>
+        <div class="stat-l">phiên bản<br/>đã sản xuất</div>
+      </div>
+      <div class="stat-box" data-target="4200" data-d="100">
+        <div class="stat-n" data-count="4200">0</div>
+        <div class="stat-l">dòng code<br/>đã viết</div>
+      </div>
+      <div class="stat-box" data-target="22" data-d="200">
+        <div class="stat-n" data-count="22">0</div>
+        <div class="stat-l">lần đổi font<br/>vì "chưa đủ cute"</div>
+      </div>
+      <div class="stat-box" data-target="3" data-d="300">
+        <div class="stat-n" data-count="3">0</div>
+        <div class="stat-l">lần bị block<br/>trong quá trình sản xuất</div>
+      </div>
+      <div class="stat-box" data-target="18" data-d="400">
+        <div class="stat-n" data-count="18">0</div>
+        <div class="stat-l">giờ thức khuya<br/>tổng cộng</div>
+      </div>
+      <div class="stat-box" data-d="500">
+        <div class="stat-n na">[ N/A ]</div>
+        <div class="stat-l">lần được hỏi<br/>"anh có ổn không"</div>
+      </div>
+    </div>
+
+    <div class="plate rv" style="margin-top:2rem;max-width:760px;width:100%;transition-delay:.2s">
+      <div class="plate-room">PHÒNG 104 · GHI CHÚ BỘ SƯU TẬP</div>
+      <div class="plate-body">
+        Series này là bộ sưu tập dài nhất bảo tàng có tính đến thời điểm hiện tại. Mỗi phiên bản được sản xuất trong điều kiện tương tự: đêm khuya, không được yêu cầu, không có deadline, không có người đặt hàng. Động lực duy nhất được ghi nhận là: <em style="color:var(--cream)">"vì sao không làm?"</em><br/><br/>
+        Câu trả lời đúng đắn cho câu hỏi đó chưa được tìm thấy.
+      </div>
+      <div class="plate-curator">
+        * Series chưa kết thúc. Khả năng có v6 là hiện tại — bạn đang ở trong v6.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 201: HIỆN VẬT ══ -->
+<section id="s201" class="room">
+  <div class="wrap-lg" style="text-align:center">
+    <div class="room-number rv">PHÒNG 201</div>
+    <h2 class="room-title rv" style="transition-delay:.07s;text-align:center">Hiện Vật<br/><em>Phục Hồi</em></h2>
+    <p class="rv" style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--cream3);letter-spacing:.18em;margin-bottom:3rem;transition-delay:.14s">
+      CLICK VÀO HIỆN VẬT ĐỂ XEM THÔNG TIN
+    </p>
+
+    <div class="artifacts-stage rv" style="transition-delay:.2s">
+
+      <div class="artifact-wrap" onclick="showArtifact(0)">
+        <div class="artifact" id="art0">
+          <div class="artifact-face af-front">📱</div>
+          <div class="artifact-face af-back">📸</div>
+          <div class="artifact-face af-left">😤</div>
+          <div class="artifact-face af-right">🔒</div>
+        </div>
+        <div class="artifact-label">ĐIỆN THOẠI<br/>SỰ CỐ</div>
+      </div>
+
+      <div class="artifact-wrap" onclick="showArtifact(1)">
+        <div class="artifact" id="art1">
+          <div class="artifact-face af-front">🚫</div>
+          <div class="artifact-face af-back">🔴</div>
+          <div class="artifact-face af-left">😶</div>
+          <div class="artifact-face af-right">📵</div>
+        </div>
+        <div class="artifact-label">NÚT BLOCK<br/>NGUYÊN BẢN</div>
+      </div>
+
+      <div class="artifact-wrap" onclick="showArtifact(2)">
+        <div class="artifact" id="art2">
+          <div class="artifact-face af-front">💻</div>
+          <div class="artifact-face af-back">🌙</div>
+          <div class="artifact-face af-left">⌨️</div>
+          <div class="artifact-face af-right">☕</div>
+        </div>
+        <div class="artifact-label">LY CÀ PHÊ<br/>2AM</div>
+      </div>
+
+      <div class="artifact-wrap" onclick="showArtifact(3)">
+        <div class="artifact" id="art3">
+          <div class="artifact-face af-front">👆</div>
+          <div class="artifact-face af-back">💦</div>
+          <div class="artifact-face af-left">😬</div>
+          <div class="artifact-face af-right">⚡</div>
+        </div>
+        <div class="artifact-label">NGÓN TAY<br/>TRƠN</div>
+      </div>
+
+      <div class="artifact-wrap" onclick="showArtifact(4)">
+        <div class="artifact" id="art4">
+          <div class="artifact-face af-front">❓</div>
+          <div class="artifact-face af-back">💭</div>
+          <div class="artifact-face af-left">🤷</div>
+          <div class="artifact-face af-right">📋</div>
+        </div>
+        <div class="artifact-label">CÂU HỎI<br/>CHƯA TÊN</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ PHÒNG 202: PROFILES ══ -->
+<section id="s202" class="room">
+  <div class="wrap">
+    <div class="room-number rv">PHÒNG 202</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">Hồ Sơ<br/><em>Nhân Vật</em></h2>
+
+    <div class="profiles rv" style="transition-delay:.14s">
+      <div class="profile">
+        <div class="pf-tag">NHÂN VẬT A · NGƯỜI LẬP TRÌNH</div>
+        <div class="pf-name">Nhân</div>
+        <div class="pf-row"><span class="pf-key">Nghề nghiệp</span><span class="pf-val">Làm web không ai hỏi</span></div>
+        <div class="pf-row"><span class="pf-key">Kỹ năng</span><span class="pf-val">Code, thức khuya, năn nỉ</span></div>
+        <div class="pf-row"><span class="pf-key">Điểm mạnh</span><span class="pf-val">Kiên trì đến mức đáng ngờ</span></div>
+        <div class="pf-row"><span class="pf-key">Điểm yếu</span><span class="pf-val">Tay trơn. Não chậm hơn tay.</span></div>
+        <div class="pf-row"><span class="pf-key">Số lần bị block</span><span class="pf-val">Đang đếm</span></div>
+        <div class="pf-row"><span class="pf-key">Tình trạng</span><span class="pf-val">Vẫn code</span></div>
+        <div class="pf-status">[ PHÂN LOẠI: CHƯA XÁC ĐỊNH ]</div>
+      </div>
+      <div class="profile">
+        <div class="pf-tag">NHÂN VẬT B · NGƯỜI GÂY RA PHÒNG 101–103</div>
+        <div class="pf-name">Bé Cá / Quỳnh</div>
+        <div class="pf-row"><span class="pf-key">Vai trò chính</span><span class="pf-val">Nguồn gốc mọi sự cố</span></div>
+        <div class="pf-row"><span class="pf-key">Kỹ năng</span><span class="pf-val">Block. Unblock. Không biết mình đang trong bảo tàng.</span></div>
+        <div class="pf-row"><span class="pf-key">Điểm mạnh</span><span class="pf-val">Đẹp gái (xem P.101 để biết tại sao điều này là vấn đề)</span></div>
+        <div class="pf-row"><span class="pf-key">Điểm yếu</span><span class="pf-val">Chưa được ghi nhận</span></div>
+        <div class="pf-row"><span class="pf-key">Quyền truy cập dữ liệu</span><span class="pf-val">Bị từ chối</span></div>
+        <div class="pf-row"><span class="pf-key">Tình trạng</span><span class="pf-val">Đang sống bình thường. Không biết trang web này tồn tại.</span></div>
+        <div class="pf-status">[ PHÂN LOẠI: KHÔNG ĐỦ THÔNG TIN ]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ QUẦY LƯU NIỆM ══ -->
+<section id="s-shop" class="room">
+  <div class="wrap-lg">
+    <div class="room-number rv">QUẦY LƯU NIỆM · G01</div>
+    <h2 class="room-title rv" style="transition-delay:.07s">Quầy Lưu<br/><em>Niệm</em></h2>
+
+    <div class="shop-grid">
+      <div class="shop-item" data-d="0">
+        <div class="shop-emoji">🖼️</div>
+        <div class="shop-name">Print Ảnh Emoji Gây Tranh Cãi</div>
+        <div class="shop-desc">Bản giới hạn. Không giới hạn vì hiếm — giới hạn vì không ai được phép in.</div>
+        <div class="shop-price">GIÁ: KHÔNG CÓ HÀNG · VĨNH VIỄN</div>
+      </div>
+      <div class="shop-item" data-d="80">
+        <div class="shop-emoji">🚫</div>
+        <div class="shop-name">Bản Sao Nút Block</div>
+        <div class="shop-desc">Chức năng đầy đủ. Đã được kiểm nghiệm thực tế nhiều lần bởi Bé Cá.</div>
+        <div class="shop-price">GIÁ: MIỄN PHÍ · BÉ CÁ ĐÃ DÙNG NHIỀU LẦN</div>
+      </div>
+      <div class="shop-item" data-d="160">
+        <div class="shop-emoji">📖</div>
+        <div class="shop-name">"Hướng Dẫn Năn Nỉ Qua 5 Kênh"</div>
+        <div class="shop-desc">Tác giả: Nhân. Kinh nghiệm thực tế: có. Tỷ lệ thành công: chưa được công bố.</div>
+        <div class="shop-price">GIÁ: 0Đ · HIỆU QUẢ: KHÔNG RÕ</div>
+      </div>
+      <div class="shop-item" data-d="240">
+        <div class="shop-emoji">☕</div>
+        <div class="shop-name">Cà Phê 2AM Phiên Bản Đặc Biệt</div>
+        <div class="shop-desc">Đồng hành cùng Nhân trong toàn bộ quá trình sản xuất bộ sưu tập web v1–v5.</div>
+        <div class="shop-price">GIÁ: HẾT HÀNG · NHÂN UỐNG HẾT RỒI</div>
+      </div>
+      <div class="shop-item" data-d="320">
+        <div class="shop-emoji">🤷</div>
+        <div class="shop-name">Gói "Tự Chăm Sóc Sau Block"</div>
+        <div class="shop-desc">Gồm: không có gì. Nhân không tìm được cách tự chăm sóc phù hợp. Kệ vẫn trống.</div>
+        <div class="shop-price">GIÁ: — · TỒN KHO: TRỐNG</div>
+      </div>
+      <div class="shop-item" data-d="400">
+        <div class="shop-emoji">❓</div>
+        <div class="shop-name">Câu Trả Lời Cho Câu Hỏi Chưa Được Hỏi</div>
+        <div class="shop-desc">Có sẵn. Nhưng không ai biết câu hỏi là gì, nên câu trả lời cũng chưa dùng được.</div>
+        <div class="shop-price">GIÁ: N/A · TÌNH TRẠNG: PENDING</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="corridor"></div>
+
+<!-- ══ EXIT / GUESTBOOK ══ -->
+<section id="s-exit">
+  <div class="wrap-sm" style="text-align:center">
+    <div class="room-number rv" style="text-align:center">LỐI RA · G02</div>
+    <h2 class="room-title rv" style="text-align:center;transition-delay:.07s">Sổ<br/><em>Lưu Bút</em></h2>
+
+    <p class="rv" style="font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--cream2);font-style:italic;line-height:1.9;margin-bottom:2.5rem;transition-delay:.14s">
+      Cảm ơn đã tham quan.<br/>
+      Bảo tàng vẫn đang hoạt động.<br/>
+      Phòng mới sẽ được mở khi có thêm sự cố.
+    </p>
+
+    <div class="guestbook rv" style="transition-delay:.2s">
+      <div class="gb-title">Ký Sổ Lưu Bút</div>
+      <div class="gb-sub">ĐỂ LẠI NHẬn XÉT · ĐƯỢC LƯU TRONG TRÌNH DUYỆT</div>
+      <textarea class="gb-textarea" id="gb-input" placeholder="Bé Cá và những người xem khác có thể để lại gì đó ở đây..."></textarea>
+      <button class="gb-btn" onclick="addEntry()">[ LƯU VÀO SỔ ]</button>
+      <div class="gb-entries" id="gb-entries"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CREDITS ══ -->
+<section id="s-credits">
+  <div class="cr-trigger" id="cr-trigger"></div>
+  <div class="cr-roll" id="cr-roll">
+    <span class="cr-bigtitle">Bé Cá VI</span>
+    <span class="cr-sub">Bảo Tàng Những Sự Cố Không Ai Yêu Cầu</span>
+    <div class="cr-sep"></div>
+
+    <span class="cr-role">TRÌNH CHIẾU BỞI</span>
+    <span class="cr-name">NHÂN</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">ĐẠO DIỄN · BIÊN KỊCH · CURATOR · LƯU TRỮ VIÊN</span>
+    <span class="cr-name">NHÂN</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">THIẾT KẾ PHÒNG TRƯNG BÀY</span>
+    <span class="cr-name">NHÂN (tự học lúc 2am, có thể sai một số chỗ)</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">KỸ XẢO VAN GOGH</span>
+    <span class="cr-name">CANVAS API · ~120 STROKE PARTICLES · KHÔNG AI YÊU CẦU</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">HIỆU ỨNG 3D</span>
+    <span class="cr-name">CSS TRANSFORM-STYLE: PRESERVE-3D · PERSPECTIVE: 900PX</span>
+    <div class="cr-sep"></div>
+
+    <span class="cr-role">DIỄN VIÊN</span>
+    <div class="cr-gap"></div>
+    <span class="cr-name">BÉ CÁ / QUỲNH</span>
+    <span class="cr-role">nhân vật chính · cũng là người phụ trách phòng 101 và 103 một cách không chủ động</span>
+    <div class="cr-gap"></div>
+    <span class="cr-name">NHÂN</span>
+    <span class="cr-role">tất cả các vai còn lại bao gồm curator, lưu trữ viên, chuyên gia tay trơn, và người viết chú thích</span>
+    <div class="cr-sep"></div>
+
+    <span class="cr-role">CẢM ƠN ĐẶC BIỆT</span>
+    <span class="cr-name">Cà phê · CSS Perspective · Van Gogh (1853–1890) · Stack Overflow</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">KHÔNG CẢM ƠN</span>
+    <span class="cr-name">Nút Block · Tay trơn · 9 giờ sáng ngày đó</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">KHÔNG CÓ ĐỘNG VẬT BỊ THƯƠNG</span>
+    <span class="cr-name">(chỉ có một người bị block 3 lần và mất nửa ngày để được unblock)</span>
+    <div class="cr-sep"></div>
+
+    <span class="cr-role">TÌNH TRẠNG BẢO TÀNG</span>
+    <span class="cr-name">ĐANG HOẠT ĐỘNG · PHÒNG MỚI: PENDING</span>
+    <div class="cr-gap"></div>
+
+    <span class="cr-role">KHẢ NĂNG CÓ VERSION 7</span>
+    <span class="cr-name">PHỤ THUỘC VÀO BÉ CÁ VÀ SỐ SỰ CỐ PHÁT SINH</span>
+    <div class="cr-sep"></div>
+
+    <span class="cr-bigtitle" style="font-size:clamp(2rem,6vw,4rem)">Bé Cá VI</span>
+    <span class="cr-sub">2026 · made with ∞ by Nhân · gửi Quỳnh</span>
+    <span class="cr-small">be-ca-6.html · bảo tàng đóng cửa lúc 02:00 sáng — trùng với giờ Nhân đi ngủ</span>
+  </div>
+</section>
+
+</div><!-- /#app -->
+
+<script>
+/* ═══════════════════════════
+   INTRO
+═══════════════════════════ */
+let pct = 0;
+const ipctEl = document.getElementById('ipct');
+const iInner = document.getElementById('intro-inner');
+const introEl = document.getElementById('intro');
+
+setTimeout(() => iInner.classList.add('show'), 200);
+
+const pctTimer = setInterval(() => {
+  pct = Math.min(100, pct + 2);
+  ipctEl.textContent = pct + '%';
+  if (pct >= 100) clearInterval(pctTimer);
+}, 3600 / 50);
+
+setTimeout(() => introEl.classList.add('open'), 3800);
+setTimeout(() => introEl.classList.add('gone'), 5400);
+
+/* ═══════════════════════════
+   CURSOR
+═══════════════════════════ */
+const cur = document.getElementById('cur');
+const cur2 = document.getElementById('cur2');
+let mx = -300, my = -300;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+setInterval(() => {
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  cur2.style.left = mx + 'px'; cur2.style.top = my + 'px';
+}, 14);
+
+/* ═══════════════════════════
+   TIMECODE
+═══════════════════════════ */
+const tcEl = document.getElementById('tc');
+const t0 = Date.now(); let frame = 0;
+setInterval(() => {
+  const ms = Date.now() - t0;
+  const h = String(~~(ms/3600000)).padStart(2,'0');
+  const m = String(~~(ms/60000)%60).padStart(2,'0');
+  const s = String(~~(ms/1000)%60).padStart(2,'0');
+  const f = String(frame++%24).padStart(2,'0');
+  tcEl.textContent = `${h}:${m}:${s}:${f}`;
+}, 1000/24);
+
+/* ═══════════════════════════
+   VAN GOGH — Vortex Flow Field
+   Reference: Starry Night live
+   Perf budget: ~200 draw calls/frame
+═══════════════════════════ */
+(function(){
+  const c = document.getElementById('vgc');
+  const ctx = c.getContext('2d');
+  let W, H;
+
+  function resize(){
+    W = c.width  = innerWidth;
+    H = c.height = innerHeight;
+    buildBg();
+  }
+  window.addEventListener('resize', resize);
+
+  /* ── Prerender static bg once ── */
+  let bgCanvas = document.createElement('canvas');
+  let bgCtx = bgCanvas.getContext('2d');
+  function buildBg(){
+    bgCanvas.width = W; bgCanvas.height = H;
+    // deep blue-black
+    bgCtx.fillStyle = '#020810'; bgCtx.fillRect(0,0,W,H);
+    // large nebulae — painted once, just blitted each frame
+    const clouds = [
+      {x:.28,y:.38,r:.42,h:215,s:80,l:35,a:.18},
+      {x:.72,y:.62,r:.38,h:255,s:70,l:30,a:.15},
+      {x:.82,y:.18,r:.28,h: 46,s:90,l:55,a:.14}, // golden sun area
+      {x:.5, y:.78,r:.32,h:190,s:75,l:32,a:.10},
+      {x:.12,y:.55,r:.28,h:230,s:75,l:28,a:.09},
+    ];
+    clouds.forEach(cl=>{
+      const rx = cl.x*W, ry = cl.y*H, rr = cl.r * Math.max(W,H);
+      const g = bgCtx.createRadialGradient(rx,ry,0,rx,ry,rr);
+      g.addColorStop(0,   `hsla(${cl.h},${cl.s}%,${cl.l}%,${cl.a})`);
+      g.addColorStop(.55, `hsla(${cl.h+20},${cl.s-15}%,${cl.l-8}%,${cl.a*.4})`);
+      g.addColorStop(1,   `hsla(${cl.h},${cl.s}%,${cl.l}%,0)`);
+      bgCtx.fillStyle = g; bgCtx.fillRect(0,0,W,H);
+    });
+  }
+  resize();
+
+  /* ── Vortex flow field ── */
+  // 3 slow-drifting vortex centres + base wave
+  const VORTICES = [
+    {bx:.27, by:.40, str: 3.2, drift:1},
+    {bx:.70, by:.60, str:-2.6, drift:1.3},
+    {bx:.82, by:.16, str: 1.8, drift:.8},  // sun
+  ];
+  function flowAngle(x, y, t){
+    const nx = x/W, ny = y/H;
+    let fx=0, fy=0;
+    VORTICES.forEach(v=>{
+      const cx = v.bx + Math.sin(t*.018*v.drift)*.04;
+      const cy = v.by + Math.cos(t*.016*v.drift)*.03;
+      const dx = nx - cx, dy = ny - cy;
+      const d  = Math.sqrt(dx*dx + dy*dy) + .008;
+      const str = v.str / (d * 7 + .4);
+      fx += -dy * str;
+      fy +=  dx * str;
+    });
+    // slow background wave
+    fx += Math.sin(ny * 2.8 + t*.07) * .55;
+    fy += Math.cos(nx * 2.2 + t*.05) * .25;
+    return Math.atan2(fy, fx);
+  }
+
+  /* ── Color palette matching reference ── */
+  // cyan, sky-blue, blue, yellow-green, near-white, gold, violet
+  const COLS = [
+    [0,  210, 230], // cyan
+    [30, 145, 255], // sky blue
+    [10, 100, 200], // deep blue
+    [185,235, 80],  // yellow-green
+    [220,240,255],  // near-white
+    [255,215, 55],  // gold
+    [120,170,255],  // light blue
+    [200, 90,255],  // violet accent
+  ];
+
+  /* ── Particle ── */
+  class P {
+    constructor(init){ this.reset(init); }
+    reset(init){
+      this.x = Math.random() * W;
+      this.y = init ? Math.random()*H : (Math.random()<.5 ? -5 : H+5);
+      this.trail = [];
+      this.speed = 1.0 + Math.random() * 2.2;
+      this.w     = 1.5 + Math.random() * 4.5;   // stroke width
+      this.life  = 0;
+      this.maxLife = 250 + ~~(Math.random() * 420);
+      const ci = ~~(Math.random() * COLS.length);
+      this.r = COLS[ci][0]; this.g = COLS[ci][1]; this.b = COLS[ci][2];
+      this.trailLen = 45 + ~~(Math.random() * 40);
+    }
+    tick(t){
+      const ang = flowAngle(this.x, this.y, t);
+      this.x += Math.cos(ang) * this.speed;
+      this.y += Math.sin(ang) * this.speed;
+      this.trail.push(this.x, this.y);   // flat array: x0,y0,x1,y1,...
+      if(this.trail.length > this.trailLen*2) this.trail.splice(0,2);
+      this.life++;
+      if(this.life>this.maxLife||this.x<-15||this.x>W+15||this.y<-15||this.y>H+15) this.reset(false);
+    }
+    draw(){
+      const n = this.trail.length/2;
+      if(n < 3) return;
+      const la = Math.sin(this.life / this.maxLife * Math.PI);
+      ctx.beginPath();
+      ctx.moveTo(this.trail[0], this.trail[1]);
+      for(let i=1; i<n; i++) ctx.lineTo(this.trail[i*2], this.trail[i*2+1]);
+      ctx.strokeStyle = `rgba(${this.r},${this.g},${this.b},${la*.72})`;
+      ctx.lineWidth   = this.w * la;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+  }
+
+  /* ── Sun (Starry Night's moon/sun) ── */
+  let sunPhase = 0;
+  function drawSun(t){
+    sunPhase += .0022;
+    const sx = W * (.82 + Math.sin(t*.04)*.012);
+    const sy = H * (.16 + Math.cos(t*.03)*.008);
+    const sr = 32 + Math.sin(sunPhase)*3;
+    // concentric glow rings
+    for(let i=7; i>=0; i--){
+      const rr = sr*(1.6 + i*1.2);
+      const a  = (.025 + i*.005) * (1+Math.sin(sunPhase)*.15);
+      const g  = ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,rr);
+      g.addColorStop(0,`rgba(255,235,120,${a*1.8})`);
+      g.addColorStop(.5,`rgba(255,200,60,${a*.6})`);
+      g.addColorStop(1,`rgba(255,160,20,0)`);
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,rr,0,Math.PI*2); ctx.fill();
+    }
+    // core disc
+    const cg = ctx.createRadialGradient(sx-sr*.2,sy-sr*.15,0,sx,sy,sr);
+    cg.addColorStop(0,'rgba(255,255,230,.98)');
+    cg.addColorStop(.4,'rgba(255,240,150,.9)');
+    cg.addColorStop(1,'rgba(255,200,60,.3)');
+    ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+  }
+
+  /* ── Stars (simple, cheap) ── */
+  const STARS = Array.from({length:80},()=>({
+    x:Math.random()*1, y:Math.random()*1,
+    r:.6+Math.random()*2.8,
+    ph:Math.random()*Math.PI*2,
+    sp:.014+Math.random()*.05,
+    gold:Math.random()<.3,
+  }));
+  function drawStars(){
+    ctx.save();
+    STARS.forEach(s=>{
+      s.ph += s.sp;
+      const a = .18+Math.sin(s.ph)*.15;
+      const r = s.r+Math.sin(s.ph*1.4)*.4;
+      const sx = s.x*W, sy = s.y*H;
+      ctx.shadowColor = s.gold?'rgba(255,220,80,.8)':'rgba(140,200,255,.8)';
+      ctx.shadowBlur  = r*8;
+      ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
+      ctx.fillStyle = s.gold?`rgba(255,235,150,${Math.min(1,a*3.5)})`:`rgba(200,230,255,${Math.min(1,a*3)})`;
+      ctx.fill();
+    });
+    ctx.shadowBlur=0; ctx.restore();
+  }
+
+  /* ── Shooting star ── */
+  const shots = Array.from({length:3},()=>({ active:false, cd:150+~~(Math.random()*500) }));
+  function tickShots(){
+    shots.forEach(s=>{
+      if(!s.active){ if(--s.cd<=0) spawnShot(s); return; }
+      s.x+=s.vx; s.y+=s.vy;
+      s.trail.push(s.x*W, s.y*H);
+      if(s.trail.length>28) s.trail.splice(0,2);
+      if(++s.life>s.maxL||s.x>1.1||s.y>1.1){ s.active=false; s.cd=250+~~(Math.random()*600); return; }
+      if(s.trail.length<4) return;
+      const a=Math.sin(s.life/s.maxL*Math.PI);
+      ctx.beginPath(); ctx.moveTo(s.trail[0],s.trail[1]);
+      for(let i=1;i<s.trail.length/2;i++) ctx.lineTo(s.trail[i*2],s.trail[i*2+1]);
+      ctx.strokeStyle=`rgba(255,250,200,${a*.8})`; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.stroke();
+    });
+  }
+  function spawnShot(s){
+    s.x=Math.random()*.45; s.y=Math.random()*.3;
+    const spd=.008+Math.random()*.016, ang=.35+Math.random()*.4;
+    s.vx=Math.cos(ang)*spd; s.vy=Math.sin(ang)*spd;
+    s.trail=[]; s.life=0; s.maxL=30+~~(Math.random()*30); s.active=true;
+  }
+
+  const particles = Array.from({length:110}, ()=>new P(true));
+  let t = 0, frame = 0;
+
+  (function loop(){
+    t += .009; frame++;
+
+    // Smear previous frame (trail persistence)
+    ctx.fillStyle='rgba(2,8,16,.11)';
+    ctx.fillRect(0,0,W,H);
+
+    // Static bg blit (cheap — just drawImage)
+    ctx.globalAlpha = .18 + Math.sin(t*.012)*.04;
+    ctx.drawImage(bgCanvas,0,0);
+    ctx.globalAlpha = 1;
+
+    // Sun
+    drawSun(t);
+
+    // Particles — update all, draw all in one pass
+    particles.forEach(p=>{ p.tick(t); p.draw(); });
+
+    // Stars (shadowBlur batch)
+    drawStars();
+
+    // Shooting stars
+    tickShots();
+
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ═══════════════════════════
+   ROOM SLATE + FLASH TRANSITIONS
+═══════════════════════════ */
+const ROOM_META = {
+  's-entrance': null,
+  's-map':      null,
+  's101': { num:'PHÒNG 101', title:'Khi Thẩm Mỹ\nThắng Lý Trí', flash:'rgba(200,151,62,' },
+  's102': { num:'PHÒNG 102', title:'Vụ Trượt Tay\nLịch Sử',     flash:'rgba(120,80,200,' },
+  's103': { num:'PHÒNG 103', title:'9h Sáng &\nNửa Ngày Năn Nỉ', flash:'rgba(192,57,43,' },
+  's104': { num:'PHÒNG 104', title:'Bộ Sưu Tập\nKỹ Thuật Số',   flash:'rgba(40,140,120,' },
+  's201': { num:'PHÒNG 201', title:'Hiện Vật\nPhục Hồi',         flash:'rgba(80,120,220,' },
+  's202': { num:'PHÒNG 202', title:'Hồ Sơ\nNhân Vật',            flash:'rgba(160,90,200,' },
+  's-shop':{ num:'QUẦY LƯU NIỆM', title:'G01',                  flash:'rgba(200,151,62,' },
+  's-exit': null,
+  's-credits': null,
+};
+
+const slateEl  = document.getElementById('room-slate');
+const slateNum = document.getElementById('rs-num');
+const slateTtl = document.getElementById('rs-title');
+const flashEl  = document.getElementById('room-flash');
+let lastRoom = null;
+
+function showRoomSlate(meta){
+  if(!meta) return;
+  // Flash
+  flashEl.style.background = (meta.flash||'rgba(200,151,62,') + '.06)';
+  flashEl.classList.add('pop');
+  setTimeout(()=>flashEl.classList.remove('pop'), 200);
+  // Slate
+  slateNum.textContent = meta.num;
+  slateTtl.textContent = meta.title;
+  // Re-trigger bar animation
+  const bar = slateEl.querySelector('.rs-bar');
+  bar.style.animation='none'; bar.offsetWidth; bar.style.animation='';
+  slateEl.classList.add('show');
+  setTimeout(()=>slateEl.classList.remove('show'), 1800);
+}
+
+const roomObs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting) return;
+    const id = e.target.id;
+    if(id === lastRoom) return;
+    lastRoom = id;
+    const meta = ROOM_META[id];
+    if(meta) showRoomSlate(meta);
+  });
+},{threshold:.45});
+document.querySelectorAll('section').forEach(s=>roomObs.observe(s));
+
+/* ═══════════════════════════
+   PAINTING CANVAS (P101, P102)
+═══════════════════════════ */
+function initPaintingCanvas(id, hueBase, hueShift){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const ctx = el.getContext('2d');
+  const resize = () => { el.width = el.offsetWidth; el.height = el.offsetHeight; };
+  setTimeout(resize, 100);
+  window.addEventListener('resize', resize);
+  const pts = Array.from({length:30}, () => ({
+    x: Math.random(), y: Math.random(),
+    angle: Math.random()*Math.PI*2,
+    spd: .15 + Math.random()*.4,
+    r: 1.5 + Math.random()*3,
+    phase: Math.random()*Math.PI*2,
+    trail: [],
+    life: 0, maxLife: 120 + Math.random()*180,
+    curlAmp: .05+Math.random()*.08,
+  }));
+  let t=0;
+  (function draw(){
+    t+=.01;
+    const W=el.offsetWidth, H=el.offsetHeight;
+    if(!W||!H){requestAnimationFrame(draw);return;}
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p => {
+      const nx=p.x, ny=p.y;
+      const curl=Math.sin(nx*3*Math.PI+t*.2+p.phase)*Math.cos(ny*3*Math.PI+t*.15)*Math.PI*.7;
+      p.angle += curl*p.curlAmp;
+      p.x+=Math.cos(p.angle)*p.spd/W*100;
+      p.y+=Math.sin(p.angle)*p.spd/H*100;
+      p.trail.push({x:p.x*W,y:p.y*H});
+      if(p.trail.length>20) p.trail.shift();
+      p.life++;
+      if(p.life>p.maxLife||p.x<0||p.x>1||p.y<0||p.y>1){
+        p.x=Math.random();p.y=Math.random();p.life=0;p.trail=[];
+      }
+      if(p.trail.length<2) return;
+      const la=Math.sin(p.life/p.maxLife*Math.PI);
+      ctx.beginPath();
+      ctx.moveTo(p.trail[0].x,p.trail[0].y);
+      for(let i=1;i<p.trail.length;i++) ctx.lineTo(p.trail[i].x,p.trail[i].y);
+      const h=hueBase+Math.sin(p.phase+t*.01)*hueShift;
+      ctx.strokeStyle=`hsla(${h},60%,40%,${la*.45})`;
+      ctx.lineWidth=p.r*la;
+      ctx.lineCap='round';ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  })();
+}
+initPaintingCanvas('p101c', 220, 40);
+initPaintingCanvas('p102c', 25, 20);
+
+/* ═══════════════════════════
+   RIPPLE
+═══════════════════════════ */
+(function(){
+  const c=document.getElementById('ripc');
+  const ctx=c.getContext('2d');
+  const resize=()=>{c.width=innerWidth;c.height=innerHeight};
+  resize();window.addEventListener('resize',resize);
+  const rips=[];
+  document.addEventListener('click',e=>{
+    rips.push({x:e.clientX,y:e.clientY,r:0,a:.4});
+  });
+  (function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    for(let i=rips.length-1;i>=0;i--){
+      const rp=rips[i];rp.r+=2.5;rp.a-=.018;
+      if(rp.a<=0){rips.splice(i,1);continue;}
+      ctx.beginPath();ctx.arc(rp.x,rp.y,rp.r,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(200,151,62,${rp.a})`;ctx.lineWidth=1;ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ═══════════════════════════
+   SCROLL REVEALS
+═══════════════════════════ */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const el = e.target;
+    const d = +(el.dataset.d||0);
+    setTimeout(() => el.classList.add('show'), d);
+    revObs.unobserve(el);
+  });
+}, {threshold:.12});
+document.querySelectorAll('.rv').forEach(el => revObs.observe(el));
+
+// Timeline items
+const tlObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const el=e.target;
+    setTimeout(()=>el.classList.add('show'), +(el.dataset.d||0));
+    tlObs.unobserve(el);
+  });
+}, {threshold:.1});
+document.querySelectorAll('.tl-item').forEach(el => tlObs.observe(el));
+
+// Shop items
+const shopObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const el=e.target;
+    setTimeout(()=>el.classList.add('show'), +(el.dataset.d||0));
+    shopObs.unobserve(el);
+  });
+}, {threshold:.1});
+document.querySelectorAll('.shop-item').forEach(el => shopObs.observe(el));
+
+/* ═══════════════════════════
+   COUNTER ANIMATION
+═══════════════════════════ */
+const cntObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const box=e.target;
+    const numEl=box.querySelector('[data-count]');
+    if(!numEl){box.classList.add('show');cntObs.unobserve(box);return;}
+    const target=+numEl.dataset.count;
+    const delay=+(box.dataset.d||0);
+    setTimeout(()=>{
+      box.classList.add('show');
+      if(!target){cntObs.unobserve(box);return;}
+      const dur=1600, start=performance.now();
+      (function tick(now){
+        const p=Math.min(1,(now-start)/dur);
+        const e=1-Math.pow(1-p,3);
+        numEl.textContent=Math.round(e*target).toLocaleString();
+        if(p<1) requestAnimationFrame(tick);
+      })(start);
+    }, delay);
+    cntObs.unobserve(box);
+  });
+}, {threshold:.2});
+document.querySelectorAll('.stat-box').forEach(el => cntObs.observe(el));
+
+/* ═══════════════════════════
+   CREDITS ROLL
+═══════════════════════════ */
+let crStarted=false;
+const crObs=new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting && !crStarted){
+    crStarted=true;
+    setTimeout(()=>{
+      const roll=document.getElementById('cr-roll');
+      roll.style.setProperty('--dur','32s');
+      roll.classList.add('rolling');
+    }, 600);
+  }
+},{threshold:.02});
+crObs.observe(document.getElementById('cr-trigger'));
+
+/* ═══════════════════════════
+   ARTIFACT POPUP DATA
+═══════════════════════════ */
+const ARTIFACTS=[
+  {
+    title:'Điện Thoại Sự Cố',
+    body:'Thiết bị chứa ảnh của Bé Cá và nút "Thêm vào emoji". Hai thứ này không nên tồn tại gần nhau trong tay Nhân. Bài học đã được ghi nhận nhưng chưa được áp dụng.'
+  },
+  {
+    title:'Nút Block Nguyên Bản',
+    body:'Đã được sử dụng nhiều hơn mức trung bình trong mối quan hệ bình thường. Hiện vật này được đánh giá là "quan trọng nhất phòng 201" vì nó là nguyên nhân của toàn bộ các phòng còn lại.'
+  },
+  {
+    title:'Ly Cà Phê 2AM',
+    body:'Đồng hành trung thành. Không phán xét. Không hỏi tại sao Nhân đang làm web lúc 2 giờ sáng. Điều này khiến nó trở thành người bạn tốt nhất trong suốt quá trình sản xuất v1–v6.'
+  },
+  {
+    title:'Ngón Tay Trơn',
+    body:'Nguyên nhân của Phòng 102. Đây là hiện vật duy nhất trong bảo tàng không có ý thức nhưng vẫn gây ra hậu quả. Chuyên gia xác nhận: xác suất xảy ra 1/47. Chuyên gia này là Nhân tự phịa.'
+  },
+  {
+    title:'Câu Hỏi Chưa Được Đặt Tên',
+    body:'Nhân có một câu hỏi. Câu hỏi chưa được viết ra vì viết ra có nghĩa là phải trả lời. Hiện tại nó tồn tại trong trạng thái lơ lửng — có thể là câu hỏi về nhiều thứ, hoặc về một thứ rất cụ thể. Bảo tàng không xác nhận cụ thể là thứ gì.'
+  }
+];
+window.showArtifact=function(i){
+  const d=ARTIFACTS[i];
+  document.getElementById('ap-title').textContent=d.title;
+  document.getElementById('ap-body').textContent=d.body;
+  document.getElementById('art-popup').classList.add('show');
+};
+window.closeArtifact=function(){
+  document.getElementById('art-popup').classList.remove('show');
+};
+document.addEventListener('click',e=>{
+  const popup=document.getElementById('art-popup');
+  if(popup.classList.contains('show') && !popup.contains(e.target) && !e.target.closest('.artifact-wrap')){
+    popup.classList.remove('show');
+  }
+});
+
+/* ═══════════════════════════
+   GUESTBOOK
+═══════════════════════════ */
+function loadEntries(){
+  const entries=JSON.parse(localStorage.getItem('beca6_guest')||'[]');
+  const el=document.getElementById('gb-entries');
+  el.innerHTML='';
+  entries.slice(-12).reverse().forEach(e=>{
+    const div=document.createElement('div');
+    div.className='gb-entry';
+    div.innerHTML=`<span class="gb-entry-ts">${e.ts}</span>${e.text}`;
+    el.appendChild(div);
+  });
+}
+window.addEntry=function(){
+  const inp=document.getElementById('gb-input');
+  const txt=inp.value.trim();
+  if(!txt) return;
+  const entries=JSON.parse(localStorage.getItem('beca6_guest')||'[]');
+  const now=new Date();
+  entries.push({text:txt, ts: now.toLocaleDateString('vi-VN')+' '+now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})});
+  localStorage.setItem('beca6_guest',JSON.stringify(entries));
+  inp.value='';
+  loadEntries();
+  spawnParticles(inp.getBoundingClientRect().left+100, inp.getBoundingClientRect().top, 20, ['#c8973e','#ffd077','#fff']);
+};
+loadEntries();
+
+/* ═══════════════════════════
+   PARTICLES
+═══════════════════════════ */
+function spawnParticles(cx,cy,n,cols){
+  for(let i=0;i<n;i++){
+    const pt=document.createElement('div');
+    pt.className='pt';
+    const a=Math.random()*Math.PI*2, d=30+Math.random()*130, s=2+Math.random()*5;
+    const col=cols[~~(Math.random()*cols.length)];
+    const dur=600+Math.random()*700;
+    pt.style.cssText=`left:${cx}px;top:${cy}px;width:${s}px;height:${s}px;background:${col};box-shadow:0 0 ${s*2}px ${col}`;
+    document.body.appendChild(pt);
+    pt.animate([
+      {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+      {transform:`translate(calc(-50% + ${Math.cos(a)*d}px),calc(-50% + ${Math.sin(a)*d}px)) scale(0)`,opacity:0}
+    ],{duration:dur,easing:'ease-out',fill:'forwards'});
+    setTimeout(()=>pt.remove(),dur+100);
+  }
+}
+</script>
+</body>
+</html>

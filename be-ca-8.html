@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bé Cá VIII — Bản Nhạc Cuối</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Nunito:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+:root{
+  --mid:#0a0a1a;--twi:#1a1035;--amb:#2a1a08;
+  --txt:#e8ddd0;--txt2:rgba(232,221,208,.7);--txt3:rgba(232,221,208,.45);
+  --acc:#d4a0a0;--acc2:#e8c4b8;--acc3:#b07878;
+  --rose:#c97b7b;--gold:#d4b896;
+}
+
+body{
+  background:var(--mid);color:var(--txt);
+  font-family:'Cormorant Garamond',serif;
+  overflow-x:hidden;cursor:none;
+}
+
+/* ── FILM GRAIN ── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:9600;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23g)' opacity='.045'/%3E%3C/svg%3E");
+  animation:grain .5s steps(2) infinite;mix-blend-mode:overlay;opacity:.4;
+}
+@keyframes grain{
+  0%{transform:translate(0,0)}25%{transform:translate(-6px,4px)}
+  50%{transform:translate(4px,-7px)}75%{transform:translate(-5px,6px)}
+}
+
+/* ── CURSOR ── */
+#cur{position:fixed;pointer-events:none;z-index:9999;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--acc);box-shadow:0 0 14px var(--acc),0 0 28px rgba(212,160,160,.4);
+  transform:translate(-50%,-50%);mix-blend-mode:screen}
+#cur2{position:fixed;pointer-events:none;z-index:9998;
+  width:26px;height:26px;border-radius:50%;
+  border:1px solid rgba(212,160,160,.25);
+  transform:translate(-50%,-50%);transition:left .13s,top .13s}
+
+/* ── CANVAS BG ── */
+#bgCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+
+/* ── FOG OVERLAY ── */
+#fogOverlay{position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse at 50% 80%,rgba(26,16,53,.0) 0%,rgba(10,10,26,.4) 100%);
+  opacity:.6}
+
+/* ── YOUTUBE ── */
+#ytPlayer{position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1}
+
+/* ── REVEAL ── */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+.rv.show{opacity:1!important;transform:translateY(0)!important}
+.rv-left{opacity:0;transform:translateX(-30px);transition:opacity .7s ease,transform .7s ease}
+.rv-left.show{opacity:1!important;transform:translateX(0)!important}
+.rv-right{opacity:0;transform:translateX(30px);transition:opacity .7s ease,transform .7s ease}
+.rv-right.show{opacity:1!important;transform:translateX(0)!important}
+.rv-scale{opacity:0;transform:scale(.85);transition:opacity .8s ease,transform .8s ease}
+.rv-scale.show{opacity:1!important;transform:scale(1)!important}
+.rv-fade{opacity:0;transition:opacity 1s ease}
+.rv-fade.show{opacity:1!important}
+
+/* ── APP ── */
+#app{position:relative;z-index:10}
+section{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:6rem 1.5rem;position:relative;overflow:hidden;
+}
+.wrap{width:100%;max-width:640px;margin:0 auto}
+
+/* ══════════════════════════════
+   SCENE 0 — PLAY SCREEN
+══════════════════════════════ */
+#scene0{position:fixed;inset:0;z-index:8000;
+  background:var(--mid);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1.6rem;
+  transition:opacity 1.2s ease,visibility 1.2s}
+#scene0.gone{opacity:0;visibility:hidden;pointer-events:none}
+
+.s0-title{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.6rem,5vw,2.8rem);color:var(--txt);
+  text-align:center;letter-spacing:.03em;opacity:.8}
+.s0-sub{font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.3em;color:var(--txt3);text-transform:uppercase}
+
+.play-btn{
+  width:80px;height:80px;border-radius:50%;border:2px solid var(--acc);
+  background:transparent;cursor:pointer;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .4s ease;animation:playPulse 2s ease-in-out infinite;
+}
+.play-btn:hover{background:rgba(212,160,160,.1);transform:scale(1.08);
+  box-shadow:0 0 40px rgba(212,160,160,.3)}
+.play-btn::after{
+  content:'';width:0;height:0;
+  border-top:14px solid transparent;border-bottom:14px solid transparent;
+  border-left:22px solid var(--acc);margin-left:4px;
+  transition:border-left-color .3s}
+.play-btn:hover::after{border-left-color:var(--acc2)}
+@keyframes playPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(212,160,160,.2)}
+  50%{box-shadow:0 0 0 18px rgba(212,160,160,0)}
+}
+
+.s0-hint{font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:.85rem;color:var(--txt3);letter-spacing:.05em}
+
+/* ══════════════════════════════
+   SCENE 1 — CHAT CONVERSATION
+══════════════════════════════ */
+#s1{background:transparent;padding-top:8rem}
+
+.scene-label{font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.35em;color:var(--txt3);margin-bottom:.6rem;text-align:center}
+.scene-title{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(2rem,6vw,3.5rem);color:var(--txt);text-align:center;
+  margin-bottom:3rem;line-height:1.1;
+  filter:drop-shadow(0 0 30px rgba(212,160,160,.2))}
+
+.chat-box{
+  display:flex;flex-direction:column;gap:.8rem;
+  max-width:480px;margin:0 auto;padding:1.5rem;
+  background:rgba(255,255,255,.02);border-radius:20px;
+  border:1px solid rgba(255,255,255,.04);
+}
+.chat-time{text-align:center;font-family:'Space Mono',monospace;
+  font-size:.55rem;color:var(--txt3);letter-spacing:.15em;margin:.5rem 0}
+
+.bubble{
+  max-width:78%;padding:.7rem 1rem;border-radius:18px;
+  font-family:'Nunito',sans-serif;font-size:.88rem;line-height:1.6;
+  position:relative;animation:bubblePop .4s ease backwards;
+}
+.bubble-left{
+  align-self:flex-start;background:rgba(255,255,255,.06);
+  color:var(--txt2);border-bottom-left-radius:4px;
+}
+.bubble-right{
+  align-self:flex-end;background:rgba(212,160,160,.12);
+  color:var(--txt);border-bottom-right-radius:4px;
+}
+.bubble-name{font-size:.6rem;font-weight:700;margin-bottom:.2rem;
+  letter-spacing:.06em}
+.bubble-left .bubble-name{color:var(--acc)}
+.bubble-right .bubble-name{color:var(--gold);text-align:right}
+
+@keyframes bubblePop{from{opacity:0;transform:scale(.92) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.chat-narrator{
+  text-align:center;font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:1.05rem;color:var(--txt3);
+  margin:1.5rem 0;padding:1rem;line-height:1.8;
+}
+
+/* ══════════════════════════════
+   SCENE 2 — THINGS LOST
+══════════════════════════════ */
+#s2{background:linear-gradient(180deg,transparent 0%,rgba(26,16,53,.3) 100%)}
+
+.loss-list{display:flex;flex-direction:column;gap:0;margin-top:1rem}
+.loss-item{
+  display:flex;align-items:center;gap:1.2rem;
+  padding:1.3rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);
+  transition:background .4s,border-color .3s;
+}
+.loss-item:hover{background:rgba(212,160,160,.03);border-color:rgba(212,160,160,.08)}
+.loss-icon{font-size:1.4rem;flex-shrink:0;filter:grayscale(.3);
+  transition:filter .3s,transform .3s}
+.loss-item:hover .loss-icon{filter:grayscale(0);transform:scale(1.15)}
+.loss-text{font-size:clamp(1rem,2.5vw,1.2rem);line-height:1.7;color:var(--txt2)}
+.loss-text em{font-style:normal;color:var(--acc2)}
+.loss-sub{display:block;font-size:.78rem;color:var(--txt3);
+  font-style:italic;margin-top:.15rem}
+
+/* ══════════════════════════════
+   SCENE 3 — MEMORY TIMELINE
+══════════════════════════════ */
+#s3{background:linear-gradient(180deg,rgba(26,16,53,.3) 0%,rgba(42,26,8,.2) 100%)}
+
+.timeline{position:relative;max-width:560px;margin:0 auto;padding-left:40px}
+.timeline::before{
+  content:'';position:absolute;left:14px;top:0;bottom:0;width:1px;
+  background:linear-gradient(to bottom,transparent,var(--acc3),var(--acc3),transparent);
+}
+
+.tl-item{position:relative;padding:.8rem 0 2.5rem;display:flex;flex-direction:column;gap:.4rem}
+.tl-dot{
+  position:absolute;left:-33px;top:1rem;width:10px;height:10px;
+  border-radius:50%;background:var(--acc);
+  box-shadow:0 0 12px var(--acc);
+  transition:transform .3s,box-shadow .3s;
+}
+.tl-item:hover .tl-dot{transform:scale(1.5);box-shadow:0 0 20px var(--acc)}
+
+.tl-ver{font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.2em;color:var(--acc)}
+.tl-name{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.1rem,3vw,1.4rem);color:var(--txt)}
+.tl-desc{font-size:.88rem;color:var(--txt3);line-height:1.6;font-style:italic}
+.tl-emoji{font-size:.9rem;margin-top:.2rem}
+
+/* ══════════════════════════════
+   SCENE 4 — LYRIC SCENE
+══════════════════════════════ */
+#s4{
+  min-height:100vh;position:relative;
+  background:transparent;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.lyric-container{
+  position:relative;width:100%;max-width:700px;
+  min-height:60vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+}
+
+.lyric-line{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.5rem,4.5vw,2.8rem);
+  font-style:italic;font-weight:300;
+  color:transparent;line-height:1.5;
+  position:absolute;
+  transition:all 1s cubic-bezier(.4,0,.2,1);
+  opacity:0;transform:translateY(30px);
+  filter:blur(4px);
+  max-width:90%;
+}
+.lyric-line.active{
+  color:var(--txt);opacity:1;transform:translateY(0);filter:blur(0);
+}
+.lyric-line.past{
+  color:var(--txt3);opacity:0;transform:translateY(-30px);filter:blur(4px);
+}
+.lyric-line .highlight{color:var(--acc2);text-shadow:0 0 30px rgba(212,160,160,.4)}
+
+.lyric-progress{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  width:200px;height:2px;background:rgba(255,255,255,.06);border-radius:9px;
+}
+.lyric-progress-bar{height:100%;background:var(--acc);border-radius:9px;
+  width:0;transition:width .3s linear}
+
+.music-vis{
+  position:absolute;bottom:4rem;left:50%;transform:translateX(-50%);
+  display:flex;gap:3px;align-items:flex-end;height:20px;
+}
+.vis-bar{width:3px;background:var(--acc);border-radius:2px;
+  opacity:.5;transition:height .15s ease}
+
+/* ══════════════════════════════
+   SCENE 5 — UNSPOKEN
+══════════════════════════════ */
+#s5{background:linear-gradient(180deg,rgba(42,26,8,.2) 0%,rgba(26,16,53,.3) 100%)}
+
+.unspoken-list{display:flex;flex-direction:column;gap:2.5rem;
+  max-width:520px;margin:0 auto;text-align:center}
+.unspoken-item{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.1rem,3vw,1.45rem);font-style:italic;
+  color:var(--txt2);line-height:1.8;position:relative;
+  padding:1.2rem 0}
+.unspoken-item::after{
+  content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:30px;height:1px;background:var(--acc3);opacity:.4}
+.unspoken-item:last-child::after{display:none}
+.unspoken-item .dim{color:var(--txt3);font-size:.92em}
+
+/* ══════════════════════════════
+   SCENE 6 — PHOTO
+══════════════════════════════ */
+#s6{background:linear-gradient(180deg,rgba(26,16,53,.3) 0%,rgba(42,26,8,.15) 100%);
+  min-height:100vh}
+
+.photo-scene{position:relative;display:flex;flex-direction:column;
+  align-items:center;margin:0 auto}
+
+.polaroid{
+  background:#fffdf7;padding:16px 16px 52px;border-radius:3px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 80px rgba(212,160,160,.08);
+  position:relative;z-index:1;
+  animation:polaroidFloat 5s ease-in-out infinite;
+  transition:transform .4s ease,box-shadow .4s ease;
+}
+.polaroid:hover{
+  transform:rotate(0deg) translateY(-10px) scale(1.03)!important;
+  box-shadow:0 30px 80px rgba(212,160,160,.2),0 0 120px rgba(212,160,160,.1);
+}
+@keyframes polaroidFloat{
+  0%,100%{transform:rotate(-1.5deg) translateY(0)}
+  50%{transform:rotate(1deg) translateY(-8px)}
+}
+
+.photo-inner{
+  width:260px;height:300px;overflow:hidden;
+  background:linear-gradient(135deg,#1a1035,#2a1a08,#1a1035);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+/* ── REPLACE src WITH REAL PHOTO ── */
+#beca-photo{width:100%;height:100%;object-fit:cover;display:block}
+.photo-placeholder{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:.8rem;width:100%;height:100%;
+  position:absolute;inset:0;
+}
+.ph-fish{font-size:3.5rem;animation:phFloat 2.5s ease-in-out infinite alternate}
+@keyframes phFloat{from{transform:translateY(-8px) rotate(-5deg)}to{transform:translateY(8px) rotate(5deg)}}
+.ph-text{font-family:'Space Mono',monospace;font-size:.5rem;
+  color:rgba(255,255,255,.2);letter-spacing:.15em;text-align:center;line-height:2.2}
+
+.polaroid-label{
+  position:absolute;bottom:14px;left:0;right:0;text-align:center;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;
+  color:#333;letter-spacing:.04em}
+
+/* warm glow ring */
+.glow-ring{
+  position:absolute;inset:-60px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,160,160,.08) 0%,transparent 70%);
+  animation:glowPulse 3s ease-in-out infinite;pointer-events:none;z-index:0;
+}
+@keyframes glowPulse{0%,100%{opacity:.5;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}}
+
+/* sparkle particles */
+.sparkle-wrap{position:absolute;inset:-50px;pointer-events:none;z-index:0}
+.sparkle-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+
+.photo-cap{text-align:center;margin-top:2.5rem}
+.photo-cap-main{font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(1.1rem,3vw,1.4rem);color:var(--txt2)}
+.photo-cap-sub{font-family:'Space Mono',monospace;font-size:.58rem;
+  color:var(--txt3);letter-spacing:.14em;margin-top:.4rem}
+
+/* ══════════════════════════════
+   SCENE 7 — SUPPORT
+══════════════════════════════ */
+#s7{background:linear-gradient(180deg,rgba(42,26,8,.15) 0%,transparent 100%)}
+
+.support-text{max-width:520px;text-align:center;
+  display:flex;flex-direction:column;gap:2rem;margin:0 auto}
+.sup-line{font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.15rem,3vw,1.5rem);line-height:1.9;
+  color:var(--txt2);font-style:italic}
+.sup-line em{color:var(--acc2);font-style:normal}
+.sup-line .muted{color:var(--txt3);font-size:.88em}
+.sup-big{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.8rem,5vw,3rem);
+  background:linear-gradient(135deg,var(--txt) 0%,var(--acc2) 50%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(212,160,160,.25));
+  line-height:1.3}
+
+/* ══════════════════════════════
+   SCENE 8 — FINAL NOTE
+══════════════════════════════ */
+#s8{background:transparent;text-align:center}
+
+.final-wrap{display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.final-title{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.5rem,5vw,2.8rem);
+  background:linear-gradient(135deg,var(--txt),var(--acc),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 40px rgba(212,160,160,.2));line-height:1.3}
+.final-body{font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(1rem,2.5vw,1.25rem);color:var(--txt3);
+  max-width:480px;line-height:2;margin:1rem 0}
+.final-sign{font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.3em;color:var(--txt3)}
+.final-heart{font-size:2rem;animation:heartBeat 1.5s ease-in-out infinite}
+@keyframes heartBeat{0%,100%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
+
+/* ══════════════════════════════
+   CREDITS
+══════════════════════════════ */
+#credits{
+  min-height:60vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:4rem 1.5rem;text-align:center;gap:1.5rem;
+  background:linear-gradient(180deg,transparent,rgba(10,10,26,.9));
+}
+.cr-label{font-family:'Space Mono',monospace;font-size:.55rem;
+  letter-spacing:.4em;color:var(--txt3)}
+.cr-title{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.2rem,4vw,2rem);color:var(--txt2)}
+.cr-line{font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:.9rem;color:var(--txt3);line-height:2}
+.cr-music{font-family:'Space Mono',monospace;font-size:.55rem;
+  color:var(--acc3);letter-spacing:.08em;margin-top:.5rem;opacity:.6}
+.cr-ver{font-family:'Space Mono',monospace;font-size:.48rem;
+  letter-spacing:.5em;color:rgba(255,255,255,.08);margin-top:2rem}
+
+/* ── SCROLL CUE ── */
+.scroll-cue{position:absolute;bottom:2rem;display:flex;flex-direction:column;
+  align-items:center;gap:.4rem}
+.scroll-cue span{font-family:'Space Mono',monospace;font-size:.5rem;
+  letter-spacing:.25em;color:rgba(255,255,255,.12)}
+.scroll-line{width:1px;background:linear-gradient(to bottom,var(--acc3),transparent);
+  animation:scrollGrow 1.6s ease-in-out infinite}
+@keyframes scrollGrow{0%,100%{height:18px;opacity:.3}50%{height:36px;opacity:.6}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  section{padding:4rem 1rem}
+  .bubble{max-width:88%}
+  .photo-inner{width:220px;height:260px}
+  .polaroid{padding:12px 12px 44px}
+  .timeline{padding-left:32px}
+  .timeline::before{left:10px}
+  .tl-dot{left:-28px}
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div id="cur"></div>
+<div id="cur2"></div>
+
+<!-- Background canvas (petals + bokeh) -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Fog overlay -->
+<div id="fogOverlay"></div>
+
+<!-- YouTube (hidden) -->
+<iframe id="ytPlayer" src="https://www.youtube.com/embed/L8yJOVN_f8w?enablejsapi=1&autoplay=0&loop=1&playlist=L8yJOVN_f8w&controls=0" allow="autoplay" frameborder="0"></iframe>
+
+<!-- ════════════════════════════
+     SCENE 0 — PLAY SCREEN
+════════════════════════════ -->
+<div id="scene0">
+  <div class="s0-sub">BÉ CÁ VIII</div>
+  <div class="s0-title">Bản Nhạc Cuối</div>
+  <button class="play-btn" id="playBtn" aria-label="Play"></button>
+  <div class="s0-hint">Đeo tai nghe vào đi bé cá</div>
+</div>
+
+<!-- ════════════════════════════
+     MAIN APP
+════════════════════════════ -->
+<div id="app">
+
+<!-- SCENE 1 — CHAT -->
+<section id="s1">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE I</div>
+    <div class="scene-title rv" data-d="200">Tin Nhắn Hôm Đó</div>
+
+    <div class="chat-box">
+      <div class="chat-time rv" data-d="400">Hôm nay, 14:32</div>
+
+      <div class="bubble bubble-left rv" data-d="600">
+        <div class="bubble-name">Bé Cá 🐟</div>
+        tui sắp phỏng vấn công ty mới...
+      </div>
+
+      <div class="bubble bubble-right rv" data-d="900">
+        <div class="bubble-name">Nhân</div>
+        hả, thiệt hả?
+      </div>
+
+      <div class="bubble bubble-left rv" data-d="1200">
+        <div class="bubble-name">Bé Cá 🐟</div>
+        ừa, tui cũng đang phân vân lắm
+      </div>
+
+      <div class="bubble bubble-right rv" data-d="1500">
+        <div class="bubble-name">Nhân</div>
+        phân vân gì, cứ đi phỏng vấn đi 😤
+      </div>
+
+      <div class="bubble bubble-right rv" data-d="1800">
+        <div class="bubble-name">Nhân</div>
+        tui ủng hộ bạn mà
+      </div>
+
+      <div class="bubble bubble-left rv" data-d="2100">
+        <div class="bubble-name">Bé Cá 🐟</div>
+        thiệt hả, tui tưởng bạn không muốn tui đi 🥺
+      </div>
+
+      <div class="bubble bubble-right rv" data-d="2400">
+        <div class="bubble-name">Nhân</div>
+        ...
+      </div>
+
+      <div class="bubble bubble-right rv" data-d="2700">
+        <div class="bubble-name">Nhân</div>
+        muốn bạn có chỗ tốt hơn chứ 🙂
+      </div>
+    </div>
+
+    <div class="chat-narrator rv" data-d="3000">
+      Tui bấm gửi tin nhắn đó rồi cười.<br>
+      Nhưng có chút gì đó buồn.
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span>SCROLL</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- SCENE 2 — THINGS LOST -->
+<section id="s2">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE II</div>
+    <div class="scene-title rv" data-d="200">Những Thứ Sẽ Mất</div>
+
+    <div class="loss-list">
+      <div class="loss-item rv" data-d="300">
+        <div class="loss-icon">😴</div>
+        <div class="loss-text">
+          Sẽ không còn thấy <em>cái mặt láo láo, buồn ngủ 24/7</em> mỗi sáng nữa.
+        </div>
+      </div>
+
+      <div class="loss-item rv" data-d="500">
+        <div class="loss-icon">🤏</div>
+        <div class="loss-text">
+          Không còn ai <em>nhéo tay tui</em> bầm tím nữa.
+          <span class="loss-sub">— đau lắm nhưng mà... quen rồi</span>
+        </div>
+      </div>
+
+      <div class="loss-item rv" data-d="700">
+        <div class="loss-icon">🫣</div>
+        <div class="loss-text">
+          Không có ai để tui <em>qua ghẹo</em> nữa.
+          <span class="loss-sub">— tui ghẹo ai bây giờ?</span>
+        </div>
+      </div>
+
+      <div class="loss-item rv" data-d="900">
+        <div class="loss-icon">🚶‍♂️</div>
+        <div class="loss-text">
+          Không có ai để <em>đi về chung</em> nữa.
+          <span class="loss-sub">— đoạn đường quen mà lạ</span>
+        </div>
+      </div>
+
+      <div class="loss-item rv" data-d="1300">
+        <div class="loss-icon">💬</div>
+        <div class="loss-text">
+          Không ai <em>nhắn tin linh tinh</em> giữa giờ họp nữa.
+          <span class="loss-sub">— "ê bạn, buồn ngủ quá"</span>
+        </div>
+      </div>
+
+      <div class="loss-item rv" data-d="1500">
+        <div class="loss-icon">🐟</div>
+        <div class="loss-text">
+          Và sẽ không còn <em>bé cá</em> ngồi cạnh bên nữa.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 3 — MEMORY TIMELINE -->
+<section id="s3">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE III</div>
+    <div class="scene-title rv" data-d="200">Hồi Ức: 7 Trang Web</div>
+
+    <div class="timeline">
+      <div class="tl-item rv" data-d="300">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V1 — BÉ CÁ</div>
+        <div class="tl-name">Trang web đầu tiên</div>
+        <div class="tl-desc">Lần đầu thức khuya code để tặng một người. Dễ thương, ngây ngô, và liều.</div>
+        <div class="tl-emoji">🐟 💕</div>
+      </div>
+
+      <div class="tl-item rv" data-d="500">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V2 — ĐẠI DƯƠNG</div>
+        <div class="tl-name">Thế giới dưới nước</div>
+        <div class="tl-desc">Cả một đại dương cho bé cá bơi. Có cả mini game nữa.</div>
+        <div class="tl-emoji">🌊 🎮</div>
+      </div>
+
+      <div class="tl-item rv" data-d="700">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V3 — DEEP SEA</div>
+        <div class="tl-name">Vực sâu phát sáng</div>
+        <div class="tl-desc">Bioluminescent. Đẹp và huyền bí, như mấy thứ tui giấu trong lòng.</div>
+        <div class="tl-emoji">✨ 🪼</div>
+      </div>
+
+      <div class="tl-item rv" data-d="900">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V4 — HỒ SƠ VỤ ÁN</div>
+        <div class="tl-name">Tội danh: Ghẹo bé cá</div>
+        <div class="tl-desc">Phong cách noir. "Bị block lúc 12h đêm mà vẫn không chịu dừng lại."</div>
+        <div class="tl-emoji">🕵️ 🚫</div>
+      </div>
+
+      <div class="tl-item rv" data-d="1100">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V5 — BỘ PHIM</div>
+        <div class="tl-name">Bộ phim chưa được chiếu</div>
+        <div class="tl-desc">7 hồi, 3 cái kết, một mid-credits scene. Dài nhất từ trước đến giờ.</div>
+        <div class="tl-emoji">🎬 🎞️</div>
+      </div>
+
+      <div class="tl-item rv" data-d="1300">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V6 — BẢO TÀNG</div>
+        <div class="tl-name">Van Gogh và những sự cố</div>
+        <div class="tl-desc">Starry Night chạy thật. Lén lấy ảnh làm emoji, tay trơn nên trượt bấm react.</div>
+        <div class="tl-emoji">🎨 🌌</div>
+      </div>
+
+      <div class="tl-item rv" data-d="1500">
+        <div class="tl-dot"></div>
+        <div class="tl-ver">V7 — CHUYẾN BAY</div>
+        <div class="tl-name">Giữa hai thành phố</div>
+        <div class="tl-desc">Bé cá bay từ Hà Nội về Sài Gòn. Tui ngồi đây, nhìn máy bay trên bản đồ.</div>
+        <div class="tl-emoji">✈️ 🌃</div>
+      </div>
+    </div>
+
+    <div class="chat-narrator rv" data-d="1700" style="margin-top:2rem">
+      7 trang web.<br>
+      Mỗi trang là một đêm thức khuya.<br>
+      Mỗi trang là một cách nói "tui quan tâm bạn" mà không dám nói thẳng.
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 4 — LYRIC SCENE -->
+<section id="s4">
+  <div class="lyric-container" id="lyricBox">
+    <div class="lyric-line" id="lyricDisplay"></div>
+  </div>
+  <div class="music-vis" id="musicVis"></div>
+  <div class="lyric-progress"><div class="lyric-progress-bar" id="lyricBar"></div></div>
+</section>
+
+<!-- SCENE 5 — UNSPOKEN -->
+<section id="s5">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE V</div>
+    <div class="scene-title rv" data-d="200">Những Điều Không Nói</div>
+
+    <div class="unspoken-list">
+      <div class="unspoken-item rv" data-d="400">
+        Mỗi lần bạn cười, tui đều lén nhìn.<br>
+        <span class="dim">— rồi giả vờ nhìn chỗ khác.</span>
+      </div>
+      <div class="unspoken-item rv" data-d="600">
+        Tui thích đi về chung không phải vì tiện đường.<br>
+        <span class="dim">— mà vì muốn thêm vài phút nữa.</span>
+      </div>
+      <div class="unspoken-item rv" data-d="800">
+        Lúc bạn nhéo tay tui,<br>
+        tui la đau nhưng trong bụng thì vui.
+      </div>
+      <div class="unspoken-item rv" data-d="1000">
+        Tui ghẹo bạn hoài không phải vì rảnh.<br>
+        <span class="dim">— mà vì muốn bạn nhớ đến tui.</span>
+      </div>
+      <div class="unspoken-item rv" data-d="1200">
+        Và bây giờ,<br>
+        tui không nói "đừng đi".<br>
+        <span class="dim">— vì tui muốn bạn bay cao hơn.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 6 — PHOTO -->
+<section id="s6">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE VI</div>
+    <div class="scene-title rv" data-d="200">Người Tui Sẽ Nhớ</div>
+
+    <div class="photo-scene rv-scale" data-d="500">
+      <div class="glow-ring"></div>
+      <div class="sparkle-wrap"><canvas id="sparkleCanvas"></canvas></div>
+      <div class="polaroid">
+        <div class="photo-inner">
+          <!-- ══ THAY src BẰNG ẢNH BÉ CÁ ══ -->
+          <img id="beca-photo" src="./img/be-ca-deep.png" alt="Bé Cá"/>
+          <!-- <div class="photo-placeholder">
+            <div class="ph-fish">🐟</div>
+            <div class="ph-text">ẢNH BÉ CÁ<br>SẼ Ở ĐÂY</div>
+          </div> -->
+        </div>
+        <div class="polaroid-label">bé cá 🐟</div>
+      </div>
+    </div>
+
+    <div class="photo-cap rv" data-d="800">
+      <div class="photo-cap-main">"Khuôn mặt mà mỗi sáng tui đều muốn thấy."</div>
+      <div class="photo-cap-sub">— NHÂN, LÚC 0H SÁNG, ĐANG CODE TRANG NÀY</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 7 — SUPPORT -->
+<section id="s7">
+  <div class="wrap">
+    <div class="scene-label rv">SCENE VII</div>
+    <div class="scene-title rv" data-d="200">Nhưng Mình Ủng Hộ</div>
+
+    <div class="support-text">
+      <div class="sup-line rv" data-d="400">
+        Tui không giỏi nói lời hay.<br>
+        Nên tui code.
+      </div>
+      <div class="sup-line rv" data-d="600">
+        8 trang web, mỗi trang là một cách tui nói rằng<br>
+        <em>bạn quan trọng với tui</em>.
+      </div>
+      <div class="sup-line rv" data-d="800">
+        Và dù bạn đi đâu,<br>
+        dù công ty nào, thành phố nào,<br>
+        <span class="muted">tui vẫn code trang web cho bạn.</span>
+      </div>
+      <div class="sup-big rv" data-d="1000">
+        Bé cá đi đi.<br>
+        Bay cao lên nha.
+      </div>
+      <div class="sup-line rv" data-d="1200">
+        <span class="muted">Tui ở đây, ủng hộ bạn. Luôn luôn.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 8 — FINAL -->
+<section id="s8">
+  <div class="final-wrap">
+    <div class="scene-label rv">SCENE VIII</div>
+    <div class="final-title rv" data-d="200">
+      Bản Nhạc Cuối<br>Không Phải Vì Kết Thúc
+    </div>
+    <div class="final-body rv" data-d="500">
+      Đây không phải trang cuối cùng.<br>
+      Chỉ là trang buồn nhất.<br><br>
+      Nếu một ngày nào đó bạn nhớ tui,<br>
+      thì mở lại mấy trang web cũ mà cười nha.<br><br>
+      Còn tui thì...<br>
+      sẽ nhớ bạn mỗi ngày, chắc vậy.
+    </div>
+    <div class="final-heart rv" data-d="800">🐟</div>
+    <div class="final-sign rv" data-d="1000">— NHÂN</div>
+  </div>
+</section>
+
+<!-- CREDITS -->
+<section id="credits">
+  <div class="cr-label rv">CREDITS</div>
+  <div class="cr-title rv" data-d="200">Bé Cá VIII — Bản Nhạc Cuối</div>
+  <div class="cr-line rv" data-d="400">
+    Viết, thiết kế, code bởi một người thức khuya<br>
+    Dành cho một người hay buồn ngủ
+  </div>
+  <div class="cr-music rv" data-d="600">♫ biết yêu một người × Bản Nhạc Cuối — Winno ft Bray | AnhLuc Mix</div>
+  <div class="cr-line rv" data-d="800" style="font-size:.78rem;color:var(--txt3)">
+    Chuỗi "Bé Cá" — v1 đến v8<br>
+    Mỗi trang là một đêm không ngủ.
+  </div>
+  <div class="cr-ver rv" data-d="1000">VIII</div>
+</section>
+
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════
+   CURSOR
+══════════════════════════════ */
+const cur=document.getElementById('cur'),cur2=document.getElementById('cur2');
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx+'px';cur.style.top=my+'px';
+  cur2.style.left=mx+'px';cur2.style.top=my+'px';
+});
+
+/* ══════════════════════════════
+   BACKGROUND CANVAS — petals + bokeh
+══════════════════════════════ */
+const bgC=document.getElementById('bgCanvas');
+const ctx=bgC.getContext('2d');
+let W,H;
+function resizeBg(){
+  W=bgC.width=window.innerWidth;
+  H=bgC.height=window.innerHeight;
+}
+resizeBg();
+window.addEventListener('resize',resizeBg);
+
+/* Petals */
+class Petal{
+  constructor(){this.reset()}
+  reset(){
+    this.x=Math.random()*W;
+    this.y=-20-Math.random()*H*.5;
+    this.s=Math.random()*8+4;
+    this.rot=Math.random()*Math.PI*2;
+    this.rotS=(Math.random()-.5)*.02;
+    this.vy=Math.random()*.4+.15;
+    this.vx=(Math.random()-.5)*.3;
+    this.drift=Math.random()*2+1;
+    this.driftOff=Math.random()*100;
+    this.alpha=Math.random()*.25+.08;
+    const hue=Math.random()>.5?[212,160,160]:[200,140,140];
+    this.r=hue[0];this.g=hue[1];this.b=hue[2];
+  }
+  update(t){
+    this.y+=this.vy;
+    this.x+=this.vx+Math.sin((t+this.driftOff)*.008)*this.drift*.15;
+    this.rot+=this.rotS;
+    if(this.y>H+20)this.reset();
+  }
+  draw(c){
+    c.save();
+    c.translate(this.x,this.y);
+    c.rotate(this.rot);
+    c.globalAlpha=this.alpha;
+    c.fillStyle=`rgb(${this.r},${this.g},${this.b})`;
+    c.beginPath();
+    // petal shape
+    c.moveTo(0,-this.s/2);
+    c.bezierCurveTo(this.s*.6,-this.s*.3,this.s*.5,this.s*.3,0,this.s/2);
+    c.bezierCurveTo(-this.s*.5,this.s*.3,-this.s*.6,-this.s*.3,0,-this.s/2);
+    c.fill();
+    c.restore();
+  }
+}
+
+/* Bokeh */
+class Bokeh{
+  constructor(){
+    this.x=Math.random()*W;
+    this.y=Math.random()*H;
+    this.r=Math.random()*40+10;
+    this.alpha=Math.random()*.04+.01;
+    this.vy=(Math.random()-.5)*.08;
+    this.vx=(Math.random()-.5)*.06;
+    this.pulse=Math.random()*Math.PI*2;
+    this.pulseS=Math.random()*.008+.003;
+    const cols=[[212,160,160],[180,140,180],[160,180,212],[212,184,150]];
+    const c=cols[Math.floor(Math.random()*cols.length)];
+    this.cr=c[0];this.cg=c[1];this.cb=c[2];
+  }
+  update(t){
+    this.x+=this.vx;this.y+=this.vy;
+    this.pulse+=this.pulseS;
+    if(this.x<-50)this.x=W+50;if(this.x>W+50)this.x=-50;
+    if(this.y<-50)this.y=H+50;if(this.y>H+50)this.y=-50;
+  }
+  draw(c){
+    const a=this.alpha*(0.6+Math.sin(this.pulse)*0.4);
+    const g=c.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
+    g.addColorStop(0,`rgba(${this.cr},${this.cg},${this.cb},${a})`);
+    g.addColorStop(1,`rgba(${this.cr},${this.cg},${this.cb},0)`);
+    c.fillStyle=g;
+    c.beginPath();c.arc(this.x,this.y,this.r,0,Math.PI*2);c.fill();
+  }
+}
+
+const petals=Array.from({length:35},()=>new Petal());
+const bokehs=Array.from({length:18},()=>new Bokeh());
+let bgT=0;
+
+function drawBg(){
+  bgT++;
+  ctx.clearRect(0,0,W,H);
+  bokehs.forEach(b=>{b.update(bgT);b.draw(ctx)});
+  petals.forEach(p=>{p.update(bgT);p.draw(ctx)});
+  requestAnimationFrame(drawBg);
+}
+drawBg();
+
+/* ══════════════════════════════
+   SPARKLE CANVAS (for photo)
+══════════════════════════════ */
+const spkC=document.getElementById('sparkleCanvas');
+const spkCtx=spkC?spkC.getContext('2d'):null;
+let spkW,spkH;
+function resizeSpk(){
+  if(!spkC)return;
+  const p=spkC.parentElement;
+  spkW=spkC.width=p.offsetWidth;
+  spkH=spkC.height=p.offsetHeight;
+}
+setTimeout(resizeSpk,500);
+window.addEventListener('resize',resizeSpk);
+
+const sparkles=Array.from({length:12},(_,i)=>({
+  angle:i*(Math.PI*2/12),
+  speed:.008+Math.random()*.005,
+  dist:.38+Math.random()*.08,
+  size:Math.random()*2+1,
+  alpha:Math.random()*.5+.3,
+  twinkle:Math.random()*Math.PI*2,
+}));
+
+let spkT=0;
+function drawSpk(){
+  if(!spkCtx||!spkW)return requestAnimationFrame(drawSpk);
+  spkT++;
+  spkCtx.clearRect(0,0,spkW,spkH);
+  const cx=spkW/2,cy=spkH/2;
+  sparkles.forEach(s=>{
+    s.angle+=s.speed;
+    s.twinkle+=.04;
+    const rx=s.dist*spkW/2,ry=s.dist*spkH/2;
+    const x=cx+Math.cos(s.angle)*rx;
+    const y=cy+Math.sin(s.angle)*ry;
+    const a=s.alpha*(0.5+Math.sin(s.twinkle)*0.5);
+    spkCtx.globalAlpha=a;
+    spkCtx.fillStyle='#d4a0a0';
+    spkCtx.shadowColor='#d4a0a0';
+    spkCtx.shadowBlur=8;
+    spkCtx.beginPath();
+    spkCtx.arc(x,y,s.size,0,Math.PI*2);
+    spkCtx.fill();
+  });
+  spkCtx.shadowBlur=0;
+  requestAnimationFrame(drawSpk);
+}
+drawSpk();
+
+/* ══════════════════════════════
+   SCROLL REVEAL
+══════════════════════════════ */
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target;
+    const delay=+(el.dataset.d||0);
+    setTimeout(()=>el.classList.add('show'),delay);
+    io.unobserve(el);
+  });
+},{threshold:0.15});
+
+document.querySelectorAll('.rv,.rv-left,.rv-right,.rv-scale,.rv-fade').forEach(el=>io.observe(el));
+
+/* ══════════════════════════════
+   YOUTUBE API & MUSIC
+══════════════════════════════ */
+let ytReady=false,ytPlayer=null;
+let musicPlaying=false;
+
+// Load YouTube IFrame API
+const tag=document.createElement('script');
+tag.src='https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+
+window.onYouTubeIframeAPIReady=function(){
+  ytPlayer=new YT.Player('ytPlayer',{
+    events:{
+      'onReady':function(){ytReady=true},
+      'onStateChange':function(e){
+        if(e.data===YT.PlayerState.PLAYING){musicPlaying=true;startLyricEngine()}
+        if(e.data===YT.PlayerState.ENDED){musicPlaying=false}
+      }
+    }
+  });
+};
+
+/* ══════════════════════════════
+   PLAY BUTTON
+══════════════════════════════ */
+const playBtn=document.getElementById('playBtn');
+const scene0=document.getElementById('scene0');
+
+playBtn.addEventListener('click',()=>{
+  if(ytReady&&ytPlayer){
+    ytPlayer.playVideo();
+  }
+  scene0.classList.add('gone');
+  setTimeout(()=>{scene0.style.display='none'},1300);
+});
+
+/* ══════════════════════════════
+   LYRIC ENGINE
+══════════════════════════════ */
+const lyrics=[
+  {t:0, text:"♫"},
+  {t:5, text:"biết yêu một người..."},
+  {t:10, text:"là khi nào cũng muốn ở bên"},
+  {t:15, text:"là sợ mất đi từng khoảnh khắc"},
+  {t:21, text:"là giả vờ bình thường"},
+  {t:26, text:"dù trong lòng thì không"},
+  {t:32, text:"bản nhạc cuối..."},
+  {t:37, text:"không phải vì hết yêu"},
+  {t:42, text:"mà vì biết rằng"},
+  {t:47, text:"có những thứ phải buông"},
+  {t:53, text:"để người ta bay xa hơn"},
+  {t:59, text:"♫ ♫ ♫"},
+  {t:65, text:"tui biết bạn sẽ đi"},
+  {t:70, text:"nhưng tui muốn bạn biết"},
+  {t:76, text:"mỗi trang web tui code"},
+  {t:81, text:"đều là một lời không dám nói"},
+  {t:87, text:"biết yêu một người..."},
+  {t:93, text:"là thức khuya làm web"},
+  {t:98, text:"để sáng mai người ta mở lên"},
+  {t:103, text:"rồi cười"},
+  {t:109, text:"chỉ cần vậy thôi"},
+  {t:115, text:"là đủ rồi..."},
+  {t:121, text:"bản nhạc cuối"},
+  {t:127, text:"dành cho bé cá 🐟"},
+  {t:133, text:"người mà tui"},
+  {t:138, text:"sẽ nhớ rất nhiều"},
+  {t:144, text:"♫"},
+  {t:150, text:"rất, rất nhiều."},
+  {t:158, text:"..."},
+  {t:165, text:""},
+];
+
+const lyricDisplay=document.getElementById('lyricDisplay');
+const lyricBar=document.getElementById('lyricBar');
+let lyricInterval=null;
+let musicStartTime=0;
+
+function startLyricEngine(){
+  if(lyricInterval)return;
+  musicStartTime=Date.now();
+
+  lyricInterval=setInterval(()=>{
+    if(!musicPlaying)return;
+    const elapsed=(Date.now()-musicStartTime)/1000;
+    const totalDur=lyrics[lyrics.length-1].t||180;
+    const pct=Math.min(elapsed/totalDur*100,100);
+    lyricBar.style.width=pct+'%';
+
+    // find current lyric
+    let current=null;
+    for(let i=lyrics.length-1;i>=0;i--){
+      if(elapsed>=lyrics[i].t){current=lyrics[i];break}
+    }
+    if(current&&lyricDisplay.textContent!==current.text){
+      lyricDisplay.classList.remove('active');
+      lyricDisplay.classList.add('past');
+      setTimeout(()=>{
+        lyricDisplay.textContent=current.text;
+        lyricDisplay.classList.remove('past');
+        lyricDisplay.classList.add('active');
+      },400);
+    }
+  },200);
+}
+
+/* Music visualizer bars */
+const musicVis=document.getElementById('musicVis');
+for(let i=0;i<16;i++){
+  const bar=document.createElement('div');
+  bar.className='vis-bar';
+  bar.style.height='2px';
+  musicVis.appendChild(bar);
+}
+const visBars=[...musicVis.children];
+function animateVis(){
+  visBars.forEach(bar=>{
+    if(musicPlaying){
+      bar.style.height=Math.random()*15+2+'px';
+      bar.style.opacity=Math.random()*.4+.2;
+    }else{
+      bar.style.height='2px';bar.style.opacity='.15';
+    }
+  });
+  requestAnimationFrame(animateVis);
+}
+animateVis();
+
+/* ══════════════════════════════
+   LYRIC SCENE SCROLL LOCK (sticky)
+══════════════════════════════ */
+const s4=document.getElementById('s4');
+const lyricObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      lyricDisplay.classList.add('active');
+    }
+  });
+},{threshold:0.3});
+lyricObs.observe(s4);
+
+/* ══════════════════════════════
+   COLOR SHIFT ON SCROLL
+══════════════════════════════ */
+function updateColorShift(){
+  const scrollY=window.scrollY;
+  const docH=document.documentElement.scrollHeight-window.innerHeight;
+  const pct=docH>0?scrollY/docH:0;
+
+  // shift background from midnight to twilight to amber
+  let r,g,b;
+  if(pct<.3){
+    const t=pct/.3;
+    r=10+Math.round(16*t);g=10+Math.round(6*t);b=26+Math.round(27*t);
+  }else if(pct<.7){
+    const t=(pct-.3)/.4;
+    r=26+Math.round(16*t);g=16-Math.round(6*t);b=53-Math.round(45*t);
+  }else{
+    const t=(pct-.7)/.3;
+    r=42-Math.round(32*t);g=10+Math.round(t*0);b=8+Math.round(18*t);
+  }
+  document.body.style.background=`rgb(${r},${g},${b})`;
+
+  // fog opacity
+  const fog=document.getElementById('fogOverlay');
+  fog.style.opacity=.3+pct*.4;
+}
+window.addEventListener('scroll',updateColorShift);
+
+/* ══════════════════════════════
+   CURSOR TRAIL
+══════════════════════════════ */
+let lastTrail=0;
+document.addEventListener('mousemove',e=>{
+  const now=Date.now();
+  if(now-lastTrail<120)return;
+  lastTrail=now;
+  const el=document.createElement('div');
+  el.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;
+    pointer-events:none;z-index:9996;font-size:.7rem;
+    transform:translate(-50%,-50%);animation:trailFly .8s ease-out forwards;`;
+  el.textContent=Math.random()>.6?'✿':'·';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),850);
+});
+
+// trail animation
+const trailStyle=document.createElement('style');
+trailStyle.textContent=`@keyframes trailFly{from{opacity:.6;transform:translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate(-50%,-200%) scale(.3)}}`;
+document.head.appendChild(trailStyle);
+
+</script>
+</body>
+</html>

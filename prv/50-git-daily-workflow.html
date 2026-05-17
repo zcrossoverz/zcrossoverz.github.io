@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#49 — Exception &amp; Logging | Java Backend Interview Prep</title>
+  <title>#50 — Git Daily Workflow | Java Backend Interview Prep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 
 <div class="topbar">
   <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#49 Exception &amp; Logging</strong></div>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#50 Git Daily Workflow</strong></div>
   <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
 </div>
 
@@ -26,10 +26,10 @@
     <a href="#roadmap">🗺️ Roadmap</a>
     <a href="#intro">Tổng quan</a>
     <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. Exception boundary</a>
-    <a href="#concept-1">3. Custom exception</a>
-    <a href="#concept-2">4. Structured logging</a>
-    <a href="#concept-3">5. PII and secret safety</a>
+    <a href="#concept-0">2. Working tree, index, commit</a>
+    <a href="#concept-1">3. Branch and rebase</a>
+    <a href="#concept-2">4. Conflict resolution</a>
+    <a href="#concept-3">5. Reflog recovery</a>
     <a href="#antipatterns">Anti-patterns</a>
     <a href="#edge-cases">Edge Cases</a>
     <a href="#mastery-plan">Mastery Plan</a>
@@ -46,13 +46,13 @@
 <div class="content">
 <section class="hero">
   <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#49 — Exception &amp; Logging</h1>
-  <p class="lead">Exception và logging là survival kit của backend production: lỗi phải được phân loại, log phải đủ context, và không được làm lộ dữ liệu nhạy cảm.</p>
+  <h1>#50 — Git Daily Workflow</h1>
+  <p class="lead">Git không phải cloud save. Git là DAG commit; hiểu được DAG, branch, index và reflog thì junior không còn sợ conflict hay mất code.</p>
   <div class="meta-grid">
     <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
     <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#26 Observability, #29 Security</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">Food delivery checkout</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#36 Clean Code, #50 daily work</div></div>
+    <div class="meta-item"><div class="k">Domain</div><div class="v">E-commerce feature branch</div></div>
   </div>
 </section>
 
@@ -76,28 +76,30 @@
   <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
   <div class="roadmap">
     <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Exception boundary — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> Custom exception — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> Structured logging — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> PII and secret safety — ADV: senior signal.</div></div>
+    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Working tree, index, commit — CORE: nền bắt buộc.</div>
+<div class="roadmap-item core"><span class="step">2</span> Branch and rebase — CORE: dùng hằng ngày.</div>
+<div class="roadmap-item supp"><span class="step">3</span> Conflict resolution — SUPP: giúp code/project sạch hơn.</div>
+<div class="roadmap-item adv"><span class="step">4</span> Reflog recovery — ADV: senior signal.</div></div>
   </div>
 </section>
 
 <section id="intro">
   <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Exception &amp; Logging là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
+  <p>Git Daily Workflow là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
   <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
   <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Exception &amp; Logging</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Exception & Logging xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
+    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Git Daily Workflow</div>
+    <div class="hist-timeline"><strong>Early software engineering</strong> — Git Daily Workflow xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
   </div>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Exception &amp; Logging sai trong project Food delivery checkout <span class="k-tag core">CORE</span></h2>
+  <h2>1. Bài Toán Thực Tế — Git Daily Workflow sai trong project E-commerce feature branch <span class="k-tag core">CORE</span></h2>
   <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
   <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">try { createOrder(request); } catch (Exception e) { log.error(&quot;error&quot;); return &quot;OK&quot;; }</code></pre>
+<pre><code class="language-java">git checkout .
+git pull
+# local changes biến mất</code></pre>
   <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
@@ -109,62 +111,59 @@
 
 
 <section id="concept-0">
-  <h2>2. Exception boundary <span class="k-tag core">CORE</span></h2>
+  <h2>2. Working tree, index, commit <span class="k-tag core">CORE</span></h2>
   <div class="k-banner core">
-    <strong>★ CORE</strong>: Không nuốt lỗi và không leak exception sai layer.
+    <strong>★ CORE</strong>: Ba vùng này giải thích hầu hết command daily.
   </div>
-  <p>Exception nên được xử lý ở boundary có đủ context để quyết định recover, convert response hoặc fail.</p>
-  <p>Bắt quá sớm làm mất stack trace; ném quá thô làm caller không biết xử lý.</p>
+  <p>Working tree là file đang sửa; index là staging area; commit là snapshot trong local repo.</p>
+  <p>Không hiểu index thì add/reset/commit đều là thao tác mù.</p>
   <div class="callout why">
     <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Production debug phụ thuộc vào stack trace và error semantics.</p>
+    <p>Daily workflow phụ thuộc vào biết thay đổi đang nằm ở đâu.</p>
   </div>
   
 <div class="compare">
   <div class="col bad">
-    <div class="col-head">❌ Swallow exception</div>
-    <pre><code class="language-java">try { checkout(); } catch (Exception e) { }</code></pre>
+    <div class="col-head">❌ Add tất cả không kiểm tra</div>
+    <pre><code class="language-java">git add .
+git commit -m &quot;fix&quot;</code></pre>
   </div>
   <div class="col good">
-    <div class="col-head">✅ Log context + rethrow</div>
-    <pre><code class="language-java">try { checkout(); }
-catch (InventoryException e) {
-  log.warn(&quot;Checkout failed: orderId={}&quot;, orderId, e);
-  throw e;
-}</code></pre>
+    <div class="col-head">✅ Review trước khi add</div>
+    <pre><code class="language-java">git status
+git diff
+git add src/ProductService.java
+git diff --staged</code></pre>
   </div>
 </div>
 
   
-  <div class="misconception">
-    <div class="mc-head">🧠 Misconception Check — Exception boundary</div>
-    <div class="mc-wrong">"Catch exception để app không crash là tốt."</div>
-    <div class="mc-right">Nếu caller tưởng thành công trong khi operation fail, đó là data integrity bug.</div>
-  </div>
-
 </section>
 
 
 <section id="concept-1">
-  <h2>3. Custom exception <span class="k-tag core">CORE</span></h2>
+  <h2>3. Branch and rebase <span class="k-tag core">CORE</span></h2>
   <div class="k-banner core">
-    <strong>★ CORE</strong>: Tên lỗi phải nói đúng nghiệp vụ.
+    <strong>★ CORE</strong>: Branch là pointer tới commit, không phải folder copy.
   </div>
-  <p>Custom exception giúp phân loại lỗi domain, validation, downstream và system.</p>
-  <p>Luôn giữ cause khi wrap exception, nếu không root cause biến mất.</p>
+  <p>Rebase tạo commit mới trên base mới, giúp history thẳng nhưng đổi hash.</p>
+  <p>Không rebase branch shared nếu team chưa thống nhất.</p>
   <div class="callout why">
     <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>ControllerAdvice/API error response cần error code ổn định.</p>
+    <p>Junior hay sợ rebase vì không hiểu commit graph.</p>
   </div>
   
 <div class="compare">
   <div class="col bad">
-    <div class="col-head">❌ Throw RuntimeException chung</div>
-    <pre><code class="language-java">throw new RuntimeException(&quot;failed&quot;);</code></pre>
+    <div class="col-head">❌ Rebase shared branch bừa</div>
+    <pre><code class="language-bash">git checkout main
+git rebase feature/shared</code></pre>
   </div>
   <div class="col good">
-    <div class="col-head">✅ Domain exception có code</div>
-    <pre><code class="language-java">throw new ProductNotAvailableException(productId, cause);</code></pre>
+    <div class="col-head">✅ Rebase feature local</div>
+    <pre><code class="language-bash">git checkout feature/catalog-filter
+git fetch origin
+git rebase origin/main</code></pre>
   </div>
 </div>
 
@@ -173,25 +172,30 @@ catch (InventoryException e) {
 
 
 <section id="concept-2">
-  <h2>4. Structured logging <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <h2>4. Conflict resolution <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
   <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Log để query, không chỉ để đọc mắt.
+    <strong>SUPPLEMENTARY</strong>: Conflict là Git hỏi con người chọn semantic đúng.
   </div>
-  <p>Log tốt có event name, ids, status, duration và traceId.</p>
-  <p>Message cần ổn định để search, context nên là field thay vì nối chuỗi lung tung.</p>
+  <p>Không chọn ours/theirs máy móc. Đọc cả hai bên và hiểu intent.</p>
+  <p>Sau resolve phải chạy test liên quan.</p>
   <div class="callout why">
     <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Khi incident xảy ra, grep/query log là đường sống.</p>
+    <p>Conflict resolved sai có thể compile nhưng phá logic.</p>
   </div>
   
 <div class="compare">
   <div class="col bad">
-    <div class="col-head">❌ Log thiếu context</div>
-    <pre><code class="language-java">log.error(&quot;error&quot;);</code></pre>
+    <div class="col-head">❌ Xóa marker bừa</div>
+    <pre><code class="language-java">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+old code
+=======
+new code
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</code></pre>
   </div>
   <div class="col good">
-    <div class="col-head">✅ Log đủ context</div>
-    <pre><code class="language-java">log.error(&quot;checkout_failed orderId={} userId={} reason={}&quot;, orderId, userId, reason, ex);</code></pre>
+    <div class="col-head">✅ Resolve có ý nghĩa</div>
+    <pre><code class="language-java">// combine intent from both branches
+return filter.and(sort).apply(products);</code></pre>
   </div>
 </div>
 
@@ -200,25 +204,27 @@ catch (InventoryException e) {
 
 
 <section id="concept-3">
-  <h2>5. PII and secret safety <span class="k-tag advanced">ADVANCED</span></h2>
+  <h2>5. Reflog recovery <span class="k-tag advanced">ADVANCED</span></h2>
   <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Log sai có thể thành security incident.
+    <strong>ADVANCED</strong>: Cứu code khi lỡ reset/delete branch.
   </div>
-  <p>Không log password, token, full address, phone/email raw nếu không cần.</p>
-  <p>Mask hoặc hash định danh khi cần correlation.</p>
+  <p>Reflog ghi lịch sử HEAD local. Đây là phao cứu sinh cho nhiều lỗi junior.</p>
+  <p>Reflog không thay backup remote, nhưng đủ cứu đa số lỡ tay local.</p>
   <div class="callout why">
     <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Junior thường log payload để debug và vô tình làm lộ dữ liệu.</p>
+    <p>Biết reflog giúp junior bình tĩnh khi tưởng mất code.</p>
   </div>
   
 <div class="compare">
   <div class="col bad">
-    <div class="col-head">❌ Log raw request</div>
-    <pre><code class="language-java">log.info(&quot;request={}&quot;, request);</code></pre>
+    <div class="col-head">❌ Panic rồi làm thêm lệnh phá</div>
+    <pre><code class="language-bash">git reset --hard HEAD~3
+# tiếp tục pull/merge lung tung</code></pre>
   </div>
   <div class="col good">
-    <div class="col-head">✅ Log masked fields</div>
-    <pre><code class="language-java">log.info(&quot;checkout_start orderId={} userHash={}&quot;, orderId, hash(userId));</code></pre>
+    <div class="col-head">✅ Dừng lại, xem reflog</div>
+    <pre><code class="language-bash">git reflog
+git checkout -b recover-work HEAD@{2}</code></pre>
   </div>
 </div>
 
@@ -251,7 +257,7 @@ catch (InventoryException e) {
 <li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
   </div>
   <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Exception &amp; Logging trong project thật</div>
+    <div class="bi-head">🔬 Thử Phá Vỡ — Git Daily Workflow trong project thật</div>
     <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
     <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
   </div>
@@ -263,7 +269,7 @@ catch (InventoryException e) {
   <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Exception &amp; Logging.</div>
+    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Git Daily Workflow.</div>
     <ol>
       <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
       <li>Lúc đó bạn thiếu mental model nào?</li>
@@ -337,7 +343,7 @@ catch (InventoryException e) {
 
 <section id="practice-bank">
   <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Exception &amp; Logging thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
+  <p>Phần này biến Git Daily Workflow thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
   <div class="table-wrap">
     <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
 <tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
@@ -399,7 +405,7 @@ catch (InventoryException e) {
   <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
   
   <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Exception &amp; Logging Kata (Beginner)</div>
+    <div class="be-head">🔨 Build #1 — Git Daily Workflow Kata (Beginner)</div>
     <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
     <p>Requirements:</p>
     <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
@@ -430,7 +436,7 @@ catch (InventoryException e) {
   <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
   <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
   
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Exception &amp; Logging quan trọng với junior backend?</h3>
+  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Git Daily Workflow quan trọng với junior backend?</h3>
   <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
   <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
 
@@ -536,7 +542,7 @@ catch (InventoryException e) {
 
 <section id="interview">
   <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Exception &amp; Logging: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
+  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Git Daily Workflow: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
   <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
   <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
 </section>
@@ -545,21 +551,21 @@ catch (InventoryException e) {
   <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
   <div class="feynman">
     <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Exception &amp; Logging cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
+    <div class="fy-prompt">"Giải thích Git Daily Workflow cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
     <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
   </div>
   <div class="verify-source">
     <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
     <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://www.slf4j.org/manual.html">SLF4J Manual</a></li>
-<li><a href="https://logback.qos.ch/manual/">Logback Manual</a></li>
-<li><a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html">Spring Exception Handling</a></li></ul>
+    <ul><li><a href="https://git-scm.com/doc">Git Documentation</a></li>
+<li><a href="https://git-scm.com/book/en/v2">Pro Git Book</a></li>
+<li><a href="https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified">Git reset demystified</a></li></ul>
   </div>
 </section>
 
 <footer>
-  <div>📁 #49 Exception &amp; Logging · Junior Foundation</div>
-  <div>Tiếp theo: #50 next junior topic</div>
+  <div>📁 #50 Git Daily Workflow · Junior Foundation</div>
+  <div>Tiếp theo: #51 next junior topic</div>
 </footer>
 </div>
 </main>

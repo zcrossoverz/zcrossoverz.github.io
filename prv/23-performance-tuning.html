@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#23 — Performance Tuning | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Phase 5 — Messaging &amp; Resilience
+    <span class="sep">/</span>
+    <strong>#23 Performance Tuning</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+  </button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#method">2. Method</a>
+    <a href="#bottlenecks">3. Bottleneck taxonomy</a>
+    <a href="#profiling">4. Profiling Java</a>
+    <a href="#database">5. DB &amp; query tuning</a>
+    <a href="#connection-pool">6. Connection pool</a>
+    <a href="#caching">7. Cache &amp; load test</a>
+    <a href="#production-runbook">8. Production Runbook</a>
+    <a href="#antipatterns">Anti-patterns</a>
+    <a href="#build-projects">Build Projects</a>
+    <a href="#drill-bank">Interview Drill Bank</a>
+    <a href="#cookbook">Performance Cookbook</a>
+    <a href="#self-test">Self-Test Scenarios</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">CORE · Profiling · Bottleneck hunting</span>
+  <h1>#23 — Performance Tuning</h1>
+  <p class="lead">Performance tuning senior không phải thuộc vài JVM flag hay tăng connection pool. Đó là quy trình điều tra: đo đúng, tái hiện đúng, profile đúng, thay đổi nhỏ có giả thuyết, verify bằng số liệu và rollback được.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Production Performance</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 ngày core · 1 tuần lab</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#02 JVM, #11 SQL, #22 Resilience</div></div>
+    <div class="meta-item"><div class="k">Domain</div><div class="v">E-commerce + social timeline</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "tối ưu theo cảm giác"</div>
+  <div class="sb-rules">
+    <p>Performance là chủ đề dễ nói hay nhưng khó làm đúng. Học theo 5 luật:</p>
+    <ol>
+      <li>Không tối ưu khi chưa có metric baseline.</li>
+      <li>Mỗi thay đổi phải có hypothesis: “Nếu bottleneck là X, đổi Y sẽ làm metric Z giảm”.</li>
+      <li>Luôn nhìn p95/p99, không chỉ average.</li>
+      <li>Phân biệt CPU-bound, IO-bound, lock-bound, pool-bound, GC-bound, downstream-bound.</li>
+      <li>Verify bằng load test hoặc production canary, không kết luận từ local run đơn lẻ.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Nếu chỉ có một ngày, tập trung method + profiling + connection pool. Đây là phần interview senior hỏi nhiều nhất.</div>
+    <div class="roadmap-path">
+      <div class="roadmap-item core"><span class="step">1</span> Measure before optimize — CORE: không đo là đoán.</div>
+      <div class="roadmap-item core"><span class="step">2</span> Bottleneck taxonomy — CORE: chọn đúng hướng điều tra.</div>
+      <div class="roadmap-item core"><span class="step">3</span> Java profiling: JFR, async-profiler, thread dump — CORE: debug production.</div>
+      <div class="roadmap-item core"><span class="step">4</span> Connection pool tuning — CORE: daily Spring backend.</div>
+      <div class="roadmap-item supp"><span class="step">5</span> Query/cache/load-test tuning — SUPP: mở rộng từ bottleneck.</div>
+      <div class="roadmap-item adv"><span class="step">6</span> Coordinated omission, queueing theory, flame graph interpretation — ADV: senior+ signal.</div>
+    </div>
+  </div>
+</section>
+
+<section id="intro">
+  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
+  <p>Một service có thể chậm vì SQL scan, connection pool queue, lock contention, GC pause, CPU serialization, remote API timeout, logging quá nhiều, hoặc đơn giản là load balancer gửi traffic lệch. Nếu bạn nhảy ngay vào “tăng thread pool” hoặc “thêm cache”, bạn có thể làm hệ thống tệ hơn.</p>
+
+  <div class="history-block">
+    <div class="hist-head">📜 Lịch sử ra đời của profiling &amp; tuning</div>
+    <div class="hist-timeline">
+      <strong>Unix/server era</strong> — Kỹ sư bắt đầu với `top`, `vmstat`, `iostat`, log timestamp để biết CPU, memory, disk, network. Đây là nền của performance diagnosis.<br><br>
+      <strong>JVM era</strong> — Java thêm JMX, thread dump, heap dump, GC log, JIT compilation. Vấn đề performance không chỉ nằm trong code Java mà còn ở runtime behavior.<br><br>
+      <strong>Modern profiling</strong> — JFR, async-profiler, eBPF, distributed tracing giúp nhìn flame graph, allocation, lock, wall-clock và cross-service latency với overhead thấp hơn.<br><br>
+      <strong>Insight</strong>: performance tuning tiến hóa từ “đo máy” sang “đo toàn request path”. Backend senior phải nối được app metrics, runtime profile, DB plan và downstream latency.
+    </div>
+  </div>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Senior answer khác gì junior answer?</div>
+    <p>Junior thường đưa checklist: cache, index, tăng pool. Senior bắt đầu bằng metric, workload, SLO, bottleneck hypothesis, profiling evidence, smallest safe change, rollout plan và regression guard.</p>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài Toán Thực Tế — MarketHub sale lớn, product page p99 = 9s <span class="k-tag core">CORE</span></h2>
+  <p>MarketHub có product detail API. Bình thường p95 là 180ms. Ngày sale lớn, p95 tăng 2.5s, p99 9s. CPU app chỉ 45%, database CPU 85%, connection pool active luôn max, thread dump nhiều thread `WAITING` ở Hikari pool. Team đề xuất tăng pool từ 40 lên 200 và thêm Redis cache cho mọi thứ.</p>
+
+  <div class="code-label">Naive product detail — nhiều IO ẩn trong một request</div>
+  <pre><code class="language-java">public ProductPage getProductPage(String productId, String userId) {
+    Product product = productRepository.findById(productId).orElseThrow();
+    List&lt;Review&gt; reviews = reviewRepository.findLatest(productId, 20);
+    Seller seller = sellerRepository.findById(product.sellerId()).orElseThrow();
+    Inventory inventory = inventoryClient.get(productId);
+    List&lt;Product&gt; related = recommendationClient.related(productId, userId);
+    return ProductPage.of(product, reviews, seller, inventory, related);
+}</code></pre>
+
+  <div class="callout danger">
+    <div class="ctitle">🔥 Tăng pool có thể làm tệ hơn</div>
+    <p>Nếu database đã CPU 85% và query đang scan nhiều row, tăng connection pool sẽ cho nhiều query chạy đồng thời hơn, làm DB cạnh tranh CPU/IO nặng hơn, latency tăng thêm. Pool lớn không tạo thêm capacity ở database; nó chỉ tăng concurrency đổ vào bottleneck.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+    <div class="pause-q">Trước khi chọn fix, hãy viết 5 metric bạn cần xem.</div>
+    <ol>
+      <li>App latency p50/p95/p99 theo endpoint.</li>
+      <li>Hikari active/idle/pending/acquire time.</li>
+      <li>Top SQL by total time và execution plan.</li>
+      <li>Thread state/flame graph wall-clock.</li>
+      <li>Downstream inventory/recommendation latency.</li>
+    </ol>
+    <div class="pause-hint">Nếu bạn chưa biết bottleneck là DB, pool, lock, CPU hay downstream, mọi fix chỉ là đoán.</div>
+  </div>
+</section>
+
+<section id="method">
+  <h2>2. Method — Measure, Profile, Fix, Verify <span class="k-tag core">CORE</span></h2>
+  <div class="k-banner core">
+    <strong>★ CORE — Bắt buộc nắm chắc</strong>: Interview performance thường đánh vào phương pháp, không chỉ kỹ thuật.
+  </div>
+  <p>Quy trình tuning tốt giống điều tra incident nhỏ. Bạn định nghĩa symptom, scope, baseline, workload, bottleneck hypothesis, rồi mới thay đổi. Mỗi lần chỉ đổi một nhóm biến đủ nhỏ để biết tác động đến đâu.</p>
+
+  <div class="pillar-grid">
+    <div class="pillar">
+      <div class="num">Step 1</div>
+      <h4>Measure</h4>
+      <p>Xác định SLO, p95/p99, throughput, error rate, saturation. So sánh trước/sau theo cùng workload.</p>
+    </div>
+    <div class="pillar">
+      <div class="num">Step 2</div>
+      <h4>Classify</h4>
+      <p>CPU, DB, network, lock, pool, GC, downstream, serialization hay logging. Mỗi loại cần công cụ khác nhau.</p>
+    </div>
+    <div class="pillar">
+      <div class="num">Step 3</div>
+      <h4>Change</h4>
+      <p>Thay đổi nhỏ có giả thuyết. Ví dụ index query X, giảm N+1, chỉnh pool size, thêm timeout, cache read-heavy.</p>
+    </div>
+    <div class="pillar">
+      <div class="num">Step 4</div>
+      <h4>Verify</h4>
+      <p>Load test/canary, kiểm tra regression, cost, memory, correctness, rollback plan.</p>
+    </div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Tối ưu theo cảm giác</div>
+      <pre><code class="language-java">// "Chậm chắc do thiếu cache"
+@Cacheable("product")
+public ProductPage getProductPage(String productId, String userId) {
+    return buildPage(productId, userId);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Hypothesis rõ metric</div>
+      <pre><code class="language-text">Hypothesis:
+- p99 high because DB query review_latest scans 1.8M rows.
+Evidence:
+- pg_stat_statements: 42% total DB time.
+- EXPLAIN: Seq Scan + Sort.
+Change:
+- Add index (product_id, created_at DESC).
+Expected:
+- query p95 900ms -> &lt;50ms, API p95 2.5s -> &lt;400ms.</code></pre>
+    </div>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Average latency ổn là được”</div>
+    <div class="mc-wrong">"Average chỉ 120ms nên service ổn, p99 5s chắc vài request lẻ."</div>
+    <div class="mc-right">User trải nghiệm tail latency. Nếu mỗi page gọi 8 backend calls, xác suất ít nhất một call chậm tăng mạnh. Average che spike, queueing, GC pause và hot partition. Production tuning phải nhìn p95/p99, saturation và error rate.</div>
+  </div>
+</section>
+
+<section id="bottlenecks">
+  <h2>3. Bottleneck Taxonomy — Chậm ở đâu? <span class="k-tag core">CORE</span></h2>
+  <p>Bottleneck là tài nguyên hoặc dependency giới hạn throughput. Nếu không phân loại đúng, bạn dùng sai tool. CPU-bound cần flame graph CPU; IO-bound cần latency breakdown; lock-bound cần thread dump/lock profiling; pool-bound cần pending/acquire metrics; GC-bound cần GC log/JFR allocation.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Loại bottleneck</th><th>Dấu hiệu</th><th>Tool</th><th>Fix thường gặp</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>CPU-bound</td><td>CPU cao, run queue cao</td><td>async-profiler CPU, JFR</td><td>Giảm serialization, algorithm, caching computed result</td></tr>
+        <tr><td>DB-bound</td><td>DB CPU/IO cao, slow query</td><td>EXPLAIN, pg_stat_statements</td><td>Index, query rewrite, batch, pagination</td></tr>
+        <tr><td>Pool-bound</td><td>Connection pending cao, active=max</td><td>Hikari metrics</td><td>Giảm query time, size pool theo capacity, backpressure</td></tr>
+        <tr><td>Lock-bound</td><td>Threads BLOCKED/WAITING</td><td>Thread dump, JFR locks</td><td>Giảm synchronized scope, concurrent data structure</td></tr>
+        <tr><td>GC-bound</td><td>Pause spike, allocation rate cao</td><td>GC log, JFR allocation</td><td>Giảm allocation, tune heap/GC, object reuse có kiểm soát</td></tr>
+        <tr><td>Downstream-bound</td><td>External latency cao</td><td>Tracing, client metrics</td><td>Timeout, circuit breaker, cache, async</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Chẩn đoán từ metric</div>
+    <div class="pause-q">Nếu CPU app 30%, Hikari pending cao, DB CPU 95%, thread dump nhiều thread chờ connection, bottleneck là gì?</div>
+    <ol>
+      <li>App CPU-bound?</li>
+      <li>Connection pool quá nhỏ?</li>
+      <li>Database/query-bound làm connection bị giữ lâu?</li>
+    </ol>
+    <div class="pause-hint">Đừng vội tăng pool. Pool pending là triệu chứng; nguyên nhân có thể là query giữ connection quá lâu.</div>
+  </div>
+</section>
+
+<section id="profiling">
+  <h2>4. Profiling Java — JFR, async-profiler, thread dump <span class="k-tag core">CORE</span></h2>
+  <p>Profiling trả lời “thời gian đi đâu?”. CPU profiler nhìn thread đang chạy trên CPU. Wall-clock profiler nhìn cả thời gian chờ IO/lock/sleep. Allocation profiler nhìn object nào tạo nhiều memory. Thread dump là snapshot, không phải profile dài hạn, nhưng rất hữu ích khi hệ thống đang treo.</p>
+
+  <div class="code-label">JFR trong production canary</div>
+  <pre><code class="language-bash">jcmd &lt;pid&gt; JFR.start name=prod-profile settings=profile duration=120s filename=/tmp/profile.jfr
+jcmd &lt;pid&gt; JFR.check
+jcmd &lt;pid&gt; JFR.stop name=prod-profile</code></pre>
+
+  <div class="code-label">async-profiler CPU và wall-clock</div>
+  <pre><code class="language-bash">./profiler.sh -e cpu -d 60 -f /tmp/cpu.html &lt;pid&gt;
+./profiler.sh -e wall -d 60 -f /tmp/wall.html &lt;pid&gt;
+./profiler.sh -e alloc -d 60 -f /tmp/alloc.html &lt;pid&gt;</code></pre>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Kết luận từ một thread dump</div>
+      <pre><code class="language-text">Thread dump shows many threads in HikariPool.getConnection().
+Conclusion: increase pool size to 200.</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Kết hợp thread dump + metrics + DB evidence</div>
+      <pre><code class="language-text">Evidence:
+- Hikari pending p95 = 120ms, active=max.
+- Top query p95 = 900ms.
+- DB CPU 92%, slow query scans reviews.
+Conclusion:
+- Fix query first; pool size is symptom amplifier.</code></pre>
+    </div>
+  </div>
+
+  <div class="break-it">
+    <div class="bi-head">🔬 Thử Phá Vỡ — Flame graph đọc sai</div>
+    <p>Câu hỏi: tìm 3 cách đọc flame graph sai dẫn đến fix sai.</p>
+    <details>
+      <summary>Click để xem analysis (sau khi đã nghĩ)</summary>
+      <div class="bi-answer">
+        <ol>
+          <li><strong>CPU profile cho IO problem</strong>: nếu service chờ DB, CPU flame graph có thể không thấy gì đáng kể. Cần wall-clock profile/tracing.</li>
+          <li><strong>Local workload khác production</strong>: local dataset nhỏ không kích hoạt query plan/GC giống production. Cần workload đại diện.</li>
+          <li><strong>Nhìn method rộng mà bỏ context</strong>: JSON serialization rộng có thể là do API trả payload quá lớn, không phải Jackson “chậm”. Fix có thể là pagination/field selection.</li>
+        </ol>
+        <p><strong>Insight</strong>: profiler là bằng chứng, không phải đáp án tự động. Phải nối profile với workload và metric.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Profiling data có thể nhạy cảm</div>
+    <p>JFR/thread dump/log có thể chứa URL, query parameter, user id, token fragment hoặc SQL literal. Khi chia sẻ profile, sanitize dữ liệu nhạy cảm và tuân thủ policy nội bộ.</p>
+  </div>
+</section>
+
+<section id="database">
+  <h2>5. DB &amp; Query Tuning — Tối ưu nơi giữ connection lâu nhất <span class="k-tag core">CORE</span></h2>
+  <p>Backend Java thường chậm không vì Java chậm, mà vì request giữ DB connection quá lâu. Slow query làm pool active lâu, pending tăng, thread chờ, p99 phình. Query tuning không chỉ là thêm index; còn là giảm N+1, projection đúng field, pagination, batch write, transaction scope ngắn và plan ổn định.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ N+1 query khi build product page</div>
+      <pre><code class="language-java">List&lt;Review&gt; reviews = reviewRepository.findLatest(productId, 20);
+for (Review review : reviews) {
+    User user = userRepository.findById(review.userId()).orElseThrow();
+    review.attachUser(user);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Batch fetch/projection đúng nhu cầu</div>
+      <pre><code class="language-java">List&lt;ReviewView&gt; reviews =
+    reviewRepository.findLatestReviewViews(productId, 20);</code></pre>
+    </div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Pagination bằng offset sâu</div>
+      <pre><code class="language-sql">SELECT id, title, created_at
+FROM product
+WHERE category_id = :categoryId
+ORDER BY created_at DESC
+OFFSET 500000 LIMIT 50;</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Keyset pagination theo cursor</div>
+      <pre><code class="language-sql">SELECT id, title, created_at
+FROM product
+WHERE category_id = :categoryId
+  AND created_at &lt; :lastSeenCreatedAt
+ORDER BY created_at DESC
+LIMIT 50;</code></pre>
+    </div>
+  </div>
+
+  <div class="code-label">EXPLAIN trước/sau index</div>
+  <pre><code class="language-sql">EXPLAIN (ANALYZE, BUFFERS)
+SELECT id, rating, comment, created_at
+FROM review
+WHERE product_id = 'p-123'
+ORDER BY created_at DESC
+LIMIT 20;
+
+CREATE INDEX idx_review_product_created
+ON review (product_id, created_at DESC);</code></pre>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Query tuning checklist ngắn</div>
+    <p>Đọc plan thật với dữ liệu thật; nhìn rows estimated vs actual; tránh function trên indexed column nếu làm mất index usage; chỉ select field cần dùng; dùng keyset pagination cho feed sâu; giữ transaction ngắn; đo query p95 sau khi thêm index vì write cost có thể tăng.</p>
+  </div>
+</section>
+
+<section id="connection-pool">
+  <h2>6. Connection Pool Tuning — Little’s Law trong đời thật <span class="k-tag core">CORE</span></h2>
+  <p>Connection pool không phải càng lớn càng tốt. Mỗi connection là khả năng chạy thêm work trên database. Nếu DB không đủ CPU/IO, thêm connection làm tăng contention. Pool size hợp lý dựa trên throughput mục tiêu, latency DB, số instance và capacity DB.</p>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Little’s Law đơn giản hóa</div>
+    <p>Concurrency ≈ Throughput × Latency. Nếu mỗi instance cần 200 request/s và mỗi request giữ DB connection trung bình 50ms, concurrency DB trung bình khoảng 10. Bạn cần headroom, nhưng không cần pool 200 cho instance đó nếu DB không chịu nổi.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Pool quá lớn để che query chậm</div>
+      <pre><code class="language-yaml">spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 200
+      connection-timeout: 60000</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Pool có giới hạn + fail fast</div>
+      <pre><code class="language-yaml">spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 32
+      minimum-idle: 8
+      connection-timeout: 500
+      validation-timeout: 250
+      leak-detection-threshold: 2000</code></pre>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Metric Hikari</th><th>Nghĩa</th><th>Cách đọc</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>active</td><td>Connection đang được dùng</td><td>Luôn bằng max nghĩa là pool saturated</td></tr>
+        <tr><td>idle</td><td>Connection rảnh</td><td>Idle cao + pending thấp thường không thiếu pool</td></tr>
+        <tr><td>pending</td><td>Thread chờ connection</td><td>Pending tăng là symptom, cần xem query/downstream</td></tr>
+        <tr><td>acquire time</td><td>Thời gian lấy connection</td><td>P95 cao ảnh hưởng request latency</td></tr>
+        <tr><td>usage time</td><td>Thời gian giữ connection</td><td>Usage cao gợi ý query/transaction chậm</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Giữ transaction qua remote call</div>
+      <pre><code class="language-java">@Transactional
+public ProductPage build(String productId) {
+    Product product = productRepository.findById(productId).orElseThrow();
+    Inventory inventory = inventoryClient.get(productId); // holds DB connection longer
+    product.markViewed();
+    return ProductPage.of(product, inventory);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Transaction scope ngắn</div>
+      <pre><code class="language-java">public ProductPage build(String productId) {
+    Product product = productReader.findSnapshot(productId);
+    Inventory inventory = inventoryClient.get(productId);
+    viewEventPublisher.publish(productId);
+    return ProductPage.of(product, inventory);
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="caching">
+  <h2>7. Cache, Load Test &amp; Verification <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Cache là công cụ mạnh nhưng dễ làm sai dữ liệu. Cần biết data có đọc nhiều hơn ghi không, stale bao lâu chấp nhận được, invalidation bằng gì, key cardinality thế nào, cache stampede xử lý ra sao. Load test cũng phải đại diện production: warm-up, realistic data distribution, think time, p95/p99, error rate, resource saturation.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Cache không TTL/invalidation rõ</div>
+      <pre><code class="language-java">@Cacheable("productPage")
+public ProductPage getProductPage(String productId, String userId) {
+    return buildProductPage(productId, userId);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Cache snapshot public, tránh user-specific leak</div>
+      <pre><code class="language-java">@Cacheable(cacheNames = "publicProductSnapshot", key = "#productId")
+public ProductSnapshot getPublicSnapshot(String productId) {
+    return productReader.findPublicSnapshot(productId);
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="edge-cases">
+    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
+    <p class="ec-intro">Performance fix phải kiểm tra cả correctness và vận hành:</p>
+    <ul class="ec-list">
+      <li><strong>Race condition</strong>: cache invalidation và DB update chạy ngược thứ tự; fix bằng versioned cache key hoặc event ordering.</li>
+      <li><strong>Network failure</strong>: DB/network spike làm pool pending tăng; fix bằng timeout, backpressure và circuit breaker cho downstream.</li>
+      <li><strong>Scale limit</strong>: index giúp read nhưng làm write sale traffic chậm; fix bằng đo write amplification và chọn index cần thiết.</li>
+      <li><strong>Security</strong>: cache user-specific response bằng key thiếu `userId` làm lộ dữ liệu; fix tách public/private cache.</li>
+      <li><strong>Data integrity</strong>: stale inventory khiến user thấy còn hàng sai; fix TTL ngắn hoặc source-of-truth check ở command path.</li>
+      <li><strong>Time/timezone</strong>: load test dùng fixed time không kích hoạt daily partition/report query; fix dataset theo thời gian thật và UTC.</li>
+      <li><strong>Concurrent access</strong>: cache stampede khi key hot expire; fix single-flight, soft TTL, refresh-ahead.</li>
+      <li><strong>Resource exhaustion</strong>: pool queue dài che overload; fix fail fast, bulkhead và admission control.</li>
+      <li><strong>Coordinated omission</strong>: load generator chờ response rồi mới gửi tiếp làm p99 giả thấp; fix dùng constant arrival rate tool.</li>
+    </ul>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Load test không phải chỉ bắn RPS</div>
+    <p>Cần warm-up JVM/JIT/cache, dữ liệu đủ lớn, phân bố key giống production, dependency fake có latency thật, theo dõi cả app và DB. Một test local với 1,000 sản phẩm không chứng minh API sẽ ổn với 50 triệu sản phẩm.</p>
+  </div>
+</section>
+
+<section id="production-runbook">
+  <h2>8. Production Runbook — Điều tra p99 chậm từ đầu đến cuối <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Interview senior thường không hỏi “JFR là gì?” đơn lẻ. Họ đưa một case mơ hồ: “API chậm sau deploy” hoặc “p99 tăng trong sale”. Bạn cần dẫn dắt investigation như một incident: khoanh vùng, đo, giả thuyết, kiểm chứng, fix nhỏ, verify và rollback.</p>
+
+  <h3><span class="k-tag core">CORE</span> 15 phút đầu tiên</h3>
+  <ol>
+    <li><strong>Scope</strong>: endpoint nào, region nào, version nào, tenant/category nào, bắt đầu lúc nào.</li>
+    <li><strong>User impact</strong>: p95/p99, error rate, timeout, conversion/drop-off nếu có.</li>
+    <li><strong>Change correlation</strong>: deploy, config, schema migration, index, traffic campaign, cache flush.</li>
+    <li><strong>Saturation</strong>: CPU, memory, GC, thread, Hikari, DB CPU/IO, downstream latency.</li>
+    <li><strong>Quick mitigation</strong>: rollback, reduce traffic, disable optional feature, increase timeout only nếu hiểu impact, fallback degraded.</li>
+  </ol>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Đừng tối ưu trong incident nếu có rollback rõ</div>
+    <p>Nếu p99 tăng ngay sau deploy và rollback rẻ, rollback trước có thể đúng hơn ngồi profile 30 phút trong khi user đang chịu lỗi. Sau khi ổn định mới capture evidence và fix root cause.</p>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Instrumentation tối thiểu cho Spring service</h3>
+  <p>Không có metric thì mọi investigation đều chậm. Một Spring backend nên expose latency theo endpoint, HTTP client latency theo target, Hikari metrics, JVM metrics, GC, executor, queue depth, cache hit rate và custom business backlog.</p>
+
+  <div class="code-label">Actuator/Micrometer baseline</div>
+  <pre><code class="language-yaml">management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: product-service
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,250ms,500ms,1s,2s</code></pre>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Metric group</th><th>Ví dụ</th><th>Failure phát hiện</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HTTP server</td><td>p95/p99 theo URI/status</td><td>Endpoint nào chậm/lỗi</td></tr>
+        <tr><td>HTTP client</td><td>latency theo host</td><td>Downstream chậm</td></tr>
+        <tr><td>Hikari</td><td>pending/acquire/usage</td><td>Pool saturation, query giữ connection lâu</td></tr>
+        <tr><td>JVM</td><td>GC pause, allocation, threads</td><td>GC-bound, thread leak</td></tr>
+        <tr><td>Executor</td><td>active, queue, rejected</td><td>Worker pool overload</td></tr>
+        <tr><td>Cache</td><td>hit/miss/eviction/load time</td><td>Cache stampede hoặc key sai</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Trace span design</h3>
+  <p>Distributed tracing hữu ích khi span được đặt đúng boundary. Đừng tạo span cho từng dòng code. Hãy đặt span ở các boundary có latency đáng kể: DB query nhóm, HTTP downstream, cache load, serialization lớn, job processing. Span name ổn định, tag có cardinality thấp; đừng tag raw `userId` nếu hệ thống metrics không chịu nổi cardinality.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Tag cardinality cao</div>
+      <pre><code class="language-java">span.tag("userId", userId);
+span.tag("productId", productId);
+span.tag("rawQuery", sql);</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Tag ổn định, hữu ích để aggregate</div>
+      <pre><code class="language-java">span.tag("dependency", "recommendation-service");
+span.tag("cache.hit", String.valueOf(cacheHit));
+span.tag("product.category", categoryCode);
+span.tag("result", resultType);</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Little’s Law applied: pool sizing walkthrough</h3>
+  <p>Giả sử một instance product-service phục vụ 300 RPS. Mỗi request gọi DB trung bình 2 lần, mỗi lần giữ connection 25ms sau khi query đã tối ưu. Tổng DB connection-seconds mỗi giây là `300 × 2 × 0.025 = 15`. Nghĩa là concurrency trung bình cần khoảng 15 connections. Bạn thêm headroom cho burst và tail, ví dụ pool 24-32. Nếu query giữ connection 250ms, concurrency thành 150; lúc đó pool 150 không phải fix, vì DB sẽ bị đập bởi query quá lâu.</p>
+
+  <div class="code-label">Pool sizing thought process</div>
+  <pre><code class="language-text">Target per instance:
+- HTTP throughput: 300 RPS
+- DB calls/request: 2
+- DB usage time/call p50: 25ms, p95: 80ms
+Average concurrent DB usage:
+  300 * 2 * 0.025 = 15
+Practical pool:
+  24-32, verify acquire p95 and DB CPU
+If usage time jumps to 250ms:
+  300 * 2 * 0.250 = 150
+Conclusion:
+  fix query/transaction first, not pool.</code></pre>
+
+  <h3><span class="k-tag core">CORE</span> GC/allocation runbook</h3>
+  <p>Không phải GC pause nào cũng cần đổi GC algorithm. Nhiều case bắt đầu từ allocation rate quá cao: tạo DTO lớn, parse JSON nhiều lần, collect list khổng lồ, log string interpolation, load toàn bộ result set. Hãy xem allocation profile trước khi tune flag.</p>
+  <ol>
+    <li>Bật GC log/JFR trong khoảng có spike.</li>
+    <li>Xem pause time, allocation rate, old-gen occupancy, promotion rate.</li>
+    <li>Capture allocation flame graph nếu allocation rate cao.</li>
+    <li>Fix code tạo object nhiều hoặc payload quá lớn trước khi đổi heap/GC.</li>
+    <li>Verify p95/p99 và memory sau fix; tránh làm tăng latency vì pooling object thủ công quá tay.</li>
+  </ol>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Load toàn bộ rồi mới cắt trang</div>
+      <pre><code class="language-java">List&lt;Product&gt; all = productRepository.findByCategory(categoryId);
+return all.stream()
+    .sorted(comparing(Product::createdAt).reversed())
+    .skip(offset)
+    .limit(50)
+    .toList();</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Pagination ở database</div>
+      <pre><code class="language-java">return productRepository.findPageByCategory(
+    categoryId,
+    cursor,
+    PageRequest.ofSize(50)
+);</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Load test report format</h3>
+  <p>Một report performance đáng tin nên đủ để người khác reproduce và challenge kết luận. Không cần văn dài, nhưng phải có cấu hình môi trường, dataset, workload, baseline, thay đổi, kết quả và rủi ro còn lại.</p>
+  <div class="code-label">Template ngắn</div>
+  <pre><code class="language-text">Performance report:
+1. Goal:
+   Product detail p95 &lt; 400ms at 500 RPS, error &lt; 0.1%.
+2. Environment:
+   4 app pods, Postgres size X, dataset 10M products/80M reviews.
+3. Workload:
+   k6 constant arrival rate, Zipfian product popularity, 15 min warm-up.
+4. Baseline:
+   p95 2.4s, p99 8.9s, Hikari pending p95 180ms.
+5. Evidence:
+   top SQL review_latest 48% DB time, seq scan + sort.
+6. Change:
+   index review(product_id, created_at desc), projection ReviewView.
+7. Result:
+   p95 310ms, p99 900ms, DB CPU 62%, pending p95 8ms.
+8. Risks:
+   write cost +8%, monitor index bloat and review insert latency.</code></pre>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Câu trả lời senior khi bị hỏi performance tuning</div>
+    <p>“Em bắt đầu bằng SLO và baseline, phân loại bottleneck bằng metrics/tracing/profile. Em không tăng pool hay thêm cache trước khi biết thời gian đi đâu. Mỗi fix có hypothesis và metric expected. Sau fix em chạy cùng workload, so p95/p99/error/saturation, kiểm tra correctness và rollback.”</p>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>Anti-Patterns — Performance tuning làm sai <span class="k-tag core">CORE</span></h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Tối ưu khi chưa đo baseline</td><td>High</td><td>Fix sai bottleneck, tạo regression</td><td>Define SLO + collect metrics trước</td></tr>
+        <tr><td>Tăng pool để che query chậm</td><td>Critical</td><td>Làm DB quá tải, p99 tăng</td><td>Fix query/transaction, size pool theo capacity</td></tr>
+        <tr><td>Chỉ nhìn average latency</td><td>High</td><td>Bỏ qua tail latency user thấy</td><td>p95/p99 + saturation + error rate</td></tr>
+        <tr><td>Cache mọi thứ</td><td>High</td><td>Stale data, memory pressure, security leak</td><td>Cache theo data semantics và key đúng</td></tr>
+        <tr><td>Profile local dataset nhỏ</td><td>Medium</td><td>Plan/profile không giống production</td><td>Workload và data distribution đại diện</td></tr>
+        <tr><td>Giữ transaction qua remote call</td><td>High</td><td>Connection bị giữ lâu, pool saturated</td><td>Transaction scope ngắn, event async cho side effect</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #1 — Product Page Performance Lab (Beginner)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: Spring Boot API product detail với Postgres, seed 1M reviews, endpoint có N+1 và query chậm rồi tối ưu.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Expose Micrometer metrics cho latency, Hikari, JVM.</li>
+      <li>Viết k6 test 200 RPS, report p50/p95/p99.</li>
+      <li>Thêm index/projection để giảm query p95.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: trước/sau report chứng minh p95 product detail giảm ít nhất 60% và không tăng error rate.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #2 — Connection Pool Tuning Experiment (Intermediate)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: chạy cùng workload với pool size 8/16/32/64, đo DB CPU, Hikari pending, API p99.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Giữ dataset và RPS cố định.</li>
+      <li>Ghi lại active/idle/pending/acquire time.</li>
+      <li>Giải thích vì sao pool lớn hơn không luôn nhanh hơn.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: report chọn pool size dựa trên số liệu, không dựa trên “cảm giác”.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #3 — Profiling Case Study (Advanced)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: tạo một bottleneck CPU serialization hoặc lock contention, capture JFR/async-profiler flame graph, fix và verify.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Có baseline flame graph và after flame graph.</li>
+      <li>Giải thích top 3 frames và vì sao fix tác động.</li>
+      <li>Không dùng local dataset quá nhỏ.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: CPU time hoặc wall-clock p95 giảm đo được; report có hypothesis, evidence, change, verification.</div>
+  </div>
+</section>
+
+<section id="drill-bank">
+  <h2>Interview Drill Bank — Performance tình huống <span class="k-tag core">CORE</span></h2>
+  <p>Performance interview đánh vào tư duy điều tra. Trả lời tốt cần metric, bottleneck hypothesis và verification. Tránh nhảy ngay vào “cache/index/tăng pool”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q1. API chậm, bạn làm gì đầu tiên?</h3>
+  <p><strong>Answer mẫu</strong>: Xác định scope và baseline: endpoint nào, p50/p95/p99, throughput, error rate, bắt đầu lúc nào, deploy nào liên quan. Sau đó xem saturation: CPU, memory, GC, thread, DB, Hikari, downstream. Dùng tracing/profile để phân loại bottleneck rồi mới fix. Nếu impact lớn và rollback rẻ, rollback trước rồi điều tra sau.</p>
+  <p><strong>Signal</strong>: interviewer muốn nghe method, không phải danh sách optimization.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q2. Hikari pending cao, có nên tăng pool?</h3>
+  <p><strong>Answer mẫu</strong>: Chưa chắc. Pending cao nghĩa là thread chờ connection, nhưng nguyên nhân có thể là query chậm, transaction giữ connection lâu, DB saturated, hoặc pool quá nhỏ thật. Xem usage time, acquire time, DB CPU/IO, top SQL, thread dump. Nếu DB đã CPU cao, tăng pool làm cạnh tranh nặng hơn. Fix query/transaction trước rồi size pool theo throughput × DB latency.</p>
+  <p><strong>Signal</strong>: phải nói pool pending là symptom, không phải root cause mặc định.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q3. Average latency thấp nhưng p99 cao, vì sao nguy hiểm?</h3>
+  <p><strong>Answer mẫu</strong>: User thấy tail latency. Nếu page gọi nhiều backend calls, xác suất một call dính p99 tăng. Average che queueing, GC pause, lock contention, hot keys và downstream spike. SLO thường dùng percentile vì nó phản ánh trải nghiệm phần lớn user và tail. Cần nhìn p95/p99 cùng throughput/error/saturation.</p>
+  <p><strong>Signal</strong>: phải nối percentile với user experience và fan-out.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q4. Khi nào dùng CPU profiler, khi nào dùng wall-clock profiler?</h3>
+  <p><strong>Answer mẫu</strong>: CPU profiler dùng khi CPU cao và muốn biết method nào tiêu CPU. Wall-clock profiler dùng khi latency cao nhưng CPU không cao, để thấy thời gian chờ IO, lock, sleep, connection pool. Allocation profiler dùng khi GC/allocation rate cao. Nếu service chờ DB, CPU flame graph có thể đánh lừa vì nó chỉ thấy phần đang chạy CPU.</p>
+  <p><strong>Signal</strong>: biết chọn tool theo bottleneck.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q5. Query chậm làm connection pool nghẽn như thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Mỗi query giữ một DB connection đến khi hoàn tất. Nếu query p95 tăng từ 30ms lên 900ms, cùng RPS sẽ cần concurrency DB lớn hơn rất nhiều. Pool active=max, request mới pending, thread chờ, p99 tăng. Tăng pool chỉ cho thêm query chậm chạy đồng thời; nếu DB đã saturated, toàn hệ thống chậm hơn.</p>
+  <p><strong>Signal</strong>: phải hiểu relationship query duration → connection usage → pending.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q6. Coordinated omission là gì?</h3>
+  <p><strong>Answer mẫu</strong>: Là khi load generator chờ response xong mới gửi request tiếp, nên lúc server chậm nó cũng gửi ít request hơn và bỏ lỡ latency mà user thật sẽ gặp. Kết quả p99 bị giả thấp. Dùng constant arrival rate hoặc tool hỗ trợ correction để giữ arrival pattern độc lập với response time. Đây là lỗi load test phổ biến.</p>
+  <p><strong>Signal</strong>: senior+ signal, nhất là với performance lab.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Cache product page có rủi ro gì?</h3>
+  <p><strong>Answer mẫu</strong>: Nếu cache cả response user-specific bằng key chỉ có `productId`, có thể lộ dữ liệu hoặc trả giá/khuyến nghị sai. Cache stale inventory làm user thấy còn hàng sai. Cache stampede xảy ra khi key hot expire. Cần tách public snapshot và user-specific data, TTL/invalidation rõ, single-flight/refresh-ahead cho key hot, và command path vẫn check source-of-truth.</p>
+  <p><strong>Signal</strong>: performance fix phải giữ correctness/security.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q8. Bạn đọc EXPLAIN như thế nào ở mức cơ bản?</h3>
+  <p><strong>Answer mẫu</strong>: Xem query dùng seq scan hay index, rows estimated vs actual có lệch không, sort/hash có spill không, filter loại bao nhiêu row, join order, buffers read/hit, execution time. Dùng `EXPLAIN ANALYZE` trên môi trường an toàn với dữ liệu đại diện. Không thêm index chỉ vì thấy seq scan; nếu table nhỏ hoặc selectivity thấp, seq scan có thể hợp lý.</p>
+  <p><strong>Signal</strong>: biết plan là evidence, không phải ritual.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q9. GC pause tăng sau deploy, bạn xử lý thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Xem GC log/JFR: pause time, allocation rate, heap occupancy, promotion, old-gen growth. Capture allocation profile để biết object nào tăng. So sánh payload size, batch size, DTO mapping, logging, result set. Fix allocation/code trước khi đổi GC flag. Nếu heap thật sự thiếu, tune heap/GC sau khi có evidence và verify p95/p99.</p>
+  <p><strong>Signal</strong>: tránh “đổi G1/ZGC cho nhanh” khi chưa biết allocation.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q10. Một performance fix tốt cần report gì?</h3>
+  <p><strong>Answer mẫu</strong>: Goal/SLO, environment, dataset, workload, baseline, evidence, change, result, side effects và rollback. Ví dụ: p95 product detail 2.4s do review query seq scan; thêm index `(product_id, created_at desc)` và projection; p95 giảm 310ms, DB CPU giảm, write latency tăng 8% cần monitor. Không có baseline/result thì không chứng minh được fix.</p>
+  <p><strong>Signal</strong>: biết chứng minh hiệu quả và trade-off.</p>
+</section>
+
+<section id="cookbook">
+  <h2>Performance Cookbook — Symptom → Evidence → Fix <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Cookbook này giúp bạn phản xạ đúng trong interview. Đừng nhảy từ symptom sang fix; luôn chèn bước evidence.</p>
+
+  <h3><span class="k-tag core">CORE</span> Symptom 1 — p99 tăng, CPU app thấp</h3>
+  <p><strong>Nghi vấn</strong>: IO/downstream/DB/pool/lock chứ không phải CPU-bound.</p>
+  <p><strong>Evidence</strong>: tracing latency breakdown, Hikari pending/acquire, HTTP client latency, thread dump, wall-clock profile.</p>
+  <p><strong>Fix</strong>: tùy evidence: timeout/fallback cho downstream, query tuning, giảm transaction scope, bulkhead, hoặc fix lock contention.</p>
+
+  <h3><span class="k-tag core">CORE</span> Symptom 2 — DB CPU cao, pool active=max</h3>
+  <p><strong>Nghi vấn</strong>: slow query hoặc concurrency quá cao vào DB.</p>
+  <p><strong>Evidence</strong>: top SQL by total time, EXPLAIN ANALYZE, buffer reads, rows actual vs estimated, Hikari usage time.</p>
+  <p><strong>Fix</strong>: index/query rewrite/projection/keyset pagination/batch, sau đó mới tune pool. Nếu DB CPU đã cao, tăng pool thường làm tệ hơn.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Symptom 3 — CPU app cao sau deploy</h3>
+  <p><strong>Nghi vấn</strong>: serialization payload lớn, algorithm thay đổi, compression, regex, mapping DTO, logging sync.</p>
+  <p><strong>Evidence</strong>: async-profiler CPU flame graph, endpoint payload size, allocation profile nếu GC cũng tăng.</p>
+  <p><strong>Fix</strong>: giảm payload, pagination/field selection, optimize hot method, tránh serialize object graph dư, cache computed result nếu data semantics cho phép.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Symptom 4 — GC pause spike</h3>
+  <p><strong>Nghi vấn</strong>: allocation rate tăng, result set quá lớn, object churn, heap pressure, memory leak.</p>
+  <p><strong>Evidence</strong>: JFR allocation, GC log, heap occupancy, old-gen trend, heap dump nếu nghi leak.</p>
+  <p><strong>Fix</strong>: stream/paginate data, giảm DTO/list tạm, tránh load toàn bộ, tune heap/GC sau khi code fix rõ.</p>
+
+  <h3><span class="k-tag core">CORE</span> Symptom 5 — Latency tốt ở load test nhưng production xấu</h3>
+  <p><strong>Nghi vấn</strong>: workload test không đại diện, dataset nhỏ, cache warm khác, key distribution khác, coordinated omission.</p>
+  <p><strong>Evidence</strong>: so sánh production traffic distribution, hot keys, dataset size, arrival rate model, cache hit rate.</p>
+  <p><strong>Fix</strong>: dùng constant arrival rate, Zipfian/hot-key distribution, warm-up đúng, dataset gần production, inject downstream latency thật.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Symptom 6 — Một category/product hot làm toàn service chậm</h3>
+  <p><strong>Nghi vấn</strong>: hot key, cache stampede, lock per key, DB row/page contention.</p>
+  <p><strong>Evidence</strong>: latency grouped by product/category, cache miss burst, DB lock wait, request distribution.</p>
+  <p><strong>Fix</strong>: request coalescing/single-flight, soft TTL, refresh-ahead, shard hot work, precompute read model, rate limit extreme hot key nếu cần.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Symptom 7 — Thread count tăng liên tục</h3>
+  <p><strong>Nghi vấn</strong>: thread leak, unbounded executor, blocking call trong reactive pipeline, scheduler tạo thread mới.</p>
+  <p><strong>Evidence</strong>: thread dump nhiều thời điểm, executor metrics, code path tạo executor/thread, JFR thread events.</p>
+  <p><strong>Fix</strong>: bounded executor, reuse bean-managed pools, remove per-request executor creation, timeout blocking calls.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Symptom 8 — p99 chỉ xấu sau 30 phút chạy</h3>
+  <p><strong>Nghi vấn</strong>: memory leak, cache growth, connection leak, JIT/warmup không phải nguyên nhân chính, DB bloat/temp files.</p>
+  <p><strong>Evidence</strong>: time-series heap, pool active/idle, cache size/eviction, GC old-gen trend, DB temp usage.</p>
+  <p><strong>Fix</strong>: leak detection, bounded cache, close resources, pagination/streaming, cleanup temp data, long-duration soak test.</p>
+
+  <div class="callout quote">
+    <div class="ctitle">📖 Câu nhớ nhanh</div>
+    <p>Performance tuning tốt là chuỗi: symptom → evidence → bottleneck class → minimal fix → verification. Bỏ qua evidence là đoán.</p>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-Test Scenarios — Chẩn đoán performance bằng evidence <span class="k-tag core">CORE</span></h2>
+  <p>Tự viết hypothesis và metric cần xem trước. Nếu bạn nhảy thẳng tới fix, hãy quay lại bước evidence.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 1 — Pool pending cao sau sale campaign</h3>
+  <p><strong>Metrics</strong>: Hikari active=max, pending p95 200ms, DB CPU 90%, top query `review_latest` chiếm 45% total time.</p>
+  <p><strong>Câu hỏi</strong>: tăng pool có phải fix đầu tiên không?</p>
+  <p><strong>Gợi ý</strong>: không. Fix query/index/projection trước. Pool pending là hậu quả connection bị giữ lâu. Sau khi query giảm, đo lại acquire time rồi mới tune pool.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — CPU high vì serialization</h3>
+  <p><strong>Metrics</strong>: CPU 85%, DB bình thường, async-profiler top frame nằm ở JSON serialization, response product page 2MB.</p>
+  <p><strong>Gợi ý</strong>: không đổ lỗi “Jackson chậm” ngay. Kiểm tra payload dư, object graph quá lớn, reviews/recommendations quá nhiều, thiếu field selection. Fix có thể là projection DTO, pagination, bỏ field không dùng, gzip nếu network-bound.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — p99 xấu nhưng profiler CPU sạch</h3>
+  <p><strong>Metrics</strong>: CPU 35%, p99 5s, wall-clock profile thấy nhiều thread chờ `CompletableFuture.get`, tracing chỉ ra recommendation service p99 4s.</p>
+  <p><strong>Gợi ý</strong>: bottleneck downstream. Thêm timeout/fallback/bulkhead, cache recommendation nếu semantics cho phép, và không block thread vô hạn. CPU profiler không phải tool đúng cho IO wait.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 4 — Cache hit cao nhưng data sai</h3>
+  <p><strong>Bối cảnh</strong>: cache hit 95%, latency giảm, nhưng user thấy inventory sai trong sale.</p>
+  <p><strong>Gợi ý</strong>: performance fix phá correctness. Inventory là data nhạy với thời gian; cache TTL/invalidation phải phù hợp, command path cần check source-of-truth. Có thể cache public product info nhưng không cache availability quyết định mua quá lâu.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 5 — Load test pass, production fail</h3>
+  <p><strong>Bối cảnh</strong>: k6 test 500 RPS local/staging pass, production sale fail ở 300 RPS.</p>
+  <p><strong>Gợi ý</strong>: kiểm tra dataset size, hot key distribution, cache warm state, downstream latency, DB hardware, arrival model, coordinated omission, network. Staging 1M rows không đại diện production 100M rows. Load test phải mô phỏng shape, không chỉ RPS.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 6 — Transaction giữ connection quá lâu</h3>
+  <p><strong>Bối cảnh</strong>: thread dump cho thấy nhiều request chờ Hikari. Code mở `@Transactional`, đọc product, gọi inventory service 800ms, rồi update view count.</p>
+  <p><strong>Gợi ý</strong>: transaction đang giữ DB connection qua remote call. Tách read snapshot ra transaction ngắn, gọi inventory ngoài transaction, view count chuyển event/async hoặc update riêng. Đây là performance và reliability issue: remote latency ăn connection pool.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Index mới làm write chậm</h3>
+  <p><strong>Bối cảnh</strong>: thêm 4 index để tăng tốc search, read p95 giảm nhưng product import chậm gấp đôi.</p>
+  <p><strong>Gợi ý</strong>: index có write amplification. Performance fix phải đo cả read và write path. Giữ index phục vụ query critical, bỏ index trùng/ít dùng, cân nhắc partial index/materialized view/search engine nếu query pattern phức tạp. Report phải nêu trade-off.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Lock contention trong in-memory cache</h3>
+  <p><strong>Bối cảnh</strong>: CPU không quá cao nhưng thread dump nhiều thread BLOCKED ở synchronized cache loader. p99 spike khi key hot expire.</p>
+  <p><strong>Gợi ý</strong>: đây là lock/cache stampede. Dùng single-flight per key thay vì global lock, soft TTL, refresh-ahead, hoặc cache library có loading semantics tốt. Profile lock/JFR monitor events để chứng minh trước khi refactor.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 9 — Optimization làm mất tính đúng</h3>
+  <p><strong>Bối cảnh</strong>: team cache product price 10 phút để giảm DB load. Latency giảm mạnh, nhưng trong flash sale giá thay đổi theo phút và user thấy giá cũ.</p>
+  <p><strong>Gợi ý</strong>: performance fix phải giữ business correctness. Tách cache public metadata ít thay đổi khỏi price/availability nhạy thời gian. Dùng TTL ngắn, event invalidation, versioned price, hoặc kiểm tra source-of-truth ở bước tạo đơn. Không chấp nhận p95 đẹp nếu dữ liệu sai.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 10 — Logging làm p99 xấu</h3>
+  <p><strong>Bối cảnh</strong>: sau khi bật debug log payload lớn trong sale, CPU và disk IO tăng, p99 xấu nhưng DB bình thường.</p>
+  <p><strong>Gợi ý</strong>: logging cũng là workload. Dùng structured log có sampling, không log payload lớn/PII, tránh sync appender trên hot path, đo log volume và IO wait. Performance tuning phải xem cả observability overhead.</p>
+  <p><strong>Calibration</strong>: một thay đổi “chỉ thêm log” vẫn phải qua performance review nếu nằm trên hot path hoặc payload lớn. Observability tốt phải giúp debug mà không biến chính nó thành bottleneck CPU, disk IO, network hoặc chi phí lưu trữ. Log, metric và trace đều có ngân sách hiệu năng riêng. Khi tuning, hãy đo cả overhead của công cụ đo nếu nó nằm trên hot path, nhất là trong endpoint có traffic lớn và payload biến thiên mạnh theo user trong giờ cao điểm hoặc sale lớn toàn sàn kéo dài.</p>
+</section>
+
+<section id="interview">
+  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
+  <div class="tier t1">
+    <div class="tier-head">
+      <span class="badge">Tầng 1 — Surface</span>
+      <span class="tier-title">Method gate</span>
+    </div>
+    <div class="q">Q: API chậm, bạn làm gì đầu tiên?</div>
+    <div class="a">Không tối ưu ngay. Đầu tiên xác định endpoint, SLO, p50/p95/p99, throughput, error rate, saturation. Sau đó phân loại bottleneck bằng metrics/tracing/profile: DB, CPU, pool, lock, GC, downstream. Có hypothesis rồi mới thay đổi và verify.</div>
+  </div>
+
+  <div class="tier t2">
+    <div class="tier-head">
+      <span class="badge">Tầng 2 — Deep Dive</span>
+      <span class="tier-title">Pool tuning</span>
+    </div>
+    <div class="q">Q: Hikari active=max và pending cao. Có nên tăng pool?</div>
+    <div class="a">Chưa đủ dữ liệu. Pending cao có thể do pool nhỏ, nhưng cũng có thể do query chậm hoặc transaction giữ connection lâu. Xem DB CPU/IO, query time, usage time, acquire time, thread dump. Nếu DB đã saturated, tăng pool có thể làm tệ hơn. Fix query/transaction trước rồi size pool theo throughput × latency và DB capacity.</div>
+  </div>
+
+  <div class="tier t3">
+    <div class="tier-head">
+      <span class="badge">Tầng 3 — Architecture</span>
+      <span class="tier-title">End-to-end investigation</span>
+    </div>
+    <div class="q">Q: Product page p99 9s trong sale event. Thiết kế investigation plan.</div>
+    <div class="a">Tách latency breakdown bằng tracing; xem Hikari metrics, top SQL, DB CPU/IO, downstream latency, JVM GC/thread dump. Reproduce bằng load test có key distribution sale. Nếu query scan review là bottleneck, thêm index/projection/keyset. Nếu recommendation downstream chậm, timeout/fallback. Canary rollout, compare p95/p99/error/resource, giữ rollback.</div>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
+  <div class="feynman">
+    <div class="fy-head">🎓 Feynman Check</div>
+    <div class="fy-prompt">"Giải thích cho một junior dev trong 5 phút: tại sao tăng connection pool từ 40 lên 200 có thể làm product API chậm hơn?"</div>
+    <div class="fy-rule">Quy tắc: phải nhắc đến DB capacity, query duration, pool pending là symptom, contention và Little’s Law.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="fy-head">🎓 Calibration Check</div>
+    <div class="fy-prompt">Viết một mini incident report: symptom, baseline, hypothesis, evidence, fix, verification, rollback cho case p99 9s.</div>
+    <div class="fy-rule">Nếu report chỉ có “thêm cache/index” mà không có metric, chưa đạt senior level.</div>
+  </div>
+
+  <div class="verify-source">
+    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
+    <p>Cross-check với official sources:</p>
+    <ul>
+      <li><a href="https://github.com/async-profiler/async-profiler">async-profiler documentation and source</a></li>
+      <li><a href="https://docs.oracle.com/javacomponents/jmc-8/jfr-runtime-guide/">Oracle JFR Runtime Guide</a></li>
+      <li><a href="https://github.com/brettwooldridge/HikariCP">HikariCP documentation</a></li>
+      <li><a href="https://www.postgresql.org/docs/current/using-explain.html">PostgreSQL EXPLAIN Documentation</a></li>
+      <li><a href="https://docs.spring.io/spring-boot/reference/actuator/metrics.html">Spring Boot Actuator Metrics</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div>📁 #23 Performance Tuning · Phase 5 — Messaging &amp; Resilience</div>
+  <div>Tiếp theo: quay lại index hoặc luyện build projects</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

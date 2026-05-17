@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#22 — Resilience Patterns | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Phase 5 — Messaging &amp; Resilience
+    <span class="sep">/</span>
+    <strong>#22 Resilience Patterns</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+  </button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#timeout">2. Timeout</a>
+    <a href="#retry">3. Retry &amp; backoff</a>
+    <a href="#circuit-breaker">4. Circuit breaker</a>
+    <a href="#bulkhead">5. Bulkhead</a>
+    <a href="#fallback">6. Fallback</a>
+    <a href="#composition">7. Compose patterns</a>
+    <a href="#observability">8. Observability</a>
+    <a href="#antipatterns">Anti-patterns</a>
+    <a href="#build-projects">Build Projects</a>
+    <a href="#drill-bank">Interview Drill Bank</a>
+    <a href="#cookbook">Resilience Cookbook</a>
+    <a href="#self-test">Self-Test Scenarios</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">CORE · Failure handling · Production readiness</span>
+  <h1>#22 — Resilience Patterns</h1>
+  <p class="lead">Resilience không phải “cố retry đến khi thành công”. Resilience là thiết kế để lỗi có biên: timeout để không chờ vô hạn, retry để vượt lỗi tạm thời, circuit breaker để dừng đổ thêm tải, bulkhead để lỗi một dependency không kéo sập toàn service.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Reliability &amp; Distributed Systems</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 ngày core · 1 tuần lab</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#20 Kafka, #21 Async, #23 Performance</div></div>
+    <div class="meta-item"><div class="k">Domain</div><div class="v">Ride-sharing + food delivery</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "resilience giả"</div>
+  <div class="sb-rules">
+    <p>Resilience pattern phải học bằng failure timeline:</p>
+    <ol>
+      <li>Mỗi pattern phải nói được nó cắt failure ở đâu trong timeline.</li>
+      <li>Mỗi retry phải trả lời: retry lỗi nào, bao nhiêu lần, delay thế nào, có idempotent không?</li>
+      <li>Mỗi fallback phải nói rõ đó là degraded result hay fake success.</li>
+      <li>Mỗi bulkhead phải gắn với tài nguyên thật: thread, connection, queue, CPU.</li>
+      <li>Sau mỗi section, tự hỏi: pattern này có thể làm hệ thống tệ hơn khi config sai không?</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Nếu bạn chỉ nhớ một câu: resilience là giảm blast radius, không phải che lỗi.</div>
+    <div class="roadmap-path">
+      <div class="roadmap-item core"><span class="step">1</span> Timeout — CORE: không có timeout thì mọi pattern sau đều yếu.</div>
+      <div class="roadmap-item core"><span class="step">2</span> Retry with backoff + jitter — CORE: chống lỗi tạm thời, tránh retry storm.</div>
+      <div class="roadmap-item core"><span class="step">3</span> Circuit breaker — CORE: dừng gọi dependency đang hỏng.</div>
+      <div class="roadmap-item supp"><span class="step">4</span> Bulkhead — SUPP: cô lập thread/connection/queue.</div>
+      <div class="roadmap-item adv"><span class="step">5</span> Pattern composition &amp; tuning — ADV: thứ tự operator, metrics, SLO.</div>
+    </div>
+  </div>
+</section>
+
+<section id="intro">
+  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
+  <p>Trong ride-sharing, endpoint “tìm chuyến phù hợp” có thể phụ thuộc vào location service, route provider, driver availability, promo service và notification gateway. Một dependency chậm không nên làm toàn bộ API hết thread. Một lỗi 503 tạm thời có thể retry; một lỗi validation không nên retry. Một provider hỏng 10 phút nên bị circuit breaker chặn để hệ thống tự hồi.</p>
+
+  <div class="history-block">
+    <div class="hist-head">📜 Lịch sử ra đời của Resilience Patterns</div>
+    <div class="hist-timeline">
+      <strong>Distributed systems early days</strong> — Khi app monolith gọi database cục bộ, failure thường rõ: DB down thì app down. Khi service gọi service qua network, failure trở nên partial: timeout, slow response, packet loss, overload.<br><br>
+      <strong>Release It!</strong> — Michael Nygard phổ biến nhiều production stability patterns như Circuit Breaker, Bulkhead, Timeout trong bối cảnh hệ thống thương mại lớn gặp cascading failure.<br><br>
+      <strong>Cloud-native era</strong> — Resilience4j, Hystrix trước đây, service mesh và observability tooling làm các pattern này phổ biến trong Java/Spring microservices.<br><br>
+      <strong>Insight</strong>: các pattern này không sinh ra để code đẹp hơn. Chúng sinh ra vì production failure lan rất nhanh nếu mỗi service cứ chờ, retry và giữ tài nguyên vô hạn.
+    </div>
+  </div>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Interviewer đang kiểm tra gì?</div>
+    <p>Họ muốn thấy bạn biết phân loại lỗi, không retry bừa, hiểu thứ tự timeout/retry/circuit breaker/bulkhead, biết fallback nào an toàn và biết đo effectiveness bằng metrics như failure rate, slow call rate, retry count, open circuit count, queue depth.</p>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài Toán Thực Tế — RideNow bị cascading failure <span class="k-tag core">CORE</span></h2>
+  <p>RideNow có endpoint `GET /ride-options` trả danh sách lựa chọn chuyến. Nó gọi route provider để tính ETA, driver-location service để tìm tài xế gần, promo service để lấy ưu đãi, và content service để render banner. Một buổi tối mưa lớn, route provider tăng latency từ 150ms lên 8s. API thread chờ route provider, connection pool đầy, request mới bị queue, user retry liên tục, các service khác cũng bắt đầu fail.</p>
+
+  <div class="code-label">Naive client — không timeout rõ, retry không kiểm soát</div>
+  <pre><code class="language-java">public RideOptions getRideOptions(Location from, Location to) {
+    Route route = routeClient.calculate(from, to);
+    List&lt;Driver&gt; drivers = driverClient.nearby(from);
+    Promo promo = promoClient.currentPromo();
+    return optionsAssembler.assemble(route, drivers, promo);
+}</code></pre>
+
+  <div class="callout danger">
+    <div class="ctitle">🔥 Failure cascade</div>
+    <p>Một dependency chậm biến thành cạn thread ở API service. Cạn thread làm health check fail. Orchestrator restart instance, cache nóng mất, traffic dồn sang instance còn sống, hệ thống càng chậm. Retry từ client và service nội bộ nhân tải lên nhiều lần.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+    <div class="pause-q">Trước khi đọc giải pháp, hãy xếp thứ tự 4 pattern bạn sẽ áp dụng.</div>
+    <ol>
+      <li>Timeout nên đặt ở đâu và bao lâu?</li>
+      <li>Lỗi nào được retry, lỗi nào không?</li>
+      <li>Khi route provider hỏng 5 phút, API trả gì cho user?</li>
+      <li>Làm sao promo service chậm không ăn hết thread của ride-options?</li>
+    </ol>
+    <div class="pause-hint">Nếu bạn trả lời “thêm retry” đầu tiên, cần đọc kỹ phần timeout và circuit breaker.</div>
+  </div>
+</section>
+
+<section id="timeout">
+  <h2>2. Timeout — Pattern nền của mọi resilience <span class="k-tag core">CORE</span></h2>
+  <div class="k-banner core">
+    <strong>★ CORE — Bắt buộc nắm chắc</strong>: Không có timeout, bạn không có biên failure. Thread có thể chờ mãi và bulkhead/circuit breaker khó bảo vệ hệ thống.
+  </div>
+  <p>Timeout phải được đặt theo SLO của caller, không theo cảm giác. Nếu endpoint `ride-options` có p95 target 500ms, route provider không thể có timeout 5s trong request path. Timeout cũng phải đồng bộ giữa client, connection pool, server và load balancer để tránh caller chờ lâu hơn nguồn lực cho phép.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ HTTP client không timeout rõ</div>
+      <pre><code class="language-java">RestTemplate restTemplate = new RestTemplate();
+Route route = restTemplate.getForObject(url, Route.class);</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Timeout tách connect/read/overall</div>
+      <pre><code class="language-java">HttpClient httpClient = HttpClient.create()
+    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 300)
+    .responseTimeout(Duration.ofMillis(450));
+
+WebClient routeClient = WebClient.builder()
+    .clientConnector(new ReactorClientHttpConnector(httpClient))
+    .baseUrl(routeProviderUrl)
+    .build();</code></pre>
+    </div>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Timeout càng dài càng an toàn”</div>
+    <div class="mc-wrong">"Đặt timeout dài để request có thêm cơ hội thành công."</div>
+    <div class="mc-right">Timeout dài giữ thread/connection lâu hơn, làm queue phình và tăng tail latency. Với request path, timeout phải bảo vệ SLO của caller. Một kết quả fail nhanh có fallback tốt thường tốt hơn giữ user chờ 8 giây rồi vẫn fail.</div>
+  </div>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Timeout budget</div>
+    <p>Nếu API tổng có budget 500ms và gọi 3 dependency song song, mỗi dependency có thể có timeout 300-400ms. Nếu gọi tuần tự, tổng timeout không được vượt budget. Hãy thiết kế bằng latency budget trước khi viết config.</p>
+  </div>
+</section>
+
+<section id="retry">
+  <h2>3. Retry with Backoff &amp; Jitter <span class="k-tag core">CORE</span></h2>
+  <p>Retry chỉ đúng khi lỗi có khả năng tạm thời và operation idempotent hoặc có idempotency key. Retry lỗi 400 validation không giúp gì. Retry non-idempotent command có thể tạo duplicate. Retry đồng loạt không jitter có thể tạo thundering herd, làm service vừa hồi lại chết tiếp.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Retry lỗi nào?</div>
+    <div class="pause-q">Với route provider, bạn sẽ retry những lỗi nào?</div>
+    <ol>
+      <li>HTTP 408/timeout</li>
+      <li>HTTP 429 rate limited</li>
+      <li>HTTP 400 invalid coordinate</li>
+      <li>HTTP 503 service unavailable</li>
+    </ol>
+    <div class="pause-hint">Retry policy tốt bắt đầu bằng phân loại lỗi, không bắt đầu bằng số lần retry.</div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Retry tight loop</div>
+      <pre><code class="language-java">for (int i = 0; i &lt; 5; i++) {
+    try {
+        return routeClient.calculate(from, to);
+    } catch (Exception ignored) {
+    }
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Retry có điều kiện, backoff, jitter</div>
+      <pre><code class="language-java">Retry retry = Retry.of("routeProvider", RetryConfig.custom()
+    .maxAttempts(3)
+    .intervalFunction(IntervalFunction
+        .ofExponentialRandomBackoff(100, 2.0, 0.5))
+    .retryExceptions(TimeoutException.class, ServiceUnavailableException.class)
+    .ignoreExceptions(BadRequestException.class)
+    .build());</code></pre>
+    </div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Retry command không idempotent</div>
+      <pre><code class="language-java">retry.executeSupplier(() ->
+    rideClient.createRide(request)
+);</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Retry kèm idempotency key</div>
+      <pre><code class="language-java">retry.executeSupplier(() ->
+    rideClient.createRide(
+        request.withIdempotencyKey(commandId)
+    )
+);</code></pre>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Retry nhân tải</div>
+    <p>Nếu 1,000 RPS gọi service đang chậm và mỗi request retry 3 lần, downstream có thể nhận gần 4,000 attempts/s. Vì vậy retry phải đi cùng timeout ngắn, backoff jitter, retry budget, circuit breaker và metric.</p>
+  </div>
+
+  <div class="break-it">
+    <div class="bi-head">🔬 Thử Phá Vỡ — Retry policy tưởng an toàn</div>
+    <p>Câu hỏi: tìm 3 cách policy retry ở trên vẫn có thể làm hệ thống tệ hơn.</p>
+    <details>
+      <summary>Click để xem analysis (sau khi đã nghĩ)</summary>
+      <div class="bi-answer">
+        <ol>
+          <li><strong>Retry vượt timeout budget</strong>: mỗi attempt có timeout 450ms, retry 3 lần làm request tổng vượt SLA 500ms. Cần budget tổng và stop retry khi không còn thời gian.</li>
+          <li><strong>Retry non-idempotent command</strong>: tạo ride hoặc reserve tài nguyên mà không có idempotency key có thể tạo duplicate state. Cần server-side dedupe.</li>
+          <li><strong>Retry đồng loạt sau outage</strong>: dù có backoff, nếu không jitter hoặc retry budget, traffic hồi lại có thể đập downstream lần hai. Cần jitter, circuit breaker và rate limit.</li>
+        </ol>
+        <p><strong>Insight</strong>: retry tốt không chỉ là `maxAttempts`. Nó là sự phối hợp giữa deadline, idempotency, backoff, jitter, budget và metrics.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="circuit-breaker">
+  <h2>4. Circuit Breaker — Dừng gọi dependency đang hỏng <span class="k-tag core">CORE</span></h2>
+  <p>Circuit breaker theo dõi failure rate hoặc slow call rate. Khi vượt ngưỡng, nó chuyển OPEN và fail fast thay vì tiếp tục gọi dependency. Sau một thời gian, nó HALF_OPEN để thử một số request. Nếu thành công, CLOSE; nếu thất bại, OPEN lại.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Circuit breaker states">
+      <rect x="80" y="88" width="140" height="62" rx="10" fill="#dcfce7"/><text x="122" y="124" fill="#166534" font-size="16" font-weight="700">CLOSED</text>
+      <rect x="380" y="88" width="140" height="62" rx="10" fill="#fee2e2"/><text x="425" y="124" fill="#991b1b" font-size="16" font-weight="700">OPEN</text>
+      <rect x="670" y="88" width="150" height="62" rx="10" fill="#fef3c7"/><text x="698" y="124" fill="#92400e" font-size="16" font-weight="700">HALF_OPEN</text>
+      <path d="M222 119 H374" stroke="currentColor" opacity="0.35" stroke-width="2"/><text x="245" y="104" fill="currentColor" font-size="12">failure/slow rate high</text>
+      <path d="M522 119 H664" stroke="currentColor" opacity="0.35" stroke-width="2"/><text x="555" y="104" fill="currentColor" font-size="12">wait duration</text>
+      <path d="M745 152 C640 220 240 220 150 152" stroke="currentColor" opacity="0.35" stroke-width="2" fill="none"/><text x="390" y="214" fill="currentColor" font-size="12">probe success</text>
+      <path d="M700 86 C620 35 470 35 450 84" stroke="#ef4444" opacity="0.65" stroke-width="2" fill="none"/><text x="548" y="42" fill="#991b1b" font-size="12">probe fail</text>
+    </svg>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Luôn gọi provider dù đang fail</div>
+      <pre><code class="language-java">public Route route(Location from, Location to) {
+    return routeProvider.calculate(from, to);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Circuit breaker fail fast + fallback</div>
+      <pre><code class="language-java">@CircuitBreaker(name = "routeProvider", fallbackMethod = "fallbackRoute")
+@TimeLimiter(name = "routeProvider")
+public CompletableFuture&lt;Route&gt; route(Location from, Location to) {
+    return CompletableFuture.supplyAsync(() ->
+        routeProvider.calculate(from, to)
+    );
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="code-label">Resilience4j config — cần tune theo traffic thực tế</div>
+  <pre><code class="language-yaml">resilience4j:
+  circuitbreaker:
+    instances:
+      routeProvider:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 50
+        failureRateThreshold: 50
+        slowCallRateThreshold: 60
+        slowCallDurationThreshold: 400ms
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 10</code></pre>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Vì sao circuit breaker không thay timeout?</div>
+    <p>Circuit breaker cần quan sát call hoàn tất hoặc timeout để biết failure. Nếu HTTP client không timeout, call treo lâu và tài nguyên vẫn bị giữ. Timeout đặt biên cho từng call; circuit breaker đặt biên cho cả dependency theo thời gian.</p>
+  </div>
+</section>
+
+<section id="bulkhead">
+  <h2>5. Bulkhead — Cô lập tài nguyên <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Bulkhead lấy hình ảnh từ tàu thủy: khoang này bị ngập không làm cả tàu chìm. Trong backend, bulkhead là tách thread pool, connection pool, queue hoặc concurrency limit cho từng dependency/workload. Promo service chậm không được ăn hết thread của route service.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Shared executor cho mọi dependency</div>
+      <pre><code class="language-java">ExecutorService pool = Executors.newFixedThreadPool(80);
+
+pool.submit(() -> routeClient.calculate(from, to));
+pool.submit(() -> promoClient.currentPromo());
+pool.submit(() -> notificationClient.prepareBanner(userId));</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Bulkhead theo dependency criticality</div>
+      <pre><code class="language-java">@Bean
+ThreadPoolTaskExecutor routeExecutor() {
+    return executor("route", 40, 80, 200);
+}
+
+@Bean
+ThreadPoolTaskExecutor promoExecutor() {
+    return executor("promo", 8, 16, 50);
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Bulkhead là tăng thread pool”</div>
+    <div class="mc-wrong">"Dependency chậm thì tăng thread pool để có nhiều request chạy hơn."</div>
+    <div class="mc-right">Tăng thread pool có thể làm downstream nghẹt hơn và JVM context switch nhiều hơn. Bulkhead không phải tăng vô hạn; nó là đặt limit để một dependency chậm chỉ chiếm phần tài nguyên được cấp, phần còn lại phục vụ chức năng khác.</div>
+  </div>
+
+  <div class="edge-cases">
+    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
+    <p class="ec-intro">Resilience pattern sai config có thể gây lỗi mới:</p>
+    <ul class="ec-list">
+      <li><strong>Race condition</strong>: nhiều request cùng thấy circuit half-open và mở flood probe; fix bằng `permittedNumberOfCallsInHalfOpenState` nhỏ.</li>
+      <li><strong>Network failure</strong>: timeout ở client ngắn hơn server processing làm server vẫn chạy request bị bỏ; fix bằng cancellation/deadline propagation nếu hỗ trợ.</li>
+      <li><strong>Scale limit</strong>: retry nhân tải vượt capacity downstream; fix bằng retry budget, rate limit và circuit breaker.</li>
+      <li><strong>Security</strong>: fallback trả stale data chứa thông tin không còn được phép xem; fix bằng authorization check cả trên fallback/cache.</li>
+      <li><strong>Data integrity</strong>: retry non-idempotent command tạo duplicate ride booking; fix bằng idempotency key và server-side dedupe.</li>
+      <li><strong>Time/timezone</strong>: circuit metrics dựa trên clock lệch giữa nodes gây dashboard khó hiểu; fix bằng monotonic clock cho duration, UTC cho event timestamp.</li>
+      <li><strong>Concurrent access</strong>: shared cache fallback bị update không thread-safe; fix bằng immutable snapshot hoặc concurrent structure.</li>
+      <li><strong>Resource exhaustion</strong>: bulkhead queue quá dài biến fail-fast thành wait-slow; fix bằng queue nhỏ và rejection metric.</li>
+      <li><strong>Fallback abuse</strong>: fallback fake success làm user tưởng ride đã được tạo; fix chỉ fallback cho read/degraded response, không fake write success.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="fallback">
+  <h2>6. Fallback — Degraded response, không phải nói dối <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Fallback tốt giữ trải nghiệm chấp nhận được mà không phá invariant. Với ride options, nếu promo service fail, có thể trả “không có ưu đãi tạm thời”. Nếu route provider fail, có thể trả ETA gần đúng từ cache và gắn flag `estimated=true`. Nhưng không được fallback bằng cách tạo ride giả hay bỏ qua validation quan trọng.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Fake success cho write operation</div>
+      <pre><code class="language-java">public Ride createRide(CreateRideRequest request) {
+    try {
+        return rideProvider.create(request);
+    } catch (Exception ex) {
+        return new Ride(request.id(), "CREATED"); // lie
+    }
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Fallback rõ degraded cho read path</div>
+      <pre><code class="language-java">public RideOptions fallbackRoute(Location from, Location to, Throwable ex) {
+    CachedEta eta = etaCache.estimate(from, to);
+    return RideOptions.degraded(eta, "ETA is estimated");
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Fallback an toàn thường có 3 dấu hiệu</div>
+    <p>Nó không làm thay đổi state quan trọng; response nói rõ degraded/estimated; và metric/alert vẫn ghi failure gốc. Fallback không được che lỗi khỏi hệ thống vận hành.</p>
+  </div>
+</section>
+
+<section id="composition">
+  <h2>7. Compose Patterns — Thứ tự quan trọng <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Pattern không độc lập. Một request thường cần timeout, bulkhead, circuit breaker và retry cùng lúc. Nhưng thứ tự sai có thể làm metric sai hoặc retry giữ tài nguyên quá lâu. Một hướng thực tế: đặt bulkhead để giới hạn concurrency, timeout cho từng attempt, retry những lỗi tạm thời trong budget, circuit breaker quan sát kết quả và mở khi dependency hỏng.</p>
+
+  <div class="code-label">Decorator style — minh họa composition</div>
+  <pre><code class="language-java">Supplier&lt;Route&gt; supplier = () -> routeProvider.calculate(from, to);
+
+Supplier&lt;Route&gt; guarded = Decorators.ofSupplier(supplier)
+    .withBulkhead(routeBulkhead)
+    .withTimeLimiter(routeTimeLimiter, scheduler)
+    .withRetry(routeRetry)
+    .withCircuitBreaker(routeCircuitBreaker)
+    .withFallback(List.of(Exception.class),
+        ex -> routeCache.estimated(from, to))
+    .decorate();</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Luôn verify bằng metrics</div>
+    <p>Đừng tin config trên giấy. Xem metrics: retry attempts/request, circuit state transitions, slow call rate, rejected bulkhead calls, timeout count, downstream RPS. Nếu retry tăng khi circuit đã open, hoặc bulkhead queue luôn đầy, composition đang có vấn đề.</p>
+  </div>
+</section>
+
+<section id="observability">
+  <h2>8. Observability &amp; Tuning — Resilience phải đo được <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Resilience pattern mà không có metric là một dạng “niềm tin”. Bạn cần biết circuit mở khi nào, retry đang nhân tải bao nhiêu, timeout có quá ngắn không, fallback có bị dùng quá nhiều không, bulkhead có reject hợp lý hay queue quá dài. Tuning resilience là quá trình cân bằng giữa user experience, downstream protection và correctness.</p>
+
+  <h3><span class="k-tag core">CORE</span> Metrics bắt buộc</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Pattern</th><th>Cách đọc</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Timeout count</td><td>Timeout</td><td>Tăng đột biến: downstream chậm hoặc timeout quá ngắn</td></tr>
+        <tr><td>Retry attempts per request</td><td>Retry</td><td>Trung bình tăng: lỗi transient đang nhiều, có nguy cơ amplification</td></tr>
+        <tr><td>Circuit state transitions</td><td>Circuit breaker</td><td>OPEN thường xuyên: dependency hoặc threshold có vấn đề</td></tr>
+        <tr><td>Slow call rate</td><td>Circuit breaker</td><td>Quan trọng hơn failure rate khi provider không fail mà chỉ chậm</td></tr>
+        <tr><td>Bulkhead rejected calls</td><td>Bulkhead</td><td>Reject có thể đúng để bảo vệ hệ thống, nhưng cần UX/fallback</td></tr>
+        <tr><td>Fallback rate</td><td>Fallback</td><td>Nếu fallback rate cao lâu dài, hệ thống đang chạy degraded</td></tr>
+        <tr><td>Downstream RPS</td><td>All</td><td>Phải giảm khi circuit open, không được retry đập tiếp</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Timeout budget example</h3>
+  <p>Giả sử `ride-options` có SLO p95 &lt; 700ms. Bạn không thể cho route provider timeout 1,500ms. Một thiết kế thực tế:</p>
+  <div class="code-label">Latency budget minh họa</div>
+  <pre><code class="language-text">Total API budget: 700ms
+- Input validation + auth: 50ms
+- Parallel remote calls:
+  - route provider: timeout 350ms, retry 1 if timeout before 150ms budget remains
+  - driver location: timeout 250ms
+  - promo service: timeout 120ms, optional fallback
+- Assembly + serialization: 80ms
+- Safety margin: 100ms</code></pre>
+
+  <p>Điểm quan trọng là budget tổng. Nếu mỗi dependency tự đặt timeout theo cảm giác, tổng worst-case sẽ vượt xa SLO. Với reactive/async composition, vẫn cần deadline tổng để request không trôi quá lâu.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Retry budget</h3>
+  <p>Retry budget giới hạn tỷ lệ retry so với request gốc. Ví dụ service chỉ cho retry traffic tối đa 10% RPS gốc trong cửa sổ 1 phút. Khi downstream fail nặng, retry bị giảm để bảo vệ hệ thống. Đây là cách thực tế hơn so với “mọi request retry 3 lần” trong outage.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Retry cố định không nhìn hệ thống</div>
+      <pre><code class="language-yaml">retry:
+  maxAttempts: 4
+  waitDuration: 100ms</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Retry có budget và loại lỗi</div>
+      <pre><code class="language-yaml">retry:
+  maxAttempts: 2
+  retryableStatus: [408, 429, 503]
+  backoff: exponential-jitter
+  retryBudget:
+    maxRetryRatio: 0.10
+    window: 60s</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Failure injection test</h3>
+  <p>Đừng chờ production mới biết circuit breaker có mở đúng không. Dùng fake provider hoặc chaos test nhỏ để tiêm lỗi có kiểm soát: delay, timeout, 500, 429, partial failure, slow response không fail. Mục tiêu không phải phá hệ thống cho vui; mục tiêu là verify fallback, alert, metrics và recovery.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Injection</th><th>Kỳ vọng</th><th>Metric cần thấy</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Provider delay 2s</td><td>Client timeout &lt; 500ms</td><td>timeout count tăng, thread không tăng vô hạn</td></tr>
+        <tr><td>Provider trả 503 80%</td><td>Retry ngắn, circuit open</td><td>retry attempts tăng rồi downstream RPS giảm</td></tr>
+        <tr><td>Provider trả 400</td><td>Không retry</td><td>retry count không tăng</td></tr>
+        <tr><td>Promo service chậm</td><td>Route vẫn trả được</td><td>promo bulkhead rejected/fallback, route p95 ổn</td></tr>
+        <tr><td>Provider hồi phục</td><td>Half-open probe nhỏ</td><td>state OPEN → HALF_OPEN → CLOSED</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Incident runbook: cascading failure</h3>
+  <p>Khi thấy nhiều service timeout cùng lúc, mục tiêu đầu tiên là giảm tải và khoanh vùng, không phải deploy fix lớn.</p>
+  <ol>
+    <li><strong>Xác định dependency gốc</strong>: tracing waterfall, top timeout target, downstream error/latency.</li>
+    <li><strong>Giảm amplification</strong>: tạm giảm retry, mở circuit hoặc tăng fallback cho read path.</li>
+    <li><strong>Bảo vệ thread/connection</strong>: kiểm tra bulkhead queue, pool active, pending, reject rate.</li>
+    <li><strong>Ưu tiên critical path</strong>: tắt optional feature như promo/banner nếu cần.</li>
+    <li><strong>Quan sát recovery</strong>: khi dependency hồi, tránh đóng circuit cho toàn traffic ngay; half-open probe nhỏ.</li>
+  </ol>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Cách nói trong interview</div>
+    <p>“Em không tune resilience chỉ bằng config. Em gắn mỗi pattern với metric và failure injection test. Khi downstream chậm, em muốn thấy timeout tăng, retry có giới hạn, circuit mở làm downstream RPS giảm, fallback rate tăng có alert, bulkhead reject bảo vệ phần còn lại. Nếu metric không phản ánh kỳ vọng, config chưa đáng tin.”</p>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>Anti-Patterns — Resilience làm sai còn nguy hiểm hơn không làm <span class="k-tag core">CORE</span></h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Không đặt timeout</td><td>Critical</td><td>Thread/connection chờ vô hạn, cascade failure</td><td>Timeout budget theo SLO</td></tr>
+        <tr><td>Retry mọi exception</td><td>High</td><td>Retry lỗi validation, nhân tải vô ích</td><td>Phân loại retryable/non-retryable</td></tr>
+        <tr><td>Retry không jitter</td><td>High</td><td>Thundering herd sau outage</td><td>Exponential backoff + jitter</td></tr>
+        <tr><td>Circuit breaker không fallback/UX</td><td>Medium</td><td>User nhận lỗi khô, support khó xử lý</td><td>Degraded response rõ ràng</td></tr>
+        <tr><td>Fallback fake success</td><td>Critical</td><td>Data integrity hỏng, user hiểu sai state</td><td>Fallback chỉ cho read/degraded, không giả write</td></tr>
+        <tr><td>Shared pool cho mọi outbound call</td><td>High</td><td>Một dependency chậm kéo chết dependency khác</td><td>Bulkhead theo dependency hoặc priority</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #1 — Resilient Route Client (Beginner)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: Spring Boot service `ride-options` gọi fake route provider có thể delay/fail, dùng timeout + retry backoff + fallback.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Fake provider có endpoint delay 100ms/2s/timeout/503.</li>
+      <li>Client timeout dưới 500ms, retry tối đa 2 lần cho 503/timeout.</li>
+      <li>Fallback trả ETA estimated và flag degraded.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: p95 của `ride-options` dưới 800ms khi provider delay 2s; response không fake success.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #2 — Circuit Breaker Dashboard (Intermediate)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: tích hợp Resilience4j metrics + Actuator/Micrometer, dashboard trạng thái CLOSED/OPEN/HALF_OPEN.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Config slow call rate threshold và failure rate threshold riêng.</li>
+      <li>Test provider fail 60 giây, circuit open rồi half-open.</li>
+      <li>Log state transition với dependency name và reason.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: khi provider fail, downstream RPS giảm mạnh trong 10 giây và circuit state hiển thị đúng.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #3 — Bulkhead Load Lab (Advanced)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: load test 3 dependency route/promo/banner, so sánh shared pool vs bulkhead pool.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Promo provider delay 5s, route provider bình thường.</li>
+      <li>Chạy k6/JMeter ở 500 RPS.</li>
+      <li>Đo p95 route latency, rejected calls, thread usage.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: bulkhead giữ route p95 ổn định dù promo fail; report giải thích trade-off rejection vs queue.</div>
+  </div>
+</section>
+
+<section id="drill-bank">
+  <h2>Interview Drill Bank — Resilience tình huống <span class="k-tag core">CORE</span></h2>
+  <p>Resilience interview thường là tình huống outage. Hãy trả lời bằng deadline, failure classification, blast radius và metrics. Nếu chỉ kể định nghĩa pattern, chưa đủ.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q1. Retry khác circuit breaker thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Retry xử lý lỗi tạm thời cho một operation, trong một timeout budget, thường với backoff/jitter. Circuit breaker quan sát nhiều calls theo thời gian và fail fast khi dependency hỏng hoặc chậm quá nhiều. Retry cố vượt lỗi ngắn; circuit breaker bảo vệ hệ thống khỏi tiếp tục đổ tải vào lỗi dài. Hai pattern thường dùng cùng timeout và fallback.</p>
+  <p><strong>Signal</strong>: phải nói được scope: per-call vs dependency health over time.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q2. Khi nào không retry?</h3>
+  <p><strong>Answer mẫu</strong>: Không retry lỗi validation/authorization, lỗi deterministic do request sai, 404 thật sự, 400 invalid input, hoặc command không idempotent nếu không có idempotency key. Cũng không retry khi timeout budget đã hết, circuit breaker open, hoặc downstream đang rate limit mà retry không tôn trọng `Retry-After`. Retry phải có lý do lỗi có thể tự hồi.</p>
+  <p><strong>Signal</strong>: interviewer muốn nghe phân loại lỗi, không phải “retry 3 lần”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q3. Vì sao timeout phải có trước retry?</h3>
+  <p><strong>Answer mẫu</strong>: Không có timeout, một attempt có thể chờ quá lâu và giữ thread/connection. Retry phía ngoài sẽ không có cơ hội chạy trong budget, hoặc tệ hơn giữ nhiều tài nguyên cùng lúc. Timeout đặt biên cho từng attempt và giúp circuit breaker quan sát slow/failure. Retry không timeout là công thức cho queue phình và cascading failure.</p>
+  <p><strong>Signal</strong>: phải nhắc tài nguyên bị giữ và deadline tổng.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q4. Fallback nào an toàn cho ride-options?</h3>
+  <p><strong>Answer mẫu</strong>: Với read path, có thể fallback ETA cache hoặc approximate route và đánh dấu `estimated=true`. Promo fail có thể trả không có promo tạm thời. Banner fail có thể bỏ banner. Không fallback fake success cho create ride hoặc bỏ qua validation quan trọng. Fallback phải degraded rõ và vẫn emit metric/alert cho lỗi gốc.</p>
+  <p><strong>Signal</strong>: phải phân biệt degraded read với fake write success.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q5. Bulkhead giải quyết vấn đề gì?</h3>
+  <p><strong>Answer mẫu</strong>: Bulkhead cô lập tài nguyên để một dependency/workload không ăn hết thread, connection hoặc queue của phần khác. Promo service chậm chỉ dùng pool promo nhỏ, không làm route provider mất thread. Bulkhead không phải tăng thread pool; nó là giới hạn blast radius. Cần metric reject/queue để biết limit có hợp lý không.</p>
+  <p><strong>Signal</strong>: phải gắn bulkhead với tài nguyên thật.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q6. Circuit breaker threshold tune thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Dựa trên traffic volume và SLO. Cần `minimumNumberOfCalls` đủ để tránh mở do vài lỗi lẻ. `failureRateThreshold` và `slowCallRateThreshold` phản ánh user impact. `waitDurationInOpenState` đủ để downstream hồi, nhưng không quá lâu nếu dependency thường hồi nhanh. Half-open probe nhỏ để tránh flood. Tune bằng metrics/failure injection, không copy config mù.</p>
+  <p><strong>Signal</strong>: nói được minimum calls, slow call, half-open probe.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q7. Route provider chậm 10 phút, bạn thiết kế thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Đặt timeout theo API budget, retry 1 lần cho timeout/503 với jitter nếu còn budget, circuit breaker mở khi slow/failure rate cao, fallback ETA estimate có flag degraded, bulkhead route pool riêng, optional dependencies như promo/banner không chặn response. Metrics: timeout, circuit state, fallback rate, downstream RPS, p95/p99. Alert khi fallback rate cao lâu.</p>
+  <p><strong>Signal</strong>: phải compose nhiều pattern và vẫn giữ UX/correctness.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q8. Retry storm là gì và tránh thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Retry storm xảy ra khi nhiều caller retry đồng loạt vào dependency đang chậm/hỏng, làm tải tăng gấp nhiều lần và cản trở recovery. Tránh bằng exponential backoff, jitter, retry budget, circuit breaker, rate limit, timeout ngắn, và tôn trọng 429/`Retry-After`. Với request fan-out, tổng retry attempts phải được giới hạn theo deadline.</p>
+  <p><strong>Signal</strong>: phải nói amplification, không chỉ “thêm jitter”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q9. Có nên dùng fallback cache cho dữ liệu nhạy cảm theo user?</h3>
+  <p><strong>Answer mẫu</strong>: Chỉ nếu cache key và authorization đúng. Fallback cache dễ lộ dữ liệu nếu key thiếu user/permission hoặc stale sau khi quyền thay đổi. Với dữ liệu public như ETA estimate theo location bucket có thể an toàn hơn. Với dữ liệu user-specific, fallback phải kiểm tra quyền và TTL rất cẩn thận, hoặc trả degraded error thay vì stale private data.</p>
+  <p><strong>Signal</strong>: resilience cũng có security/data integrity, không chỉ latency.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q10. Metrics nào chứng minh circuit breaker đang giúp?</h3>
+  <p><strong>Answer mẫu</strong>: Khi downstream fail, circuit state chuyển open, downstream RPS từ caller giảm, timeout count ở caller giảm sau khi open, fallback/rejection tăng có kiểm soát, p95 của caller ổn hơn, thread/connection không saturated. Khi downstream hồi, half-open probe nhỏ và circuit close. Nếu retry vẫn đập downstream khi circuit open, composition/config sai.</p>
+  <p><strong>Signal</strong>: phải biết verify pattern bằng số liệu.</p>
+</section>
+
+<section id="cookbook">
+  <h2>Resilience Cookbook — Config theo tình huống <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Không có config resilience dùng chung cho mọi dependency. Một route provider critical khác promo service optional; một read API khác create command; một downstream idempotent khác downstream non-idempotent. Cookbook này giúp bạn nói được cách chọn pattern theo risk.</p>
+
+  <h3><span class="k-tag core">CORE</span> Case 1 — Critical read dependency chậm</h3>
+  <p><strong>Ví dụ</strong>: route provider cho `ride-options` chậm nhưng API vẫn có thể trả ETA estimated.</p>
+  <p><strong>Policy</strong>: timeout ngắn theo API budget, retry 1 lần nếu lỗi transient và còn deadline, circuit breaker theo slow call rate, fallback cache có flag degraded, bulkhead riêng cho route.</p>
+  <p><strong>Metric</strong>: timeout count, fallback rate, circuit open duration, route provider RPS, p95 caller.</p>
+
+  <h3><span class="k-tag core">CORE</span> Case 2 — Optional dependency</h3>
+  <p><strong>Ví dụ</strong>: promo/banner trong food delivery home page.</p>
+  <p><strong>Policy</strong>: timeout rất ngắn, không retry hoặc retry cực hạn chế, fallback empty result, bulkhead nhỏ, circuit breaker để tránh giữ tài nguyên. Optional dependency không được chặn critical response.</p>
+  <p><strong>Trap</strong>: một promo service chậm không được làm API đặt món timeout.</p>
+
+  <h3><span class="k-tag core">CORE</span> Case 3 — Non-idempotent write</h3>
+  <p><strong>Ví dụ</strong>: create ride request hoặc reserve delivery slot.</p>
+  <p><strong>Policy</strong>: không retry blind. Nếu retry cần idempotency key và server-side dedupe. Timeout phải trả trạng thái rõ: unknown outcome có thể cần query status hoặc async reconciliation. Fallback fake success bị cấm.</p>
+  <p><strong>Metric</strong>: duplicate rejection count, unknown outcome count, idempotency key conflict.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Case 4 — Rate limited downstream</h3>
+  <p><strong>Ví dụ</strong>: maps provider trả 429 khi vượt quota.</p>
+  <p><strong>Policy</strong>: tôn trọng `Retry-After`, retry với backoff dài hơn nếu request còn relevant, client-side rate limit, cache kết quả phổ biến, circuit breaker nếu 429 kéo dài. Không retry tức thì vì sẽ vi phạm quota thêm.</p>
+  <p><strong>Trap</strong>: coi 429 như 503 và retry 3 lần ngay lập tức.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Case 5 — Brownout mode</h3>
+  <p><strong>Ví dụ</strong>: traffic mưa lớn tăng mạnh, hệ thống cần giữ core ride matching, tạm giảm feature phụ.</p>
+  <p><strong>Policy</strong>: feature flag để tắt promo/banner/recommendation, giảm timeout optional, ưu tiên thread/connection cho critical path, degrade UI rõ ràng. Brownout phải có owner và metric để bật/tắt có kiểm soát.</p>
+  <p><strong>Signal interview</strong>: senior biết resilience không chỉ là library config mà còn là product/ops decision.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Case 6 — Dependency hồi phục sau outage</h3>
+  <p><strong>Policy</strong>: circuit breaker half-open với số probe nhỏ, retry budget chưa mở full ngay, warm cache dần, quan sát downstream latency. Nếu mọi caller cùng đóng circuit và retry lại, downstream có thể chết lần hai.</p>
+  <p><strong>Metric</strong>: half-open success/failure, downstream saturation, fallback rate giảm từ từ.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Case 7 — Multi-region partial failure</h3>
+  <p><strong>Ví dụ</strong>: route provider ở một region chậm, region khác bình thường.</p>
+  <p><strong>Policy</strong>: circuit breaker và metrics phải tag theo region/provider, không gom global làm che partial failure. Fallback/cache cũng nên theo region. Traffic shifting cần kiểm tra capacity region nhận thêm tải.</p>
+  <p><strong>Trap</strong>: alert global p95 bình thường nhưng một city/region p99 rất xấu.</p>
+
+  <h3><span class="k-tag core">CORE</span> Case 8 — Thread pool saturation</h3>
+  <p><strong>Policy</strong>: đo active/queue/rejected, giảm timeout, bulkhead theo dependency, queue nhỏ để fail fast, không tăng thread vô hạn. Nếu thread chờ IO, tăng thread chỉ che symptom; cần timeout/downstream fix.</p>
+  <p><strong>Answer phrase</strong>: “Em muốn rejection có kiểm soát hơn là queue dài làm user chờ rồi timeout.”</p>
+
+  <div class="callout quote">
+    <div class="ctitle">📖 Câu nhớ nhanh</div>
+    <p>Resilience config tốt phải trả lời được: bảo vệ ai, hy sinh gì, fallback có đúng sự thật không, và metric nào chứng minh pattern đang hoạt động.</p>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-Test Scenarios — Tự thiết kế trước khi xem đáp án <span class="k-tag core">CORE</span></h2>
+  <p>Các bài này nên làm bằng giấy. Với mỗi scenario, hãy viết timeout, retry, circuit breaker, bulkhead, fallback, metrics và rollout. Sau đó so với gợi ý.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 1 — Promo service chậm nhưng không critical</h3>
+  <p><strong>Bối cảnh</strong>: food delivery home page gọi menu service, restaurant availability, promo service và recommendation. Promo service p99 tăng 4s, nhưng không có promo vẫn hiển thị được nhà hàng.</p>
+  <p><strong>Tự trả lời</strong>: promo timeout bao lâu nếu home page SLO 600ms? Có retry không? Fallback trả gì? Bulkhead thế nào?</p>
+  <p><strong>Gợi ý</strong>: promo timeout 80-150ms, không retry hoặc retry 1 lần nếu còn budget rất nhỏ, fallback empty promo/degraded flag, bulkhead promo nhỏ, circuit breaker theo slow call. Alert nếu fallback rate cao, nhưng không để promo phá home page.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 2 — Driver location service trả stale data</h3>
+  <p><strong>Bối cảnh</strong>: ride matching dùng driver location. Service không fail, latency bình thường, nhưng đôi lúc trả location cũ 5 phút do cache replication lag.</p>
+  <p><strong>Tự trả lời</strong>: circuit breaker có giúp không? Retry có giúp không? Pattern nào cần thêm?</p>
+  <p><strong>Gợi ý</strong>: đây là data freshness/integrity issue, không phải availability đơn thuần. Retry có thể vẫn trả stale. Cần timestamp freshness check, reject data quá cũ, fallback giảm confidence hoặc query source khác, metric stale rate, và alert theo age. Resilience không chỉ xử lý exception; nó còn phải bảo vệ correctness.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 3 — Provider trả 429 trong 10 phút</h3>
+  <p><strong>Bối cảnh</strong>: route provider quota bị vượt, trả 429 kèm `Retry-After: 30`. API vẫn retry 3 lần nhanh vì config generic.</p>
+  <p><strong>Tự trả lời</strong>: sửa retry policy ra sao? Có circuit breaker không? Có cache không?</p>
+  <p><strong>Gợi ý</strong>: 429 phải được xử lý khác 503. Tôn trọng `Retry-After`, giảm hoặc dừng retry trong request path, dùng client-side rate limit, circuit breaker/rate limiter để giảm downstream RPS, cache route phổ biến nếu semantics cho phép, fallback ETA estimated. Metric cần có 429 count và quota remaining nếu provider expose.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 4 — Circuit breaker mở/đóng liên tục</h3>
+  <p><strong>Bối cảnh</strong>: route provider thỉnh thoảng timeout. Circuit breaker cứ OPEN rồi CLOSED mỗi vài giây, làm user lúc được lúc không.</p>
+  <p><strong>Tự trả lời</strong>: config nào cần xem? Metrics nào chứng minh?</p>
+  <p><strong>Gợi ý</strong>: kiểm tra `minimumNumberOfCalls`, sliding window, slow call threshold, wait duration open state, half-open permitted calls. Nếu traffic thấp mà minimum calls quá nhỏ, vài lỗi làm circuit flap. Nếu half-open quá nhiều probe, provider vừa hồi đã bị flood. Cần dashboard state transition và downstream latency để tune.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 5 — Retry làm duplicate create request</h3>
+  <p><strong>Bối cảnh</strong>: mobile app gửi create delivery request, network timeout, app retry. Backend cũng retry call sang matching service. User thấy hai delivery requests.</p>
+  <p><strong>Tự trả lời</strong>: sửa ở client, API gateway và service thế nào?</p>
+  <p><strong>Gợi ý</strong>: client/API gửi idempotency key theo user action. Backend lưu key + result/operation state, matching service cũng dedupe theo command id. Timeout response có thể là unknown/pending, client query status thay vì tạo command mới. Retry chỉ an toàn khi write path có idempotency end-to-end.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bulkhead reject nhiều request</h3>
+  <p><strong>Bối cảnh</strong>: sau khi thêm bulkhead, promo calls bị reject 20% lúc traffic peak. Product manager phàn nàn mất promo hiển thị.</p>
+  <p><strong>Tự trả lời</strong>: tăng bulkhead limit ngay không? Cần dữ liệu gì?</p>
+  <p><strong>Gợi ý</strong>: xem promo dependency capacity, latency, queue wait, caller p95, revenue impact, fallback UX. Nếu promo service vẫn khỏe và reject quá sớm, tăng limit có thể được. Nếu promo service chậm, reject là bảo vệ đúng. Có thể precompute promo, cache, hoặc phân tier traffic thay vì tăng thread mù.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 7 — Fallback cache trả dữ liệu hết quyền</h3>
+  <p><strong>Bối cảnh</strong>: food delivery app cache restaurant detail. Một restaurant bị tạm ẩn vì vi phạm policy, nhưng fallback cache vẫn trả restaurant đó trong 10 phút khi restaurant-service timeout.</p>
+  <p><strong>Gợi ý</strong>: fallback phải tôn trọng authorization/policy freshness. Dữ liệu public nhưng có trạng thái an toàn cần TTL ngắn hoặc policy check riêng. Resilience không được đánh đổi data correctness/security. Metric fallback rate cần đi cùng audit stale/invalid fallback nếu domain nhạy.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 8 — Timeout quá ngắn gây false failure</h3>
+  <p><strong>Bối cảnh</strong>: route provider p95 280ms, p99 450ms. Team đặt timeout 200ms để API nhanh hơn, làm fallback rate 35% dù provider khỏe.</p>
+  <p><strong>Gợi ý</strong>: timeout phải theo SLO tổng và latency distribution thật, không thấp hơn khả năng bình thường của dependency nếu feature cần kết quả thật. Có thể dùng timeout 350-450ms, parallelize calls, hoặc tối ưu route provider. Timeout quá ngắn làm hệ thống chạy degraded giả.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 9 — Circuit breaker không mở vì lỗi là slow call</h3>
+  <p><strong>Bối cảnh</strong>: provider trả 200 nhưng mất 3s. Failure rate thấp nên circuit không open, nhưng API p99 rất xấu.</p>
+  <p><strong>Gợi ý</strong>: cấu hình slow call threshold/rate, không chỉ failure rate. Với user-facing API, “200 sau 3s” vẫn là failure theo SLO. Metrics phải tách failure rate và slow call rate để circuit phản ánh đúng user impact.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 10 — Fallback làm che incident quá lâu</h3>
+  <p><strong>Bối cảnh</strong>: fallback ETA cache hoạt động tốt nên user ít báo lỗi, nhưng route provider thật đã hỏng 2 giờ. Team phát hiện muộn vì error rate API không tăng.</p>
+  <p><strong>Gợi ý</strong>: fallback không được che observability. Alert phải dựa trên fallback rate, circuit open duration và downstream health, không chỉ API error rate. Degraded mode lâu dài cần incident/owner, vì dữ liệu estimated có thể làm giảm chất lượng matching dù API vẫn 200.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 11 — Timeout mismatch giữa client và load balancer</h3>
+  <p><strong>Bối cảnh</strong>: client timeout 5s, load balancer timeout 2s, server route handler có thể chạy 8s. User thấy lỗi 502 nhưng server vẫn tiếp tục giữ tài nguyên.</p>
+  <p><strong>Gợi ý</strong>: deadline phải nhất quán qua stack. Đặt client/server/LB timeout theo cùng budget, hỗ trợ cancellation nếu framework cho phép, và tránh server tiếp tục làm việc vô ích sau khi caller đã bỏ cuộc.</p>
+  <p><strong>Calibration</strong>: resilience không chỉ nằm trong code Java. Load balancer, gateway, client SDK, server thread pool và downstream timeout đều phải cùng một latency budget. Nếu mỗi layer tự chọn timeout riêng, production sẽ có request bị cắt ở ngoài nhưng vẫn chạy bên trong, vừa tốn tài nguyên vừa khó debug. Khi trả lời interview, hãy luôn nói rõ deadline đi qua những layer nào và layer nào chịu trách nhiệm hủy work. Đây là dấu hiệu bạn hiểu failure propagation chứ không chỉ thuộc annotation của Resilience4j. Một thiết kế tốt có thể được giải thích bằng timeline request cụ thể, từ lúc caller gửi request đến lúc downstream bị hủy hoặc fallback được trả.</p>
+</section>
+
+<section id="interview">
+  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
+  <div class="tier t1">
+    <div class="tier-head">
+      <span class="badge">Tầng 1 — Surface</span>
+      <span class="tier-title">Definitions with trade-off</span>
+    </div>
+    <div class="q">Q: Circuit breaker khác retry thế nào?</div>
+    <div class="a">Retry thử lại lỗi tạm thời cho một operation trong budget. Circuit breaker theo dõi nhiều call theo thời gian và fail fast khi dependency có dấu hiệu hỏng, để bảo vệ caller và downstream khỏi tải thêm. Hai pattern thường đi cùng timeout và fallback.</div>
+  </div>
+
+  <div class="tier t2">
+    <div class="tier-head">
+      <span class="badge">Tầng 2 — Deep Dive</span>
+      <span class="tier-title">Failure classification</span>
+    </div>
+    <div class="q">Q: Khi nào không retry?</div>
+    <div class="a">Không retry lỗi validation/authorization, lỗi deterministic do request sai, và command không idempotent nếu không có idempotency key. Cũng không retry khi timeout budget đã hết hoặc circuit breaker đã open. Retry phải có max attempts, backoff, jitter và metrics.</div>
+  </div>
+
+  <div class="tier t3">
+    <div class="tier-head">
+      <span class="badge">Tầng 3 — Architecture</span>
+      <span class="tier-title">Cascading failure design</span>
+    </div>
+    <div class="q">Q: Thiết kế `ride-options` chịu được route provider chậm 10 phút.</div>
+    <div class="a">Đặt timeout 300-500ms theo SLO, retry 1-2 lần cho lỗi transient với jitter, circuit breaker open khi slow/failure rate cao, fallback ETA cache có flag degraded, bulkhead route pool riêng, promo/banner optional không ảnh hưởng route, metrics/alert cho open circuit, downstream RPS và fallback rate.</div>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
+  <div class="feynman">
+    <div class="fy-head">🎓 Feynman Check</div>
+    <div class="fy-prompt">"Giải thích cho một junior dev trong 5 phút: tại sao retry không timeout có thể làm hệ thống chết nhanh hơn?"</div>
+    <div class="fy-rule">Quy tắc: phải nhắc đến thread/connection holding, retry amplification, backoff jitter và circuit breaker.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="fy-head">🎓 Calibration Check</div>
+    <div class="fy-prompt">Vẽ timeline provider chậm: request vào, timeout, retry, circuit open, fallback. Ghi rõ metric nào tăng ở từng bước.</div>
+    <div class="fy-rule">Nếu không gắn pattern với metric, bạn mới hiểu pattern ở mức lý thuyết.</div>
+  </div>
+
+  <div class="verify-source">
+    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
+    <p>Cross-check với official sources:</p>
+    <ul>
+      <li><a href="https://resilience4j.readme.io/docs">Resilience4j Documentation</a></li>
+      <li><a href="https://docs.spring.io/spring-cloud-circuitbreaker/reference/">Spring Cloud Circuit Breaker Reference</a></li>
+      <li><a href="https://docs.spring.io/spring-boot/reference/actuator/metrics.html">Spring Boot Actuator Metrics</a></li>
+      <li><a href="https://github.com/resilience4j/resilience4j">Resilience4j source code</a></li>
+      <li>Sách: <em>Release It!</em> — Michael T. Nygard, các chương về stability patterns.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div>📁 #22 Resilience Patterns · Phase 5 — Messaging &amp; Resilience</div>
+  <div>Tiếp theo: #23 Performance Tuning</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

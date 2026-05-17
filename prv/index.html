@@ -176,8 +176,10 @@
   <nav class="toc" aria-label="Mục lục trang chủ">
     <a href="#core-java">Core Java Mastery</a>
     <a href="#spring">Spring Ecosystem</a>
+    <a href="#database">Database</a>
     <a href="#architecture">Architecture Core</a>
-    <a href="#foundation">Foundation & Reliability</a>
+    <a href="#messaging-resilience">Messaging & Resilience</a>
+    <a href="#junior-foundation">Junior Foundation</a>
   </nav>
 </aside>
 
@@ -191,14 +193,14 @@
     <p class="lead">Trang chủ gom các file HTML hiện có trong thư mục này để mở nhanh từng bài học.</p>
   </div>
   <div class="home-actions">
-    <span class="phase-tag">17 bài</span>
+    <span class="phase-tag">26 bài</span>
     <span class="phase-tag">HTML offline</span>
   </div>
 </section>
 
 <div class="search-wrap">
   <input class="search-input" id="moduleSearch" type="search" placeholder="Tìm theo số bài, tên chủ đề hoặc nhóm..." autocomplete="off">
-  <div class="count-pill" id="resultCount">17 bài</div>
+  <div class="count-pill" id="resultCount">26 bài</div>
 </div>
 <div class="empty-state" id="emptyState">Không có bài nào khớp với từ khóa hiện tại.</div>
 
@@ -332,6 +334,23 @@
   </div>
 </section>
 
+<section id="database" class="module-section">
+  <h2>Database</h2>
+  <div class="module-grid">
+    <a class="module-card" href="11-sql-advanced.html" data-search="11 sql advanced index strategy execution plan query optimization covering index database">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#11</span>
+          <span class="module-status">SQL</span>
+        </div>
+        <h3>SQL Nâng Cao</h3>
+        <p>Index strategy, execution plan, query optimization, covering index và cách đọc bottleneck query trong production.</p>
+      </div>
+      <div class="module-foot"><span>11-sql-advanced.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
 <section id="architecture" class="module-section">
   <h2>Architecture Core</h2>
   <div class="module-grid">
@@ -382,11 +401,76 @@
       </div>
       <div class="module-foot"><span>18-event-driven-architecture.html</span><span>Open</span></div>
     </a>
+
+    <a class="module-card" href="19-api-design.html" data-search="19 api design rest versioning idempotency key rate limiting pagination api contract">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#19</span>
+          <span class="module-status">API</span>
+        </div>
+        <h3>API Design</h3>
+        <p>REST best practices, versioning, idempotency key, rate limiting, pagination và API contract dễ vận hành.</p>
+      </div>
+      <div class="module-foot"><span>19-api-design.html</span><span>Open</span></div>
+    </a>
   </div>
 </section>
 
-<section id="foundation" class="module-section">
-  <h2>Foundation & Reliability</h2>
+<section id="messaging-resilience" class="module-section">
+  <h2>Messaging &amp; Resilience</h2>
+  <div class="module-grid">
+    <a class="module-card" href="20-apache-kafka.html" data-search="20 apache kafka producer consumer partition offset exactly once event streaming messaging">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#20</span>
+          <span class="module-status">Kafka</span>
+        </div>
+        <h3>Apache Kafka</h3>
+        <p>Producer/consumer, partition, offset, ordering, idempotency, rebalancing, lag, DLQ và exactly-once semantics đúng biên.</p>
+      </div>
+      <div class="module-foot"><span>20-apache-kafka.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="21-async-patterns.html" data-search="21 async patterns message queue job queue outbox scheduler batch durable work">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#21</span>
+          <span class="module-status">Async</span>
+        </div>
+        <h3>Async Patterns</h3>
+        <p>Message queue, job queue, durable background work, outbox pattern, scheduler, batch và idempotent retry trong production.</p>
+      </div>
+      <div class="module-foot"><span>21-async-patterns.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="22-resilience-patterns.html" data-search="22 resilience patterns circuit breaker retry backoff jitter bulkhead timeout fallback resilience4j">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#22</span>
+          <span class="module-status">Resilience</span>
+        </div>
+        <h3>Resilience Patterns</h3>
+        <p>Timeout, retry with backoff/jitter, circuit breaker, bulkhead, fallback và cách tránh cascading failure.</p>
+      </div>
+      <div class="module-foot"><span>22-resilience-patterns.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="23-performance-tuning.html" data-search="23 performance tuning profiling bottleneck connection pool hikari jfr async profiler query tuning">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#23</span>
+          <span class="module-status">Performance</span>
+        </div>
+        <h3>Performance Tuning</h3>
+        <p>Method đo trước khi tối ưu, profiling Java, bottleneck taxonomy, query tuning, cache và connection pool tuning.</p>
+      </div>
+      <div class="module-foot"><span>23-performance-tuning.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="junior-foundation" class="module-section">
+  <h2>Junior Foundation</h2>
   <div class="module-grid">
     <a class="module-card" href="47-junior-foundation-pack.html" data-search="47 junior foundation pack java backend basic web sql http git">
       <div>
@@ -422,6 +506,42 @@
         <p>Error handling, exception boundary, structured logging và tư duy debug production cho backend service.</p>
       </div>
       <div class="module-foot"><span>49-exception-logging.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="50-git-daily-workflow.html" data-search="50 git daily workflow branch commit rebase conflict stash reflog junior">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#50</span>
+          <span class="module-status">Git</span>
+        </div>
+        <h3>Git Daily Workflow</h3>
+        <p>Mental model DAG, working tree/index/commit, branch, rebase, conflict resolution, stash và reflog recovery.</p>
+      </div>
+      <div class="module-foot"><span>50-git-daily-workflow.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="51-linux-backend-essentials.html" data-search="51 linux backend essentials process log grep tail ps top lsof ss curl journalctl">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#51</span>
+          <span class="module-status">Linux</span>
+        </div>
+        <h3>Linux for Backend Dev</h3>
+        <p>Process, port, log, disk, file handle, network debug và các command cần reflex khi xử lý production.</p>
+      </div>
+      <div class="module-foot"><span>51-linux-backend-essentials.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="52-collections-deep-dive.html" data-search="52 collections deep dive arraylist linkedlist hashmap treemap concurrenthashmap jmh benchmark">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#52</span>
+          <span class="module-status">Collections</span>
+        </div>
+        <h3>Collections Deep Dive</h3>
+        <p>ArrayList internals, HashMap collision, TreeMap ordering, ConcurrentHashMap và cách benchmark bằng evidence.</p>
+      </div>
+      <div class="module-foot"><span>52-collections-deep-dive.html</span><span>Open</span></div>
     </a>
   </div>
 </section>

@@ -322,6 +322,314 @@ tbody tr:hover { background: var(--bg-elev); }
 .section-tag.c { background: var(--success-soft); color: var(--success); }
 .section-tag.d { background: var(--warning-soft); color: var(--warning); }
 
+/* =========================================
+   ENHANCEMENT BLOCKS — Anti "fake understanding"
+   ========================================= */
+
+/* Pause & Predict — force active recall */
+.pause-block {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px dashed var(--info);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin: 24px 0;
+}
+[data-theme="dark"] .pause-block { background: linear-gradient(135deg, #082f49 0%, #0c4a6e 100%); }
+.pause-block .pause-head {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; color: var(--info);
+  font-size: 0.95rem; margin-bottom: 10px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.pause-block .pause-q { font-weight: 600; font-size: 1rem; color: var(--text); margin: 8px 0; }
+.pause-block .pause-hint { font-style: italic; color: var(--text-muted); font-size: 0.9rem; }
+
+/* Misconception Check */
+.misconception {
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 20px 0;
+}
+.misconception .mc-head {
+  font-weight: 700; color: var(--warning);
+  font-size: 0.95rem; margin-bottom: 8px;
+}
+.misconception .mc-wrong {
+  background: var(--danger-soft);
+  border-left: 3px solid var(--danger);
+  padding: 10px 14px; border-radius: 4px;
+  margin: 8px 0; font-size: 0.93rem;
+}
+.misconception .mc-wrong::before {
+  content: "❌ NHIỀU NGƯỜI NGHĨ: ";
+  font-weight: 700; color: var(--danger);
+  font-size: 0.85rem;
+}
+.misconception .mc-right {
+  background: var(--success-soft);
+  border-left: 3px solid var(--success);
+  padding: 10px 14px; border-radius: 4px;
+  margin: 8px 0; font-size: 0.93rem;
+}
+.misconception .mc-right::before {
+  content: "✅ THỰC TẾ: ";
+  font-weight: 700; color: var(--success);
+  font-size: 0.85rem;
+}
+
+/* Lịch sử ra đời */
+.history-block {
+  background: linear-gradient(90deg, #fef3c7 0%, #fffbeb 100%);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px; margin: 20px 0;
+  position: relative;
+}
+[data-theme="dark"] .history-block { background: linear-gradient(90deg, #451a03 0%, #292524 100%); }
+.history-block .hist-head {
+  font-weight: 700; color: var(--warning);
+  font-size: 0.95rem; margin-bottom: 10px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.history-block .hist-timeline {
+  font-family: var(--font-mono); font-size: 0.85rem;
+  color: var(--text-muted); padding: 8px 0;
+  border-left: 2px solid var(--warning); padding-left: 14px;
+  margin: 10px 0;
+}
+.history-block .hist-timeline strong { color: var(--text); font-family: var(--font-sans); }
+
+/* Thử phá vỡ */
+.break-it {
+  background: var(--purple-soft);
+  border: 1px solid var(--purple);
+  border-left: 4px solid var(--purple);
+  border-radius: var(--radius);
+  padding: 16px 20px; margin: 20px 0;
+}
+.break-it .bi-head {
+  font-weight: 700; color: var(--purple);
+  font-size: 0.95rem; margin-bottom: 8px;
+}
+.break-it details { margin-top: 12px; }
+.break-it summary {
+  cursor: pointer; padding: 8px 14px;
+  background: var(--bg);
+  border-radius: 6px; font-weight: 500;
+  color: var(--purple); font-size: 0.92rem;
+  user-select: none;
+}
+.break-it summary:hover { background: var(--accent-soft); }
+.break-it details[open] summary { margin-bottom: 10px; }
+.break-it .bi-answer {
+  background: var(--bg);
+  border-left: 3px solid var(--purple);
+  padding: 12px 16px; border-radius: 0 6px 6px 0;
+  font-size: 0.93rem; color: var(--text-muted);
+}
+
+/* Edge Cases — Production Reality */
+.edge-cases {
+  background: linear-gradient(135deg, #fef2f2 0%, #fce7f3 100%);
+  border: 1px solid var(--danger);
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px; margin: 20px 0;
+}
+[data-theme="dark"] .edge-cases { background: linear-gradient(135deg, #450a0a 0%, #500724 100%); }
+.edge-cases .ec-head {
+  font-weight: 700; color: var(--danger);
+  font-size: 0.95rem; margin-bottom: 10px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.edge-cases .ec-intro { font-size: 0.93rem; color: var(--text-muted); margin-bottom: 12px; }
+.edge-cases .ec-list { list-style: none; padding: 0; margin: 0; }
+.edge-cases .ec-list li {
+  background: var(--bg);
+  border-left: 3px solid var(--danger);
+  padding: 10px 14px; margin: 8px 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.93rem;
+}
+.edge-cases .ec-list li strong { color: var(--danger); }
+.edge-cases .ec-list li::before {
+  content: "⚠ "; font-weight: 700; color: var(--danger);
+}
+
+/* Build Exercise */
+.build-exercise {
+  background: var(--success-soft);
+  border: 2px solid var(--success);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px; margin: 24px 0;
+}
+.build-exercise .be-head {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; color: var(--success);
+  font-size: 1.05rem; margin-bottom: 12px;
+}
+.build-exercise .be-deliverable {
+  background: var(--bg);
+  border-left: 3px solid var(--success);
+  padding: 12px 16px; border-radius: 0 6px 6px 0;
+  margin: 10px 0; font-size: 0.93rem;
+}
+.build-exercise .be-deliverable strong { color: var(--success); display: block; margin-bottom: 4px; }
+.build-exercise .be-criteria { font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.build-exercise .be-criteria strong { color: var(--success); }
+
+/* Feynman Prompt */
+.feynman {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px dashed var(--success);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px; margin: 24px 0;
+  text-align: center;
+}
+[data-theme="dark"] .feynman { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); }
+.feynman .fy-head {
+  font-weight: 700; color: var(--success);
+  font-size: 1rem; margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.feynman .fy-prompt {
+  font-size: 1.05rem; color: var(--text);
+  font-style: italic; margin: 8px 0;
+}
+.feynman .fy-rule {
+  font-size: 0.85rem; color: var(--text-muted);
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed var(--success);
+}
+
+/* Verify Against Source */
+.verify-source {
+  background: var(--info-soft);
+  border-left: 4px solid var(--info);
+  border-radius: var(--radius);
+  padding: 14px 18px; margin: 18px 0;
+  font-size: 0.93rem;
+}
+.verify-source .vs-head {
+  font-weight: 700; color: var(--info);
+  font-size: 0.9rem; margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.verify-source ul { margin: 8px 0 0 18px; padding: 0; }
+.verify-source li { margin: 4px 0; }
+.verify-source a { color: var(--info); font-weight: 500; }
+
+/* Knowledge importance tags — Core / Supplementary / Advanced */
+.k-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-right: 8px;
+  vertical-align: middle;
+  font-family: var(--font-sans);
+}
+.k-tag.core {
+  background: var(--danger);
+  color: white;
+}
+.k-tag.core::before { content: "★ "; }
+.k-tag.supplementary {
+  background: var(--info-soft);
+  color: var(--info);
+  border: 1px solid var(--info);
+}
+.k-tag.advanced {
+  background: var(--purple-soft);
+  color: var(--purple);
+  border: 1px solid var(--purple);
+}
+.k-tag.optional {
+  background: var(--bg-elev);
+  color: var(--text-faint);
+  border: 1px solid var(--border-strong);
+}
+
+/* Knowledge importance heading — full-width banner under h3 */
+.k-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  margin: 8px 0 16px;
+  font-size: 0.9rem;
+  background: var(--bg-elev);
+  border-left: 3px solid var(--border-strong);
+}
+.k-banner.core { background: #fef2f2; border-left-color: var(--danger); color: #991b1b; }
+[data-theme="dark"] .k-banner.core { background: #450a0a; color: #fca5a5; }
+.k-banner.supplementary { background: var(--info-soft); border-left-color: var(--info); color: #075985; }
+[data-theme="dark"] .k-banner.supplementary { color: #7dd3fc; }
+.k-banner.advanced { background: var(--purple-soft); border-left-color: var(--purple); color: #6b21a8; }
+[data-theme="dark"] .k-banner.advanced { color: #c4b5fd; }
+.k-banner strong { font-weight: 700; }
+
+/* Roadmap visual — show core path */
+.roadmap {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin: 20px 0;
+}
+.roadmap-head {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.roadmap-path { display: grid; gap: 8px; }
+.roadmap-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.roadmap-item .step {
+  background: var(--accent);
+  color: white;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+}
+.roadmap-item.core { border-left: 3px solid var(--danger); }
+.roadmap-item.core .step { background: var(--danger); }
+.roadmap-item.supp { border-left: 3px solid var(--info); }
+.roadmap-item.supp .step { background: var(--info); }
+.roadmap-item.adv { border-left: 3px solid var(--purple); }
+.roadmap-item.adv .step { background: var(--purple); }
+
+/* How to study banner — meta intro */
+.study-banner {
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px; margin: 0 0 32px;
+}
+[data-theme="dark"] .study-banner { background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%); }
+.study-banner .sb-head {
+  font-weight: 700; color: var(--accent);
+  font-size: 1.05rem; margin-bottom: 10px;
+}
+.study-banner .sb-rules { font-size: 0.93rem; color: var(--text-muted); }
+.study-banner .sb-rules li { margin: 6px 0; }
+
 /* Log display card */
 .log-card {
   background: #1e1e2e; border: 1px solid var(--border);

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#11 — SQL Nâng Cao | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 3 — Database<span class="sep">/</span><strong>#11 SQL Nâng Cao</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#btree">2. B-Tree Index</a>
+    <a href="#composite">3. Composite Index + Leftmost Prefix</a>
+    <a href="#selectivity">4. Selectivity & Column Order</a>
+    <a href="#covering">5. Covering Index</a>
+    <a href="#explain">6. EXPLAIN ANALYZE</a>
+    <a href="#planner">7. Query Planner</a>
+    <a href="#monitoring">8. Slow Query Monitoring</a>
+    <a href="#maintenance">9. Index Maintenance</a>
+    <a href="#antipatterns">10. Anti-Patterns</a>
+    <a href="#build-projects">11. Build Projects</a>
+    <a href="#interview">12. Interview Framework</a>
+    <a href="#feynman-end">13. Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔴 CRITICAL — Performance Leverage</span>
+  <h1>#11 — SQL Nâng Cao</h1>
+  <p class="lead">Index strategy, Execution plan, Query optimization. Senior khác junior <strong>chính ở chỗ này</strong>: cùng query, senior viết thành 50ms, junior viết 8 giây trên cùng dataset. Examples dùng <strong>e-commerce order search</strong> và <strong>social platform timeline</strong>.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">C — Database</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần + build benchmark</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#9 JPA N+1, #12 DB Design, #23 Performance</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">3 — Database</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>SQL có nhiều khái niệm trừu tượng dễ "đọc trôi" nhưng không apply được. 5 quy tắc bắt buộc:</p>
+    <ol>
+      <li><strong>⏸ Pause &amp; Predict</strong>: BẮT BUỘC dừng, viết câu trả lời ra giấy trước khi đọc đáp án</li>
+      <li><strong>🧠 Misconception Check</strong>: tự hỏi "tôi có đang nghĩ giống cách sai không?"</li>
+      <li><strong>🔬 Thử Phá Vỡ</strong>: nghĩ 3 cách query break trước khi xem analysis</li>
+      <li><strong>🔨 Build</strong>: setup PostgreSQL local + 1M rows + chạy EXPLAIN ANALYZE thật. <em>Không thay được</em>.</li>
+      <li><strong>🎓 Feynman</strong>: cuối mỗi section, đóng máy, vẽ B-Tree trên giấy + giải thích tại sao composite index column order matters</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Đọc Theo Độ Ưu Tiên</h2>
+<p>File này dài. Nếu bạn có:</p>
+<ul>
+<li><strong>1 ngày</strong> → đọc chỉ CORE (4 sections marked đỏ)</li>
+<li><strong>1 tuần</strong> → đọc CORE + SUPPLEMENTARY</li>
+<li><strong>2 tuần</strong> → đọc tất cả + làm Build Projects</li>
+</ul>
+
+<div class="roadmap">
+  <div class="roadmap-head">Path đề xuất:</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span><div><strong>B-Tree Index</strong> — Foundation. Hiểu cấu trúc trước, mới hiểu mọi thứ về index.</div></div>
+    <div class="roadmap-item core"><span class="step">2</span><div><strong>Composite Index + Leftmost Prefix</strong> — Source of #1 SQL bug junior. Hiểu rule này = 80% production query bug.</div></div>
+    <div class="roadmap-item core"><span class="step">3</span><div><strong>Selectivity</strong> — Vì sao column order matter. Quyết định performance.</div></div>
+    <div class="roadmap-item core"><span class="step">4</span><div><strong>EXPLAIN ANALYZE</strong> — Tool chính để debug. Mỗi senior phải đọc fluent.</div></div>
+    <div class="roadmap-item supp"><span class="step">5</span><div><strong>Covering Index</strong> — Performance boost cho hot queries. Worth learning sau core.</div></div>
+    <div class="roadmap-item supp"><span class="step">6</span><div><strong>Query Planner heuristics</strong> — Hiểu vì sao DB chọn plan này.</div></div>
+    <div class="roadmap-item supp"><span class="step">7</span><div><strong>Slow Query Monitoring</strong> — Production setup. P6Spy + alerting.</div></div>
+    <div class="roadmap-item adv"><span class="step">8</span><div><strong>Index Maintenance</strong> — REINDEX, ANALYZE, vacuum strategy. DBA-level.</div></div>
+    <div class="roadmap-item adv"><span class="step">9</span><div><strong>Cost-based optimizer internals</strong> — Statistics, pg_stats, histograms. Advanced.</div></div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Tổng Quan — Vì Sao SQL Critical Cho Senior</h2>
+<p>Junior viết SQL "chạy được". Senior viết SQL "<em>chạy được trên 50M rows trong 50ms</em>". Khác biệt nằm ở:</p>
+<ul>
+<li>Hiểu <strong>cách DB lưu data</strong> (B-Tree, heap pages)</li>
+<li>Predict được DB <strong>chọn plan nào</strong> cho query (index scan vs seq scan)</li>
+<li>Đọc <strong>EXPLAIN ANALYZE</strong> fluent, không sợ</li>
+<li>Biết khi nào index <strong>không help</strong> (functions in WHERE, leftmost prefix violation)</li>
+<li>Trade-off giữa <strong>read perf vs write perf</strong> (mỗi index = +1 cost mỗi insert)</li>
+</ul>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử của Index — Từ Hash Tables đến B-Tree</div>
+  <div class="hist-timeline">
+    <strong>1960s-1970s</strong> — Database đầu (IBM IMS, hierarchical) dùng <strong>hash index</strong> cho equality lookup. Không support range query (BETWEEN, &lt;, &gt;). Mỗi insert hash key có thể trigger rehash toàn bộ — expensive.<br><br>
+    <strong>1972</strong> — <strong>Rudolf Bayer</strong> và <strong>Ed McCreight</strong> publish paper "Organization and Maintenance of Large Ordered Indices" introduce <strong>B-Tree</strong>. Self-balancing tree với 3 properties critical:
+    <ul style="margin:6px 0 0 20px">
+    <li>Mọi leaf cùng depth → predictable O(log n)</li>
+    <li>Node fan-out cao (100-1000 keys/node) → tree shallow, ít disk I/O</li>
+    <li>Range query natural (next sibling pointer)</li>
+    </ul><br>
+    <strong>1980s</strong> — B+Tree variant (data chỉ ở leaves, internal nodes chỉ keys) thành standard cho relational DB. Oracle, DB2 dùng.<br><br>
+    <strong>1990s-2000s</strong> — PostgreSQL, MySQL InnoDB inherit B+Tree. Một số DB experiment với LSM-Tree (Cassandra, LevelDB) cho write-heavy workload — trade read perf cho write throughput.<br><br>
+    <strong>Modern</strong> — B-Tree vẫn dominant cho OLTP (online transactional). LSM-Tree cho time-series/analytics. Hybrid (TokuDB, MyRocks) cho mixed workload.<br><br>
+    <strong>Insight</strong>: B-Tree thắng vì balance giữa read/write/range query. Hiểu cấu trúc giúp predict performance trước khi chạy.
+  </div>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Order Search API Của Sàn TMĐT</h2>
+
+<p>Sàn ShopVN có table <code>orders</code> 50M rows (5 năm operation, ~30K orders/ngày × 1800 ngày). API <code>GET /api/customers/{id}/orders?status=DELIVERED&amp;from=2026-01-01</code> mất <strong>8 giây</strong>. SLA yêu cầu 500ms. Query trông đơn giản:</p>
+
+<pre><code class="language-sql">SELECT id, customer_id, total_amount, status, created_at, shipping_address
+FROM orders
+WHERE customer_id = ?
+  AND status = 'DELIVERED'
+  AND created_at &gt; ?
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+
+<p>Không có N+1, có LIMIT, primary key đã có index trên <code>id</code>. Nhưng query planner chọn... <strong>full table scan</strong>. <em>Vì sao?</em></p>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — BẮT BUỘC dừng</div>
+  <div class="pause-q">Trước khi đọc tiếp, tự trả lời (viết ra giấy):</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>3 thông tin từ <code>EXPLAIN ANALYZE</code> output sẽ confirm đây là full scan problem?</li>
+  <li>Tại sao chỉ add <code>CREATE INDEX idx_cust ON orders(customer_id)</code> KHÔNG đủ?</li>
+  <li>Nếu tạo <code>CREATE INDEX idx_cust_status_date ON orders(customer_id, status, created_at DESC)</code> — tại sao <strong>column order matter</strong>? Reverse thành <code>(created_at, status, customer_id)</code> sẽ ra sao?</li>
+  <li>Sau khi add composite index, latency drop xuống 200ms. Nhưng 1 tháng sau lại tăng 5s. Data volume không đổi. <strong>Chuyện gì xảy ra?</strong></li>
+  </ol>
+  <div class="pause-hint">Nếu trả lời được hết 4 câu → bạn solid về SQL, đọc lướt file. Nếu &lt;3 câu → đọc kỹ.</div>
+</div>
+</section>
+
+<section id="btree">
+<h2>2. B-Tree Index <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation cho mọi thứ về index</strong>. Hiểu B-Tree → tự predict được DB performance trước khi run query.
+</div>
+
+<p>B-Tree index <strong>không phải</strong> sorted list. Đó là <strong>self-balancing tree</strong> giữ lookup O(log n) kể cả khi data grow:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .root{fill:#fef2f2;stroke:#dc2626;stroke-width:2}
+    .internal{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .leaf{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .mono{font-family:'JetBrains Mono';font-size:11px}
+    .edge{stroke:#64748b;stroke-width:1.5;fill:none}
+  </style></defs>
+
+  <rect x="290" y="20" width="140" height="40" rx="6" class="root"/>
+  <text x="360" y="44" text-anchor="middle" class="lbl mono">[50 | 100]</text>
+  <text x="450" y="44" font-size="10" fill="#475569">← Root node</text>
+
+  <rect x="50" y="100" width="120" height="36" rx="6" class="internal"/>
+  <text x="110" y="123" text-anchor="middle" class="lbl mono">[10 | 30]</text>
+
+  <rect x="300" y="100" width="120" height="36" rx="6" class="internal"/>
+  <text x="360" y="123" text-anchor="middle" class="lbl mono">[60 | 80]</text>
+
+  <rect x="540" y="100" width="140" height="36" rx="6" class="internal"/>
+  <text x="610" y="123" text-anchor="middle" class="lbl mono">[120 | 150]</text>
+  <text x="690" y="123" font-size="10" fill="#475569">← Internal</text>
+
+  <line x1="320" y1="60" x2="110" y2="100" class="edge"/>
+  <line x1="360" y1="60" x2="360" y2="100" class="edge"/>
+  <line x1="400" y1="60" x2="610" y2="100" class="edge"/>
+
+  <rect x="20" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="60" y="200" text-anchor="middle" class="lbl mono">[5,15,25]</text>
+  <rect x="110" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="150" y="200" text-anchor="middle" class="lbl mono">[35,45]</text>
+  <rect x="270" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="310" y="200" text-anchor="middle" class="lbl mono">[55,70]</text>
+  <rect x="380" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="420" y="200" text-anchor="middle" class="lbl mono">[85,95]</text>
+  <rect x="510" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="550" y="200" text-anchor="middle" class="lbl mono">[125,140]</text>
+  <rect x="600" y="180" width="80" height="32" rx="4" class="leaf"/>
+  <text x="640" y="200" text-anchor="middle" class="lbl mono">[160,200]</text>
+  <text x="700" y="200" font-size="10" fill="#475569">← Leaf</text>
+
+  <line x1="90" y1="136" x2="60" y2="180" class="edge"/>
+  <line x1="130" y1="136" x2="150" y2="180" class="edge"/>
+  <line x1="340" y1="136" x2="310" y2="180" class="edge"/>
+  <line x1="380" y1="136" x2="420" y2="180" class="edge"/>
+  <line x1="590" y1="136" x2="550" y2="180" class="edge"/>
+  <line x1="630" y1="136" x2="640" y2="180" class="edge"/>
+
+  <text x="360" y="260" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Tìm key 75: root (50|100) → 100&lt;75? no → 75&lt;100 → right child → (60|80) → 75&lt;80 → left → leaf [55,70] → not found
+  </text>
+</svg>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Tại sao B-Tree shallow trên data lớn?</div>
+  <p>Mỗi node có thể chứa <strong>100-1000 keys</strong> (fan-out cao). Với fan-out 100:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li>Depth 1 → 100 leaves → 100 keys</li>
+  <li>Depth 2 → 100² = 10K leaves → 1M keys</li>
+  <li>Depth 3 → 100³ = 1M leaves → 100M keys</li>
+  <li>Depth 4 → 100⁴ = 100M leaves → 10B keys</li>
+  </ul>
+  <p>50M rows → tree chỉ depth 3-4. Lookup = <strong>3-4 disk I/O</strong> (vs 50M nếu sequential scan). Đây là magic của B-Tree.</p>
+</div>
+
+<h3>Index Scan vs Heap Fetch — 2-Phase Lookup</h3>
+
+<p>Leaf nodes của index chứa <strong>row pointer (TID)</strong>, không phải full row. Sau khi tìm xong index, DB phải <em>fetch heap page</em> để get full row data:</p>
+
+<pre><code class="language-text">Index Scan:
+  Phase 1: Navigate B-Tree → tìm TIDs    (3-4 I/Os)
+  Phase 2: Fetch heap pages              (1 I/O per matching row, có thể merge)
+
+→ Total cost cho 20 rows: ~10-25 I/Os
+→ Vs Seq Scan 50M rows: ~600K I/Os (mỗi page chứa ~80 rows)
+
+→ Index scan nhanh hơn 60,000x cho query selective</code></pre>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "Index = sorted list of values"</div>
+  <div class="mc-wrong">"Index là 1 file sorted theo column value, tìm bằng binary search"</div>
+  <div class="mc-right">B-Tree <strong>không phải sorted array</strong>. Sorted array có cost insert/delete O(n) (shift elements). B-Tree balance dynamic — insert/delete O(log n) với rebalancing. Đây là lý do DB có thể handle hàng triệu writes/second mà index vẫn fast.</div>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Index trên column có 2 unique values</div>
+  <p style="font-size:0.93rem;margin:8px 0">"Tôi tạo index trên column <code>is_deleted</code> (boolean true/false) để query <code>WHERE is_deleted = false</code> nhanh hơn." Đoán: index có giúp không?</p>
+  <details>
+    <summary>Click để xem analysis</summary>
+    <div class="bi-answer">
+      <p><strong>KHÔNG giúp, có khi còn hại.</strong> Reasoning:</p>
+      <ol style="margin:0 0 0 20px">
+      <li><strong>Low selectivity</strong>: 95% rows có <code>is_deleted=false</code> → DB scan 95% rows kể cả qua index → cost cao hơn full scan (extra index lookup + heap fetch).</li>
+      <li><strong>Planner thông minh</strong>: PostgreSQL optimizer dù có index sẽ chọn seq scan vì cost lower.</li>
+      <li><strong>Index nhưng vô dụng</strong>: tốn storage + write cost (mỗi insert/update phải maintain index) nhưng read không benefit.</li>
+      </ol>
+      <p><strong>Fix</strong>: dùng <em>partial index</em>: <code>CREATE INDEX idx_active ON orders(created_at) WHERE is_deleted = false</code>. Index chỉ chứa rows hợp lệ → smaller, faster. Hoặc combine vào composite index nếu thường filter together.</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="composite">
+<h2>3. Composite Index + Leftmost Prefix Rule <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — #1 source of SQL bug junior</strong>. Hiểu rule này = fix được 80% production query slow.
+</div>
+
+<p>Composite index <code>(customer_id, status, created_at)</code> tạo B-Tree sort theo thứ tự:</p>
+
+<pre><code class="language-text">customer_id=CUST_001:
+  status=CANCELLED:
+    2026-01-02, 2026-01-08, ...
+  status=DELIVERED:
+    2026-01-01, 2026-01-05, 2026-01-10, ...   ← sorted by created_at
+  status=PROCESSING:
+    2026-01-03, 2026-01-07, ...
+
+customer_id=CUST_002:
+  status=DELIVERED:
+    ...</code></pre>
+
+<h3>Leftmost Prefix Rule — Học thuộc</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>WHERE clause</th><th>Dùng được index?</th><th>Vì sao</th></tr></thead>
+<tbody>
+<tr><td><code>WHERE customer_id = ?</code></td><td>✅</td><td>First column</td></tr>
+<tr><td><code>WHERE customer_id = ? AND status = ?</code></td><td>✅</td><td>First 2 columns</td></tr>
+<tr><td><code>WHERE customer_id = ? AND status = ? AND created_at &gt; ?</code></td><td>✅</td><td>All 3 columns</td></tr>
+<tr><td><code>WHERE customer_id = ? AND created_at &gt; ?</code></td><td>⚠️</td><td>Skip status — index partial useful (chỉ first column)</td></tr>
+<tr><td><code>WHERE status = ? AND customer_id = ?</code></td><td>✅ (modern planner reorder)</td><td>Planner tự reorder predicates — equivalent</td></tr>
+<tr><td><code>WHERE status = ?</code></td><td>❌</td><td>Skip leading column customer_id</td></tr>
+<tr><td><code>WHERE created_at &gt; ?</code></td><td>❌</td><td>Skip 2 leading columns</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao "leftmost prefix" matter?</div>
+  <p>Vì B-Tree sort <strong>hierarchically</strong>: trước sort theo column 1, trong mỗi group lại sort theo column 2, etc. Tương tự sort tên người: trước theo họ, trong cùng họ thì theo tên.</p>
+  <p>Tìm "tất cả người tên 'Nhân'" mà không biết họ → phải scan toàn bộ danh bạ. Không có shortcut. Đây là lý do skip leading column = không dùng được index.</p>
+</div>
+</section>
+
+<section id="selectivity">
+<h2>4. Selectivity & Column Order <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Quyết định performance composite index</strong>. Sai column order = index gần như vô dụng.
+</div>
+
+<p><strong>Selectivity</strong>: column "selective" nếu WHERE values gần unique.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Column</th><th>Unique values</th><th>Selectivity</th><th>Rows/value avg</th></tr></thead>
+<tbody>
+<tr><td><code>customer_id</code></td><td>500K (50M / 100)</td><td>0.01 (1%)</td><td>~100 (rất selective)</td></tr>
+<tr><td><code>status</code></td><td>4 (PENDING/PROCESSING/DELIVERED/CANCELLED)</td><td>0.25 (25%)</td><td>~12.5M (low)</td></tr>
+<tr><td><code>created_at</code></td><td>~50M (millisecond precision)</td><td>~1.0 (gần unique)</td><td>~1 (cực selective)</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Rule</strong>: trong composite index, đặt column <strong>SELECTIVE NHẤT</strong> đầu tiên (đối với equality filters). Lý do:</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ (status, customer_id, created_at)</div>
+<pre><code class="language-sql">CREATE INDEX idx_bad ON orders(
+  status,        -- 25M rows where DELIVERED
+  customer_id,   -- narrow to ~50 rows
+  created_at
+);
+
+-- Query: WHERE customer_id=X AND status=DELIVERED
+-- Step 1: Index seek to status=DELIVERED → 25M entries
+-- Step 2: Within those, filter customer_id → 50 rows
+-- Step 3: Filter created_at, sort, limit
+--
+-- Index scans 25M index entries → SLOW</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ (customer_id, status, created_at)</div>
+<pre><code class="language-sql">CREATE INDEX idx_good ON orders(
+  customer_id,   -- narrow to ~100 rows
+  status,        -- narrow to ~50 rows
+  created_at     -- sort key
+);
+
+-- Query: WHERE customer_id=X AND status=DELIVERED
+-- Step 1: Index seek to customer_id=X → 100 entries
+-- Step 2: Within those, filter status → 50 entries
+-- Step 3: Already sorted by created_at DESC, take LIMIT 20
+--
+-- Index scans 100 entries → FAST (10K× ít hơn)</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Quy tắc thực dụng cho column order</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Equality filters trước, range/sort sau</strong>. <code>WHERE a = ? AND b BETWEEN x AND y</code> → index (a, b).</li>
+  <li><strong>Trong equality filters: high selectivity → low</strong>. Như example trên.</li>
+  <li><strong>Sort/ORDER BY column ở cuối</strong>. Index đã sorted theo column này → no extra sort needed.</li>
+  <li><strong>Pin column thường xuất hiện trong query lên trên</strong>. Index serve được nhiều query khác nhau cùng leading prefix.</li>
+  </ol>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Mixed equality + range filter</div>
+  <p style="font-size:0.93rem;margin:8px 0">Query: <code>WHERE customer_id = ? AND created_at &gt; ? AND status = ?</code>. Index nào tốt hơn?</p>
+  <ul style="font-size:0.9rem">
+    <li>A: <code>(customer_id, created_at, status)</code></li>
+    <li>B: <code>(customer_id, status, created_at)</code></li>
+  </ul>
+  <details>
+    <summary>Click để xem analysis</summary>
+    <div class="bi-answer">
+      <p><strong>B tốt hơn</strong>. Lý do: range filter (<code>created_at &gt; ?</code>) khi đặt trong middle composite index sẽ <strong>break leftmost prefix</strong> cho columns sau nó.</p>
+      <p>Cụ thể với A: <code>(customer_id, created_at, status)</code>:</p>
+      <ul style="margin:6px 0 0 20px;font-size:0.9rem">
+      <li>Index seek to <code>customer_id = X</code> → OK</li>
+      <li>Index seek to <code>created_at &gt; ?</code> trong subset đó → OK, returns N rows</li>
+      <li><strong>KHÔNG thể</strong> seek tiếp đến <code>status = ?</code> vì rows sau range filter scattered → phải scan tất cả N rows và filter status manually</li>
+      </ul>
+      <p>Với B: <code>(customer_id, status, created_at)</code>:</p>
+      <ul style="margin:6px 0 0 20px;font-size:0.9rem">
+      <li>Index seek to <code>customer_id = X</code> → OK</li>
+      <li>Index seek to <code>status = ?</code> trong subset → OK</li>
+      <li>Index seek to <code>created_at &gt; ?</code> trong subset đó → OK (range filter ở cuối — fine)</li>
+      </ul>
+      <p><strong>Rule</strong>: equality columns trước, range column ở cuối.</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="covering">
+<h2>5. Covering Index <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Performance optimization cho hot queries</strong>. Học sau khi nắm core. Senior signal nếu áp dụng đúng.
+</div>
+
+<p>Covering index = index chứa <em>đủ data</em> để answer query <strong>không cần heap fetch</strong>. Khi DB plan thấy mọi column SELECT đã có trong index → <em>"Index Only Scan"</em>.</p>
+
+<div class="code-label">Tạo covering index — PostgreSQL syntax</div>
+<pre><code class="language-sql">CREATE INDEX idx_orders_covering ON orders(customer_id, status, created_at DESC)
+INCLUDE (total_amount, shipping_address);
+-- "INCLUDE" columns stored trong leaf, không tham gia sort
+-- Không dùng cho WHERE filter, chỉ để avoid heap fetch
+
+-- Query nay là Index Only Scan
+SELECT id, customer_id, status, created_at, total_amount, shipping_address
+FROM orders
+WHERE customer_id = ? AND status = ? AND created_at &gt; ?
+ORDER BY created_at DESC LIMIT 20;</code></pre>
+
+<p><strong>Benchmark expected</strong> (50M rows table):</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Index strategy</th><th>p95 latency</th><th>I/O per query</th></tr></thead>
+<tbody>
+<tr><td>No index (seq scan)</td><td>8000ms</td><td>600K reads</td></tr>
+<tr><td>Basic composite index + heap fetch</td><td>180ms</td><td>~50 reads</td></tr>
+<tr><td>Covering index (Index Only Scan)</td><td>15ms</td><td>~5 reads</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Trade-off của covering index</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Storage</strong>: index size tăng 2-5× (vì store INCLUDE columns). Có thể vài chục GB extra.</li>
+  <li><strong>Write cost</strong>: mỗi UPDATE column trong INCLUDE phải update index → write amplification.</li>
+  <li><strong>Maintenance</strong>: REINDEX time tăng tỷ lệ với size.</li>
+  <li><strong>Khi nào worth</strong>: hot query (≥1000 QPS), read-heavy (10:1 read/write ratio), latency critical.</li>
+  <li><strong>Khi nào KHÔNG worth</strong>: rare query, write-heavy table, storage constrained.</li>
+  </ul>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "SELECT * có thể dùng covering index"</div>
+  <div class="mc-wrong">"Tôi tạo covering index với INCLUDE (a, b, c), query SELECT * sẽ tự dùng Index Only Scan"</div>
+  <div class="mc-right"><code>SELECT *</code> yêu cầu <strong>tất cả columns</strong>. Nếu table có 20 columns mà INCLUDE chỉ có 3 → DB vẫn phải fetch heap cho 17 columns còn lại → <strong>Index Scan (not Index Only)</strong>. Covering index defeated. <strong>Fix</strong>: explicit list columns trong SELECT, chỉ list những column index cover.</div>
+</div>
+</section>
+
+<section id="explain">
+<h2>6. EXPLAIN ANALYZE — Tool Debug Chính <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Tool quan trọng nhất debug query</strong>. Mỗi senior phải đọc fluent, hiểu mọi keyword.
+</div>
+
+<p>EXPLAIN ANALYZE chạy thật query + show plan + actual stats. <strong>EXPLAIN</strong> alone chỉ show estimate.</p>
+
+<div class="code-label">Output example — PostgreSQL</div>
+<pre><code class="language-text">EXPLAIN (ANALYZE, BUFFERS) SELECT ... WHERE customer_id = 'X' AND status = 'DELIVERED' ...
+
+Limit  (cost=10.29..10.35 rows=20 width=120) (actual time=0.234..0.250 rows=20 loops=1)
+  Buffers: shared hit=4
+  ->  Sort  (cost=10.29..10.35 rows=20 width=120) (actual time=0.228..0.238 rows=20 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: top-N heapsort  Memory: 27kB
+        Buffers: shared hit=4
+        ->  Index Scan using idx_orders_cust_status_date on orders
+              (cost=0.29..10.00 rows=100 width=120)
+              (actual time=0.042..0.080 rows=100 loops=1)
+              Index Cond: (customer_id = 'X' AND status = 'DELIVERED' AND created_at &gt; '2026-01-01')
+              Buffers: shared hit=4
+Planning Time: 0.123 ms
+Execution Time: 0.298 ms</code></pre>
+
+<h3>Key metrics — học thuộc</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Metric</th><th>Ý nghĩa</th><th>Red flag</th></tr></thead>
+<tbody>
+<tr><td><code>cost</code></td><td>Planner cost estimate (arbitrary unit)</td><td>Cost &gt; 10000 cho simple query → re-examine</td></tr>
+<tr><td><code>rows</code></td><td>Estimated rows fetched</td><td>Mismatch estimated vs actual rows × 10 → stale stats</td></tr>
+<tr><td><code>actual time=A..B</code></td><td>ms: A = first row, B = last row</td><td>B &gt; 1000ms = slow query</td></tr>
+<tr><td><code>loops</code></td><td>Số lần execute node</td><td>loops &gt; 1000 trong nested loop = N+1 problem</td></tr>
+<tr><td><code>Buffers: shared hit=X</code></td><td>Pages from cache (hit) vs disk (read)</td><td>Mostly disk reads = cold cache or large data</td></tr>
+<tr><td><code>Seq Scan</code></td><td>Full table scan</td><td>Seq Scan trên table &gt; 1M rows = missing index</td></tr>
+<tr><td><code>Index Scan</code></td><td>Using index + heap fetch</td><td>OK, but check rows efficiency</td></tr>
+<tr><td><code>Index Only Scan</code></td><td>Index covers query, no heap</td><td>Best case</td></tr>
+<tr><td><code>Nested Loop</code></td><td>Join via inner loop</td><td>OK cho small outer set. &gt;10K outer rows = bad</td></tr>
+<tr><td><code>Hash Join</code></td><td>Build hash table + probe</td><td>OK cho larger sets. Cần memory.</td></tr>
+<tr><td><code>Sort Method: external merge</code></td><td>Sort spill to disk (memory không đủ)</td><td>Slow. Tăng <code>work_mem</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — EXPLAIN ANALYZE Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>EXPLAIN (không ANALYZE) lying</strong>: estimate based on stats. Có thể wildly wrong nếu stats stale. Luôn dùng ANALYZE để see actual.</li>
+    <li><strong>EXPLAIN ANALYZE chạy thật query</strong>: UPDATE/DELETE/INSERT sẽ <em>modify data</em>! Phải wrap trong transaction + ROLLBACK: <code>BEGIN; EXPLAIN ANALYZE UPDATE ...; ROLLBACK;</code></li>
+    <li><strong>Cold cache vs warm cache</strong>: lần chạy đầu chậm (disk reads), lần 2 nhanh (cached). Chạy 3-5 lần lấy median.</li>
+    <li><strong>Plan thay đổi theo data size</strong>: dev DB 1K rows luôn dùng index. Prod 50M rows có thể chọn seq scan. Test trên realistic data size.</li>
+    <li><strong>Statistics expire</strong>: PostgreSQL ANALYZE auto-run nhưng có thể lag. Force: <code>ANALYZE orders;</code> trước khi explain.</li>
+    <li><strong>Parameter sniffing</strong>: query với hard-coded literal vs prepared statement có thể chọn plan khác. Test cả 2.</li>
+    <li><strong>Parallel scan</strong>: query lớn có thể parallel → output có <code>Workers Launched</code>. Concurrency limit affect.</li>
+    <li><strong>Generic plan vs custom plan</strong>: prepared statement chạy &gt;5 lần có thể switch sang generic plan (worse). Set <code>plan_cache_mode = force_custom_plan</code> để test.</li>
+  </ul>
+</div>
+</section>
+
+<section id="planner">
+<h2>7. Query Planner Heuristics <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Hiểu vì sao planner chọn plan này</strong>. Helpful cho debug, không bắt buộc nắm chi tiết.
+</div>
+
+<p>PostgreSQL planner dùng <strong>cost estimates</strong>, không phải actual time. Cost = combination của:</p>
+
+<ul>
+<li><strong>I/O cost</strong>: <code>random_page_cost = 4.0</code>, <code>seq_page_cost = 1.0</code> (defaults). Random reads expensive hơn sequential 4×.</li>
+<li><strong>CPU cost</strong>: <code>cpu_tuple_cost</code>, <code>cpu_index_tuple_cost</code>, <code>cpu_operator_cost</code>.</li>
+<li><strong>Estimated rows</strong>: từ <code>pg_statistics</code> (column histograms, n_distinct).</li>
+</ul>
+
+<p>Planner pick plan với <strong>lowest total cost</strong>. Decision tree:</p>
+
+<div class="code-label">Pseudo-decision logic</div>
+<pre><code class="language-text">For each query:
+  Generate candidate plans (Seq Scan, Index Scan, Index Only Scan, Bitmap Scan, ...)
+  For each plan:
+    Estimate cost based on stats + cost constants
+  Pick lowest-cost plan
+
+If filtering returns &gt; ~10% of rows → Seq Scan often wins (avoid random I/O)
+If filtering returns &lt; 5% of rows → Index Scan wins
+If query needs only indexed columns → Index Only Scan wins (no heap fetch)</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Khi planner sai — Stale statistics</div>
+  <p>PostgreSQL auto-vacuum chạy <code>ANALYZE</code> định kỳ, nhưng có delay. Sau big batch insert/delete:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li>Old stats: table có 1M rows, customer_id selectivity 0.001</li>
+  <li>Reality after batch: table có 100M rows, customer_id selectivity 0.0001</li>
+  <li>Planner estimate dựa old stats → wrong plan choice → query slow</li>
+  </ul>
+  <p><strong>Fix</strong>: <code>ANALYZE table_name;</code> sau batch operations. Hoặc tune <code>autovacuum_analyze_threshold</code>.</p>
+</div>
+</section>
+
+<section id="monitoring">
+<h2>8. Slow Query Monitoring <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Production setup essential</strong>. Junior chưa cần, senior phải có.
+</div>
+
+<h3>P6Spy — Java JDBC Interceptor</h3>
+
+<pre><code class="language-yaml"># application.yml
+spring:
+  datasource:
+    url: jdbc:p6spy:postgresql://localhost:5432/shopvn
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+
+# spy.properties (classpath)
+moduleLogWithPrepare=true
+excludecategories=info,debug
+logfile=logs/p6spy-slow.log
+filter=true
+slowQueryThresholdMs=200</code></pre>
+
+<pre><code class="language-java">@Slf4j
+@Component
+public class SlowQueryListener implements JdbcEventListener {
+    private static final long THRESHOLD_MS = 200;
+
+    @Override
+    public void onAfterAnyExecute(StatementInformation info, long timeNs, SQLException e) {
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(timeNs);
+        if (elapsedMs &gt; THRESHOLD_MS) {
+            log.warn("SLOW_QUERY [{}ms] {}", elapsedMs, info.getSqlWithValues());
+            slowQueryMetric.increment(elapsedMs);
+            // Optionally: send to Sentry/Datadog
+        }
+    }
+}</code></pre>
+
+<h3>PostgreSQL pg_stat_statements</h3>
+
+<pre><code class="language-sql">-- Enable extension (DBA action)
+CREATE EXTENSION pg_stat_statements;
+
+-- Top 20 slowest queries (mean time)
+SELECT
+    query,
+    calls,
+    total_exec_time,
+    mean_exec_time,
+    rows / calls AS avg_rows
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 20;
+
+-- Top 20 queries by total time impact
+SELECT query, total_exec_time, calls
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 20;</code></pre>
+</section>
+
+<section id="maintenance">
+<h2>9. Index Maintenance <span class="k-tag advanced">ADVANCED</span></h2>
+
+<div class="k-banner advanced">
+  <strong>ADVANCED — DBA-level operation</strong>. Backend dev nên biết khi nào cần, không cần master detail.
+</div>
+
+<p>Indexes fragmented theo thời gian (insert/update/delete). Periodic maintenance:</p>
+
+<pre><code class="language-sql">-- Refresh statistics — quick, an toàn
+ANALYZE orders;
+
+-- Rebuild fragmented index (PostgreSQL 12+ — CONCURRENTLY no lock)
+REINDEX INDEX CONCURRENTLY idx_orders_cust_status_date;
+
+-- Find unused indexes (candidate to drop)
+SELECT schemaname, tablename, indexname, idx_scan
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+ORDER BY tablename;
+
+-- Vacuum (reclaim space from deleted rows)
+VACUUM ANALYZE orders;</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">📅 Maintenance schedule recommended</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Daily 3AM</strong>: <code>ANALYZE</code> all hot tables (cheap, &lt;1 min)</li>
+  <li><strong>Weekly</strong>: Identify unused indexes, review with team</li>
+  <li><strong>Monthly</strong>: REINDEX critical indexes (CONCURRENTLY) trong low-traffic window</li>
+  <li><strong>Quarterly</strong>: Full VACUUM ANALYZE, review index strategy với DBA</li>
+  </ul>
+</div>
+</section>
+
+<section id="antipatterns">
+<h2>10. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+
+<h3>#1 Over-indexing (every column has index)</h3>
+
+<pre><code class="language-sql">-- ❌ 6 indexes trên 1 table
+CREATE INDEX idx_orders_id ON orders(id);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created ON orders(created_at);
+CREATE INDEX idx_orders_amount ON orders(total_amount);
+CREATE INDEX idx_orders_address ON orders(shipping_address);</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Consequence</div>
+  <p>Mỗi INSERT/UPDATE/DELETE phải maintain 6 indexes:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li>1 index: INSERT 100K rows = 2s</li>
+  <li>6 indexes: INSERT 100K rows = 6.2s (3× slower)</li>
+  </ul>
+  <p><strong>Fix</strong>: chỉ index columns thường filter/sort. Composite index cover được nhiều use case.</p>
+</div>
+
+<h3>#2 Wrong column order (high selectivity first when should be low)</h3>
+<p>Đã cover ở section 4. Fix: analyze query patterns + put narrowing column first.</p>
+
+<h3>#3 Function on indexed column defeats index</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ LOWER() defeats index</div>
+<pre><code class="language-sql">CREATE INDEX idx_email ON users(email);
+
+-- Query (case-insensitive search)
+SELECT * FROM users
+WHERE LOWER(email) = 'foo@bar.com';
+-- DB phải apply LOWER cho EVERY row → seq scan</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Functional index</div>
+<pre><code class="language-sql">CREATE INDEX idx_email_lower ON users(LOWER(email));
+
+-- Query uses functional index
+SELECT * FROM users
+WHERE LOWER(email) = 'foo@bar.com';
+-- Index seek O(log n)</code></pre>
+</div>
+</div>
+
+<p>Alternative: store data normalized (always lowercase) ở write time. Better long-term.</p>
+
+<h3>#4 SELECT * defeats covering index</h3>
+<p>Đã cover ở Misconception ở section 5. Fix: explicit columns trong SELECT.</p>
+
+<h3>#5 Missing index on foreign key (catastrophic for JOIN)</h3>
+
+<pre><code class="language-java">@Entity
+public class OrderItem {
+    @ManyToOne
+    @JoinColumn(name = "order_id")  // ❌ Không có index trên order_id!
+    private Order order;
+}
+
+// Query JOIN
+SELECT oi.* FROM order_items oi
+JOIN orders o ON oi.order_id = o.id
+WHERE o.status = 'DELIVERED';</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Hậu quả</div>
+  <p>Không có index trên <code>order_items.order_id</code> → JOIN thành nested loop:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li>For each order DELIVERED (1M rows):</li>
+  <li>&nbsp;&nbsp;Full scan order_items (50M rows) tìm match</li>
+  <li>= 50 trillion comparisons → query mất 30+ phút thay vì 200ms</li>
+  </ul>
+  <p><strong>Fix</strong>: luôn index foreign keys.</p>
+</div>
+
+<h3>#6 OR condition often defeats index</h3>
+
+<pre><code class="language-sql">-- ❌ Có thể không dùng index hiệu quả
+SELECT * FROM orders WHERE customer_id = ? OR email = ?
+
+-- ✅ UNION 2 query, mỗi query dùng index riêng
+SELECT * FROM orders WHERE customer_id = ?
+UNION
+SELECT * FROM orders WHERE email = ?</code></pre>
+
+<h3>#7 NOT IN / != defeats index (most cases)</h3>
+
+<pre><code class="language-sql">-- ❌ Index không help
+SELECT * FROM orders WHERE status != 'CANCELLED'
+-- Hầu hết rows match → seq scan tốt hơn
+
+-- ✅ Nếu có vài statuses, list explicitly
+SELECT * FROM orders WHERE status IN ('DELIVERED', 'PROCESSING', 'PENDING')
+-- Index seek per status</code></pre>
+
+<h3>#8 LIKE '%pattern' (leading wildcard) defeats index</h3>
+
+<pre><code class="language-sql">-- ❌ Leading wildcard — full scan
+SELECT * FROM products WHERE name LIKE '%iPhone%'
+
+-- ✅ Trailing wildcard — index seek
+SELECT * FROM products WHERE name LIKE 'iPhone%'
+
+-- Nếu cần full-text — dùng full-text index
+CREATE INDEX idx_name_gin ON products USING gin(name gin_trgm_ops);
+SELECT * FROM products WHERE name ILIKE '%iPhone%';</code></pre>
+</section>
+
+<section id="build-projects">
+<h2>11. Build Projects</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Index Benchmark Suite (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Repo GitHub với PostgreSQL Docker + script generate 1M orders + benchmark 5 query patterns. README có comparison table.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Script SQL tạo table orders + 1M random rows (1000 customers, 4 statuses, 1 năm date range)</li>
+    <li>5 queries: by customer only, by customer+status, by customer+status+date range, by date range only, by amount range</li>
+    <li>Benchmark mỗi query: no index, single-column index, composite index → 3 timing</li>
+    <li>EXPLAIN ANALYZE output cho mỗi case</li>
+    <li>README markdown table show all results</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: rõ ràng cho thấy ≥ 1000× speedup giữa no-index và optimal composite index cho query selective.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Covering Index Analyzer (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Spring Boot tool đọc EXPLAIN ANALYZE output, identify queries can benefit từ covering index, suggest INCLUDE columns.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Parse EXPLAIN output (multi-line, nested)</li>
+    <li>Detect Index Scan + heap fetch pattern</li>
+    <li>Identify SELECT columns not in current index</li>
+    <li>Suggest <code>ALTER INDEX ... ADD INCLUDE (col1, col2)</code></li>
+    <li>Estimate storage cost increase</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: 10 test EXPLAIN outputs với labeled expected suggestions, tool match ≥ 8/10.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Production Slow Query Monitoring (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Production-ready monitoring service: detect slow queries, alert Slack, weekly report top slow queries.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>P6Spy integration capture all SQL với elapsed time</li>
+    <li>Threshold-based logging (200ms = warn, 1000ms = alert)</li>
+    <li>Aggregate: normalize SQL (replace params với <code>?</code>) → count occurrences</li>
+    <li>Daily cron job query pg_stat_statements → top 20 slowest</li>
+    <li>Slack notification cho query mới appear trong top 20</li>
+    <li>Weekly HTML report email to team</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: deploy lên VPS, run 7 ngày, verify report generated chính xác. Notification delivered cho slow query.</div>
+</div>
+</section>
+
+<section id="interview">
+<h2>12. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Khác biệt giữa index scan và full table scan?</div>
+<div class="a">"Index scan dùng B-Tree index navigate đến rows matching → O(log n) cost. Full table scan đọc mỗi row → O(n). Index scan tốt cho query selective (small result set, &lt; 5-10% rows). Nếu filter return &gt; 10-15% rows, planner thường chọn seq scan vì avoiding random I/O overhead."</div>
+
+<div class="q">Q: Tại sao composite index <code>(customer_id, status, created_at)</code> không help query <code>WHERE status = ? AND created_at &gt; ?</code>?</div>
+<div class="a">"Leftmost prefix rule: composite index dùng từ trái sang phải. Query skip <code>customer_id</code> (column đầu) → index không seek được. DB phải scan toàn bộ index hoặc fallback seq scan. <strong>Fix</strong>: nếu query này thường xuyên, tạo index <code>(status, created_at)</code> riêng, hoặc đổi index thành <code>(status, customer_id, created_at)</code> nếu most queries dùng status làm anchor."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: Design index strategy cho order search API. Queries filter by customer_id, status, date range. 50M rows.</div>
+<div class="a">"<strong>Index recommended</strong>: <code>CREATE INDEX idx_orders_cust_status_date ON orders(customer_id, status, created_at DESC)</code><br><br>
+<strong>Reasoning column order</strong>:<br>
+• <code>customer_id</code> selectivity 0.001 (500K customers, 50M rows) → narrow to ~100 rows immediately, first<br>
+• <code>status</code> selectivity 0.25 (4 values) → narrow to ~25 rows, second<br>
+• <code>created_at DESC</code> → match ORDER BY direction, avoid extra sort step<br><br>
+<strong>Optionally add covering</strong>: <code>INCLUDE (total_amount, shipping_address)</code> nếu SELECT columns này thường xuyên → enable Index Only Scan, 10× faster.<br><br>
+<strong>Trade-offs</strong>:<br>
+• Write cost: mỗi INSERT/UPDATE tốn thêm 1 index maintenance → ~5-10% slower writes<br>
+• Storage: ~2GB index (400MB per column).<br>
+• Query thay đổi pattern (search by status only) → cần index riêng.<br><br>
+<strong>Monitoring</strong>: set up pg_stat_statements + alert nếu p95 latency &gt; 500ms."</div>
+
+<div class="q">Q: Covering index là gì? Khi nào worth dùng?</div>
+<div class="a">"Covering index chứa đủ data trong index leaf để answer query mà không cần heap fetch. PostgreSQL syntax: <code>INCLUDE (col1, col2)</code> ở cuối CREATE INDEX. Plan output: 'Index Only Scan' thay vì 'Index Scan'.<br><br>
+<strong>Worth khi</strong>:<br>
+• Hot query (≥ 100 QPS), latency critical<br>
+• Read-heavy ratio (10:1)<br>
+• Query select few specific columns (không SELECT *)<br>
+• INCLUDE columns small (avoid bloat)<br><br>
+<strong>KHÔNG worth khi</strong>:<br>
+• Rare query<br>
+• Write-heavy table<br>
+• SELECT * (defeats purpose)<br>
+• Storage budget constrained (covering index 2-5× larger)<br><br>
+<strong>Production benchmark expected</strong>: query với covering 15ms vs same query without 180ms → 10× speedup."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Orders table grows 10M → 500M rows. Index strategy hiện tại latency từ 100ms → 5s. Propose solution với indexing, partitioning, caching trade-offs.</div>
+<div class="a">"<strong>Multi-layer approach</strong>:<br><br>
+<strong>Layer 1 — Verify index strategy</strong>:<br>
+• Run EXPLAIN ANALYZE trên production query → confirm seq scan hay slow index scan<br>
+• Check stats: ANALYZE table → planner có lựa chọn dựa stats up-to-date<br>
+• Verify covering index cover most SELECT columns<br><br>
+<strong>Layer 2 — Range partitioning by created_at</strong>:<br>
+• PARTITION BY RANGE (created_at) — monthly partitions<br>
+• Mới queries (last 30 days) → only scan 1 partition (~3M rows thay 500M)<br>
+• Old data archive sang partition tách (parquet S3 hoặc cheaper storage)<br>
+• <strong>Trade-off</strong>: cross-partition JOIN slower, schema changes complex<br><br>
+<strong>Layer 3 — Read replica</strong>:<br>
+• Reporting queries (long-running analytics) → route to read replica<br>
+• Primary handle writes + critical real-time reads<br>
+• <strong>Trade-off</strong>: replication lag ~100ms-1s, eventual consistency<br><br>
+<strong>Layer 4 — Application caching</strong>:<br>
+• Caffeine L1 cache cho top 1% hot customers (LRU 10K entries)<br>
+• Redis L2 cache cho frequent queries (TTL 5 phút)<br>
+• Cache invalidation on order status change via event<br><br>
+<strong>Roadmap implementation</strong>:<br>
+• Week 1: optimize index (lowest risk, big impact)<br>
+• Week 2-3: implement caching (medium risk)<br>
+• Month 2-3: partition table (high risk, requires careful migration)<br>
+• Month 3-4: read replica setup (infrastructure work)<br><br>
+<strong>Expected final</strong>: p95 latency 50ms (hot), 500ms (cold), system handle 10× current load."</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>13. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior dev (chưa biết database) trong 5 phút:<br><br>
+  Vì sao composite index <code>(a, b, c)</code> không help cho query <code>WHERE b = ?</code>?<br><br>
+  Và vì sao putting low-selectivity column first thường tệ?"</div>
+  <div class="fy-rule">Không xem file. Vẽ B-Tree trên giấy. Lắp bắp → quay lại đọc.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước khi đọc: tôi confident ___/5<br>Sau khi đọc: tôi confident ___/5<br>Sau khi LÀM Build #1: tôi confident ___/5"</div>
+  <div class="fy-rule">Nếu trước = sau = 5 nhưng chưa LÀM benchmark thật → đó là illusion. Đọc-only không thay được hands-on.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source — Đọc Thêm</div>
+  <ul>
+    <li><a href="https://www.postgresql.org/docs/current/indexes.html" target="_blank">PostgreSQL Documentation — Indexes</a> (official, comprehensive)</li>
+    <li><a href="https://use-the-index-luke.com/" target="_blank">Use The Index, Luke!</a> — best free resource về SQL indexing (Markus Winand)</li>
+    <li><a href="https://wiki.postgresql.org/wiki/Using_EXPLAIN" target="_blank">PostgreSQL Wiki — Using EXPLAIN</a></li>
+    <li><a href="https://explain.depesz.com/" target="_blank">explain.depesz.com</a> — visualize EXPLAIN output</li>
+    <li><strong>Sách</strong>: "SQL Performance Explained" (Markus Winand) — 200 pages, đáng đọc</li>
+    <li><strong>Sách</strong>: "High Performance MySQL" (Baron Schwartz et al.) — covers index optimization cho MySQL</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #11 SQL Nâng Cao · Phase 3 — Database</div>
+<div>Tiếp theo: #12 Database Design · #13 Distributed Transaction · #14 Redis</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

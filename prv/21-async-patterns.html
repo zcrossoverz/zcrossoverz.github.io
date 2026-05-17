@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#21 — Async Patterns | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Phase 5 — Messaging &amp; Resilience
+    <span class="sep">/</span>
+    <strong>#21 Async Patterns</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+  </button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#async-boundary">2. Async boundary</a>
+    <a href="#message-queue">3. Message queue</a>
+    <a href="#job-queue">4. Job queue</a>
+    <a href="#outbox">5. Outbox pattern</a>
+    <a href="#scheduling">6. Scheduler &amp; Batch</a>
+    <a href="#production-playbook">7. Production Playbook</a>
+    <a href="#antipatterns">Anti-patterns</a>
+    <a href="#build-projects">Build Projects</a>
+    <a href="#drill-bank">Interview Drill Bank</a>
+    <a href="#cookbook">Async Cookbook</a>
+    <a href="#self-test">Self-Test Scenarios</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">CORE · Async workflow · Reliability</span>
+  <h1>#21 — Async Patterns</h1>
+  <p class="lead">Async không có nghĩa là “ném sang thread khác cho nhanh”. Senior backend phải biết khi nào dùng message queue, khi nào dùng job queue, khi nào chỉ cần `@Async`, và làm sao không mất việc khi service crash giữa chừng.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Messaging &amp; Background Work</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 ngày core · 4 ngày practice</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#20 Kafka, #22 Resilience, #07 Transaction</div></div>
+    <div class="meta-item"><div class="k">Domain</div><div class="v">E-commerce + content media</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "async giả"</div>
+  <div class="sb-rules">
+    <p>Đọc theo câu hỏi vận hành, không đọc theo annotation:</p>
+    <ol>
+      <li>Mỗi pattern phải trả lời: nếu process chết, work item còn không?</li>
+      <li>Mỗi retry phải có owner, limit, backoff và idempotency.</li>
+      <li>Luôn phân biệt event đã xảy ra với command cần làm.</li>
+      <li>Không gọi một thứ là queue nếu không biết nó đảm bảo delivery thế nào.</li>
+      <li>Phải vẽ được state machine của job: queued, running, succeeded, failed, dead.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Async Patterns đọc nhanh rất dễ nhầm. Hãy ưu tiên hiểu boundary trước API.</div>
+    <div class="roadmap-path">
+      <div class="roadmap-item core"><span class="step">1</span> Async boundary &amp; durability — CORE: quyết định pattern.</div>
+      <div class="roadmap-item core"><span class="step">2</span> Message queue vs job queue — CORE: interview daily.</div>
+      <div class="roadmap-item core"><span class="step">3</span> Outbox pattern — CORE: tránh DB commit xong mất event.</div>
+      <div class="roadmap-item supp"><span class="step">4</span> Scheduler, batch, chunk, partition — SUPP: daily work trong backend.</div>
+      <div class="roadmap-item adv"><span class="step">5</span> Backpressure, visibility timeout, poison job — ADV: production readiness.</div>
+    </div>
+  </div>
+</section>
+
+<section id="intro">
+  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
+  <p>Trong e-commerce, request đặt hàng hoặc upload sản phẩm không nên chờ mọi side effect: resize ảnh, gửi email, cập nhật search index, tính recommendation, sync warehouse view. Nhưng nếu chỉ quăng vào thread pool trong cùng JVM, app restart là mất việc. Nếu chỉ publish message sau khi commit DB, network lỗi có thể làm database đã đổi nhưng event không ra ngoài.</p>
+  <p>Async pattern tốt không bắt đầu từ câu “dùng Kafka hay RabbitMQ?”. Nó bắt đầu từ câu: work này có cần durability không, có cần ordering không, có cần user thấy trạng thái không, có thể retry bao nhiêu lần, và duplicate có gây hỏng dữ liệu không?</p>
+
+  <div class="history-block">
+    <div class="hist-head">📜 Lịch sử ra đời của async patterns</div>
+    <div class="hist-timeline">
+      <strong>Batch era</strong> — Hệ thống xử lý nền ban đầu thường chạy theo batch ban đêm: export, import, report, cleanup. Đơn giản nhưng latency cao và khó phản ứng theo event.<br><br>
+      <strong>Message-oriented middleware</strong> — Các message broker xuất hiện để tách producer và consumer, giúp hệ thống chịu spike tốt hơn và retry độc lập hơn.<br><br>
+      <strong>Microservices era</strong> — Khi mỗi business capability có database riêng, vấn đề mới là atomicity giữa local transaction và publish event. Outbox pattern trở thành cách phổ biến để không mất event sau DB commit.<br><br>
+      <strong>Insight</strong>: async không chỉ để “nhanh hơn”. Nó là cách kiểm soát coupling, durability, retry và failure isolation.
+    </div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài Toán Thực Tế — ShopSphere upload sản phẩm bị timeout <span class="k-tag core">CORE</span></h2>
+  <p>ShopSphere cho seller tạo sản phẩm mới. Sau khi seller submit, hệ thống cần lưu product, resize 6 kích thước ảnh, scan nội dung ảnh, cập nhật search index, gửi notification cho follower và warm cache cho trang category. Junior code làm tất cả trong request path.</p>
+
+  <div class="code-label">Synchronous implementation — một request ôm quá nhiều side effect</div>
+  <pre><code class="language-java">@PostMapping("/products")
+public ProductResponse create(@RequestBody CreateProductRequest request) {
+    Product product = productService.create(request);
+    imageService.resizeAll(product.id());       // CPU + IO
+    moderationService.scan(product.id());       // external API
+    searchClient.index(product.id());           // network
+    followerNotifier.notify(product.id());      // fan-out
+    cacheWarmer.warm(product.categoryId());     // best effort
+    return ProductResponse.from(product);
+}</code></pre>
+
+  <div class="callout danger">
+    <div class="ctitle">🔥 Hậu quả production</div>
+    <p>Latency p95 tăng từ 300ms lên 12s. Khi moderation API chậm, seller không tạo được product dù dữ liệu chính có thể đã hợp lệ. Khi request timeout nhưng server vẫn chạy tiếp, user retry tạo duplicate. Nếu app crash sau khi lưu product nhưng trước search index, product tồn tại trong database nhưng không tìm kiếm được.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+    <div class="pause-q">Hãy chia 5 side effect trên thành 3 nhóm: phải đồng bộ, async durable, async best-effort.</div>
+    <ol>
+      <li>Cái nào phải hoàn thành trước khi trả response?</li>
+      <li>Cái nào cần retry sau crash?</li>
+      <li>Cái nào fail thì chỉ log/metric, không ảnh hưởng business state?</li>
+    </ol>
+    <div class="pause-hint">Nếu bạn gom tất cả vào một queue, bạn đang bỏ qua semantics của từng loại work.</div>
+  </div>
+</section>
+
+<section id="async-boundary">
+  <h2>2. Async Boundary — Không phải work nào cũng nên async <span class="k-tag core">CORE</span></h2>
+  <div class="k-banner core">
+    <strong>★ CORE — Bắt buộc nắm chắc</strong>: Câu hỏi “khi nào async?” xuất hiện nhiều hơn câu hỏi “dùng Kafka thế nào?”.
+  </div>
+  <p>Boundary đúng thường là: request path chỉ làm phần cần thiết để xác nhận command thành công và ghi state bền vững. Các work có thể làm sau được đưa sang queue/job với trạng thái rõ ràng. Nhưng async cũng làm hệ thống phức tạp hơn: eventual consistency, duplicate, retry storm, monitoring, replay tool, và user experience khi trạng thái chưa cập nhật.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Loại work</th><th>Ví dụ</th><th>Pattern phù hợp</th><th>Cần chú ý</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Critical state change</td><td>Lưu product, validate owner</td><td>Synchronous DB transaction</td><td>Atomic, fail fast</td></tr>
+        <tr><td>Business event</td><td>`ProductCreated` cho search/reco</td><td>Outbox + message queue</td><td>At-least-once, idempotent consumer</td></tr>
+        <tr><td>Long-running task</td><td>Resize video/image</td><td>Job queue</td><td>Status, retry, visibility timeout</td></tr>
+        <tr><td>Best-effort</td><td>Warm cache, analytics ping</td><td>Async fire-and-observe</td><td>Metric, no business dependency</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Async là nhanh hơn”</div>
+    <div class="mc-wrong">"Em chuyển sang async để API nhanh hơn, nên không cần quan tâm lỗi bên dưới."</div>
+    <div class="mc-right">Async chỉ chuyển thời điểm và nơi xảy ra lỗi. Nếu work đó quan trọng, bạn phải có durability, retry, DLQ, idempotency và monitoring. API nhanh hơn nhưng data âm thầm lệch thì đó là lỗi nặng hơn timeout.</div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Dùng `@Async` để che latency</div>
+      <pre><code class="language-java">@Async
+public void indexProduct(String productId) {
+    searchClient.index(productId);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Durable job/event có trạng thái</div>
+      <pre><code class="language-java">productOutboxRepository.save(new OutboxEvent(
+    UUID.randomUUID(),
+    "ProductCreated",
+    product.id(),
+    objectMapper.writeValueAsString(payload)
+));</code></pre>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Rule of thumb</div>
+    <p>Nếu mất work sau app restart là chấp nhận được, `@Async` có thể đủ. Nếu mất work làm sai business state, cần durable queue/job/outbox. Nếu user cần theo dõi tiến độ, cần job state machine chứ không chỉ message event.</p>
+  </div>
+</section>
+
+<section id="message-queue">
+  <h2>3. Message Queue — Event đã xảy ra <span class="k-tag core">CORE</span></h2>
+  <p>Message queue/event stream phù hợp khi service A muốn thông báo “điều này đã xảy ra” để nhiều consumer độc lập phản ứng. Ví dụ `ProductCreated` có thể được search-service, recommendation-service, audit-service, notification-service đọc theo consumer group riêng.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Event hay Command?</div>
+    <div class="pause-q">Với các tên sau, cái nào là event, cái nào là command?</div>
+    <ol>
+      <li>`ProductCreated`</li>
+      <li>`ResizeProductImage`</li>
+      <li>`SellerSuspended`</li>
+      <li>`SendFollowerNotification`</li>
+    </ol>
+    <div class="pause-hint">Event là sự thật đã xảy ra. Command là yêu cầu làm việc.</div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Event đặt tên như command</div>
+      <pre><code class="language-java">public record IndexProductMessage(String productId) {}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Event nói sự thật domain</div>
+      <pre><code class="language-java">public record ProductCreated(
+    UUID eventId,
+    String productId,
+    String sellerId,
+    Instant occurredAt
+) {}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Vì sao tên event quan trọng?</div>
+    <p>Nếu producer publish `IndexProductMessage`, producer đang biết consumer nào làm gì, coupling tăng. Nếu publish `ProductCreated`, producer chỉ công bố sự thật domain, consumer tự quyết định có index, notify hay update recommendation không.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Consumer không idempotent</div>
+      <pre><code class="language-java">@KafkaListener(topics = "product-events")
+void on(ProductCreated event) {
+    searchClient.index(event.productId());
+    notificationClient.notifyFollowers(event.sellerId());
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Tách consumer theo responsibility</div>
+      <pre><code class="language-java">@KafkaListener(topics = "product-events", groupId = "search-indexer")
+void on(ProductCreated event) {
+    if (inbox.markIfNew(event.eventId())) {
+        searchIndexer.upsert(event.productId());
+    }
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="job-queue">
+  <h2>4. Job Queue — Work cần làm, có trạng thái <span class="k-tag core">CORE</span></h2>
+  <p>Job queue phù hợp với command/background work có lifecycle riêng: resize ảnh, transcode video, generate monthly seller report, import catalog CSV. Khác với event, job cần status để user/admin biết đang queued, running, succeeded, failed hay cần retry.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 220" role="img" aria-label="Job queue state machine">
+      <rect x="38" y="72" width="110" height="48" rx="8" fill="#e0f2fe"/><text x="67" y="101" fill="#075985" font-size="14" font-weight="700">QUEUED</text>
+      <path d="M150 96 H260" stroke="currentColor" opacity="0.35" stroke-width="2"/><text x="175" y="84" fill="currentColor" font-size="12">worker claims</text>
+      <rect x="270" y="72" width="120" height="48" rx="8" fill="#fef3c7"/><text x="303" y="101" fill="#92400e" font-size="14" font-weight="700">RUNNING</text>
+      <path d="M392 96 H500" stroke="currentColor" opacity="0.35" stroke-width="2"/><text x="420" y="84" fill="currentColor" font-size="12">success</text>
+      <rect x="510" y="72" width="125" height="48" rx="8" fill="#dcfce7"/><text x="540" y="101" fill="#166534" font-size="14" font-weight="700">SUCCEEDED</text>
+      <path d="M330 122 C330 170 500 170 500 122" stroke="#ef4444" opacity="0.75" stroke-width="2" fill="none"/>
+      <text x="370" y="176" fill="#991b1b" font-size="12">retryable failure</text>
+      <rect x="704" y="72" width="120" height="48" rx="8" fill="#fee2e2"/><text x="737" y="101" fill="#991b1b" font-size="14" font-weight="700">DEAD</text>
+      <path d="M636 96 H700" stroke="currentColor" opacity="0.35" stroke-width="2"/><text x="643" y="84" fill="currentColor" font-size="12">max retry</text>
+    </svg>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Job không có lease/claim atomic</div>
+      <pre><code class="language-java">Job job = jobRepository.findFirstByStatus("QUEUED");
+job.setStatus("RUNNING");
+jobRepository.save(job);</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Claim job bằng atomic update</div>
+      <pre><code class="language-sql">UPDATE media_job
+SET status = 'RUNNING',
+    locked_by = :workerId,
+    locked_until = now() + interval '2 minutes'
+WHERE id = (
+  SELECT id FROM media_job
+  WHERE status = 'QUEUED'
+  ORDER BY created_at
+  FOR UPDATE SKIP LOCKED
+  LIMIT 1
+)
+RETURNING *;</code></pre>
+    </div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Retry ngay lập tức gây storm</div>
+      <pre><code class="language-java">catch (Exception ex) {
+    job.setStatus("QUEUED");
+    jobRepository.save(job);
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Retry có backoff và max attempts</div>
+      <pre><code class="language-java">catch (RetryableException ex) {
+    job.scheduleNextAttempt(
+        Backoff.exponentialWithJitter(job.attempts()),
+        clock.instant()
+    );
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="break-it">
+    <div class="bi-head">🔬 Thử Phá Vỡ — Job queue resize ảnh</div>
+    <p>Câu hỏi: tìm 3 cách làm job resize ảnh bị chạy trùng hoặc mất job.</p>
+    <details>
+      <summary>Click để xem analysis (sau khi đã nghĩ)</summary>
+      <div class="bi-answer">
+        <ol>
+          <li><strong>Worker crash sau khi set RUNNING</strong>: nếu không có `locked_until`, job kẹt vĩnh viễn. Cần lease timeout để worker khác claim lại.</li>
+          <li><strong>Hai worker cùng select job</strong>: nếu claim không atomic, cả hai cùng xử lý. Cần `FOR UPDATE SKIP LOCKED` hoặc atomic compare-and-set.</li>
+          <li><strong>Output không idempotent</strong>: resize trùng ghi hai object path khác nhau, database trỏ lung tung. Cần deterministic output key hoặc upsert theo `(product_id, size)`.</li>
+        </ol>
+        <p><strong>Insight</strong>: job queue không chỉ là bảng `jobs`. Nó là state machine có locking, lease, retry, dedupe và observability.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="outbox">
+  <h2>5. Outbox Pattern — DB commit xong thì event không được mất <span class="k-tag core">CORE</span></h2>
+  <p>Outbox giải bài toán atomicity giữa local database transaction và message publish. Thay vì save product rồi gọi Kafka trực tiếp, service ghi product và outbox row trong cùng DB transaction. Một relay/poller đọc outbox và publish ra broker. Nếu app crash sau commit, outbox row vẫn còn để publish lại.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Publish sau DB commit có lỗ mất event</div>
+      <pre><code class="language-java">@Transactional
+public Product create(CreateProductRequest request) {
+    Product product = productRepository.save(Product.from(request));
+    kafkaTemplate.send("product-events", ProductCreated.from(product));
+    return product;
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Product + outbox trong cùng transaction</div>
+      <pre><code class="language-java">@Transactional
+public Product create(CreateProductRequest request) {
+    Product product = productRepository.save(Product.from(request));
+    outboxRepository.save(OutboxEvent.productCreated(product));
+    return product;
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="code-label">Outbox table tối thiểu</div>
+  <pre><code class="language-sql">CREATE TABLE outbox_event (
+  id UUID PRIMARY KEY,
+  aggregate_type VARCHAR(80) NOT NULL,
+  aggregate_id VARCHAR(120) NOT NULL,
+  event_type VARCHAR(120) NOT NULL,
+  payload JSONB NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  attempts INT NOT NULL DEFAULT 0,
+  next_attempt_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  published_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_outbox_ready
+ON outbox_event (status, next_attempt_at, created_at);</code></pre>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Vì sao outbox không đảm bảo exactly-once?</div>
+    <p>Relay có thể publish thành công rồi crash trước khi mark `PUBLISHED`; lần sau nó publish lại. Vì vậy outbox thường cho at-least-once delivery. Consumer vẫn phải idempotent. Outbox giải “không mất event sau DB commit”, không giải “không bao giờ duplicate”.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Mark published trước khi broker ack</div>
+      <pre><code class="language-java">event.markPublished();
+outboxRepository.save(event);
+kafkaTemplate.send(topic, event.key(), event.payload());</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Chỉ mark sau khi publish thành công</div>
+      <pre><code class="language-java">kafkaTemplate.send(topic, event.key(), event.payload()).get();
+event.markPublished(clock.instant());
+outboxRepository.save(event);</code></pre>
+    </div>
+  </div>
+
+  <div class="edge-cases">
+    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
+    <p class="ec-intro">Outbox/job code chạy happy path chưa đủ. Production cần cover:</p>
+    <ul class="ec-list">
+      <li><strong>Race condition</strong>: nhiều relay cùng publish một row; fix bằng `FOR UPDATE SKIP LOCKED` hoặc status transition atomic.</li>
+      <li><strong>Network failure</strong>: publish thành công nhưng response mất; relay retry tạo duplicate; fix bằng event id và idempotent consumer.</li>
+      <li><strong>Scale limit</strong>: outbox table 100M rows làm poll chậm; fix bằng partition theo thời gian, archive, index đúng.</li>
+      <li><strong>Security</strong>: payload outbox chứa email/số điện thoại; fix bằng data minimization, encryption, retention cleanup.</li>
+      <li><strong>Data integrity</strong>: event payload không khớp schema version consumer; fix bằng schema version và compatibility tests.</li>
+      <li><strong>Time/timezone</strong>: `next_attempt_at` dùng local time gây retry sai sau DST/timezone; fix dùng `Instant`/UTC.</li>
+      <li><strong>Concurrent access</strong>: retry manual và relay tự động cùng publish; fix bằng lock hoặc command replay idempotent.</li>
+      <li><strong>Poison event</strong>: một event payload lỗi retry mãi; fix bằng max attempts, dead status, operator workflow.</li>
+      <li><strong>Backpressure</strong>: broker chậm làm outbox backlog tăng; fix bằng metric backlog age, rate limit producer và alert theo age.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="scheduling">
+  <h2>6. Scheduler, Batch &amp; `@Async` <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>`@Scheduled`, Quartz, Spring Batch và `@Async` đều liên quan background work nhưng không thay thế nhau. `@Async` chạy trong process hiện tại. `@Scheduled` trigger theo thời gian. Quartz quản lý job scheduling durable hơn. Spring Batch phù hợp xử lý dữ liệu lớn theo chunk với restartability.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Công cụ</th><th>Dùng khi</th><th>Không dùng khi</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>@Async</code></td><td>Best-effort, request không cần chờ, mất work chấp nhận được</td><td>Work quan trọng cần retry sau crash</td></tr>
+        <tr><td><code>@Scheduled</code></td><td>Cleanup, polling nhẹ, periodic health task</td><td>Cluster nhiều node nhưng không có lock</td></tr>
+        <tr><td>Quartz</td><td>Job có lịch cụ thể, durable trigger, pause/resume</td><td>High-throughput event stream</td></tr>
+        <tr><td>Spring Batch</td><td>Import/export lớn, chunk processing, restart</td><td>Low-latency event reaction</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Scheduled job chạy trên mọi pod</div>
+      <pre><code class="language-java">@Scheduled(fixedDelay = 60000)
+void sendDailyDigest() {
+    digestService.sendToAllUsers();
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Distributed lock hoặc single scheduler</div>
+      <pre><code class="language-java">@Scheduled(fixedDelay = 60000)
+void sendDailyDigest() {
+    lockService.runOnce("daily-digest", () ->
+        digestService.enqueueMissingDigests()
+    );
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Batch cần restartability</div>
+    <p>Nếu import 5 triệu sản phẩm từ CSV và fail ở dòng 3.2 triệu, senior answer không phải “run lại từ đầu”. Cần chunk checkpoint, skip policy có giới hạn, idempotent upsert và report lỗi theo dòng.</p>
+  </div>
+</section>
+
+<section id="production-playbook">
+  <h2>7. Production Playbook — Chọn pattern, vận hành queue/job/outbox <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Async workflow production cần nhiều hơn một annotation hoặc một broker. Bạn cần quyết định pattern bằng tiêu chí rõ ràng, thiết kế state machine, định nghĩa retry policy, đặt metric và có runbook khi backlog tăng. Đây là phần giúp bạn trả lời interview ở tầng architecture thay vì chỉ kể tên pattern.</p>
+
+  <h3><span class="k-tag core">CORE</span> Decision matrix: chọn pattern nào?</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Câu hỏi</th><th>Nếu câu trả lời là Có</th><th>Pattern nghiêng về</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mất work sau restart có chấp nhận được không?</td><td>Không</td><td>Durable job queue hoặc message queue</td></tr>
+        <tr><td>Nhiều service cần phản ứng với sự kiện?</td><td>Có</td><td>Message/event queue</td></tr>
+        <tr><td>User/admin cần xem tiến độ work?</td><td>Có</td><td>Job queue có status endpoint</td></tr>
+        <tr><td>Work chạy theo lịch cụ thể?</td><td>Có</td><td>Scheduler/Quartz/Spring Batch tùy độ phức tạp</td></tr>
+        <tr><td>Cần atomic giữa DB write và publish?</td><td>Có</td><td>Transactional outbox</td></tr>
+        <tr><td>Work chỉ là best-effort telemetry/cache warm?</td><td>Có</td><td>`@Async` hoặc fire-and-observe có metric</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Vì sao decision matrix quan trọng?</div>
+    <p>Nó ngăn team dùng một công cụ cho mọi việc. Kafka không tự cho bạn job status. Job table không tự broadcast event cho nhiều service. `@Async` không durable. Scheduler không phải message queue. Chọn đúng pattern giúp semantics rõ trước khi code.</p>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Job state fields tối thiểu</h3>
+  <p>Một job table thiếu field vận hành sẽ hoạt động trong demo nhưng fail khi có retry, worker chết, hoặc cần debug. Các field dưới đây không phải trang trí; mỗi field trả lời một câu hỏi production.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Câu hỏi nó trả lời</th><th>Lưu ý</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>Job nào?</td><td>Dùng UUID hoặc deterministic key nếu cần dedupe</td></tr>
+        <tr><td><code>job_key</code></td><td>Work logical có trùng không?</td><td>Unique cho `(type, aggregate_id, variant)`</td></tr>
+        <tr><td><code>status</code></td><td>Đang ở state nào?</td><td>QUEUED/RUNNING/SUCCEEDED/FAILED/DEAD</td></tr>
+        <tr><td><code>attempts</code></td><td>Đã retry mấy lần?</td><td>Dùng để tính backoff và dead-letter</td></tr>
+        <tr><td><code>locked_by</code>, <code>locked_until</code></td><td>Worker nào đang giữ?</td><td>Cho phép recover khi worker chết</td></tr>
+        <tr><td><code>next_attempt_at</code></td><td>Khi nào được retry?</td><td>Dùng UTC/Instant</td></tr>
+        <tr><td><code>last_error</code></td><td>Fail vì gì?</td><td>Không lưu secret/token trong error</td></tr>
+        <tr><td><code>created_at</code>, <code>updated_at</code></td><td>Backlog age bao lâu?</td><td>Metric quan trọng hơn count</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Retry policy theo loại lỗi</h3>
+  <p>Retry tốt bắt đầu từ taxonomy lỗi. Với e-commerce media processing, lỗi “file chưa replicate xong” có thể retry; lỗi “file format không hỗ trợ” không nên retry; lỗi “virus scanner timeout” retry có backoff; lỗi “image quá lớn vượt limit” đi thẳng failed và hiển thị cho seller.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Một catch-all cho mọi lỗi</div>
+      <pre><code class="language-java">catch (Exception ex) {
+    job.retryLater();
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Phân loại retryable/non-retryable</div>
+      <pre><code class="language-java">catch (UnsupportedMediaTypeException ex) {
+    job.failPermanently("UNSUPPORTED_FORMAT", ex.getMessage());
+} catch (TransientStorageException ex) {
+    job.retryWithBackoff(clock.instant());
+} catch (Exception ex) {
+    job.deadLetter("UNKNOWN_ERROR", sanitize(ex));
+}</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Outbox relay: runbook khi backlog tăng</h3>
+  <p>Outbox backlog tăng có thể do broker chậm, relay chết, query poll thiếu index, payload lỗi schema, hoặc downstream consumer bị kẹt. Đừng xóa outbox row thủ công trước khi biết nguyên nhân.</p>
+  <ol>
+    <li><strong>Đo backlog age</strong>: row cũ nhất chưa publish bao lâu, không chỉ count.</li>
+    <li><strong>Kiểm tra relay health</strong>: số relay instance, lock contention, poll query time, publish latency.</li>
+    <li><strong>Kiểm tra broker</strong>: publish timeout, authorization error, topic missing, partition unavailable.</li>
+    <li><strong>Phân loại lỗi payload</strong>: nếu schema lỗi, chuyển DEAD và tạo migration/replay plan.</li>
+    <li><strong>Rate limit</strong>: khi relay hồi lại, backlog publish quá nhanh có thể làm consumer downstream quá tải.</li>
+  </ol>
+
+  <div class="code-label">Outbox relay loop có claim, publish, mark</div>
+  <pre><code class="language-java">while (running) {
+    List&lt;OutboxEvent&gt; batch = outboxRepository.claimReady("relay-1", 100);
+    for (OutboxEvent event : batch) {
+        try {
+            publisher.publish(event.topic(), event.key(), event.payload()).get();
+            outboxRepository.markPublished(event.id(), clock.instant());
+        } catch (RetryablePublishException ex) {
+            outboxRepository.scheduleRetry(event.id(), backoff(event.attempts()));
+        } catch (NonRetryablePublishException ex) {
+            outboxRepository.markDead(event.id(), sanitize(ex));
+        }
+    }
+}</code></pre>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Backpressure cho async pipeline</h3>
+  <p>Async thường làm caller nhanh hơn nhưng có thể dồn nợ vào queue. Queue không phải nơi giấu overload. Nếu worker xử lý 500 jobs/phút mà producer tạo 2,000 jobs/phút liên tục, backlog sẽ tăng đến khi storage đầy hoặc SLA bị phá. Backpressure cần xuất hiện ở API, scheduler, producer hoặc worker scaling.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Signal</th><th>Nghĩa</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Backlog count tăng</td><td>Produce &gt; consume</td><td>Scale worker nếu downstream chịu được, hoặc rate limit producer</td></tr>
+        <tr><td>Backlog age tăng</td><td>SLA async bị đe dọa</td><td>Alert theo business priority</td></tr>
+        <tr><td>Dead jobs tăng</td><td>Lỗi logic/schema/input</td><td>Dừng retry, fix code/data, replay có kiểm soát</td></tr>
+        <tr><td>Retry attempts tăng</td><td>Downstream/storage bất ổn</td><td>Backoff dài hơn, circuit breaker, kiểm tra dependency</td></tr>
+        <tr><td>Worker CPU thấp nhưng backlog cao</td><td>Worker chờ IO/lock</td><td>Profile wall-clock, DB/downstream metrics</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Câu trả lời senior khi thiết kế async workflow</div>
+    <p>“Em sẽ tách command path khỏi background work bằng durable boundary. Với event cho nhiều service, dùng outbox + message broker. Với long-running work cần progress, dùng job queue có state machine, lease, retry/backoff, dead state. Em sẽ thiết kế idempotency trước, sau đó đặt metrics backlog age, retry rate, dead job count và runbook replay.”</p>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>Anti-Patterns — Async làm hệ thống tệ hơn <span class="k-tag core">CORE</span></h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dùng `@Async` cho work quan trọng</td><td>High</td><td>Restart app là mất work</td><td>Durable job/message/outbox</td></tr>
+        <tr><td>Không có idempotency key</td><td>Critical</td><td>Retry tạo duplicate side effect</td><td>Event id, job key, unique constraint</td></tr>
+        <tr><td>Retry vô hạn không backoff</td><td>High</td><td>Retry storm làm downstream chết thêm</td><td>Backoff jitter, max attempts, DLQ</td></tr>
+        <tr><td>Outbox không cleanup</td><td>Medium</td><td>Poll chậm, table phình, index bloat</td><td>Archive/partition/TTL theo retention</td></tr>
+        <tr><td>Scheduler chạy trên mọi instance</td><td>High</td><td>Gửi duplicate digest, chạy duplicate cleanup</td><td>Distributed lock hoặc dedicated worker</td></tr>
+        <tr><td>Không expose job status</td><td>Medium</td><td>User/admin không biết work đang kẹt</td><td>Status endpoint, metrics, dashboard</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #1 — Product Image Job Queue (Beginner)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: Spring Boot service cho seller upload product, enqueue image resize job, worker xử lý và cập nhật status.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Job table có status, attempts, locked_by, locked_until, next_attempt_at.</li>
+      <li>Worker claim job atomically, retry với exponential backoff.</li>
+      <li>Endpoint `GET /jobs/{id}` trả trạng thái.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: kill worker giữa job, job được claim lại sau lease timeout; duplicate worker không tạo duplicate output.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #2 — ProductCreated Outbox (Intermediate)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: product-service ghi product + outbox trong cùng transaction, relay publish sang Kafka/RabbitMQ, search-service consume idempotent.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Outbox poller có `SKIP LOCKED` hoặc atomic claim.</li>
+      <li>Consumer có inbox table hoặc unique `event_id`.</li>
+      <li>Integration test mô phỏng crash sau DB commit.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: sau crash/restart, mọi product created đều vào search index đúng một bản logical.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #3 — Catalog Import Batch (Advanced)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: Spring Batch import 1M products từ CSV, chunk processing, restart từ checkpoint, report dòng lỗi.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Chunk size configurable, skip invalid rows tối đa 0.5%.</li>
+      <li>Upsert theo `(seller_id, sku)` để idempotent.</li>
+      <li>Metrics throughput rows/s và failed rows.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: kill process ở 60%, restart không import lại các row đã commit; report đúng số dòng lỗi.</div>
+  </div>
+</section>
+
+<section id="drill-bank">
+  <h2>Interview Drill Bank — Async workflow tình huống <span class="k-tag core">CORE</span></h2>
+  <p>Luyện phần này bằng cách nói thành tiếng. Mỗi câu phải có boundary, failure mode và recovery. Nếu câu trả lời chỉ là “dùng queue”, chưa đủ senior.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q1. Khi nào `@Async` đủ, khi nào không đủ?</h3>
+  <p><strong>Answer mẫu</strong>: `@Async` đủ cho work best-effort trong cùng process, ví dụ warm cache hoặc log enrichment mà mất cũng chấp nhận được. Nó không đủ cho work business quan trọng vì app restart, thread pool reject, hoặc process crash có thể làm mất task. Nếu work cần retry sau crash, cần durable job queue/message queue/outbox với trạng thái và idempotency.</p>
+  <p><strong>Signal</strong>: phải nhắc đến durability và process boundary, không chỉ “@Async chạy background”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q2. Message queue khác job queue thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Message queue/event stream phù hợp thông báo sự kiện đã xảy ra cho nhiều consumer, ví dụ `ProductCreated`. Job queue phù hợp work cần làm có lifecycle, ví dụ `ResizeProductImage`, với status queued/running/succeeded/failed, retry, lease và progress. Event thường là fact; job thường là command. Nếu user cần xem tiến độ, job queue hợp hơn.</p>
+  <p><strong>Signal</strong>: câu trả lời tốt dùng “event vs command” và “state machine”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q3. Outbox pattern giải quyết atomicity thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Thay vì save DB rồi publish broker trong hai operation rời, service ghi business row và outbox row trong cùng local transaction. Relay đọc outbox và publish sau. Nếu service crash sau commit, outbox row vẫn còn. Outbox giải vấn đề mất event sau DB commit, nhưng không đảm bảo exactly-once vì relay có thể publish duplicate sau crash.</p>
+  <p><strong>Signal</strong>: phải nói rõ “không mất event” và “vẫn có duplicate”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q4. Thiết kế job resize ảnh product như thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Tạo job với unique key `(productId, imageId, size)`, status, attempts, `locked_by`, `locked_until`, `next_attempt_at`. Worker claim atomic bằng `FOR UPDATE SKIP LOCKED`, resize ra deterministic object key, upsert output metadata. Retry lỗi transient với backoff, fail permanent nếu format không hỗ trợ, dead-letter sau max attempts. API trả job status để seller biết ảnh đang xử lý.</p>
+  <p><strong>Signal</strong>: interviewer muốn nghe lease/atomic claim/idempotent output.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q5. Làm sao tránh duplicate side effect khi retry?</h3>
+  <p><strong>Answer mẫu</strong>: Đặt idempotency key theo logical work, không theo attempt. Với job, unique `job_key`. Với event, unique `eventId` trong inbox/processed table. Với side effect, dùng deterministic output path hoặc upsert/unique constraint. Retry có thể chạy lại cùng work nhiều lần, nên side effect phải biến “chạy lại” thành no-op hoặc update cùng record.</p>
+  <p><strong>Signal</strong>: phải đưa được mechanism cụ thể ở storage layer, không chỉ nói “check duplicate”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q6. Scheduler chạy nhiều pod sẽ gây lỗi gì?</h3>
+  <p><strong>Answer mẫu</strong>: Nếu `@Scheduled` chạy trên mọi pod, mỗi instance có thể enqueue/gửi cùng một job, tạo duplicate digest, duplicate cleanup hoặc double processing. Cần distributed lock, leader election, dedicated scheduler instance, hoặc thiết kế job enqueue idempotent bằng unique key. Với Quartz clustered mode, dùng database lock/trigger state đúng cách.</p>
+  <p><strong>Signal</strong>: câu trả lời tốt nhắc đến cluster, không chỉ local scheduler.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q7. Outbox backlog tăng, bạn debug thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Xem backlog age và count, relay health, poll query time, lock contention, publish latency, broker error, schema error và retry/dead count. Nếu broker hồi phục sau outage, rate limit relay để không làm consumer quá tải. Không xóa row thủ công. Nếu payload poison, mark dead với reason rồi tạo replay/migration plan.</p>
+  <p><strong>Signal</strong>: phải có runbook theo triệu chứng, không chỉ “scale relay”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q8. Async có làm hệ thống eventually consistent. Bạn xử lý UX thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: UI/API phải hiển thị state trung gian rõ: product created nhưng image processing, search indexing pending. Với work user quan tâm, expose `GET /jobs/{id}` hoặc field trạng thái. Command path chỉ xác nhận phần đã durable. Không trả “xong hết” khi các side effect async chưa chạy. Notification/search có thể trễ, nhưng user phải thấy trạng thái hợp lý.</p>
+  <p><strong>Signal</strong>: senior answer nối backend semantics với user experience.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Spring Batch khác job queue thường ở đâu?</h3>
+  <p><strong>Answer mẫu</strong>: Spring Batch phù hợp xử lý dữ liệu lớn theo step/chunk, có job repository, checkpoint, restartability, skip/retry policy và partitioning. Job queue thường xử lý nhiều work item độc lập theo worker. Import 1M sản phẩm từ CSV nên dùng batch/chunk để commit từng phần và restart từ checkpoint. Resize từng ảnh độc lập thường dùng job queue.</p>
+  <p><strong>Signal</strong>: biết chọn công cụ theo workload shape.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q10. Queue backlog tăng có phải cứ scale worker?</h3>
+  <p><strong>Answer mẫu</strong>: Không. Scale worker chỉ đúng nếu bottleneck là worker compute và downstream còn capacity. Nếu worker chờ DB/storage, scale làm downstream quá tải hơn. Cần xem backlog age, worker CPU, job duration, retry rate, DB/downstream latency, dead jobs. Có thể cần rate limit producer, backpressure API, tối ưu job, hoặc tách priority queue.</p>
+  <p><strong>Signal</strong>: tránh reflex scale; phải đọc saturation.</p>
+</section>
+
+<section id="cookbook">
+  <h2>Async Cookbook — 8 workflow thường gặp <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Cookbook này giúp bạn mapping requirement sang pattern nhanh hơn. Khi interview đưa case, hãy nhận diện workload shape trước: event broadcast, long-running job, scheduled batch, fan-out notification, hoặc consistency bridge.</p>
+
+  <h3><span class="k-tag core">CORE</span> Recipe 1 — Product created cần search index</h3>
+  <p><strong>Pattern</strong>: transactional outbox + message queue + idempotent consumer.</p>
+  <p><strong>Why</strong>: product DB là source-of-truth. Search index là read model async. Nếu DB commit xong mà event mất, product không tìm được. Outbox bảo vệ event; consumer upsert index theo `productId` và dedupe theo `eventId`.</p>
+  <p><strong>Trap</strong>: đừng index trực tiếp trong transaction tạo product vì search latency làm request chậm và rollback semantics không rõ.</p>
+
+  <h3><span class="k-tag core">CORE</span> Recipe 2 — Resize ảnh/video sau upload</h3>
+  <p><strong>Pattern</strong>: durable job queue có status, lease, retry và deterministic output.</p>
+  <p><strong>Why</strong>: user cần biết processing đang chạy, job có thể mất vài giây/phút, worker có thể chết giữa chừng. Output path nên deterministic như `products/{productId}/images/{imageId}/size-{size}.webp` để retry không tạo object rác.</p>
+  <p><strong>Trap</strong>: đừng dùng `@Async` nếu seller cần chắc chắn ảnh sẽ được xử lý sau restart.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Recipe 3 — Gửi follower notification</h3>
+  <p><strong>Pattern</strong>: event consumer + fan-out job queue.</p>
+  <p><strong>Why</strong>: `ProductCreated` có thể kích hoạt notification, nhưng gửi cho 1 triệu follower không nên làm trong Kafka listener trực tiếp. Listener enqueue fan-out jobs theo shard/follower batch, ack nhanh, worker gửi notification có rate limit và retry.</p>
+  <p><strong>Trap</strong>: gửi notification trực tiếp trong consumer làm `max.poll.interval.ms` bị vượt và consumer rebalance.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Recipe 4 — Import catalog CSV lớn</h3>
+  <p><strong>Pattern</strong>: Spring Batch hoặc batch job với chunk checkpoint.</p>
+  <p><strong>Why</strong>: file lớn cần restart từ checkpoint, skip invalid row có policy, commit theo chunk, report lỗi theo dòng. Queue từng row có thể overhead lớn và khó tạo report tổng thể.</p>
+  <p><strong>Trap</strong>: import lại từ đầu sau fail dễ tạo duplicate nếu không upsert theo `(sellerId, sku)`.</p>
+
+  <h3><span class="k-tag core">CORE</span> Recipe 5 — Sync read model cho social timeline</h3>
+  <p><strong>Pattern</strong>: event stream + projection consumer, đôi khi dùng rebuild/replay.</p>
+  <p><strong>Why</strong>: timeline/read model có thể eventually consistent. Consumer cần version guard để event cũ không overwrite state mới. Khi projection bug, có thể rebuild từ event log hoặc source-of-truth snapshot.</p>
+  <p><strong>Trap</strong>: nếu consumer không idempotent, replay để rebuild sẽ nhân đôi item trong timeline.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Recipe 6 — Outbox relay bằng polling hay CDC?</h3>
+  <p><strong>Polling</strong> dễ implement, kiểm soát batch/retry trong app, đủ tốt cho nhiều hệ thống. Nhược điểm là query/poll overhead, cần index/cleanup tốt.</p>
+  <p><strong>CDC</strong> như Debezium đọc database log và publish change gần real-time, giảm custom poller nhưng thêm hạ tầng, schema/connector vận hành, và cần hiểu transaction log semantics.</p>
+  <p><strong>Decision</strong>: team nhỏ, throughput vừa, cần kiểm soát nhanh: polling. Throughput cao, nhiều table, muốn stream DB changes chuẩn hóa: CDC.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Recipe 7 — Priority jobs</h3>
+  <p><strong>Pattern</strong>: queue/job table có priority + fair scheduling.</p>
+  <p><strong>Why</strong>: thumbnail cho product hot cần nhanh hơn report offline. Nhưng priority tuyệt đối có thể starve low-priority jobs. Thiết kế worker lấy theo priority nhưng có quota hoặc aging.</p>
+  <p><strong>Trap</strong>: một queue chung FIFO làm job lớn phía trước chặn mọi job nhỏ phía sau.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Recipe 8 — Multi-step workflow</h3>
+  <p><strong>Pattern</strong>: state machine hoặc orchestration nhẹ, không chỉ nhiều queue nối nhau.</p>
+  <p><strong>Why</strong>: upload media có các bước scan, transcode, thumbnail, publish. Mỗi bước có retry/failure riêng. Nếu chỉ publish message bước sau mà không lưu workflow state, debug sẽ khó khi step 3 fail. State machine giúp biết workflow đang ở đâu và resume thế nào.</p>
+  <p><strong>Trap</strong>: choreograph quá nhiều event mà không có observability sẽ biến workflow thành “mê cung event”.</p>
+
+  <div class="callout quote">
+    <div class="ctitle">📖 Câu nhớ nhanh</div>
+    <p>Async design tốt là thiết kế trạng thái và failure trước, chọn broker/framework sau. Nếu không nói được work nằm ở state nào khi crash, pattern chưa đủ production-ready.</p>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-Test Scenarios — Thiết kế async workflow bằng tay <span class="k-tag core">CORE</span></h2>
+  <p>Hãy tự trả lời trước khi đọc gợi ý. Mục tiêu là luyện khả năng chọn đúng pattern, không phải nhớ tên pattern.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 1 — Product created nhưng search index trễ</h3>
+  <p><strong>Bối cảnh</strong>: seller tạo product thành công, 5 phút sau vẫn không search được. DB có product, Kafka không thấy event tương ứng.</p>
+  <p><strong>Tự trả lời</strong>: bug có thể nằm ở đâu? Pattern nào ngăn mất event?</p>
+  <p><strong>Gợi ý</strong>: nếu service save DB rồi publish event ngoài transaction, crash/network lỗi có thể làm mất event. Dùng outbox: product + outbox row cùng transaction, relay publish sau. Thêm metric outbox backlog age và audit event id để trace product → event → index.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 2 — Worker chết giữa resize ảnh</h3>
+  <p><strong>Bối cảnh</strong>: job status RUNNING mãi, ảnh không xuất hiện. Worker pod bị restart trong lúc xử lý.</p>
+  <p><strong>Tự trả lời</strong>: job table cần field gì để recover?</p>
+  <p><strong>Gợi ý</strong>: cần `locked_by`, `locked_until`, status, attempts, next_attempt_at. Worker khác reclaim job sau lease timeout. Output phải deterministic/upsert để retry không tạo duplicate. UI nên hiển thị processing/retry thay vì im lặng.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 3 — Notification fan-out làm consumer lag</h3>
+  <p><strong>Bối cảnh</strong>: một seller lớn đăng sản phẩm, consumer `product-events` gửi notification trực tiếp cho 2 triệu follower. Consumer lag tăng, rebalance liên tục.</p>
+  <p><strong>Gợi ý</strong>: Kafka listener nên ack nhanh sau khi enqueue fan-out jobs theo shard/batch. Worker notification xử lý rate-limited, retry/DLQ riêng. Long-running fan-out không nằm trong poll loop. Dùng idempotency key cho notification `(eventId, followerId)`.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 4 — Outbox relay publish duplicate</h3>
+  <p><strong>Bối cảnh</strong>: relay publish thành công rồi crash trước mark published. Sau restart, event được publish lại. Search index ổn nhưng notification gửi hai lần.</p>
+  <p><strong>Gợi ý</strong>: outbox là at-least-once. Consumer notification phải dedupe theo `eventId` hoặc `(eventId, recipientId)`. Với external push provider, gửi idempotency key nếu hỗ trợ. Nếu không hỗ trợ, lưu send record trước/atomic với state để tránh gửi lại.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 5 — Batch import fail ở 70%</h3>
+  <p><strong>Bối cảnh</strong>: import 1M products từ CSV, fail ở dòng 700k. Team run lại từ đầu và tạo duplicate SKU.</p>
+  <p><strong>Gợi ý</strong>: dùng Spring Batch/chunk checkpoint, upsert theo `(sellerId, sku)`, skip policy có giới hạn, restart từ checkpoint. Report invalid rows. Không rely vào “file nhỏ nên chạy lại được”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Queue chung bị job nặng chặn</h3>
+  <p><strong>Bối cảnh</strong>: cùng một job queue xử lý resize ảnh nhỏ và transcode video dài. Khi nhiều video lớn vào queue, ảnh sản phẩm mới mất 30 phút mới có thumbnail.</p>
+  <p><strong>Gợi ý</strong>: tách queue/pool theo workload hoặc priority, giới hạn concurrency cho job nặng, dùng fair scheduling/aging để tránh starvation. Metric cần có backlog age theo job type, không chỉ tổng backlog. Một queue FIFO duy nhất thường không đủ khi job duration phân bố quá lệch.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 7 — Workflow nhiều bước khó debug</h3>
+  <p><strong>Bối cảnh</strong>: media upload đi qua scan, transcode, thumbnail, publish. Mỗi step publish message cho step sau. Khi thumbnail không có, team mất 2 giờ tìm xem workflow kẹt ở đâu.</p>
+  <p><strong>Gợi ý</strong>: cần workflow state hoặc correlation id xuyên suốt. Mỗi step ghi status, attempt, error, timestamps. Event choreography vẫn dùng được, nhưng phải có observability để query “mediaId này đang ở step nào”. Với workflow critical, cân nhắc orchestration/state machine thay vì chỉ nối queue mù.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 8 — API trả success nhưng async step fail</h3>
+  <p><strong>Bối cảnh</strong>: API tạo product trả 201 ngay sau khi ghi DB. Sau đó moderation async fail permanent vì ảnh vi phạm policy. Seller phàn nàn vì tưởng product đã published.</p>
+  <p><strong>Gợi ý</strong>: response phải nói đúng state, ví dụ product ở `PENDING_REVIEW` hoặc `PROCESSING`, không phải `PUBLISHED`. Async workflow cần state visible cho user, notification khi fail, và command path không hứa điều chưa hoàn tất. Đây là UX consequence của eventual consistency.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 9 — Dead jobs không có owner</h3>
+  <p><strong>Bối cảnh</strong>: `DEAD` jobs tăng mỗi ngày nhưng không team nào xử lý vì API vẫn trả nhanh.</p>
+  <p><strong>Gợi ý</strong>: async failure vẫn là product failure. Dead queue cần dashboard, alert, owner, replay/fix workflow và SLA. Nếu không, queue chỉ biến lỗi realtime thành dữ liệu bẩn tích lũy.</p>
+  <p><strong>Calibration</strong>: nếu bạn không chỉ được ai chịu trách nhiệm khi job chết, hệ thống async đó chưa production-ready dù throughput có cao. Một queue khỏe trên dashboard hạ tầng nhưng không có owner nghiệp vụ vẫn có thể tạo incident âm thầm trong nhiều tuần.</p>
+</section>
+
+<section id="interview">
+  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
+  <div class="tier t1">
+    <div class="tier-head">
+      <span class="badge">Tầng 1 — Surface</span>
+      <span class="tier-title">Pattern selection</span>
+    </div>
+    <div class="q">Q: Khác nhau giữa `@Async`, message queue và job queue?</div>
+    <div class="a">`@Async` chạy trong cùng process, không durable. Message queue phù hợp publish event đã xảy ra cho nhiều consumer. Job queue phù hợp work cần làm có lifecycle, status, retry và ownership. Chọn pattern theo durability, ordering, retry, user-visible status và failure handling.</div>
+  </div>
+
+  <div class="tier t2">
+    <div class="tier-head">
+      <span class="badge">Tầng 2 — Deep Dive</span>
+      <span class="tier-title">Outbox semantics</span>
+    </div>
+    <div class="q">Q: Outbox pattern giải quyết vấn đề gì và không giải quyết vấn đề gì?</div>
+    <div class="a">Outbox giải atomicity giữa DB commit và event publish bằng cách ghi event trong cùng DB transaction. Nó không đảm bảo exactly-once delivery; relay có thể publish duplicate nếu crash sau publish trước khi mark published. Consumer vẫn phải idempotent.</div>
+  </div>
+
+  <div class="tier t3">
+    <div class="tier-head">
+      <span class="badge">Tầng 3 — Architecture</span>
+      <span class="tier-title">Workflow design</span>
+    </div>
+    <div class="q">Q: Thiết kế workflow upload product có resize ảnh, scan nội dung, search index và notification.</div>
+    <div class="a">Request path validate và lưu product draft. Ghi outbox `ProductCreated`. Search/reco consume event idempotent. Resize/scan là job queue có status, lease, retry, dead state. Notification có thể consume event riêng. UI hiển thị trạng thái processing. Metrics gồm backlog age, retry count, dead jobs và search lag.</div>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
+  <div class="feynman">
+    <div class="fy-head">🎓 Feynman Check</div>
+    <div class="fy-prompt">"Giải thích cho một junior dev trong 5 phút: tại sao `@Async` không đủ cho resize ảnh sản phẩm nếu seller cần chắc chắn ảnh sẽ xuất hiện sau restart?"</div>
+    <div class="fy-rule">Quy tắc: phải nhắc đến durability, job state, retry, lease và idempotency. Không được chỉ nói “vì @Async không reliable”.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="fy-head">🎓 Calibration Check</div>
+    <div class="fy-prompt">Tự vẽ workflow product create + outbox + search index. Đánh dấu 4 điểm crash và cách hệ thống recover.</div>
+    <div class="fy-rule">Nếu không tìm được crash point nào, bạn đang đọc ở mức quá trơn.</div>
+  </div>
+
+  <div class="verify-source">
+    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
+    <p>Cross-check với official sources:</p>
+    <ul>
+      <li><a href="https://docs.spring.io/spring-framework/reference/integration/scheduling.html">Spring Framework Scheduling and Async Execution</a></li>
+      <li><a href="https://docs.spring.io/spring-batch/reference/">Spring Batch Reference Documentation</a></li>
+      <li><a href="https://kafka.apache.org/documentation/">Apache Kafka Documentation</a></li>
+      <li><a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional Outbox pattern</a></li>
+      <li>Sách: <em>Enterprise Integration Patterns</em>, chương Message Channel, Message, Message Router.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div>📁 #21 Async Patterns · Phase 5 — Messaging &amp; Resilience</div>
+  <div>Tiếp theo: #22 Resilience Patterns</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

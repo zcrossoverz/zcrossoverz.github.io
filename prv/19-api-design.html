@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#19 — API Design | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 4 — Architecture<span class="sep">/</span><strong>#19 API Design</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#rest">2. REST + HTTP Semantics</a>
+    <a href="#idempotency">3. Idempotency Key</a>
+    <a href="#pagination">4. Pagination Strategies</a>
+    <a href="#versioning">5. API Versioning</a>
+    <a href="#rate-limit">6. Rate Limiting</a>
+    <a href="#hateoas">7. HATEOAS — Hypermedia</a>
+    <a href="#error-format">8. Error Response Format</a>
+    <a href="#antipatterns">9. Anti-Patterns</a>
+    <a href="#build-projects">10. Build Projects</a>
+    <a href="#interview">11. Interview Framework</a>
+    <a href="#feynman-end">12. Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🟠 HIGH PRIORITY — Daily Work</span>
+  <h1>#19 — API Design</h1>
+  <p class="lead">REST best practices, Versioning, Idempotency, Rate Limiting, Pagination — kiến thức bạn dùng <strong>hàng ngày</strong> khi viết backend. Examples đa dạng: streaming music, e-commerce, social platform. File này có nhiều block "anti-illusion" để tránh hiểu giả.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">D — Kiến Trúc</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1–2 tuần + build project</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#8 Security, #22 Resilience, #33 Idempotency</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">4 — Architecture</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Tài liệu mượt mà dễ đọc cho cảm giác "tôi hiểu rồi" — đó là <strong>illusion of competence</strong>. Để học thật, hãy tuân thủ 5 quy tắc:</p>
+    <ol>
+      <li>Gặp block <strong>⏸ Pause &amp; Predict</strong>: <em>BẮT BUỘC</em> dừng, ghi câu trả lời ra giấy/file note <strong>TRƯỚC</strong> khi đọc tiếp. Không skip.</li>
+      <li>Gặp block <strong>🧠 Misconception Check</strong>: tự hỏi <em>"Tôi có đang nghĩ giống cách sai không?"</em>. Trung thực với bản thân.</li>
+      <li>Gặp block <strong>🔬 Thử phá vỡ</strong>: nghĩ 3 cách break code trước khi xem đáp án.</li>
+      <li>Gặp block <strong>🔨 Build Exercise</strong>: <em>thực sự build</em>, không chỉ đọc. Push lên GitHub.</li>
+      <li>Cuối mỗi section: thử Feynman — đóng máy, giải thích to ra cho người tưởng tượng (90s/concept). Chỗ nào lắp bắp = chưa hiểu thật.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="intro">
+<h2 class="no-border">API Design — Vì Sao Quan Trọng?</h2>
+<p>API là <strong>contract giữa systems</strong>. Một khi public, rất khó thay đổi mà không break users. Khác với code internal có thể refactor tự do, API design mistake = bị "kẹt" với decision đó nhiều năm. Vì vậy senior phải:</p>
+<ul>
+<li>Hiểu HTTP semantics đủ sâu để chọn đúng method (vì sao GET không được modify state?)</li>
+<li>Anticipate edge cases (network retry, race condition, scale)</li>
+<li>Plan cho evolution (versioning strategy ngay từ đầu, không phải afterthought)</li>
+<li>Defend từ abuse (rate limiting, idempotency)</li>
+</ul>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử ra đời của REST</div>
+  <div class="hist-timeline">
+    <strong>1990s</strong> — Web ban đầu chỉ có HTML form + CGI. APIs giữa systems dùng <strong>SOAP/XML-RPC</strong> — phức tạp, verbose, dùng custom protocol over HTTP.<br><br>
+    <strong>2000</strong> — Roy Fielding viết PhD dissertation tại UC Irvine, mô tả <strong>REST (Representational State Transfer)</strong>. Đặt câu hỏi: <em>"Web đã scale lên hàng tỷ document — kiến trúc nào enable điều đó?"</em><br><br>
+    <strong>Insight cốt lõi</strong> của Fielding: kiến trúc Web work tốt vì <strong>uniform interface</strong> (HTTP verbs có semantics rõ), <strong>stateless</strong> (server không nhớ context), <strong>cacheable</strong> (proxy/CDN tận dụng được).<br><br>
+    <strong>2005-2010</strong> — REST dần thay SOAP cho public APIs (Twitter, Facebook, AWS). Lý do: simpler, HTTP-native, browser-friendly.<br><br>
+    <strong>2010s</strong> — REST thành de-facto standard. GraphQL (2015) và gRPC (2016) emerge như alternative cho specific use cases (frontend flexibility, internal RPC).<br><br>
+    <strong>Bài học</strong>: REST không phải "the only way" — chọn vì philosophy: leverage HTTP semantics, decouple client/server, evolve over time. Hiểu philosophy quan trọng hơn memorize "RESTful rules".
+  </div>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Music Streaming App "TuneFlow"</h2>
+
+<p>TuneFlow là app streaming nhạc (kiểu Spotify) đã launch 2 năm. 4 vấn đề thực gặp trong production:</p>
+
+<h3>Issue #1 — Mobile app crash khi load playlist lớn</h3>
+<p>Mobile gọi <code>GET /api/playlists/{id}/songs</code>. Playlist của user power "Workout Mix 2025" có <strong>10,000 bài</strong>. API trả về JSON 8MB trong 12 giây. Mobile parse JSON OOM → crash.</p>
+
+<h3>Issue #2 — Double charge khi upgrade Premium</h3>
+<p>User upgrade Premium qua mobile. Network flaky → request reach server, charge thành công, response timeout. User không thấy gì → bấm "Upgrade" lần nữa. Server xử lý lần 2 → <strong>user bị charge 2 lần</strong>. Customer support ngập complaints.</p>
+
+<h3>Issue #3 — Update API break mobile cũ</h3>
+<p>Team add field <code>currency</code> vào response price. Mobile app v3.2 (cũ) hardcode parse JSON theo position, không theo name → crash. Hơn 30% user dùng version cũ → 30% userbase bị down 2 ngày trong khi đợi mobile release fix.</p>
+
+<h3>Issue #4 — 1 user lạm dụng → ảnh hưởng mọi user khác</h3>
+<p>Script kiddie phát hiện <code>GET /api/search?q=X</code> không có auth check, viết bot search 1000 req/sec. Server overload, mọi user khác slow. Rate limit có nhưng global (10 req/sec total), không per-user → 1 user starve toàn bộ.</p>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+  <div class="pause-q">Trước khi đọc giải pháp, hãy tự trả lời 4 câu hỏi này (viết ra giấy):</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>Issue #1: bạn sẽ design API trả 10K songs thế nào? Một câu trả lời cụ thể.</li>
+  <li>Issue #2: làm sao biết request là "lần đầu" hay "retry"? Cơ chế gì?</li>
+  <li>Issue #3: làm sao add field mới mà không break mobile cũ?</li>
+  <li>Issue #4: rate limit per-user implementation: data structure gì? Storage?</li>
+  </ol>
+  <div class="pause-hint">Nếu bạn không trả lời được 3/4 câu trên trong 5 phút → bạn cần file này. Nếu trả lời được hết với confidence cao → đọc lướt để verify approach của bạn.</div>
+</div>
+</section>
+
+<section id="rest">
+<h2>2. REST + HTTP Method Semantics</h2>
+
+<p>REST = <em>Representational State Transfer</em>. 5 constraints chính:</p>
+
+<ol>
+<li><strong>Client-Server</strong>: tách biệt. Server không biết client UI, client không biết server DB.</li>
+<li><strong>Stateless</strong>: mỗi request chứa đủ info để xử lý. Server không lưu session state.</li>
+<li><strong>Cacheable</strong>: response label được "cache" hay không. Tận dụng CDN/browser cache.</li>
+<li><strong>Uniform Interface</strong>: resources identify qua URI, manipulate qua representations.</li>
+<li><strong>Layered System</strong>: client không assume connect trực tiếp (qua proxy, LB).</li>
+</ol>
+
+<h3>HTTP Method Semantics — Bảng phải thuộc</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Method</th><th>Safe?</th><th>Idempotent?</th><th>Cacheable?</th><th>Use case</th></tr></thead>
+<tbody>
+<tr><td><code>GET</code></td><td>✅</td><td>✅</td><td>✅</td><td>Đọc data, no side effect</td></tr>
+<tr><td><code>POST</code></td><td>❌</td><td>❌</td><td>⚠️ rarely</td><td>Tạo resource, action có side effect</td></tr>
+<tr><td><code>PUT</code></td><td>❌</td><td>✅</td><td>❌</td><td>Replace toàn bộ resource</td></tr>
+<tr><td><code>PATCH</code></td><td>❌</td><td>❌ (technically)</td><td>❌</td><td>Update một phần resource</td></tr>
+<tr><td><code>DELETE</code></td><td>❌</td><td>✅</td><td>❌</td><td>Remove resource</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — Safe vs Idempotent</div>
+  <div class="mc-wrong">"Idempotent = không thay đổi state". <em>Junior thường confuse safe và idempotent.</em></div>
+  <div class="mc-right"><strong>Safe</strong> = không có side effect (GET). <strong>Idempotent</strong> = gọi N lần kết quả giống nhau (cùng end state). DELETE idempotent nhưng KHÔNG safe — gọi DELETE lần đầu xóa, lần 2 vẫn "đã xóa" (cùng state) → idempotent. PUT thay đổi state nhưng vẫn idempotent — replace toàn bộ resource, gọi N lần cùng result.</div>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — PATCH có idempotent không?</div>
+  <div class="mc-wrong">"PATCH idempotent vì update partial vẫn ra same result"</div>
+  <div class="mc-right"><strong>Technically KHÔNG idempotent</strong> trong general case. Ví dụ: <code>PATCH /counter { "op": "increment" }</code> — gọi N lần counter tăng N lần. Nếu PATCH dùng để <strong>set value</strong> (<code>{"name": "John"}</code>) thì idempotent. Spec HTTP không guarantee — depends on operation. Best practice: design PATCH operations idempotent (set-based, không increment-based).</div>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — POST cho mọi thứ thì sao?</div>
+  <p style="font-size:0.93rem;margin:8px 0">"Tôi sẽ dùng POST cho mọi endpoint, đơn giản hơn." — Liệt kê 3 vấn đề sẽ gặp.</p>
+  <details>
+    <summary>Click để xem 3 vấn đề (sau khi bạn đã nghĩ)</summary>
+    <div class="bi-answer">
+      <ol style="margin:0 0 0 20px">
+      <li><strong>Mất caching</strong>: GET cacheable, browser/CDN/proxy đều cache được. POST không cache → mọi request hit server → load tăng 10-100×.</li>
+      <li><strong>Mất idempotency tự nhiên</strong>: GET idempotent → retry safe. POST không → cần idempotency key thủ công cho mọi endpoint, code phức tạp hơn.</li>
+      <li><strong>Mất semantics</strong>: monitoring tool, API gateway, SDK đều dựa HTTP verbs. POST cho mọi thứ → log nhìn rối (POST /search? POST /list-users?), audit khó (POST có thể là read hoặc write?).</li>
+      </ol>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="idempotency">
+<h2>3. Idempotency Key — Tránh Duplicate Khi Retry</h2>
+
+<h3>Vấn đề</h3>
+<p>Mạng flaky. Client POST <code>/api/subscriptions/upgrade</code>. Request reach server, charge thành công, response timeout. Client retry → server xử lý lần 2 → <strong>user bị charge 2 lần</strong>.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .client{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .server{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .redis{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr-ok{stroke:#059669;stroke-width:1.5;fill:none;marker-end:url(#aar2)}
+    .arr-fail{stroke:#dc2626;stroke-width:1.5;fill:none;marker-end:url(#aar3);stroke-dasharray:5,3}
+  </style>
+  <marker id="aar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+  <marker id="aar3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker></defs>
+
+  <rect x="20" y="20" width="120" height="50" rx="6" class="client"/>
+  <text x="80" y="44" text-anchor="middle" class="lbl">Mobile App</text>
+  <text x="80" y="60" text-anchor="middle" font-size="10" fill="#475569">generate UUID</text>
+
+  <rect x="280" y="20" width="180" height="50" rx="6" class="server"/>
+  <text x="370" y="44" text-anchor="middle" class="lbl">API Server</text>
+  <text x="370" y="60" text-anchor="middle" font-size="10" fill="#475569">SubscriptionService</text>
+
+  <rect x="560" y="20" width="140" height="50" rx="6" class="redis"/>
+  <text x="630" y="44" text-anchor="middle" class="lbl">Redis</text>
+  <text x="630" y="60" text-anchor="middle" font-size="10" fill="#475569">idempotency store</text>
+
+  <line x1="140" y1="45" x2="280" y2="45" class="arr-ok"/>
+  <text x="155" y="36" font-size="10" fill="#059669">① POST + Idempotency-Key: uuid-A</text>
+
+  <line x1="460" y1="45" x2="560" y2="45" class="arr-ok"/>
+  <text x="465" y="36" font-size="10" fill="#059669">② check exists?</text>
+
+  <line x1="560" y1="50" x2="460" y2="50" class="arr-ok"/>
+  <text x="465" y="80" font-size="10" fill="#059669">③ NO → process</text>
+
+  <line x1="280" y1="80" x2="140" y2="115" class="arr-fail"/>
+  <text x="155" y="100" font-size="10" fill="#dc2626">④ response TIMEOUT (network fail)</text>
+
+  <line x1="140" y1="155" x2="280" y2="155" class="arr-ok"/>
+  <text x="155" y="146" font-size="10" fill="#059669">⑤ RETRY same Idempotency-Key: uuid-A</text>
+
+  <line x1="460" y1="155" x2="560" y2="155" class="arr-ok"/>
+  <text x="475" y="146" font-size="10" fill="#059669">⑥ check exists?</text>
+
+  <line x1="560" y1="160" x2="460" y2="160" class="arr-ok"/>
+  <text x="465" y="180" font-size="10" fill="#059669">⑦ YES → return cached</text>
+
+  <line x1="280" y1="180" x2="140" y2="215" class="arr-ok"/>
+  <text x="155" y="200" font-size="10" fill="#059669">⑧ Same response, no double charge</text>
+
+  <text x="360" y="260" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Server detect retry qua Idempotency-Key → return cached result thay vì process lại
+  </text>
+</svg>
+</div>
+
+<pre><code class="language-java">@RestController
+@RequestMapping("/api/v1/subscriptions")
+public class SubscriptionController {
+    private final UpgradeSubscriptionUseCase upgradeUseCase;
+    private final IdempotencyStore idempotencyStore;
+
+    @PostMapping("/upgrade")
+    public ResponseEntity&lt;UpgradeResponse&gt; upgrade(
+            @RequestBody UpgradeRequest request,
+            @RequestHeader("Idempotency-Key") String idempotencyKey) {
+
+        // Check cache trước
+        Optional&lt;UpgradeResponse&gt; cached = idempotencyStore.get(idempotencyKey);
+        if (cached.isPresent()) {
+            // Retry detected — return cached response
+            return ResponseEntity.ok()
+                .header("Idempotency-Replay", "true")  // Indicate this is a replay
+                .body(cached.get());
+        }
+
+        // First-time request — process
+        UpgradeResponse response = upgradeUseCase.execute(request);
+
+        // Cache result với TTL 24h
+        idempotencyStore.put(idempotencyKey, response, Duration.ofHours(24));
+
+        return ResponseEntity.ok(response);
+    }
+}
+
+@Service
+public class RedisIdempotencyStore implements IdempotencyStore {
+    private final RedisTemplate&lt;String, String&gt; redis;
+    private final ObjectMapper json;
+
+    @Override
+    public Optional&lt;UpgradeResponse&gt; get(String key) {
+        String value = redis.opsForValue().get("idem:" + key);
+        if (value == null) return Optional.empty();
+        try {
+            return Optional.of(json.readValue(value, UpgradeResponse.class));
+        } catch (Exception e) { return Optional.empty(); }
+    }
+
+    @Override
+    public void put(String key, UpgradeResponse value, Duration ttl) {
+        try {
+            redis.opsForValue().set("idem:" + key, json.writeValueAsString(value), ttl);
+        } catch (Exception e) { throw new RuntimeException(e); }
+    }
+}</code></pre>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Production Reality</div>
+  <p class="ec-intro">Code trên work cho happy path. Production gặp 7 edge cases sau, mỗi cái cần handle riêng:</p>
+  <ul class="ec-list">
+    <li><strong>Race condition giữa check và put</strong>: 2 retry arrive cùng lúc, cả 2 check cache không có → cả 2 process. Fix: dùng <code>SETNX</code> (set-if-not-exists) atomic, hoặc database unique constraint trên idempotency key.</li>
+    <li><strong>Server crash giữa "process success" và "cache put"</strong>: business logic commit nhưng cache chưa update. Retry → process lại. Fix: cache write trong cùng transaction với business write, hoặc dùng Saga pattern.</li>
+    <li><strong>Idempotency-Key collision</strong>: 2 client gen cùng UUID (rất hiếm nhưng có thể với UUID v1 timestamp-based). Fix: dùng UUID v4 (random) hoặc combine với userId scope.</li>
+    <li><strong>TTL expire trong retry window</strong>: client retry sau 25h (offline period dài), cache đã expire → process lại. Fix: TTL phải &gt; max retry window expected (thường 48-72h).</li>
+    <li><strong>Different request body, same Idempotency-Key</strong>: client gửi key X cho request A, sau đó gửi key X cho request B khác. Server return response của A → user thấy sai. Fix: cache phải verify request hash, mismatch → reject với 422 Unprocessable Entity.</li>
+    <li><strong>Idempotency cho long-running operations</strong>: request 1 đang process 30s, retry arrive lúc 5s. Cache chưa có. Fix: ngay khi nhận request, put "IN_PROGRESS" marker. Retry thấy marker → return 409 Conflict hoặc 202 + polling URL.</li>
+    <li><strong>GDPR — xóa user, idempotency cache vẫn còn data</strong>: user data đã xóa khỏi DB chính nhưng cache còn response. Fix: cache invalidation on user delete, hoặc encrypt cache với user-derived key (crypto-shredding).</li>
+  </ul>
+</div>
+
+<div class="verify-source">
+  <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
+  <p>Mình đã giải thích pattern theo cách phổ biến. Đọc spec chính thức + implementation thật để verify:</p>
+  <ul>
+    <li><a href="https://stripe.com/docs/api/idempotent_requests" target="_blank">Stripe Idempotency Docs</a> — tham chiếu chuẩn cho payment APIs</li>
+    <li><a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/" target="_blank">IETF draft: Idempotency-Key HTTP Header</a> — spec đang propose</li>
+    <li><a href="https://shopify.dev/docs/api/usage/idempotent-requests" target="_blank">Shopify Idempotency</a> — alternative implementation</li>
+    <li>Đọc Stripe Java SDK source code, file <code>Idempotency*.java</code> — xem họ implement client-side thế nào</li>
+  </ul>
+</div>
+</section>
+
+<section id="pagination">
+<h2>4. Pagination Strategies</h2>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Trước khi đọc, tự design API cho: "Get 50 most recent posts của user X trên social platform, scroll infinite". Câu hỏi:</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>URL endpoint và query params bạn sẽ chọn?</li>
+  <li>Nếu trong lúc user scroll, có 10 posts mới được tạo, behavior nên thế nào?</li>
+  <li>Nếu user muốn jump đến page 100 directly, có support không? Nếu không, vì sao?</li>
+  </ol>
+</div>
+
+<h3>3 Strategies — Offset, Cursor, Keyset</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Strategy</th><th>Complexity</th><th>Stable under insert?</th><th>Jump to page N?</th><th>Khi nào dùng</th></tr></thead>
+<tbody>
+<tr><td><strong>Offset</strong> (<code>?offset=100&amp;limit=50</code>)</td><td>O(offset + limit)</td><td>❌</td><td>✅</td><td>Small dataset (&lt;10K), admin UI</td></tr>
+<tr><td><strong>Cursor</strong> (<code>?cursor=abc&amp;limit=50</code>)</td><td>O(limit)</td><td>✅</td><td>❌</td><td>Infinite scroll, feed, timeline</td></tr>
+<tr><td><strong>Keyset</strong> (<code>?after_id=X&amp;after_ts=Y&amp;limit=50</code>)</td><td>O(limit)</td><td>✅</td><td>❌</td><td>Large dataset sorted, time-series</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Vì sao Cursor pagination phổ biến cho modern APIs?</div>
+  <div class="hist-timeline">
+    <strong>Era 1 (1990s-2000s)</strong> — Web app dùng offset pagination vì SQL có <code>LIMIT/OFFSET</code> built-in. Đơn giản, ai cũng hiểu.<br><br>
+    <strong>Era 2 (2010s, Twitter, Facebook)</strong> — Social feed thay đổi liên tục. Offset pagination tạo bug: user scroll page 1, thấy post A B C; trong lúc đó posts mới được tạo, push offset xuống; user load page 2 → thấy A B C lại (duplicate) hoặc miss posts (gap). Twitter implement <strong>cursor pagination</strong> dùng <code>since_id</code> và <code>max_id</code> để fix.<br><br>
+    <strong>Era 3 (2015+)</strong> — Cursor pagination thành standard cho:
+    <ul style="margin:6px 0 0 20px">
+    <li>Public APIs (Facebook Graph, GitHub API, Stripe API)</li>
+    <li>Infinite scroll UIs (Instagram, TikTok, Twitter)</li>
+    <li>Event streams (Kafka offset is essentially cursor)</li>
+    </ul>
+    <br>
+    <strong>Insight</strong>: cursor pagination evolve không phải vì "performance" (mặc dù có) — chính vì <strong>stable iteration semantics</strong>. Người dùng không tolerate duplicate/missed items trong feed.
+  </div>
+</div>
+
+<h3>Implementation — Cursor Pagination cho Music Streaming Playlist</h3>
+
+<pre><code class="language-java">@RestController
+@RequestMapping("/api/v1/playlists")
+public class PlaylistController {
+    private final PlaylistService playlistService;
+
+    @GetMapping("/{playlistId}/songs")
+    public ResponseEntity&lt;PagedSongs&gt; getSongs(
+            @PathVariable String playlistId,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) String cursor) {
+
+        // Validate limit để tránh abuse
+        if (limit &lt; 1 || limit &gt; 200) {
+            throw new BadRequestException("limit must be between 1 and 200");
+        }
+
+        // Decode cursor (base64-encoded timestamp + ID)
+        SongCursor cursorObj = cursor != null ? SongCursor.decode(cursor) : null;
+
+        // Fetch limit + 1 để check hasMore
+        List&lt;Song&gt; songs = playlistService.getSongsAfter(playlistId, cursorObj, limit + 1);
+
+        boolean hasMore = songs.size() &gt; limit;
+        if (hasMore) songs = songs.subList(0, limit);
+
+        // Build next cursor từ last item
+        String nextCursor = hasMore
+            ? SongCursor.encode(songs.get(songs.size() - 1))
+            : null;
+
+        return ResponseEntity.ok(new PagedSongs(
+            songs.stream().map(SongDto::from).toList(),
+            nextCursor,
+            hasMore,
+            new PaginationLinks(
+                String.format("/api/v1/playlists/%s/songs?cursor=%s", playlistId, cursor),
+                hasMore ? String.format("/api/v1/playlists/%s/songs?cursor=%s", playlistId, nextCursor) : null
+            )
+        ));
+    }
+}
+
+// Cursor encodes timestamp + ID để uniquely identify position
+public record SongCursor(Instant addedAt, String songId) {
+    public static String encode(Song song) {
+        String raw = song.addedAt().toString() + "|" + song.id();
+        return Base64.getUrlEncoder().encodeToString(raw.getBytes());
+    }
+
+    public static SongCursor decode(String encoded) {
+        String raw = new String(Base64.getUrlDecoder().decode(encoded));
+        String[] parts = raw.split("\\|");
+        return new SongCursor(Instant.parse(parts[0]), parts[1]);
+    }
+}
+
+// Repository query với keyset (more efficient than OFFSET)
+@Repository
+public class SongRepository {
+    public List&lt;Song&gt; findAfterCursor(String playlistId, SongCursor cursor, int limit) {
+        String sql;
+        if (cursor == null) {
+            sql = "SELECT * FROM playlist_songs WHERE playlist_id = ? " +
+                  "ORDER BY added_at DESC, song_id DESC LIMIT ?";
+            return jdbc.query(sql, mapper, playlistId, limit);
+        } else {
+            // Keyset condition: tuple comparison
+            sql = "SELECT * FROM playlist_songs WHERE playlist_id = ? " +
+                  "AND (added_at, song_id) &lt; (?, ?) " +
+                  "ORDER BY added_at DESC, song_id DESC LIMIT ?";
+            return jdbc.query(sql, mapper, playlistId, cursor.addedAt(), cursor.songId(), limit);
+        }
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao cursor là (timestamp, id) chứ không chỉ timestamp?</div>
+  <p>Nếu 2 songs add cùng millisecond (rất phổ biến với batch add từ external playlist), cursor chỉ timestamp → ambiguous: WHERE timestamp &lt; T loại bỏ cả 2 hoặc giữ cả 2. Tuple <strong>(timestamp, id)</strong> với secondary sort theo ID → strictly ordered, không bao giờ duplicate hay miss.</p>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Cursor pagination với "Sort by popularity"</div>
+  <p style="font-size:0.93rem;margin:8px 0">User muốn sort songs theo <code>?sort=popularity_desc</code> (popularity là field <code>play_count</code> update realtime). Code trên có work không? Nếu không, vì sao?</p>
+  <details>
+    <summary>Click để xem analysis</summary>
+    <div class="bi-answer">
+      <p><strong>KHÔNG work.</strong> Cursor pagination assume <strong>sort field stable</strong>. Nhưng <code>play_count</code> tăng liên tục → cursor (play_count=1000, id=X) hôm nay có thể trỏ đến song khác ngày mai.</p>
+      <p><strong>Hậu quả</strong>: scroll page 2 thấy song đã thấy ở page 1 (duplicate), hoặc miss songs giữa.</p>
+      <p><strong>Fix options</strong>:</p>
+      <ol style="margin:0 0 0 20px">
+      <li>Snapshot popularity at query time (cache popularity score trong session 5 phút) → stable trong session</li>
+      <li>Pagination dùng (popularity_at_snapshot, id) thay vì current popularity</li>
+      <li>Hoặc thay sort: "popular last 7 days" — pre-calculate daily, immutable trong day</li>
+      <li>Accept some inconsistency — UX message "Results may shift as new data arrives"</li>
+      </ol>
+      <p><strong>Insight</strong>: cursor pagination chỉ work với <strong>append-only ordered fields</strong> (timestamp, ID, immutable counters). Mutable sort fields cần snapshot.</p>
+    </div>
+  </details>
+</div>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Pagination Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Empty page với hasMore=true</strong>: filter loại bỏ hết items page này. Client tưởng đã hết, dừng scroll → miss. Fix: tiếp tục fetch internally cho đến khi đủ N items hoặc hết DB.</li>
+    <li><strong>Cursor invalid sau schema change</strong>: thêm column mới, cursor encoding cũ break. Fix: version cursor (<code>v1:base64data</code>), reject old version với 400 + force client re-fetch.</li>
+    <li><strong>User permission change giữa pages</strong>: user lose access đến playlist khi đang scroll. Page 1 fetched OK, page 2 → 403. Fix: re-validate permission mỗi page, return 403 nicely với guidance.</li>
+    <li><strong>Cursor leak data position</strong>: cursor base64 timestamp → reverse engineer biết "song ID = 123 added at 2024-01-15". Fix: encrypt cursor (HMAC + secret), client không decode được.</li>
+    <li><strong>Bot scrape toàn bộ dataset</strong>: cursor pagination cho phép walk through everything. Fix: limit max pages (sau N pages reject), hoặc rate limit hơn cho cursor requests.</li>
+    <li><strong>Network retry duplicate cursor</strong>: client gọi page 2 với cursor C, timeout, retry. Idempotent vì GET — nhưng analytics đếm 2 hits. Fix: deduplicate ở analytics layer dùng request ID.</li>
+  </ul>
+</div>
+</section>
+
+<section id="versioning">
+<h2>5. API Versioning</h2>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "Add field mới là backward-compatible"</div>
+  <div class="mc-wrong">"Thêm field <code>currency</code> vào response không break client cũ vì client cũ chỉ ignore field mới"</div>
+  <div class="mc-right">Phụ thuộc <strong>client implementation</strong>. JSON parser <em>strict mode</em> (như Jackson <code>FAIL_ON_UNKNOWN_PROPERTIES = true</code>) sẽ throw exception khi gặp field unknown. Mobile app cũ dùng generated code (Protobuf, OpenAPI codegen) parse theo schema cố định cũng break. <strong>"Add field is backward-compatible" chỉ đúng nếu client tolerant — không phải luôn.</strong> Safe assumption: thay đổi response = breaking change unless proven otherwise.</div>
+</div>
+
+<h3>4 Versioning Strategies</h3>
+
+<pre><code class="language-text">1. URI Path:        /api/v1/songs    →  /api/v2/songs       ← Explicit, dễ test
+2. Query param:     /api/songs?v=1   →  /api/songs?v=2      ← Easy forget default
+3. Header:          Accept-Version: 2                        ← Clean URL, hidden
+4. Content nego:    Accept: application/vnd.tuneflow.v2+json ← RESTful, complex</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Recommendation cho 90% case: URI Path Versioning</div>
+  <p>Lý do thực tế:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Visible</strong>: nhìn URL biết ngay version. Browser test dễ.</li>
+  <li><strong>Logging/analytics</strong>: filter by version trong access log đơn giản (path-based).</li>
+  <li><strong>Cache friendly</strong>: CDN cache theo URL — v1 và v2 cache độc lập tự nhiên.</li>
+  <li><strong>Documentation</strong>: Swagger/OpenAPI generate per-path dễ hiểu hơn per-header.</li>
+  </ul>
+  <p>Trade-off: code duplication. Nhưng đây chính là điểm — mỗi version có lifecycle riêng, deprecation timeline riêng, không nên share code.</p>
+</div>
+
+<h3>Implementation — V1 và V2 song song</h3>
+
+<pre><code class="language-java">// V1 (deprecated, maintained 2 năm)
+@RestController
+@RequestMapping("/api/v1/songs")
+@Deprecated  // Annotation cho IDE warn
+public class SongControllerV1 {
+    @GetMapping("/{id}")
+    public ResponseEntity&lt;SongResponseV1&gt; getSong(@PathVariable String id) {
+        SongDto song = songService.findById(id);
+        ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
+        // Sunset header — báo client v1 sẽ retire
+        builder.header("Sunset", "Sat, 31 Dec 2026 23:59:59 GMT");
+        builder.header("Deprecation", "true");
+        builder.header("Link", "&lt;/api/v2/songs/" + id + "&gt;; rel=\"successor-version\"");
+        return builder.body(new SongResponseV1(song.id(), song.title(), song.duration()));
+    }
+}
+
+// V2 (current) — thêm artist, album, price với currency
+@RestController
+@RequestMapping("/api/v2/songs")
+public class SongControllerV2 {
+    @GetMapping("/{id}")
+    public ResponseEntity&lt;SongResponseV2&gt; getSong(@PathVariable String id) {
+        SongDto song = songService.findById(id);
+        return ResponseEntity.ok(new SongResponseV2(
+            song.id(),
+            song.title(),
+            song.durationSeconds(),
+            new ArtistRef(song.artistId(), song.artistName()),
+            new AlbumRef(song.albumId(), song.albumName()),
+            new Price(song.priceAmount(), song.currency())  // NEW in v2
+        ));
+    }
+}
+
+public record SongResponseV1(String id, String title, int duration) {}
+public record SongResponseV2(String id, String title, int durationSeconds,
+                              ArtistRef artist, AlbumRef album, Price price) {}</code></pre>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Versioning Production</div>
+  <ul class="ec-list">
+    <li><strong>V1 vs V2 cùng update DB → race condition</strong>: V1 PUT song, V2 PUT song cùng lúc, 2 schemas khác → last write wins, fields của loser bị lost. Fix: optimistic locking với version field, hoặc converge schema (V1 endpoint internally update full schema với defaults).</li>
+    <li><strong>V1 client gửi field tên cũ, V2 expect field mới</strong>: rename <code>name</code> → <code>title</code>. Nếu client cũ POST V2 endpoint với <code>name</code> field → silently ignored. Fix: V2 phải reject explicit unknown fields (Jackson <code>FAIL_ON_UNKNOWN_PROPERTIES</code>) hoặc transform request through anti-corruption layer.</li>
+    <li><strong>Database supports cả 2 versions = schema bloat</strong>: thêm cột mới cho V2, V1 không hiểu. Nullable cột → invariant không enforce. Fix: tách microservice per version (extreme), hoặc accept temporary nullable + migration plan để retire V1.</li>
+    <li><strong>Mobile app stuck ở V1</strong>: enterprise apps không update được (approval cycle 6+ tháng). V1 retire sẽ break critical users. Fix: support window ≥ 2 năm từ V2 launch, multiple deprecation warnings (header, email, dashboard).</li>
+    <li><strong>Caching giữa V1 và V2 confusion</strong>: CDN cache <code>/api/v1/songs/123</code> và <code>/api/v2/songs/123</code> độc lập (good), nhưng nếu shared underlying DB query → invalidation cần care. Fix: cache key bao gồm version.</li>
+    <li><strong>Documentation drift</strong>: V1 docs outdated vì team focus V2. Confusion cho V1 maintenance users. Fix: auto-generate docs từ code (Swagger/OpenAPI), mỗi PR check docs build.</li>
+  </ul>
+</div>
+</section>
+
+<section id="rate-limit">
+<h2>6. Rate Limiting</h2>
+
+<h3>3 Algorithms phổ biến</h3>
+
+<div class="pillar-grid">
+<div class="pillar">
+  <div class="num">Algorithm 1</div>
+  <h4>Token Bucket</h4>
+  <p>Bucket có N tokens, refill X tokens/sec. Mỗi request consume 1 token. Hết tokens → reject. <strong>Allow bursts</strong> đến bucket size. Phổ biến nhất (AWS, GCP).</p>
+</div>
+<div class="pillar">
+  <div class="num">Algorithm 2</div>
+  <h4>Fixed Window</h4>
+  <p>Đếm requests trong 1 window cố định (00:00-01:00, 01:00-02:00). Đơn giản nhưng có <strong>boundary spike</strong>: 60 req ở 00:59 + 60 req ở 01:00 = 120 req trong 1 phút.</p>
+</div>
+<div class="pillar">
+  <div class="num">Algorithm 3</div>
+  <h4>Sliding Window</h4>
+  <p>Đếm requests trong rolling window N giây trước hiện tại. Chính xác nhất, không có boundary effect. Implement phức tạp (sorted set Redis).</p>
+</div>
+<div class="pillar">
+  <div class="num">Bonus</div>
+  <h4>Leaky Bucket</h4>
+  <p>Tương tự token bucket nhưng output rate constant — smooth traffic. Dùng cho bandwidth shaping, không phổ biến cho HTTP rate limit.</p>
+</div>
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Vì sao Sliding Window phổ biến hơn cho modern APIs?</div>
+  <div class="hist-timeline">
+    <strong>Early 2000s</strong> — Apache <code>mod_evasive</code>, simple counter per IP. Fixed window. Boundary spike phổ biến nhưng tolerable.<br><br>
+    <strong>2010s</strong> — DoS attackers học spike boundary trick → fixed window không đủ. Cloudflare, AWS WAF chuyển sang sliding window.<br><br>
+    <strong>Redis as kingmaker</strong> — Sliding window complex để implement (cần ordered set). Redis ZADD/ZREMRANGEBYSCORE đủ nhanh để làm trên scale lớn → sliding window thành affordable.<br><br>
+    <strong>Modern preference</strong> — <em>Sliding window log</em> (chính xác, tốn memory) cho high-value endpoints; <em>token bucket</em> cho general traffic.<br><br>
+    <strong>Practical insight</strong>: chọn algorithm dựa trên (1) traffic pattern (bursty hay smooth?), (2) tolerance cho boundary effect, (3) Redis memory budget. Không có "best", có "best for your case".
+  </div>
+</div>
+
+<h3>Implementation — Token Bucket với Redis</h3>
+
+<pre><code class="language-java">@Component
+public class TokenBucketRateLimiter {
+    private final StringRedisTemplate redis;
+    private final DefaultRedisScript&lt;Long&gt; refillScript;
+
+    public TokenBucketRateLimiter(StringRedisTemplate redis) {
+        this.redis = redis;
+        // Lua script atomic: check + decrement + refill
+        this.refillScript = new DefaultRedisScript&lt;&gt;(LUA_TOKEN_BUCKET, Long.class);
+    }
+
+    /**
+     * @return true nếu allow, false nếu rate-limited
+     */
+    public boolean tryAcquire(String userId, int capacity, int refillPerSec) {
+        String key = "rl:user:" + userId;
+        Long result = redis.execute(refillScript,
+            List.of(key),
+            String.valueOf(capacity),
+            String.valueOf(refillPerSec),
+            String.valueOf(System.currentTimeMillis())
+        );
+        return result != null && result == 1;
+    }
+
+    private static final String LUA_TOKEN_BUCKET = """
+        local key = KEYS[1]
+        local capacity = tonumber(ARGV[1])
+        local refillPerSec = tonumber(ARGV[2])
+        local now = tonumber(ARGV[3])
+
+        local bucket = redis.call('HMGET', key, 'tokens', 'lastRefill')
+        local tokens = tonumber(bucket[1]) or capacity
+        local lastRefill = tonumber(bucket[2]) or now
+
+        -- Refill tokens based on elapsed time
+        local elapsed = (now - lastRefill) / 1000
+        local newTokens = math.min(capacity, tokens + elapsed * refillPerSec)
+
+        if newTokens &lt; 1 then
+            redis.call('HMSET', key, 'tokens', newTokens, 'lastRefill', now)
+            redis.call('EXPIRE', key, 3600)
+            return 0  -- Reject
+        end
+
+        redis.call('HMSET', key, 'tokens', newTokens - 1, 'lastRefill', now)
+        redis.call('EXPIRE', key, 3600)
+        return 1  -- Allow
+        """;
+}
+
+@Component
+public class RateLimitFilter extends OncePerRequestFilter {
+    private final TokenBucketRateLimiter limiter;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
+        String userId = extractUserIdFromJwt(req);
+        if (userId == null) {
+            // Anonymous — limit by IP
+            userId = "ip:" + req.getRemoteAddr();
+        }
+
+        // 100 requests / second sustained, burst 200
+        boolean allowed = limiter.tryAcquire(userId, 200, 100);
+        if (!allowed) {
+            res.setStatus(429);
+            res.setHeader("Retry-After", "1");
+            res.setHeader("X-RateLimit-Limit", "100");
+            res.setHeader("X-RateLimit-Remaining", "0");
+            res.getWriter().write("{\"error\":\"RATE_LIMIT_EXCEEDED\",\"retryAfter\":1}");
+            return;
+        }
+        chain.doFilter(req, res);
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Lua script atomic critical?</div>
+  <p>Nếu implement bằng nhiều Redis commands (GET → compute → SET), 2 threads cùng request:</p>
+  <ol style="margin:8px 0 0 20px">
+  <li>Thread A: GET tokens = 1</li>
+  <li>Thread B: GET tokens = 1 (cùng lúc, chưa decrement)</li>
+  <li>Thread A: SET tokens = 0, allow</li>
+  <li>Thread B: SET tokens = 0, allow</li>
+  </ol>
+  <p>→ Cả 2 đều pass dù chỉ có 1 token. Lua script run atomic trong Redis single-thread → race condition không thể xảy ra.</p>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Rate limit theo IP với CGNAT</div>
+  <p style="font-size:0.93rem;margin:8px 0">"Tôi rate limit per IP để bảo vệ API." Hãy nghĩ tình huống IP-based rate limit fail.</p>
+  <details>
+    <summary>Click để xem</summary>
+    <div class="bi-answer">
+      <ol style="margin:0 0 0 20px">
+      <li><strong>CGNAT (Carrier-Grade NAT)</strong>: hàng nghìn user mobile cùng public IP. Limit per-IP = limit per ngàn người. 1 attacker dùng hết quota → tất cả user của carrier đó bị block.</li>
+      <li><strong>Corporate/School network</strong>: 1 office 500 nhân viên, 1 public IP. Limit thấp = mọi người block nhau.</li>
+      <li><strong>Mobile NAT chuyển IP</strong>: user di chuyển → IP đổi (4G → wifi → 4G). Rate limit reset → user bypass.</li>
+      <li><strong>VPN/Tor</strong>: user dễ đổi IP để bypass.</li>
+      <li><strong>IPv6</strong>: mỗi device unique IPv6 → IP-based vô nghĩa với users IPv6.</li>
+      </ol>
+      <p><strong>Fix</strong>: layer multiple identifiers — per user (JWT), per API key, per IP (fallback for anonymous). Whitelist trusted IPs (office, partners). Adaptive limit (lower cho new accounts, higher cho verified).</p>
+    </div>
+  </details>
+</div>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Rate Limiting Production</div>
+  <ul class="ec-list">
+    <li><strong>Distributed rate limit consistency</strong>: 3 servers behind LB, mỗi server rate limit local → user gửi 100 req qua 3 servers vẫn pass dù limit là 100. Fix: central store (Redis), atomic ops.</li>
+    <li><strong>Redis down → fail open hay fail closed?</strong> Fail open = không có rate limit, attack passes. Fail closed = mọi user block. Production thường: <strong>fail open with alerting</strong> (better UX, monitoring catches issue).</li>
+    <li><strong>Clock skew giữa servers</strong>: sliding window dùng <code>System.currentTimeMillis()</code>. Server clocks lệch nhau vài giây → inconsistent windows. Fix: dùng Redis server time (TIME command) làm source of truth.</li>
+    <li><strong>Rate limit headers gây cache hit/miss inconsistent</strong>: response chứa <code>X-RateLimit-Remaining</code> đổi mỗi request. CDN cache response → wrong header serve cho user khác. Fix: <code>Cache-Control: private</code> cho rate-limited endpoints.</li>
+    <li><strong>Burst capacity bị abuse</strong>: bucket size 200, refill 100/s → attacker burst 200 lúc 0s, đợi 1s, burst 200 lần nữa = 400 req trong 1s. Fix: nếu cần strict, dùng sliding window thay token bucket.</li>
+    <li><strong>Differential limit cho operations khác nhau</strong>: GET song cheap, POST upload song expensive. Single limit unfair. Fix: weighted tokens (GET cost 1, POST cost 10).</li>
+  </ul>
+</div>
+</section>
+
+<section id="hateoas">
+<h2>7. HATEOAS — Hypermedia As The Engine Of Application State</h2>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Nhìn 2 response JSON dưới, predict ưu/nhược điểm:</div>
+
+<pre style="margin:8px 0"><code class="language-json">// A. Plain REST
+{ "id": "song-123", "title": "Yesterday", "albumId": "album-456" }
+
+// B. HATEOAS
+{
+  "id": "song-123", "title": "Yesterday",
+  "_links": {
+    "self":   { "href": "/songs/song-123" },
+    "album":  { "href": "/albums/album-456" },
+    "lyrics": { "href": "/songs/song-123/lyrics" },
+    "play":   { "href": "/play", "method": "POST" }
+  }
+}</code></pre>
+  <div class="pause-q">Câu hỏi:</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>Khi backend đổi URL pattern (ví dụ <code>/albums/X</code> thành <code>/library/albums/X</code>), client nào break?</li>
+  <li>Khi user state thay đổi (chưa Premium thì <code>play</code> link absent), client UI thế nào?</li>
+  <li>Response size khác nhau ra sao? Mobile data plan tốn không?</li>
+  </ol>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — HATEOAS phổ biến trong REST APIs</div>
+  <div class="mc-wrong">"REST = HATEOAS. Mọi REST API nên có _links field."</div>
+  <div class="mc-right">Roy Fielding (cha đẻ REST) khẳng định HATEOAS là <strong>required</strong> để thật sự "RESTful". Nhưng thực tế <strong>&lt; 5% public APIs implement HATEOAS</strong> (Twitter, Facebook, GitHub, Stripe đều không). Lý do: complexity vs benefit. Client mobile hardcode URLs work tốt hơn parse _links runtime. HATEOAS shine với <strong>public APIs có evolution rất nhanh</strong> hoặc <strong>generic clients</strong> (browser tự navigate). Cho 90% case, REST level 2 (verbs + resources, no HATEOAS) đủ.</div>
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Richardson Maturity Model — Đo độ "RESTful"</div>
+  <div class="hist-timeline">
+    Leonard Richardson (2008) propose 4 level maturity cho REST APIs:<br><br>
+    <strong>Level 0 — Swamp of POX</strong>: 1 URL, POST tất cả. SOAP-style. (Không RESTful)<br>
+    <strong>Level 1 — Resources</strong>: nhiều URLs cho resources. Nhưng vẫn POST mọi thứ.<br>
+    <strong>Level 2 — HTTP Verbs</strong>: GET/POST/PUT/DELETE đúng semantics. 90% modern APIs ở đây.<br>
+    <strong>Level 3 — HATEOAS</strong>: response chứa links để navigate. Đây mới là "true REST" theo Fielding.<br><br>
+    <strong>Insight</strong>: Industry chọn Level 2 vì cost/benefit. Level 3 cost cao (server impl + client parse logic), benefit nhỏ với typed clients (mobile, SDK). Hiểu mature model giúp bạn argue về architecture decisions, không phải để áp dụng cứng nhắc.
+  </div>
+</div>
+</section>
+
+<section id="error-format">
+<h2>8. Error Response Format — Consistent Across API</h2>
+
+<p>Error format inconsistent → client phải parse mỗi endpoint differently → bug + bad UX. Standard hóa:</p>
+
+<pre><code class="language-json">{
+  "error": {
+    "code": "INSUFFICIENT_FUNDS",
+    "message": "Cannot complete upgrade: payment method rejected",
+    "details": {
+      "paymentMethod": "card_visa_1234",
+      "declineReason": "insufficient_funds"
+    },
+    "timestamp": "2026-05-20T14:32:15.123Z",
+    "path": "/api/v1/subscriptions/upgrade",
+    "traceId": "abc-123-def",
+    "documentation": "https://docs.tuneflow.com/errors/insufficient_funds"
+  }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Mỗi field có purpose riêng — không phải decoration</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><code>code</code>: machine-readable, client switch/case xử lý. <em>KHÔNG dùng message để switch — i18n sẽ break.</em></li>
+  <li><code>message</code>: human-readable cho support/log. KHÔNG show thẳng cho end-user (có thể leak internal info).</li>
+  <li><code>details</code>: contextual data để debug. Validation errors có field-level breakdown.</li>
+  <li><code>timestamp</code>: cho support correlate với log timeline.</li>
+  <li><code>path</code>: endpoint gây error (dynamic routing có thể che mất).</li>
+  <li><code>traceId</code>: critical cho distributed tracing — copy vào support ticket.</li>
+  <li><code>documentation</code>: link self-service để user/dev tự fix.</li>
+  </ul>
+</div>
+
+<p>Implementation với Spring <code>@ControllerAdvice</code>:</p>
+
+<pre><code class="language-java">@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity&lt;ApiErrorResponse&gt; handle(InsufficientFundsException e, HttpServletRequest req) {
+        return ResponseEntity.badRequest().body(ApiErrorResponse.builder()
+            .code("INSUFFICIENT_FUNDS")
+            .message("Cannot complete upgrade: payment method rejected")
+            .detail("paymentMethod", e.getPaymentMethodId())
+            .detail("declineReason", e.getDeclineReason())
+            .path(req.getRequestURI())
+            .traceId(MDC.get("traceId"))
+            .documentation("https://docs.tuneflow.com/errors/insufficient_funds")
+            .build());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)  // Validation
+    public ResponseEntity&lt;ApiErrorResponse&gt; handleValidation(MethodArgumentNotValidException e, HttpServletRequest req) {
+        Map&lt;String, String&gt; fieldErrors = e.getBindingResult().getFieldErrors().stream()
+            .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+        return ResponseEntity.badRequest().body(ApiErrorResponse.builder()
+            .code("VALIDATION_FAILED")
+            .message("Request validation failed")
+            .detail("fields", fieldErrors)
+            .path(req.getRequestURI())
+            .traceId(MDC.get("traceId"))
+            .build());
+    }
+
+    @ExceptionHandler(Exception.class)  // Fallback
+    public ResponseEntity&lt;ApiErrorResponse&gt; handleUnexpected(Exception e, HttpServletRequest req) {
+        log.error("Unexpected error", e);
+        return ResponseEntity.internalServerError().body(ApiErrorResponse.builder()
+            .code("INTERNAL_ERROR")
+            .message("An unexpected error occurred. Please retry or contact support.")
+            // ⚠️ KHÔNG leak stack trace ra response (security risk)
+            .path(req.getRequestURI())
+            .traceId(MDC.get("traceId"))
+            .build());
+    }
+}</code></pre>
+</section>
+
+<section id="antipatterns">
+<h2>9. Anti-Patterns</h2>
+
+<h3>#1 GET cho operations modify state</h3>
+<pre><code class="language-text">// ❌
+GET /api/users/123/delete
+GET /api/cart/add?productId=456
+
+// Vấn đề: browser prefetch link → tự xóa user; bot crawl → tự add cart</code></pre>
+
+<h3>#2 No pagination (return all)</h3>
+<pre><code class="language-java">@GetMapping("/posts")
+public List&lt;Post&gt; all() { return postRepo.findAll(); }
+// 1M posts → 100MB JSON → mobile OOM, server slow</code></pre>
+
+<h3>#3 Expose internal IDs (sequential)</h3>
+<pre><code class="language-text">GET /api/orders/1001  → exists
+GET /api/orders/1002  → exists  (attacker enumerates)
+GET /api/orders/1003  → exists  (data leak)
+
+// Fix: UUID/hashids, không sequential</code></pre>
+
+<h3>#4 Inconsistent error format</h3>
+<pre><code class="language-text">Endpoint A: { "error": "..." }
+Endpoint B: { "errorCode": "...", "message": "..." }
+Endpoint C: { "errors": ["..."] }
+Endpoint D: returns 500 with HTML page
+
+// Client phải write 4 parsing logic. Pain.</code></pre>
+
+<h3>#5 Breaking changes trong minor version</h3>
+<pre><code class="language-text">v2.0: { "balance": 100.5 }      // number
+v2.1: { "balance": "100.50" }   // string — minor bump, breaking!
+
+// Mobile parseDouble crash → user app freeze</code></pre>
+
+<h3>#6 No rate limiting</h3>
+<p>1 bad actor đủ để DoS toàn bộ service. Even legitimate misbehaved client (infinite loop) cũng có thể.</p>
+
+<h3>#7 Verb in URL</h3>
+<pre><code class="language-text">// ❌
+POST /api/users/createUser
+POST /api/orders/cancelOrder/123
+
+// ✅ Resource + verb separation
+POST /api/users               (verb in HTTP method)
+DELETE /api/orders/123        (verb = DELETE)</code></pre>
+
+<h3>#8 No documentation versioning</h3>
+<p>API v2 release, docs vẫn show v1. Client confused. Fix: docs deploy cùng API release, hosted per-version.</p>
+</section>
+
+<section id="build-projects">
+<h2>10. Build Projects — Apply Hands-On</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Idempotent Subscription API (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Spring Boot service với endpoint <code>POST /api/subscriptions/upgrade</code> support Idempotency-Key. Repository public trên GitHub.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Header <code>Idempotency-Key</code> required cho POST</li>
+    <li>Redis-backed cache (Docker-compose include Redis)</li>
+    <li>TTL 24 giờ cho cached responses</li>
+    <li>Integration test: simulate retry, verify single charge (mock payment gateway)</li>
+    <li>Race condition test: 10 concurrent requests cùng key → verify chỉ 1 processed</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: README có architecture diagram, test pass với <code>mvn test</code>, có <code>curl</code> examples để verify manual.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Cursor Pagination cho Music Playlist (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: API <code>GET /api/playlists/{id}/songs</code> với cursor pagination cho 100K songs, performance &lt; 50ms p95.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>PostgreSQL với index trên <code>(playlist_id, added_at DESC, song_id DESC)</code></li>
+    <li>Cursor base64-encoded với (timestamp, id)</li>
+    <li>Response include <code>next</code> link (HATEOAS-style)</li>
+    <li>Test: insert 100K songs, paginate full → verify đúng order, no duplicate, no miss</li>
+    <li>Benchmark: JMH compare cursor vs offset cho page 1, 100, 1000, 10000</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: benchmark results trong README chứng minh cursor consistent O(1), offset O(N).</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Multi-Tier Rate Limiter (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Rate limit service với multi-tier limits (per-user, per-IP, per-endpoint, weighted operations).
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Token bucket implemented qua Redis Lua script (atomic)</li>
+    <li>Tier 1: per-user 1000 req/min</li>
+    <li>Tier 2: per-IP 500 req/min (fallback cho anonymous)</li>
+    <li>Tier 3: per-endpoint expensive ops (search) cost 10 tokens, GET cost 1</li>
+    <li>Headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>, <code>Retry-After</code></li>
+    <li>Fail open khi Redis down (log alert)</li>
+    <li>Load test với <strong>k6</strong> hoặc <strong>wrk</strong>: 1000 concurrent clients, verify limits enforced correctly</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: load test report chứng minh accurate rate limiting + graceful degradation khi Redis fail.</div>
+</div>
+</section>
+
+<section id="interview">
+<h2>11. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Giải thích cursor pagination. Vì sao không dùng offset?</div>
+<div class="a">"Offset scan rows từ đầu đến offset+limit (O(N) cho page xa). Cursor dùng (sort_field, id) làm position, query <code>WHERE (sort_field, id) &lt; cursor LIMIT N</code> — O(limit) với index. Cursor cũng <strong>stable</strong>: nếu insert/delete xảy ra giữa pages, không shift offset → no duplicate/miss. Trade-off: client không jump-to-page-N, chỉ next/prev. Phù hợp infinite scroll, feed, không phù hợp paginated table có 'Go to page 50' button."</div>
+
+<div class="q">Q: Idempotency key là gì, vì sao cần cho POST?</div>
+<div class="a">"Client generate UUID gửi qua header <code>Idempotency-Key</code>. Server cache response by key (Redis, TTL 24h). Lần đầu: process + cache. Retry (cùng key): return cached response thay vì process lại. Vì sao cần: POST không idempotent natively. Network timeout → client retry → server process lần 2 (double charge). Idempotency key cho phép client retry safely. Spec: header chuẩn IETF (đang draft), Stripe/Shopify đã implement."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: Design pagination cho social feed (Instagram-like) — 10K followers, mỗi follower có 100 posts.</div>
+<div class="a">"<strong>Architecture</strong>:<br>
+<strong>1. Storage</strong>: posts table với index (author_id, created_at DESC, post_id DESC).<br>
+<strong>2. Feed generation</strong>: 2 approaches:<br>
+  <em>Pull model</em>: query <code>WHERE author_id IN (followed_ids) ORDER BY created_at DESC LIMIT 50</code>. Slow với 10K follows.<br>
+  <em>Push (fanout-on-write)</em>: khi follower post, write copy vào feed table của tất cả followers. Fast read, expensive write.<br>
+  <em>Hybrid</em>: celebrities (millions of followers) pull; regular pull. Twitter dùng approach này.<br><br>
+<strong>3. Pagination</strong>: cursor (created_at, post_id) tuple. Stable, O(limit) — critical cho infinite scroll UX không bị duplicate.<br><br>
+<strong>4. Response</strong>: chunk 50 items, include next_cursor + hasMore. Pre-fetch next page khi user scroll 80%.<br><br>
+<strong>5. Caching</strong>: Redis cache top 100 items mỗi user 5 phút. CDN cache page 1 (most accessed).<br><br>
+<strong>6. Edge cases</strong>: new post arrives during scroll (handle with 'X new posts' indicator, không insert silently), post deleted (return null entry hoặc skip), permission revoked (filter out)."</div>
+
+<div class="q">Q: Rate limit per user 100 req/min. 1 user gửi 500 → handle thế nào? Tránh starvation user khác?</div>
+<div class="a">"<strong>Token bucket per user</strong>: mỗi user có bucket riêng, 100 tokens, refill 100/min. User A consume hết → reject A. User B bucket independent → không bị ảnh hưởng.<br><br>
+<strong>Implementation</strong>: Redis HMSET cho mỗi userId (tokens, lastRefill). Lua script atomic check + decrement. Key có TTL (cleanup inactive users).<br><br>
+<strong>Response cho rate-limited request</strong>: HTTP 429 + headers <code>Retry-After: 60</code>, <code>X-RateLimit-Reset: &lt;timestamp&gt;</code>. Client backoff exponential.<br><br>
+<strong>Fairness across endpoints</strong>: weighted tokens — search cost 10, getProfile cost 1. Prevent 1 expensive endpoint drain all tokens.<br><br>
+<strong>Anti-abuse</strong>: nếu user hit limit liên tục (cumulative), escalate: lower limit, require captcha, temporary ban. Detect pattern với analytics, không hardcode.<br><br>
+<strong>Graceful degradation</strong>: limit hit không return 500. Return 429 với clear message + retry guidance + documentation link."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: TuneFlow đã release v1 cho 50,000 mobile apps. Cần add field <code>preview_url</code> cho song response để mobile có thể preview 30s. Plan rollout không break old apps.</div>
+<div class="a">"<strong>Strategy: URI versioning + parallel deployment + sunset timeline</strong>.<br><br>
+<strong>Phase 1 — Build (week 1-2)</strong>:<br>
+  Create <code>/api/v2/songs/{id}</code> endpoint với schema mới (include preview_url). v1 endpoint giữ nguyên, không touch.<br>
+  Internal services backfill <code>preview_url</code> cho mọi songs (async job, vài giờ).<br><br>
+<strong>Phase 2 — Test (week 3)</strong>:<br>
+  Deploy v2 to staging, mobile QA test build với v2.<br>
+  Load test v2 — verify performance không degrade.<br>
+  Internal alpha với engineering team.<br><br>
+<strong>Phase 3 — Rollout (week 4)</strong>:<br>
+  Mobile app release v2 update (call /api/v2/) — push qua app store.<br>
+  v1 endpoint thêm headers: <code>Sunset: Sat, 31 Dec 2026 23:59:59 GMT</code>, <code>Deprecation: true</code>, <code>Link: &lt;/api/v2/songs/X&gt;; rel='successor-version'</code>.<br>
+  Email + in-app notification cho users dùng mobile cũ: 'Update app để tính năng X'.<br><br>
+<strong>Phase 4 — Monitor (week 5-52)</strong>:<br>
+  Dashboard: % traffic v1 vs v2 theo ngày.<br>
+  Khi v1 traffic &lt; 1% → engineer notify last few users → set sunset date 30 ngày sau.<br>
+  At sunset: v1 trả 410 Gone với clear message.<br><br>
+<strong>Risk mitigation</strong>:<br>
+  Enterprise users (B2B partners): outreach personally, extended deprecation window.<br>
+  Have rollback plan: nếu v2 có bug critical, route v2 traffic về v1-compatible handler tạm thời.<br><br>
+<strong>Cost analysis</strong>: maintaining 2 versions ~6 tháng tốn engineering effort, nhưng breaking 50K users tốn nhiều hơn (support cost, churn). Cost reasonable."</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>12. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Hãy giải thích cho 1 junior dev (chưa biết API design) trong 5 phút:<br><br>
+  Vì sao POST cần Idempotency-Key, còn GET thì không?<br><br>
+  Và vì sao cursor pagination tốt hơn offset cho social feed?"</div>
+  <div class="fy-rule">Quy tắc: không xem file. Nói ra to (hoặc viết blog post 500 từ). Nếu lắp bắp ở chỗ nào → chỗ đó chưa hiểu thật → quay lại đọc.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước khi đọc file này, tôi confident về API design ở mức: ___/5<br>Sau khi đọc, tôi confident ở mức: ___/5"</div>
+  <div class="fy-rule">Nếu trước đọc bạn confident 4-5 nhưng câu trả lời ở Tầng 2-3 mà bạn không trả lời được hết → đó là dấu hiệu illusion of competence. Quay lại làm Build Exercise.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source — Đọc Thêm</div>
+  <ul>
+    <li><a href="https://datatracker.ietf.org/doc/html/rfc7231" target="_blank">RFC 7231 — HTTP/1.1 Semantics</a> (HTTP method spec gốc)</li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank">Microsoft API Design Best Practices</a></li>
+    <li><a href="https://stripe.com/docs/api" target="_blank">Stripe API Docs</a> — gold standard cho REST API design</li>
+    <li><a href="https://cloud.google.com/apis/design" target="_blank">Google API Design Guide</a> — opinionated nhưng valuable</li>
+    <li><a href="https://restfulapi.net/richardson-maturity-model/" target="_blank">Richardson Maturity Model</a></li>
+    <li><strong>Sách</strong>: "Designing Web APIs" (Brenda Jin), "REST API Design Rulebook" (Mark Massé)</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #19 API Design · Phase 4 — Architecture</div>
+<div>Hoàn thành Phase 4 (15→19) ✅ · Phase tiếp theo: 1 / 2 / 3 / 5 (Core Java / Spring / Database / Messaging)</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

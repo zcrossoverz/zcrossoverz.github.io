@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#20 — Apache Kafka | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Phase 5 — Messaging &amp; Resilience
+    <span class="sep">/</span>
+    <strong>#20 Apache Kafka</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+  </button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#mental-model">2. Mental model</a>
+    <a href="#producer">3. Producer correctness</a>
+    <a href="#consumer">4. Consumer &amp; offset</a>
+    <a href="#rebalancing">5. Rebalancing &amp; lag</a>
+    <a href="#eos">6. Exactly-once</a>
+    <a href="#spring-kafka">7. Spring Kafka</a>
+    <a href="#operations">8. Operations Playbook</a>
+    <a href="#antipatterns">Anti-patterns</a>
+    <a href="#build-projects">Build Projects</a>
+    <a href="#drill-bank">Interview Drill Bank</a>
+    <a href="#cheat-sheet">Cheat Sheet</a>
+    <a href="#self-test">Self-Test Scenarios</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">CORE · Messaging · Production readiness</span>
+  <h1>#20 — Apache Kafka</h1>
+  <p class="lead">Kafka không phải chỉ là “message queue nhanh”. Với senior backend, Kafka là bài test về ordering, delivery semantics, backpressure, partitioning, idempotency và khả năng debug production khi consumer lag tăng lúc traffic peak.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Messaging &amp; Event Streaming</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 ngày core · 1 tuần deep dive</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#21 Async, #22 Resilience, #23 Performance</div></div>
+    <div class="meta-item"><div class="k">Domain</div><div class="v">Food delivery + content streaming</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu Kafka giả"</div>
+  <div class="sb-rules">
+    <p>Kafka là chủ đề đọc thì thấy dễ, đi phỏng vấn lại hay vỡ ở chi tiết. Học theo 5 luật sau:</p>
+    <ol>
+      <li>Với mỗi config, tự hỏi: config này thay đổi failure mode nào?</li>
+      <li>Mỗi khi thấy “exactly-once”, hỏi ngay: exactly-once trong biên nào, có bao gồm database ngoài Kafka không?</li>
+      <li>Vẽ partition timeline bằng tay trước khi đọc phần offset.</li>
+      <li>Luôn tách 3 câu hỏi: produce thành công chưa, message được lưu chưa, side effect xử lý xong chưa.</li>
+      <li>Sau mỗi section, thử giải thích lại bằng ví dụ food delivery, không dùng định nghĩa thuộc lòng.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Nếu chỉ có 1 ngày, đọc các mục CORE trước. Nếu có 1 tuần, thêm SUPPLEMENTARY. Nếu chuẩn bị senior+, đọc cả ADVANCED.</div>
+    <div class="roadmap-path">
+      <div class="roadmap-item core"><span class="step">1</span> Topic, partition, key, ordering — CORE: nền của mọi câu Kafka.</div>
+      <div class="roadmap-item core"><span class="step">2</span> Producer acks, retries, idempotence — CORE: chống mất/trùng event.</div>
+      <div class="roadmap-item core"><span class="step">3</span> Consumer offset commit &amp; idempotent processing — CORE: daily production.</div>
+      <div class="roadmap-item supp"><span class="step">4</span> Rebalancing, lag, backpressure — SUPP: debug hệ thống thật.</div>
+      <div class="roadmap-item adv"><span class="step">5</span> Exactly-once semantics — ADV: dùng đúng biên, không thần thánh hóa.</div>
+    </div>
+  </div>
+</section>
+
+<section id="intro">
+  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
+  <p>Trong hệ thống food delivery, một đơn hàng đi qua nhiều bước: created, restaurant accepted, courier assigned, picked up, delivered, rated. Nếu mọi service gọi trực tiếp lẫn nhau bằng HTTP, giờ cao điểm sẽ tạo thành một chuỗi phụ thuộc dài: service A chậm kéo service B chậm, retry đồng loạt, thread pool cạn, database bị dồn write.</p>
+  <p>Kafka giải bài toán này bằng event log phân tán: producer append event vào topic, consumer đọc theo offset của partition. Điểm quan trọng không nằm ở “send message” mà ở cách Kafka buộc bạn thiết kế stream như một chuỗi sự kiện có thứ tự cục bộ, replay được và đo được lag.</p>
+
+  <div class="history-block">
+    <div class="hist-head">📜 Lịch sử ra đời của Kafka</div>
+    <div class="hist-timeline">
+      <strong>Trước Kafka</strong> — Nhiều công ty dùng log file, enterprise message broker hoặc batch ETL để đưa dữ liệu từ app sang data warehouse. Vấn đề là mỗi hệ thống có một pipeline riêng, khó replay, khó scale theo event volume.<br><br>
+      <strong>LinkedIn, khoảng 2010</strong> — Kafka được phát triển để gom activity stream và operational metrics thành một commit log phân tán, throughput cao, có thể nhiều consumer group đọc độc lập.<br><br>
+      <strong>Apache Kafka</strong> — Kafka trở thành nền tảng event streaming: không chỉ message queue, mà là durable event log cho microservices, analytics, CDC, stream processing.<br><br>
+      <strong>Insight</strong>: Kafka sinh ra từ nhu cầu xử lý dữ liệu liên tục ở scale lớn. Vì vậy interview Kafka luôn xoay quanh log, partition, offset, retention và failure semantics, không dừng ở API gửi/nhận.
+    </div>
+  </div>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Senior interviewer đang tìm gì?</div>
+    <p>Họ không cần bạn đọc thuộc `acks=all`. Họ muốn nghe bạn nói được trade-off: ordering chỉ đảm bảo trong một partition; retry có thể gây duplicate nếu không idempotent; commit offset trước xử lý có thể mất message; commit sau xử lý có thể xử lý lại; exactly-once không tự động bảo vệ side effect bên ngoài Kafka.</p>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài Toán Thực Tế — MealRush mất trạng thái đơn hàng <span class="k-tag core">CORE</span></h2>
+  <p>MealRush có service `order-service` phát event `OrderAccepted` để `courier-dispatch-service` tìm tài xế và `notification-service` gửi push notification. Trưa thứ Sáu, traffic tăng 8 lần. Một số khách thấy app báo “restaurant accepted” nhưng tài xế không bao giờ được assign. Log producer báo send success, consumer lại có khoảng offset bị skip.</p>
+
+  <div class="code-label">Junior implementation — nhìn có vẻ chạy, nhưng failure mode rất xấu</div>
+  <pre><code class="language-java">public void acceptOrder(String orderId) {
+    Order order = orderRepository.findById(orderId).orElseThrow();
+    order.accept();
+    orderRepository.save(order);
+
+    kafkaTemplate.send("order-events", new OrderAccepted(orderId));
+    notificationClient.push(order.customerId(), "Restaurant accepted your order");
+}</code></pre>
+
+  <div class="callout danger">
+    <div class="ctitle">🔥 Vấn đề bị che giấu</div>
+    <p>Code trên trộn database write, Kafka publish và HTTP side effect trong một method nhưng không định nghĩa atomic boundary. Nếu DB save thành công nhưng Kafka send fail, dispatch mất event. Nếu Kafka send thành công nhưng notification fail, retry method có thể publish duplicate. Nếu consumer auto-commit offset trước khi xử lý xong, crash giữa chừng sẽ làm mất assignment.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
+    <ol>
+      <li>Nếu producer nhận timeout, message chắc chắn chưa vào Kafka hay có thể đã vào?</li>
+      <li>Nếu consumer xử lý DB thành công rồi crash trước commit offset, lần sau chuyện gì xảy ra?</li>
+      <li>Key của event nên là `orderId`, `restaurantId` hay random UUID? Vì sao?</li>
+    </ol>
+    <div class="pause-hint">Nếu câu trả lời của bạn không nhắc đến duplicate, ordering, partition và idempotency, đọc kỹ phần dưới.</div>
+  </div>
+</section>
+
+<section id="mental-model">
+  <h2>2. Mental Model — Topic, Partition, Offset, Key <span class="k-tag core">CORE</span></h2>
+  <div class="k-banner core">
+    <strong>★ CORE — Bắt buộc nắm chắc</strong>: Hầu hết câu Kafka senior đều quay về một trong bốn khái niệm này.
+  </div>
+  <p>Kafka topic là tên logic của một stream, ví dụ `order-events`. Topic được chia thành nhiều partition. Mỗi partition là một append-only log có offset tăng dần. Producer chọn partition bằng key; consumer group chia partition cho các consumer instance. Ordering chỉ được Kafka đảm bảo trong cùng một partition, không phải toàn topic.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 920 260" role="img" aria-label="Kafka topic partition offset diagram">
+      <rect x="20" y="26" width="880" height="208" rx="10" fill="none" stroke="currentColor" opacity="0.2"/>
+      <text x="40" y="58" fill="currentColor" font-size="18" font-weight="700">topic: order-events</text>
+      <g transform="translate(60 86)">
+        <text x="0" y="24" fill="currentColor" font-size="14">partition 0</text>
+        <rect x="120" y="0" width="92" height="38" rx="6" fill="#fee2e2"/><text x="145" y="24" fill="#991b1b" font-size="13">o-10</text>
+        <rect x="222" y="0" width="92" height="38" rx="6" fill="#fee2e2"/><text x="247" y="24" fill="#991b1b" font-size="13">o-21</text>
+        <rect x="324" y="0" width="92" height="38" rx="6" fill="#fee2e2"/><text x="349" y="24" fill="#991b1b" font-size="13">o-37</text>
+        <text x="442" y="24" fill="currentColor" font-size="13">offset 0 → 1 → 2</text>
+      </g>
+      <g transform="translate(60 146)">
+        <text x="0" y="24" fill="currentColor" font-size="14">partition 1</text>
+        <rect x="120" y="0" width="92" height="38" rx="6" fill="#dcfce7"/><text x="145" y="24" fill="#166534" font-size="13">o-11</text>
+        <rect x="222" y="0" width="92" height="38" rx="6" fill="#dcfce7"/><text x="247" y="24" fill="#166534" font-size="13">o-12</text>
+        <rect x="324" y="0" width="92" height="38" rx="6" fill="#dcfce7"/><text x="349" y="24" fill="#166534" font-size="13">o-13</text>
+        <text x="442" y="24" fill="currentColor" font-size="13">order per partition only</text>
+      </g>
+      <text x="60" y="220" fill="currentColor" font-size="13">key = orderId giúp mọi event của cùng một order vào cùng partition, giữ thứ tự trạng thái đơn hàng.</text>
+    </svg>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Kafka giữ thứ tự message”</div>
+    <div class="mc-wrong">"Kafka là queue nên event nào gửi trước sẽ được xử lý trước trên toàn hệ thống."</div>
+    <div class="mc-right">Đúng hơn: Kafka giữ thứ tự trong một partition. Nếu `OrderAccepted` của order `A` vào partition 0 và `OrderCancelled` của chính order `A` vào partition 3, consumer có thể thấy cancel trước accept. Muốn giữ ordering theo aggregate, phải chọn key ổn định như `orderId`.</div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Key random làm mất ordering theo order</div>
+      <pre><code class="language-java">ProducerRecord&lt;String, OrderEvent&gt; record =
+    new ProducerRecord&lt;&gt;(
+        "order-events",
+        UUID.randomUUID().toString(),
+        event
+    );</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Key theo aggregate cần ordering</div>
+      <pre><code class="language-java">ProducerRecord&lt;String, OrderEvent&gt; record =
+    new ProducerRecord&lt;&gt;(
+        "order-events",
+        event.orderId(),
+        event
+    );</code></pre>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Cách chọn partition key</div>
+    <p>Chọn key theo đơn vị cần ordering và idempotency. Với food delivery thường là `orderId`; với driver location có thể là `driverId`; với content streaming watch-event có thể là `userId` nếu cần session ordering. Tránh key quá hot như `restaurantId` nếu một nhà hàng lớn có thể tạo phần lớn traffic.</p>
+  </div>
+</section>
+
+<section id="producer">
+  <h2>3. Producer Correctness — acks, retries, idempotence <span class="k-tag core">CORE</span></h2>
+  <p>Producer correctness trả lời câu hỏi: “Khi API trả về success/failure, ta hiểu gì về việc event đã được ghi vào Kafka?”. Ở production, timeout không đồng nghĩa message chưa được ghi. Producer có thể gửi request, broker ghi thành công, response bị mất trên network, producer retry và tạo duplicate nếu không bật idempotence.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Timeout không đơn giản</div>
+    <div class="pause-q">Giả sử producer gửi `OrderPickedUp`, sau 30s nhận timeout. Hãy đoán 3 trạng thái có thể xảy ra.</div>
+    <ol>
+      <li>Broker chưa nhận request.</li>
+      <li>Broker nhận và ghi thành công nhưng response mất.</li>
+      <li>Broker leader chết sau khi ghi ở leader nhưng chưa replicate đủ.</li>
+    </ol>
+    <div class="pause-hint">Phần producer config chính là để thu hẹp các trạng thái mập mờ này.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Config</th><th>Mục tiêu</th><th>Trade-off</th><th>Interview signal</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>acks=0</code></td><td>Fire-and-forget</td><td>Có thể mất message mà app không biết</td><td>Chỉ dùng cho telemetry không quan trọng</td></tr>
+        <tr><td><code>acks=1</code></td><td>Leader ghi là success</td><td>Mất message nếu leader crash trước replication</td><td>Không đủ cho event nghiệp vụ quan trọng</td></tr>
+        <tr><td><code>acks=all</code></td><td>Đợi ISR acknowledge</td><td>Latency cao hơn, cần cấu hình ISR đúng</td><td>Default an toàn cho business event</td></tr>
+        <tr><td><code>enable.idempotence=true</code></td><td>Chống duplicate do retry producer</td><td>Không chống duplicate từ app logic</td><td>Phải hiểu biên của idempotence</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Producer config ưu tiên throughput mù quáng</div>
+      <pre><code class="language-yaml">spring:
+  kafka:
+    producer:
+      acks: 1
+      retries: 0
+      properties:
+        enable.idempotence: false</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Config cho event nghiệp vụ quan trọng</div>
+      <pre><code class="language-yaml">spring:
+  kafka:
+    producer:
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        max.in.flight.requests.per.connection: 5</code></pre>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ `enable.idempotence` không thay thế idempotency key</div>
+    <p>Producer idempotence dedupe retry trong cùng producer session bằng sequence number. Nếu application gọi method publish hai lần vì user double-click, scheduler retry job, hoặc service restart rồi replay outbox, Kafka producer idempotence không tự biết hai event đó là cùng nghiệp vụ. Event vẫn cần `eventId` hoặc idempotency key ở consumer.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Event thiếu identity nghiệp vụ</div>
+      <pre><code class="language-java">public record OrderAccepted(
+    String orderId,
+    Instant acceptedAt
+) {}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Event có identity để dedupe/replay</div>
+      <pre><code class="language-java">public record OrderAccepted(
+    UUID eventId,
+    String orderId,
+    long orderVersion,
+    Instant acceptedAt,
+    String sourceService
+) {}</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="consumer">
+  <h2>4. Consumer &amp; Offset — At-least-once là default thực tế <span class="k-tag core">CORE</span></h2>
+  <p>Offset là vị trí đọc của consumer group trên từng partition. Commit offset nghĩa là consumer group nói với Kafka: “tôi đã xử lý xong tới đây”. Từ này gây hiểu nhầm vì Kafka không biết side effect của bạn đã thành công chưa. Nó chỉ lưu con số offset.</p>
+
+  <div class="callout why">
+    <div class="ctitle">🎯 Vì sao commit timing quan trọng?</div>
+    <p>Nếu commit trước khi xử lý, crash sẽ mất message. Nếu commit sau khi xử lý, crash giữa xử lý và commit sẽ xử lý lại. Vì vậy hệ thống Kafka business thường chọn at-least-once + idempotent consumer thay vì cố đuổi “không bao giờ duplicate”.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Auto commit có thể mất side effect</div>
+      <pre><code class="language-yaml">spring:
+  kafka:
+    consumer:
+      enable-auto-commit: true
+      auto-commit-interval: 1000</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Manual ack sau khi xử lý thành công</div>
+      <pre><code class="language-yaml">spring:
+  kafka:
+    consumer:
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual</code></pre>
+    </div>
+  </div>
+
+  <div class="code-label">Idempotent consumer — lưu processed event trước khi side effect trở thành duplicate</div>
+  <pre><code class="language-java">@KafkaListener(topics = "order-events", groupId = "courier-dispatch")
+public void onOrderAccepted(OrderAccepted event, Acknowledgment ack) {
+    if (processedEventRepository.existsById(event.eventId())) {
+        ack.acknowledge();
+        return;
+    }
+
+    dispatchService.assignCourier(event.orderId(), event.orderVersion());
+    processedEventRepository.save(new ProcessedEvent(event.eventId(), Instant.now()));
+    ack.acknowledge();
+}</code></pre>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Side effect không idempotent</div>
+      <pre><code class="language-java">public void assignCourier(String orderId) {
+    Courier courier = courierPool.pickNearest();
+    assignmentRepository.save(new Assignment(orderId, courier.id()));
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Unique constraint + semantic idempotency</div>
+      <pre><code class="language-java">public void assignCourier(String orderId, long orderVersion) {
+    if (assignmentRepository.existsByOrderId(orderId)) {
+        return;
+    }
+    Courier courier = courierPool.pickNearest();
+    assignmentRepository.insertOnce(orderId, courier.id(), orderVersion);
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="break-it">
+    <div class="bi-head">🔬 Thử Phá Vỡ — Consumer idempotent nhưng vẫn duplicate?</div>
+    <p>Câu hỏi: tìm 3 cách làm code idempotent consumer ở trên vẫn sinh duplicate assignment.</p>
+    <details>
+      <summary>Click để xem analysis (sau khi đã nghĩ)</summary>
+      <div class="bi-answer">
+        <ol>
+          <li><strong>Race condition</strong>: hai consumer không nên đọc cùng partition trong cùng group, nhưng retry manual/job khác có thể gọi cùng logic. Nếu check-then-insert không atomic, hai thread cùng thấy chưa có assignment rồi cùng insert.</li>
+          <li><strong>Processed event save sau side effect</strong>: nếu side effect thành công nhưng save `ProcessedEvent` fail, replay sẽ chạy lại. Cần transaction cục bộ bao gồm processed marker và write side effect, hoặc unique constraint bảo vệ side effect.</li>
+          <li><strong>Event version cũ</strong>: nếu `OrderAccepted` version 3 đến sau `OrderCancelled` version 4 do bug partition key, consumer không kiểm tra version có thể assign courier cho order đã cancel.</li>
+        </ol>
+        <p><strong>Insight</strong>: idempotency không phải một bảng `processed_events` là xong. Nó là invariant nghiệp vụ được bảo vệ bằng unique constraint, version check và atomic write.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="rebalancing">
+  <h2>5. Rebalancing, Lag &amp; Backpressure <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Consumer group giúp scale bằng cách chia partition cho các consumer instance. Khi instance join/leave, Kafka rebalance lại ownership. Rebalance không xấu; vấn đề là rebalance liên tục làm consumer pause, lag tăng, duplicate tăng và SLA trễ.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th><th>Cách xử lý</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Lag tăng đều</td><td>Throughput consume thấp hơn produce</td><td>Tối ưu xử lý, tăng partition, tăng consumer, batch DB write</td></tr>
+        <tr><td>Lag spike rồi giảm</td><td>Peak traffic hoặc GC pause</td><td>Kiểm tra JVM, thread pool, DB latency</td></tr>
+        <tr><td>Rebalance liên tục</td><td><code>max.poll.interval.ms</code> quá thấp hoặc xử lý quá lâu</td><td>Tách long job, pause/resume, tăng interval có kiểm soát</td></tr>
+        <tr><td>Một partition lag nặng</td><td>Hot key</td><td>Đổi key strategy, shard key, xử lý riêng hot aggregate</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="misconception">
+    <div class="mc-head">🧠 Misconception Check — “Lag cao thì tăng consumer là xong”</div>
+    <div class="mc-wrong">"Consumer lag tăng, scale deployment từ 4 lên 20 pods sẽ nhanh hơn."</div>
+    <div class="mc-right">Một consumer group chỉ parallel tối đa bằng số partition. Nếu topic có 6 partition, pod thứ 7 trở đi sẽ idle. Nếu lag đến từ một hot partition do key skew, tăng consumer cũng không giúp partition đó chạy song song trong cùng group.</div>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Xử lý long job trực tiếp trong poll loop</div>
+      <pre><code class="language-java">@KafkaListener(topics = "video-events")
+void onEvent(VideoUploaded event) {
+    thumbnailService.renderAllFormats(event.videoId()); // 2-5 minutes
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Consumer nhanh, long job sang job queue</div>
+      <pre><code class="language-java">@KafkaListener(topics = "video-events")
+void onEvent(VideoUploaded event, Acknowledgment ack) {
+    renderJobRepository.enqueue(event.videoId(), event.eventId());
+    ack.acknowledge();
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="edge-cases">
+    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
+    <p class="ec-intro">Kafka code chạy được ở happy path chưa đủ. Production thường gặp:</p>
+    <ul class="ec-list">
+      <li><strong>Race condition</strong>: retry job và Kafka consumer cùng xử lý một `eventId`; fix bằng unique constraint và atomic state transition.</li>
+      <li><strong>Network failure</strong>: producer timeout nhưng broker đã ghi message; fix bằng producer idempotence và event-level idempotency.</li>
+      <li><strong>Scale limit</strong>: consumer replicas nhiều hơn partition không tăng throughput; fix bằng partition planning và đo key distribution.</li>
+      <li><strong>Security</strong>: topic chứa PII như địa chỉ giao đồ ăn; fix bằng ACL, encryption in transit, schema governance và data minimization.</li>
+      <li><strong>Data integrity</strong>: event schema đổi field bắt buộc làm consumer cũ fail; fix bằng schema compatibility backward/forward.</li>
+      <li><strong>Time/timezone</strong>: event-time và processing-time lệch, dashboard trạng thái sai; fix bằng `Instant`, event timestamp rõ nghĩa và clock sync.</li>
+      <li><strong>Concurrent access</strong>: hai consumer group khác nhau update cùng bảng read model theo thứ tự khác nhau; fix bằng versioning trên aggregate.</li>
+      <li><strong>Retention</strong>: consumer down lâu hơn retention, offset trỏ vào message đã bị xóa; fix bằng alert lag-by-time và replay plan từ source-of-truth.</li>
+      <li><strong>Poison message</strong>: một payload lỗi làm partition kẹt mãi; fix bằng DLQ, error handler, retry policy có giới hạn.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="eos">
+  <h2>6. Exactly-once Semantics — Hiểu đúng biên <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Kafka exactly-once semantics (EOS) là một trong những chỗ dễ “nói quá”. EOS hữu ích khi pipeline đọc từ Kafka, xử lý, rồi ghi lại Kafka trong transaction của Kafka. Nó không biến mọi side effect bên ngoài như database, HTTP call, search index thành exactly-once.</p>
+
+  <div class="callout danger">
+    <div class="ctitle">🔥 Câu sai dễ bị bắt bẻ</div>
+    <p>“Kafka support exactly-once nên consumer của em sẽ không bao giờ xử lý trùng.” Sai. Consumer vẫn có thể thấy lại record nếu crash trước commit side effect; HTTP downstream có thể nhận duplicate; DB ngoài Kafka không tự tham gia Kafka transaction nếu bạn không thiết kế outbox/idempotency.</p>
+  </div>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Tưởng EOS bảo vệ external API</div>
+      <pre><code class="language-java">@KafkaListener(topics = "order-events")
+void notify(OrderAccepted event) {
+    pushClient.send(event.orderId()); // external side effect
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ External side effect có idempotency riêng</div>
+      <pre><code class="language-java">@KafkaListener(topics = "order-events")
+void notify(OrderAccepted event) {
+    pushClient.sendOnce(
+        event.eventId().toString(),
+        event.orderId()
+    );
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Cách trả lời phỏng vấn gọn và đúng</div>
+    <p>“Kafka EOS giúp tránh duplicate khi producer retry và khi app consume-process-produce trong Kafka transaction. Với side effect ngoài Kafka, em vẫn thiết kế idempotent consumer, outbox/inbox, unique constraint và retry có giới hạn. Em không claim exactly-once end-to-end trừ khi toàn bộ side effect nằm trong cùng transactional boundary.”</p>
+  </div>
+</section>
+
+<section id="spring-kafka">
+  <h2>7. Spring Kafka Implementation <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Spring Kafka giúp giảm boilerplate nhưng không làm mất đi semantics. Bạn vẫn phải tự chọn ack mode, error handler, retry topic/DLQ, serialization, schema compatibility và idempotent processing.</p>
+
+  <div class="code-label">Spring Kafka listener với retry/DLQ concept</div>
+  <pre><code class="language-java">@Configuration
+class KafkaConsumerConfig {
+
+    @Bean
+    DefaultErrorHandler errorHandler(KafkaTemplate&lt;Object, Object&gt; template) {
+        DeadLetterPublishingRecoverer recoverer =
+            new DeadLetterPublishingRecoverer(template);
+
+        FixedBackOff backOff = new FixedBackOff(1_000L, 3L);
+        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
+        handler.addNotRetryableExceptions(InvalidEventSchemaException.class);
+        return handler;
+    }
+}</code></pre>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Retry vô hạn làm kẹt partition</div>
+      <pre><code class="language-java">catch (Exception ex) {
+    throw ex; // same poison message retried forever
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Retry hữu hạn + DLQ + alert</div>
+      <pre><code class="language-java">handler.addRetryableExceptions(TransientDispatchException.class);
+handler.addNotRetryableExceptions(InvalidEventSchemaException.class);
+// After 3 retries, publish to order-events.DLT and alert.</code></pre>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 DLQ không phải thùng rác</div>
+    <p>DLQ là workflow vận hành: có owner, dashboard, retry/replay tool, rule phân loại lỗi, và SLA xử lý. Nếu chỉ đẩy message lỗi vào topic khác rồi không ai đọc, bạn chỉ đổi vị trí của data loss.</p>
+  </div>
+</section>
+
+<section id="operations">
+  <h2>8. Operations Playbook — Schema, Retention, Lag, Replay <span class="k-tag advanced">ADVANCED</span></h2>
+  <p>Kafka ở production không kết thúc ở việc listener chạy được. Senior engineer phải biết đặt topic contract, quan sát lag, xử lý poison message, lên kế hoạch retention, và replay mà không phá dữ liệu. Đây là phần tạo khác biệt lớn trong interview vì nó chứng minh bạn từng nghĩ qua vòng đời vận hành.</p>
+
+  <h3><span class="k-tag core">CORE</span> Event envelope chuẩn</h3>
+  <p>Một event nên có envelope ổn định để mọi consumer xử lý đồng nhất. Payload có thể thay đổi theo event type, nhưng metadata như `eventId`, `aggregateId`, `aggregateVersion`, `occurredAt`, `schemaVersion`, `source` phải nhất quán. Không có envelope, bạn sẽ gặp khó khi dedupe, trace, replay, audit và debug ordering.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <div class="col-head">❌ Payload tùy hứng theo từng team</div>
+      <pre><code class="language-json">{
+  "id": "o-123",
+  "status": "ACCEPTED",
+  "time": "2026-05-17 10:20:00"
+}</code></pre>
+    </div>
+    <div class="col good">
+      <div class="col-head">✅ Envelope đủ để trace/dedupe/replay</div>
+      <pre><code class="language-json">{
+  "eventId": "4b56f6fd-6f45-4d55-9f41-0a26d3d94a91",
+  "eventType": "OrderAccepted",
+  "aggregateType": "Order",
+  "aggregateId": "o-123",
+  "aggregateVersion": 7,
+  "occurredAt": "2026-05-17T03:20:00Z",
+  "schemaVersion": 2,
+  "source": "order-service",
+  "payload": {
+    "restaurantId": "r-88",
+    "customerId": "c-19"
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Schema evolution</h3>
+  <p>Schema break là một trong những nguyên nhân làm consumer chết hàng loạt. Rule thực tế: thêm field optional thường an toàn; xóa/rename field thường phá consumer cũ; đổi type nguy hiểm; đổi meaning của field còn nguy hiểm hơn vì code vẫn chạy nhưng hiểu sai.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Thay đổi</th><th>Rủi ro</th><th>Cách rollout</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Thêm optional field</td><td>Thấp</td><td>Producer thêm field, consumer cũ ignore, consumer mới đọc sau</td></tr>
+        <tr><td>Thêm required field</td><td>Trung bình/cao</td><td>Đặt default hoặc rollout consumer trước khi producer bắt buộc</td></tr>
+        <tr><td>Rename field</td><td>Cao</td><td>Dual-write field cũ và mới, migrate consumer, rồi deprecate</td></tr>
+        <tr><td>Đổi type</td><td>Cao</td><td>Tạo field mới, không đổi field cũ trực tiếp</td></tr>
+        <tr><td>Đổi semantics</td><td>Rất cao</td><td>Tạo event type/schema version mới, document rõ meaning</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ “Backward compatible” không chỉ là parse được JSON</div>
+    <p>Consumer parse được message không có nghĩa là business logic đúng. Ví dụ field `estimatedDeliveryTime` trước đây là phút, sau đổi thành giây nhưng vẫn là number; hệ thống không crash, nhưng UI và dispatch decision sai. Contract test phải verify semantics, không chỉ verify deserialization.</p>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Lag không chỉ là số message</h3>
+  <p>Lag theo message count hữu ích nhưng chưa đủ. Một partition lag 10,000 message có thể chỉ là 5 giây nếu throughput cao, hoặc là 2 giờ nếu traffic thấp nhưng event quan trọng. Vì vậy production nên alert theo cả lag count, lag time, consumer processing time, retry rate và DLQ rate.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Ý nghĩa</th><th>Alert gợi ý</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Consumer lag count</td><td>Số record chưa đọc</td><td>Lag tăng liên tục trong 10 phút</td></tr>
+        <tr><td>Lag age</td><td>Message cũ nhất chưa xử lý bao lâu</td><td>Order lifecycle lag &gt; 2 phút</td></tr>
+        <tr><td>Processing time p95</td><td>Consumer xử lý một record mất bao lâu</td><td>P95 vượt budget sau deploy</td></tr>
+        <tr><td>Rebalance count</td><td>Consumer group bất ổn</td><td>Rebalance nhiều lần trong 15 phút</td></tr>
+        <tr><td>DLQ rate</td><td>Poison/schema/business lỗi</td><td>DLQ &gt; 0 cho critical topic</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Replay an toàn</h3>
+  <p>Replay là lý do Kafka rất mạnh, nhưng replay cũng là cách phá hệ thống nhanh nhất nếu consumer không idempotent. Trước khi reset offset hoặc replay DLQ, hãy trả lời: consumer có ghi side effect không, side effect idempotent chưa, event version cũ có bị reject không, replay có cần rate limit không, và downstream có chịu được traffic replay không?</p>
+
+  <div class="code-label">Replay checklist dạng runbook</div>
+  <pre><code class="language-text">Replay checklist:
+1. Xác định scope: topic, partition, offset/time range, consumer group.
+2. Confirm consumer idempotency: event_id unique, version guard, side effect safe.
+3. Dry-run trên staging với data copy hoặc subset.
+4. Rate limit replay để không làm downstream quá tải.
+5. Monitor: lag, error rate, DLQ, DB write rate, downstream latency.
+6. Có stop plan: pause consumer group hoặc rollback offset strategy.</code></pre>
+
+  <h3><span class="k-tag core">CORE</span> Incident runbook: consumer lag tăng</h3>
+  <p>Khi lag tăng, đừng scale consumer ngay. Hãy chẩn đoán theo thứ tự để tránh chữa triệu chứng sai.</p>
+  <ol>
+    <li><strong>Lag tăng ở tất cả partition hay một partition?</strong> Nếu một partition, nghi hot key hoặc poison message.</li>
+    <li><strong>Processing time tăng hay poll rate giảm?</strong> Nếu processing time tăng, xem DB/downstream/CPU. Nếu poll rate giảm, xem rebalance, `max.poll.interval.ms`, pause/resume.</li>
+    <li><strong>DLQ/retry có tăng không?</strong> Poison message có thể giữ partition hoặc tạo retry storm.</li>
+    <li><strong>Deploy gần nhất thay đổi gì?</strong> Schema, code consumer, DB query, downstream timeout.</li>
+    <li><strong>Scale có giúp không?</strong> Chỉ giúp nếu còn partition chưa được consumer tận dụng và bottleneck không nằm ở downstream.</li>
+  </ol>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Câu trả lời senior khi bị hỏi “lag tăng xử lý sao?”</div>
+    <p>“Em sẽ xác định lag theo partition và lag age trước. Nếu tất cả partition tăng, em kiểm tra processing latency, DB/downstream, retry/DLQ, CPU/GC. Nếu một partition tăng, em nghi hot key hoặc poison message. Em chỉ scale consumer khi số partition và downstream capacity cho phép. Nếu poison message, em dùng DLQ/replay runbook thay vì retry vô hạn.”</p>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>Anti-Patterns — Lỗi hay gặp khi dùng Kafka <span class="k-tag core">CORE</span></h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dùng Kafka như RPC synchronous</td><td>High</td><td>Timeout chain khó debug, coupling ngầm</td><td>Dùng HTTP/gRPC cho request-response ngắn; Kafka cho event async</td></tr>
+        <tr><td>Không có event id/version</td><td>Critical</td><td>Không dedupe/replay an toàn</td><td>Chuẩn hóa envelope: eventId, aggregateId, version, timestamp</td></tr>
+        <tr><td>Auto commit offset</td><td>High</td><td>Mất message khi crash sau commit trước side effect</td><td>Manual ack sau xử lý thành công</td></tr>
+        <tr><td>Retry poison message vô hạn</td><td>High</td><td>Partition bị kẹt, lag lan rộng</td><td>Retry hữu hạn + DLQ + alert</td></tr>
+        <tr><td>Partition key theo field hot</td><td>Medium</td><td>Một partition lag nặng, throughput không scale</td><td>Đo key distribution, shard key khi cần</td></tr>
+        <tr><td>Claim exactly-once end-to-end</td><td>High</td><td>Thiết kế thiếu idempotency ở DB/API ngoài Kafka</td><td>Nói rõ boundary và thêm inbox/outbox/unique constraint</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #1 — Food Delivery Order Events (Beginner)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: Spring Boot app có endpoint accept order, publish `OrderAccepted` vào Kafka, consumer ghi read model `order_status_view`.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Topic `order-events` có ít nhất 3 partitions, key là `orderId`.</li>
+      <li>Producer config `acks=all`, idempotence enabled.</li>
+      <li>Consumer manual ack, idempotent bằng unique `event_id`.</li>
+      <li>Integration test dùng Testcontainers Kafka.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: test duplicate event không tạo duplicate read model; stop consumer 30s rồi start lại, lag giảm về 0.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #2 — DLQ &amp; Replay Console (Intermediate)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: thêm retry hữu hạn, topic `.DLT`, endpoint admin replay message sau khi sửa lỗi schema.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Invalid schema đi thẳng DLQ, transient exception retry 3 lần.</li>
+      <li>DLQ payload giữ original topic, partition, offset, error class.</li>
+      <li>Replay endpoint yêu cầu reason và operator id.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: poison message không làm kẹt partition quá 5 giây; replay có audit log và không tạo duplicate side effect.</div>
+  </div>
+
+  <div class="build-exercise">
+    <div class="be-head">🔨 Build #3 — Kafka Lag Lab (Advanced)</div>
+    <div class="be-deliverable"><strong>Deliverable</strong>: tool tạo traffic skew để quan sát hot partition, lag, rebalance và throughput.</div>
+    <p>Requirements:</p>
+    <ul>
+      <li>Generate 1M events với 80% event rơi vào 5% keys.</li>
+      <li>Expose Micrometer metrics: lag, processing time, rebalance count.</li>
+      <li>Thử 3 chiến lược key và so sánh kết quả.</li>
+    </ul>
+    <div class="be-criteria"><strong>Acceptance</strong>: report có chart lag theo partition và giải thích vì sao tăng pod không giải quyết hot partition.</div>
+  </div>
+</section>
+
+<section id="drill-bank">
+  <h2>Interview Drill Bank — Kafka tình huống <span class="k-tag core">CORE</span></h2>
+  <p>Phần này dùng để luyện nói. Mỗi câu nên trả lời trong 2-4 phút, có trade-off và failure mode. Đừng học thuộc; hãy dùng nó để kiểm tra xem bạn có thật sự nối được producer, broker, consumer, DB và vận hành không.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q1. Producer timeout thì message có bị mất không?</h3>
+  <p><strong>Answer mẫu</strong>: Không thể kết luận chỉ từ timeout. Có ba khả năng: broker chưa nhận request, broker ghi thành công nhưng response mất, hoặc broker leader ghi nhưng replication/ack chưa đủ. Vì vậy producer phải bật idempotence, chọn `acks=all` cho event quan trọng, và application phải chịu được duplicate. Timeout là trạng thái không rõ ràng, không phải bằng chứng message chưa vào Kafka.</p>
+  <p><strong>Signal</strong>: interviewer muốn nghe “unknown outcome”, “idempotent producer”, “event-level idempotency”, không phải câu đơn giản “timeout thì retry”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q2. Vì sao commit offset sau xử lý vẫn có duplicate?</h3>
+  <p><strong>Answer mẫu</strong>: Vì crash có thể xảy ra sau khi side effect thành công nhưng trước khi commit offset. Khi consumer restart, nó đọc lại record cũ và xử lý lại. Đây là at-least-once semantics. Cách xử lý là làm consumer idempotent: unique `eventId`, unique business constraint như `assignment(order_id)`, version guard, và transaction cục bộ cho processed marker + side effect nếu có thể.</p>
+  <p><strong>Signal</strong>: phải phân biệt Kafka offset với side effect bên ngoài. Kafka không biết DB/API của bạn đã xử lý xong chưa.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q3. Chọn partition key thế nào cho order lifecycle?</h3>
+  <p><strong>Answer mẫu</strong>: Chọn theo aggregate cần ordering. Với order lifecycle, key nên là `orderId` để `OrderAccepted`, `CourierAssigned`, `OrderCancelled`, `Delivered` của cùng order vào cùng partition. Nếu key là random, ordering theo order mất. Nếu key là `restaurantId`, nhà hàng hot có thể tạo hot partition. Nếu cần scale cao hơn và vẫn giữ ordering, có thể shard theo aggregate group nhưng phải hiểu invariant nào còn được giữ.</p>
+  <p><strong>Signal</strong>: câu trả lời tốt không chỉ nói “dùng key”, mà nêu hot key và ordering scope.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q4. Consumer lag tăng, bạn xử lý thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Đầu tiên xem lag theo partition và lag age. Nếu tất cả partition tăng, xem processing latency, DB/downstream, CPU/GC, retry/DLQ. Nếu một partition tăng, nghi hot key hoặc poison message. Kiểm tra rebalance count và `max.poll.interval.ms`. Chỉ scale consumer nếu số partition còn cho phép và downstream còn capacity. Nếu poison message, đưa DLQ/replay có kiểm soát thay vì retry vô hạn.</p>
+  <p><strong>Signal</strong>: interviewer muốn thấy bạn không reflex “scale pod”.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q5. Kafka exactly-once có giải quyết duplicate DB write không?</h3>
+  <p><strong>Answer mẫu</strong>: Không tự động. Kafka EOS hỗ trợ idempotent producer và transaction cho consume-process-produce trong Kafka. Nếu consumer ghi DB ngoài Kafka, DB không tự nằm trong Kafka transaction. Duplicate vẫn có thể xảy ra khi crash giữa DB write và offset commit. Cần idempotency ở DB: unique key, processed event table, version check, hoặc outbox/inbox pattern.</p>
+  <p><strong>Signal</strong>: “exactly-once boundary” là cụm từ nên xuất hiện. Tránh claim “Kafka đảm bảo exactly-once end-to-end”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q6. Khi nào dùng compacted topic?</h3>
+  <p><strong>Answer mẫu</strong>: Compacted topic giữ bản ghi mới nhất theo key, phù hợp cho state snapshot như driver profile, restaurant open status, feature flag, product availability snapshot. Nó không phù hợp nếu bạn cần audit đầy đủ mọi event theo thời gian, vì record cũ có thể bị compact. Nhiều hệ thống dùng cả event topic retention theo thời gian và compacted topic cho latest-state cache.</p>
+  <p><strong>Signal</strong>: phải nói được difference giữa event log đầy đủ và latest state.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q7. DLQ dùng thế nào để không thành nơi giấu lỗi?</h3>
+  <p><strong>Answer mẫu</strong>: DLQ phải có owner, alert, dashboard, payload giữ original metadata, và replay workflow. Phân loại lỗi retryable/non-retryable: schema invalid đi DLQ nhanh, transient downstream retry hữu hạn. DLQ message cần reason, exception type, topic/partition/offset, timestamp. Replay phải idempotent và rate-limited. Nếu không ai xử lý DLQ, đó chỉ là data loss chậm.</p>
+  <p><strong>Signal</strong>: interviewer muốn nghe vận hành, không chỉ “đẩy vào DLT”.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Q8. Bạn plan partition count thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Dựa trên throughput mục tiêu, consumer parallelism, ordering key, broker capacity và growth. Partition nhiều giúp parallelism nhưng tăng overhead: metadata, file handles, rebalance cost, leader election. Không chọn 1 partition cho event critical nếu cần scale, cũng không chọn 500 partition “cho chắc”. Cần đo throughput per partition với payload thật, compression thật, consumer processing thật.</p>
+  <p><strong>Signal</strong>: câu trả lời tốt có cả hiện tại và future scaling, không chỉ “partition = số consumer”.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q9. Schema evolution rollout an toàn thế nào?</h3>
+  <p><strong>Answer mẫu</strong>: Ưu tiên backward/forward compatibility. Nếu thêm field, làm optional/default trước. Nếu rename, dual-write field cũ và mới, deploy consumer đọc mới, quan sát, rồi deprecate. Nếu đổi semantics, tạo schema version hoặc event type mới. Có contract test giữa producer và consumer. Với JSON không schema registry, vẫn phải có test và documentation.</p>
+  <p><strong>Signal</strong>: phải nhắc được rollout order, không chỉ “dùng Avro”.</p>
+
+  <h3><span class="k-tag core">CORE</span> Q10. Kafka khác message queue truyền thống ở điểm nào?</h3>
+  <p><strong>Answer mẫu</strong>: Kafka là distributed append-only log với retention và consumer group giữ offset riêng. Nhiều consumer group có thể đọc cùng event độc lập, replay được theo offset/time. Queue truyền thống thường nhấn mạnh work distribution và message được ack/remove. Kafka phù hợp event streaming, replay, analytics, CDC; job queue có thể phù hợp hơn cho long-running command có status.</p>
+  <p><strong>Signal</strong>: câu trả lời tốt không thần thánh Kafka; biết khi nào không dùng Kafka.</p>
+</section>
+
+<section id="cheat-sheet">
+  <h2>Kafka Cheat Sheet — Config, decision, failure catalog <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+  <p>Phần này dùng để ôn nhanh trước phỏng vấn. Mục tiêu không phải học thuộc config, mà là nhớ config nào tác động đến failure mode nào.</p>
+
+  <h3><span class="k-tag core">CORE</span> Producer config theo mục tiêu</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Mục tiêu</th><th>Config gợi ý</th><th>Giải thích</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Không mất event quan trọng</td><td><code>acks=all</code>, <code>min.insync.replicas &gt;= 2</code></td><td>Leader và ISR phải xác nhận trước khi producer coi là success</td></tr>
+        <tr><td>Chống duplicate do retry producer</td><td><code>enable.idempotence=true</code></td><td>Broker dedupe sequence trong producer session</td></tr>
+        <tr><td>Giảm network overhead</td><td><code>linger.ms</code>, <code>batch.size</code>, compression</td><td>Tăng batching, đổi latency lấy throughput</td></tr>
+        <tr><td>Giới hạn thời gian gửi</td><td><code>delivery.timeout.ms</code>, <code>request.timeout.ms</code></td><td>Tránh producer chờ quá lâu khi broker/network xấu</td></tr>
+        <tr><td>Ordering per partition khi retry</td><td>Idempotence + kiểm soát in-flight</td><td>Tránh retry làm đảo thứ tự trong một số cấu hình cũ/sai</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag core">CORE</span> Consumer config theo failure mode</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Failure mode</th><th>Config/thiết kế</th><th>Trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mất message do commit sớm</td><td><code>enable.auto.commit=false</code>, manual ack</td><td>Có thể xử lý duplicate khi crash trước ack</td></tr>
+        <tr><td>Consumer xử lý lâu bị rebalance</td><td>Tăng <code>max.poll.interval.ms</code> hoặc tách long job</td><td>Tăng interval quá cao làm phát hiện consumer chết chậm</td></tr>
+        <tr><td>Poll quá nhiều record xử lý không kịp</td><td>Giảm <code>max.poll.records</code></td><td>Throughput mỗi poll thấp hơn nhưng latency ổn hơn</td></tr>
+        <tr><td>Poison message kẹt partition</td><td>Error handler, retry hữu hạn, DLQ</td><td>Cần workflow vận hành DLQ</td></tr>
+        <tr><td>Hot partition</td><td>Đổi key/shard strategy</td><td>Có thể ảnh hưởng ordering invariant</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Topic design cookbook</h3>
+  <p><strong>Order lifecycle events</strong>: topic `order-events`, key `orderId`, retention đủ cho replay lifecycle, schema version trong envelope. Consumer group riêng cho dispatch, notification, analytics.</p>
+  <p><strong>Driver location updates</strong>: throughput rất cao, giá trị nhanh cũ. Có thể dùng topic riêng, key `driverId`, retention ngắn. Nếu chỉ cần latest location, cân nhắc compacted topic hoặc state store tùy architecture.</p>
+  <p><strong>Product catalog snapshot</strong>: nếu consumer cần latest state theo product, compacted topic hữu ích. Nhưng nếu cần audit thay đổi title/price/availability theo thời gian, cần event topic đầy đủ.</p>
+  <p><strong>Content watch events</strong>: key có thể là `userId` nếu cần session ordering, hoặc composite/sharded key nếu một số user/device tạo traffic quá lớn. Thường analytics consumer chịu duplicate bằng event id.</p>
+
+  <h3><span class="k-tag core">CORE</span> Failure catalog ngắn</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Triệu chứng</th><th>Nghi vấn đầu tiên</th><th>Evidence cần lấy</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Producer timeout tăng</td><td>Broker/network/ISR chậm</td><td>request latency, under-replicated partitions, broker logs</td></tr>
+        <tr><td>Duplicate event</td><td>Retry producer/app/outbox replay</td><td>eventId, producer logs, outbox attempts</td></tr>
+        <tr><td>Consumer lag chỉ partition 3</td><td>Hot key hoặc poison message</td><td>key distribution, last processed offset, DLQ logs</td></tr>
+        <tr><td>Rebalance liên tục</td><td>Consumer xử lý quá lâu hoặc instance unstable</td><td>rebalance count, poll interval, pod restart, GC pause</td></tr>
+        <tr><td>DLQ tăng sau deploy</td><td>Schema/logic change</td><td>exception type, schema version, commit diff</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout quote">
+    <div class="ctitle">📖 Câu nhớ nhanh</div>
+    <p>Kafka giúp bạn lưu và phân phối event rất tốt, nhưng không tự thiết kế business idempotency, schema rollout, replay workflow hay downstream correctness. Những phần đó là trách nhiệm của backend engineer.</p>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-Test Scenarios — Debug Kafka bằng timeline <span class="k-tag core">CORE</span></h2>
+  <p>Kafka phải luyện bằng timeline. Với mỗi case, hãy vẽ producer, broker, consumer, DB và offset trước khi xem gợi ý.</p>
+
+  <h3><span class="k-tag core">CORE</span> Scenario 1 — Event duplicate sau deploy</h3>
+  <p><strong>Bối cảnh</strong>: sau deploy order-service, `OrderAccepted` đôi lúc xuất hiện hai lần với cùng `orderId` nhưng khác `eventId`. Consumer dispatch tạo một assignment nhờ unique constraint, notification gửi hai push.</p>
+  <p><strong>Gợi ý</strong>: đây có thể là duplicate ở application level, không phải producer retry. Kiểm tra command id/idempotency ở order accept path, outbox unique key theo `(aggregateId, aggregateVersion, eventType)`, notification dedupe theo logical event hoặc order version. Producer idempotence không chặn app publish hai event nghiệp vụ khác id.</p>
+
+  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Offset reset để replay analytics</h3>
+  <p><strong>Bối cảnh</strong>: analytics consumer có bug 2 giờ, team muốn reset offset về 2 giờ trước. Topic có cả analytics và dispatch consumer group.</p>
+  <p><strong>Gợi ý</strong>: reset offset chỉ cho consumer group analytics, không ảnh hưởng group dispatch. Trước replay, kiểm tra consumer idempotency/upsert theo event id/time bucket, rate limit nếu downstream warehouse chịu tải kém, và ghi lại offset/time range. Không reset group production critical nếu không hiểu side effect.</p>
+
+  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Hot partition do nhà hàng lớn</h3>
+  <p><strong>Bối cảnh</strong>: key `restaurantId`; một nhà hàng mega sale tạo 40% traffic, partition 7 lag nặng, partition khác rảnh.</p>
+  <p><strong>Gợi ý</strong>: key theo `restaurantId` giữ ordering theo restaurant nhưng tạo skew. Nếu invariant thật sự cần ordering theo order, đổi key sang `orderId` sẽ phân tán tốt hơn. Nếu cần ordering theo restaurant cho một workflow riêng, tách topic hoặc shard key có kiểm soát và chấp nhận ordering scope thay đổi.</p>
+</section>
+
+<section id="interview">
+  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
+  <div class="tier t1">
+    <div class="tier-head">
+      <span class="badge">Tầng 1 — Surface</span>
+      <span class="tier-title">Mid gate</span>
+    </div>
+    <div class="q">Q: Kafka đảm bảo ordering như thế nào?</div>
+    <div class="a">Kafka đảm bảo ordering trong một partition. Producer chọn partition bằng key hoặc partitioner. Nếu cần mọi event của cùng một order đúng thứ tự, dùng `orderId` làm key để chúng vào cùng partition. Kafka không đảm bảo ordering toàn topic.</div>
+  </div>
+
+  <div class="tier t2">
+    <div class="tier-head">
+      <span class="badge">Tầng 2 — Deep Dive</span>
+      <span class="tier-title">Production semantics</span>
+    </div>
+    <div class="q">Q: Tại sao at-least-once + idempotent consumer thường thực tế hơn exactly-once?</div>
+    <div class="a">Vì external side effects không nằm trong Kafka transaction. Commit offset sau xử lý giúp tránh mất message nhưng có thể xử lý lại khi crash trước commit. Do đó consumer phải idempotent bằng event id, unique constraint, version check và side effect semantics.</div>
+  </div>
+
+  <div class="tier t3">
+    <div class="tier-head">
+      <span class="badge">Tầng 3 — Architecture</span>
+      <span class="tier-title">Design discussion</span>
+    </div>
+    <div class="q">Q: Thiết kế event pipeline cho food delivery order lifecycle ở 10k events/s.</div>
+    <div class="a">Tách command path và event path; topic theo domain event; key theo `orderId`; schema registry; outbox từ order-service; consumer group riêng cho dispatch, notification, analytics; DLQ/replay; lag alert theo partition; idempotent read model; retention đủ cho replay; không dùng Kafka như synchronous RPC.</div>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
+  <div class="feynman">
+    <div class="fy-head">🎓 Feynman Check</div>
+    <div class="fy-prompt">"Giải thích cho một junior dev trong 5 phút: vì sao consumer commit offset sau xử lý vẫn có thể tạo duplicate, và tại sao đó không phải bug Kafka?"</div>
+    <div class="fy-rule">Quy tắc: không xem file. Phải dùng timeline crash-before/after commit và đề xuất cách fix bằng idempotency.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="fy-head">🎓 Calibration Check</div>
+    <div class="fy-prompt">Nếu bạn không thể trả lời rõ “exactly-once trong Kafka không bao gồm external HTTP side effect” thì chưa nên claim đã nắm Kafka ở mức senior.</div>
+    <div class="fy-rule">Viết lại câu trả lời interview 120 từ, có boundary và trade-off.</div>
+  </div>
+
+  <div class="verify-source">
+    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
+    <p>Cross-check với official sources:</p>
+    <ul>
+      <li><a href="https://kafka.apache.org/documentation/">Apache Kafka Documentation</a></li>
+      <li><a href="https://docs.spring.io/spring-kafka/reference/">Spring for Apache Kafka Reference</a></li>
+      <li><a href="https://github.com/apache/kafka">Apache Kafka source code</a></li>
+      <li><a href="https://kafka.apache.org/documentation/#semantics">Kafka Message Delivery Semantics</a></li>
+      <li>Sách: <em>Designing Data-Intensive Applications</em>, chương về logs, replication và stream processing.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div>📁 #20 Apache Kafka · Phase 5 — Messaging &amp; Resilience</div>
+  <div>Tiếp theo: #21 Async Patterns</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

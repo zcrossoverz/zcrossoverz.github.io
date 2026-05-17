@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#03 - Java 8-17 Features | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 1 - Core Java Mastery<span class="sep">/</span><strong>#03 Java 8-17 Features</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#problem">1. Code review scenario</a>
+    <a href="#stream">2. Stream API</a>
+    <div class="sub">
+      <a href="#stream-internals">Stream internals</a>
+      <a href="#primitive-stream">Primitive streams</a>
+      <a href="#collectors">Collectors</a>
+    </div>
+    <a href="#optional">3. Optional</a>
+    <a href="#lambda">4. Lambda</a>
+    <div class="sub">
+      <a href="#functional-interfaces">Functional interfaces</a>
+      <a href="#lambda-capture">Lambda capture</a>
+      <a href="#default-methods">Default methods</a>
+    </div>
+    <a href="#modern">5. Java 14-17</a>
+    <div class="sub">
+      <a href="#records">Records</a>
+      <a href="#sealed">Sealed classes</a>
+      <a href="#switch-var-text">Switch, var, text blocks</a>
+      <a href="#jpms">JPMS modules</a>
+    </div>
+    <a href="#collections">6. Collections internals</a>
+    <div class="sub">
+      <a href="#hashmap">HashMap</a>
+      <a href="#concurrenthashmap">ConcurrentHashMap</a>
+      <a href="#arraylist-linkedlist">ArrayList vs LinkedList</a>
+      <a href="#treemap">TreeMap</a>
+    </div>
+    <a href="#implementation">7. Code production</a>
+    <a href="#tradeoffs">8. Trade-offs</a>
+    <a href="#interview">9. Interview framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase 1 - Core Java Mastery - Modern code style</span>
+  <h1>#03 - Java 8-17 Features: Stream, Lambda, Optional, Record, Sealed, Pattern Matching</h1>
+  <p class="lead">Modern Java không phải biến mọi thứ thành stream. Senior biết khi nào Stream làm code rõ hơn, khi nào for-loop tốt hơn; biết Optional là API contract chứ không phải thuốc trị null; biết record/sealed class giúp model dữ liệu và state machine chặt hơn.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Readable modern Java</div></div>
+    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">SaaS billing/reporting</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#01 Async, #04 JMM, #09 JPA</div></div>
+    <div class="meta-item"><div class="k">Đầu ra</div><div class="v">Review code và chọn feature đúng</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Java 8-17 Là Chuyển Dịch Từ Imperative Sang Expressive</h2>
+<p>Java 8 đưa lambda, stream, Optional và default methods vào daily code. Java 14-17 bổ sung record, sealed class, switch expression và pattern matching. Những feature này giúp code ngắn hơn, nhưng nếu dùng máy móc có thể làm code khó debug, chậm hơn, hoặc giấu side effect.</p>
+<p>Cách học đúng: mỗi feature phải trả lời ba câu. Nó giải quyết vấn đề gì? Nó có trade-off gì? Trong code backend production, dùng nó ở boundary nào là hợp lý?</p>
+
+<div class="callout why">
+  <div class="ctitle">Mục tiêu không phải "viết ít dòng hơn"</div>
+  <p>Modern Java tốt khi nó làm intent rõ hơn và giảm state ngoài ý muốn. Nếu stream pipeline dài 20 dòng, có side effect, bắt checked exception vòng vèo và khó debug, nó không modern hơn for-loop. Senior biết quay lại for-loop khi đó là lựa chọn rõ hơn.</p>
+</div>
+
+<div class="pillar-grid">
+  <div class="pillar"><div class="num">1</div><h4>Intent</h4><p>Stream/Optional/record phải làm ý định code rõ hơn, không chỉ ngắn hơn.</p></div>
+  <div class="pillar"><div class="num">2</div><h4>Contracts</h4><p>Optional, sealed class và record làm API contract rõ hơn ở compile time.</p></div>
+  <div class="pillar"><div class="num">3</div><h4>Cost model</h4><p>Stream có allocation/boxing/debug cost; parallelStream có scheduling cost.</p></div>
+  <div class="pillar"><div class="num">4</div><h4>Boundaries</h4><p>DTO/event/value object rất hợp record; entity/proxy/lifecycle object thì không.</p></div>
+</div>
+</section>
+
+<section id="problem">
+<h2>1. Code Review Scenario - Báo Cáo Billing Viết Kiểu Java Cũ</h2>
+<p>Bạn review PR tạo báo cáo invoice cho một SaaS. Code chạy được nhưng nhiều null check, string status rải rác, mutable list external và thiếu xử lý empty case.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Trước: nested imperative</div>
+<pre><code class="language-java">public List&lt;String&gt; paidInvoiceIds(List&lt;Invoice&gt; invoices) {
+    List&lt;String&gt; result = new ArrayList&lt;&gt;();
+    for (Invoice invoice : invoices) {
+        if (invoice != null) {
+            if (invoice.getAmount() != null) {
+                if (invoice.getAmount().compareTo(BigDecimal.ZERO) &gt; 0) {
+                    if ("PAID".equals(invoice.getStatus())) {
+                        result.add(invoice.getId());
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Sau: pipeline thể hiện intent</div>
+<pre><code class="language-java">public List&lt;String&gt; paidInvoiceIds(List&lt;Invoice&gt; invoices) {
+    return invoices.stream()
+        .filter(Objects::nonNull)
+        .filter(Invoice::hasPositiveAmount)
+        .filter(invoice -&gt; invoice.status() == InvoiceStatus.PAID)
+        .map(Invoice::id)
+        .toList();
+}</code></pre>
+  </div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">Không phải ngắn hơn là tốt hơn</div>
+  <p>Stream tốt khi pipeline là transform/filter/reduce rõ ràng. Nếu logic cần nhiều nhánh, debug từng bước, break phức tạp, mutate state có kiểm soát, for-loop vẫn là lựa chọn tốt.</p>
+</div>
+</section>
+
+<section id="stream">
+<h2>2. Stream API</h2>
+<section id="stream-internals">
+<h3>2.1 Stream Là Pipeline Lazy</h3>
+<p>Stream không lưu dữ liệu như collection. Nó mô tả pipeline xử lý. Intermediate operations như <code>filter</code>, <code>map</code>, <code>sorted</code> lazy; terminal operation như <code>collect</code>, <code>toList</code>, <code>count</code>, <code>findFirst</code> mới kích hoạt chạy.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 760 245" role="img" aria-label="Stream pipeline">
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <rect x="40" y="90" width="115" height="58" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="98" y="124" text-anchor="middle" font-size="13">source</text>
+  <line x1="155" y1="119" x2="215" y2="119" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="215" y="90" width="115" height="58" rx="8" fill="#f0f9ff" stroke="#0284c7"></rect>
+  <text x="272" y="124" text-anchor="middle" font-size="13">filter</text>
+  <line x1="330" y1="119" x2="390" y2="119" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="390" y="90" width="115" height="58" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="448" y="124" text-anchor="middle" font-size="13">map</text>
+  <line x1="505" y1="119" x2="565" y2="119" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="565" y="90" width="140" height="58" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="635" y="124" text-anchor="middle" font-size="13">terminal op</text>
+  <text x="380" y="190" text-anchor="middle" font-size="12" fill="#475569">Không có terminal operation, pipeline không chạy.</text>
+</svg>
+<div class="caption">Lazy evaluation là lý do <code>limit</code>, <code>findFirst</code>, <code>anyMatch</code> có thể short-circuit.</div>
+</div>
+
+<h4>Pipeline chạy theo từng element, không phải từng stage toàn bộ</h4>
+<p>Với pipeline stateless, stream thường xử lý một element đi qua nhiều operation rồi mới tới element tiếp theo. Điều này giúp short-circuit hiệu quả.</p>
+<pre><code class="language-java">Optional&lt;Invoice&gt; first = invoices.stream()
+    .filter(Invoice::isPaid)
+    .filter(invoice -&gt; invoice.total().compareTo(LIMIT) &gt; 0)
+    .findFirst();</code></pre>
+<p>Khi <code>findFirst</code> tìm được element đầu tiên thỏa điều kiện, stream dừng. Nó không cần filter toàn bộ list trước.</p>
+
+<h4>Spliterator: lý do parallel stream có thể split data</h4>
+<p>Bên dưới stream source có <code>Spliterator</code>, chịu trách nhiệm duyệt và có thể chia dữ liệu thành phần nhỏ cho parallel processing. Collection như <code>ArrayList</code> split tốt vì có index; <code>LinkedList</code> split kém hơn; I/O stream hoặc iterator không biết size thường parallel kém.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Source</th><th>Parallel friendliness</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td><code>ArrayList</code></td><td>Tốt</td><td>Random access, biết size, split dễ.</td></tr>
+    <tr><td><code>HashSet</code></td><td>Trung bình</td><td>Split được nhưng order không ổn định.</td></tr>
+    <tr><td><code>LinkedList</code></td><td>Kém hơn</td><td>Không random access, split cost cao.</td></tr>
+    <tr><td><code>BufferedReader.lines()</code></td><td>Thường không tốt</td><td>I/O source, không muốn parallel common pool.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<h3>2.2 Stateless vs Stateful Operation</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Loại</th><th>Operation</th><th>Đặc điểm</th><th>Rủi ro</th></tr></thead>
+  <tbody>
+    <tr><td>Stateless</td><td><code>map</code>, <code>filter</code>, <code>flatMap</code></td><td>Mỗi element xử lý độc lập</td><td>Dễ parallel hơn nếu không side effect</td></tr>
+    <tr><td>Stateful</td><td><code>sorted</code>, <code>distinct</code>, <code>limit</code>, <code>skip</code></td><td>Cần nhớ nhiều element</td><td>Có buffer, tốn memory, parallel không chắc nhanh</td></tr>
+  </tbody>
+</table>
+</div>
+
+<section id="primitive-stream">
+<h3>2.3 Primitive Streams: Tránh Boxing Không Cần Thiết</h3>
+<p><code>Stream&lt;Integer&gt;</code>, <code>Stream&lt;Long&gt;</code>, <code>Stream&lt;Double&gt;</code> có boxing/unboxing overhead. Với aggregation số lượng lớn, dùng <code>IntStream</code>, <code>LongStream</code>, <code>DoubleStream</code>.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Tốn boxing</div>
+<pre><code class="language-java">int total = orders.stream()
+    .map(Order::quantity)      // Stream&lt;Integer&gt;
+    .reduce(0, Integer::sum);</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Primitive stream</div>
+<pre><code class="language-java">int total = orders.stream()
+    .mapToInt(Order::quantity)
+    .sum();</code></pre>
+  </div>
+</div>
+<p>Với money, vẫn dùng <code>BigDecimal</code>; primitive stream không thay thế decimal arithmetic. Nhưng với count, duration, quantity, primitive stream làm code vừa rõ vừa ít overhead.</p>
+</section>
+
+<section id="collectors">
+<h3>2.4 Reduce, Collect, Grouping</h3>
+<pre><code class="language-java">BigDecimal total = invoices.stream()
+    .map(Invoice::amount)
+    .filter(Objects::nonNull)
+    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+Map&lt;InvoiceStatus, BigDecimal&gt; totalByStatus = invoices.stream()
+    .collect(Collectors.groupingBy(
+        Invoice::status,
+        Collectors.mapping(
+            Invoice::amount,
+            Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+        )
+    ));</code></pre>
+<p><code>reduce</code> hợp với aggregation đơn giản. <code>collect</code> hợp với mutable result container như list, map, grouping, partitioning.</p>
+
+<h4>partitioningBy: chia 2 nhóm boolean</h4>
+<pre><code class="language-java">Map&lt;Boolean, List&lt;Invoice&gt;&gt; byPaymentState = invoices.stream()
+    .collect(Collectors.partitioningBy(Invoice::isPaid));
+
+List&lt;Invoice&gt; paid = byPaymentState.get(true);
+List&lt;Invoice&gt; unpaid = byPaymentState.get(false);</code></pre>
+
+<h4>teeing: tính hai aggregate trong một pass</h4>
+<pre><code class="language-java">record InvoiceStats(long count, BigDecimal total) {}
+
+InvoiceStats stats = invoices.stream()
+    .collect(Collectors.teeing(
+        Collectors.counting(),
+        Collectors.mapping(
+            Invoice::amount,
+            Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+        ),
+        InvoiceStats::new
+    ));</code></pre>
+
+<h4>toMap cần merge function khi dữ liệu có thể duplicate</h4>
+<pre><code class="language-java">Map&lt;String, Invoice&gt; byExternalId = invoices.stream()
+    .collect(Collectors.toMap(
+        Invoice::externalId,
+        Function.identity(),
+        (older, newer) -&gt; newer
+    ));</code></pre>
+</section>
+</section>
+
+<section id="optional">
+<h2>3. Optional</h2>
+<p><code>Optional</code> là cách làm absence explicit trong API. Nó không loại bỏ null khỏi toàn bộ chương trình, nhưng làm method contract rõ hơn: caller phải nghĩ tới case không có kết quả.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dùng</th><th>Không dùng</th></tr></thead>
+  <tbody>
+    <tr><td>Return type của query có thể không tìm thấy</td><td>Field trong JPA entity</td></tr>
+    <tr><td>Transform result bằng <code>map</code>/<code>flatMap</code></td><td>Parameter bắt caller wrap value</td></tr>
+    <tr><td>Fail rõ bằng <code>orElseThrow</code></td><td><code>Optional.get()</code> không check</td></tr>
+    <tr><td>Lazy default bằng <code>orElseGet</code></td><td>Collection chứa <code>Optional</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-java">public Optional&lt;CustomerDto&gt; findCustomer(String id) {
+    return customerRepository.findById(id)
+        .map(CustomerDto::from);
+}
+
+public CustomerDto requiredCustomer(String id) {
+    return findCustomer(id)
+        .orElseThrow(() -&gt; new CustomerNotFoundException(id));
+}
+
+public String displayName(String id) {
+    return findCustomer(id)
+        .map(CustomerDto::displayName)
+        .filter(name -&gt; !name.isBlank())
+        .orElseGet(() -&gt; "Guest");
+}</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle"><code>orElse</code> vs <code>orElseGet</code></div>
+  <p><code>orElse(defaultValue())</code> evaluate default ngay cả khi Optional có value. Nếu default là DB call, HTTP call hoặc object đắt, dùng <code>orElseGet(() -&gt; defaultValue())</code>.</p>
+</div>
+
+<h3>3.1 Optional.map vs flatMap</h3>
+<p>Dùng <code>map</code> khi function trả value thường. Dùng <code>flatMap</code> khi function đã trả Optional, để tránh <code>Optional&lt;Optional&lt;T&gt;&gt;</code>.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: nested Optional</div>
+<pre><code class="language-java">Optional&lt;Optional&lt;Address&gt;&gt; address =
+    customerRepository.findById(id)
+        .map(Customer::primaryAddress);</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: flatMap</div>
+<pre><code class="language-java">Optional&lt;Address&gt; address =
+    customerRepository.findById(id)
+        .flatMap(Customer::primaryAddress);</code></pre>
+  </div>
+</div>
+
+<h3>3.2 Optional Không Thay Validation</h3>
+<p>Optional biểu diễn absence của result, không biểu diễn validation error phong phú. Nếu cần trả nhiều lỗi validate, dùng result type riêng hoặc exception phù hợp ở boundary.</p>
+<pre><code class="language-java">public sealed interface SignupResult permits SignupResult.Accepted, SignupResult.Rejected {
+    record Accepted(UserId userId) implements SignupResult {}
+    record Rejected(List&lt;String&gt; errors) implements SignupResult {}
+}</code></pre>
+
+<h3>3.3 Optional Trong Repository Và Service</h3>
+<p>Repository method như <code>findById</code> trả Optional là hợp lý. Service public API cần cân nhắc: nếu missing là expected, trả Optional; nếu missing là lỗi của use case, throw domain exception ngay để caller không phải handle ở mọi tầng.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Method</th><th>Return</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td><code>findBySlug</code></td><td><code>Optional&lt;Article&gt;</code></td><td>Không tìm thấy là expected.</td></tr>
+    <tr><td><code>getRequiredWorkspace</code></td><td><code>Workspace</code> hoặc throw</td><td>Use case không thể tiếp tục nếu thiếu.</td></tr>
+    <tr><td><code>validateSignup</code></td><td><code>ValidationResult</code></td><td>Cần chứa nhiều lỗi, không chỉ present/empty.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="lambda">
+<h2>4. Lambda, Method Reference, Functional Interface</h2>
+<p>Lambda giúp truyền behavior như value. Về mặt mental model, bạn đang đưa một function nhỏ vào API khác: filter cần predicate, map cần function, forEach cần consumer.</p>
+
+<section id="functional-interfaces">
+<h3>4.1 Functional Interfaces</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Interface</th><th>Method</th><th>Nghĩa</th><th>Ví dụ</th></tr></thead>
+  <tbody>
+    <tr><td><code>Supplier&lt;T&gt;</code></td><td><code>get()</code></td><td>Không nhận, trả value</td><td>Generate request ID</td></tr>
+    <tr><td><code>Consumer&lt;T&gt;</code></td><td><code>accept(T)</code></td><td>Nhận value, không trả</td><td>Log/audit một event</td></tr>
+    <tr><td><code>Function&lt;T,R&gt;</code></td><td><code>apply(T)</code></td><td>Transform</td><td>Entity sang DTO</td></tr>
+    <tr><td><code>Predicate&lt;T&gt;</code></td><td><code>test(T)</code></td><td>Điều kiện true/false</td><td>Lọc invoice paid</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-java">Predicate&lt;Invoice&gt; isPaid = invoice -&gt; invoice.status() == InvoiceStatus.PAID;
+Function&lt;Invoice, InvoiceDto&gt; toDto = InvoiceDto::from;
+Consumer&lt;InvoiceDto&gt; trace = dto -&gt; log.debug("invoiceId={}", dto.id());
+
+List&lt;InvoiceDto&gt; dtos = invoices.stream()
+    .filter(isPaid)
+    .map(toDto)
+    .peek(trace) // chỉ debug, không đặt business side effect quan trọng ở đây
+    .toList();</code></pre>
+
+<h4>Tự định nghĩa functional interface khi domain cần tên rõ</h4>
+<pre><code class="language-java">@FunctionalInterface
+public interface PricePolicy {
+    Money apply(Cart cart);
+}
+
+public Money calculate(Cart cart, PricePolicy policy) {
+    return policy.apply(cart);
+}</code></pre>
+<p>Dùng <code>Function&lt;Cart, Money&gt;</code> cũng được, nhưng <code>PricePolicy</code> truyền intent domain rõ hơn.</p>
+</section>
+
+<section id="lambda-capture">
+<h3>4.2 Lambda Capture Và Effectively Final</h3>
+<p>Lambda chỉ capture biến local effectively final. Java cố tình không cho bạn mutate biến local capture trong lambda vì nó dễ gây bug về lifecycle và concurrency.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Không compile</div>
+<pre><code class="language-java">int count = 0;
+invoices.forEach(invoice -&gt; {
+    if (invoice.isPaid()) {
+        count++; // local variable must be effectively final
+    }
+});</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: dùng stream operation</div>
+<pre><code class="language-java">long count = invoices.stream()
+    .filter(Invoice::isPaid)
+    .count();</code></pre>
+  </div>
+</div>
+
+<p>Nếu bạn dùng array hoặc <code>AtomicInteger</code> chỉ để "lách" effectively final trong stream, đó thường là code smell. Hãy dùng collector/reduce hoặc quay lại for-loop.</p>
+</section>
+
+<section id="default-methods">
+<h3>4.3 Default Methods</h3>
+<p>Default method cho phép thêm method vào interface mà không phá tất cả implementation cũ. Nó được dùng nhiều trong Java collections và framework APIs.</p>
+<pre><code class="language-java">public interface InvoiceFormatter {
+    String format(Invoice invoice);
+
+    default List&lt;String&gt; formatAll(List&lt;Invoice&gt; invoices) {
+        return invoices.stream()
+            .map(this::format)
+            .toList();
+    }
+}</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">Không biến interface thành abstract class trá hình</div>
+  <p>Default method nên cung cấp behavior phổ quát dựa trên method abstract cốt lõi. Nếu interface bắt đầu giữ quá nhiều logic, dependency và state giả, hãy cân nhắc class/strategy riêng.</p>
+</div>
+</section>
+</section>
+
+<section id="modern">
+<h2>5. Java 14-17: Record, Sealed, Pattern Matching</h2>
+
+<section id="records">
+<h3>5.1 Record Cho DTO Và Value Object</h3>
+<pre><code class="language-java">public record InvoiceSummary(
+    String invoiceId,
+    String customerId,
+    BigDecimal total,
+    InvoiceStatus status
+) {
+    public InvoiceSummary {
+        Objects.requireNonNull(invoiceId);
+        Objects.requireNonNull(customerId);
+        Objects.requireNonNull(total);
+        Objects.requireNonNull(status);
+        if (total.signum() &lt; 0) {
+            throw new IllegalArgumentException("total must not be negative");
+        }
+    }
+}</code></pre>
+<p>Record tự sinh constructor, accessor, equals/hashCode/toString. Không dùng record cho JPA entity vì entity cần lifecycle, proxy, no-arg constructor và thường mutable.</p>
+
+<h4>Record không có nghĩa là shallow object graph immutable tuyệt đối</h4>
+<p>Record fields là final, nhưng nếu field là mutable collection, content bên trong vẫn có thể bị đổi. Hãy defensive copy trong compact constructor.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: list vẫn mutable từ ngoài</div>
+<pre><code class="language-java">public record InvoiceBatch(List&lt;InvoiceSummary&gt; invoices) {}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: defensive copy</div>
+<pre><code class="language-java">public record InvoiceBatch(List&lt;InvoiceSummary&gt; invoices) {
+    public InvoiceBatch {
+        invoices = List.copyOf(invoices);
+    }
+}</code></pre>
+  </div>
+</div>
+
+</section>
+
+<section id="sealed">
+<h3>5.2 Sealed Class Cho State Hữu Hạn</h3>
+<pre><code class="language-java">public sealed interface PaymentAttempt
+    permits PaymentAttempt.Approved, PaymentAttempt.Declined, PaymentAttempt.ProviderError {
+
+    record Approved(String transactionId, Instant approvedAt) implements PaymentAttempt {}
+    record Declined(String reasonCode, boolean retryable) implements PaymentAttempt {}
+    record ProviderError(String provider, String message) implements PaymentAttempt {}
+}</code></pre>
+<p>Sealed hierarchy giúp compiler biết toàn bộ subtype hợp lệ. Khi kết hợp switch expression, bạn giảm rủi ro quên case mới.</p>
+</section>
+
+<h3>5.3 Pattern Matching Cho <code>instanceof</code></h3>
+<pre><code class="language-java">public String describe(Object value) {
+    if (value instanceof InvoiceSummary summary) {
+        return "Invoice " + summary.invoiceId() + " = " + summary.total();
+    }
+    if (value instanceof CustomerDto customer) {
+        return "Customer " + customer.id();
+    }
+    return "Unknown";
+}</code></pre>
+
+<section id="switch-var-text">
+<h3>5.4 Switch Expression, var, Text Blocks</h3>
+<p>Switch expression giúp return value trực tiếp và tránh fall-through lỗi thời. <code>var</code> giảm noise khi type đã rõ từ vế phải. Text block giúp SQL/JSON mẫu dễ đọc hơn.</p>
+
+<h4>Switch expression</h4>
+<pre><code class="language-java">public String label(InvoiceStatus status) {
+    return switch (status) {
+        case DRAFT -&gt; "Draft";
+        case SENT -&gt; "Sent";
+        case PAID -&gt; "Paid";
+        case CANCELLED -&gt; "Cancelled";
+    };
+}</code></pre>
+
+<h4>var dùng có kiểm soát</h4>
+<div class="compare">
+  <div class="col good">
+    <div class="col-head">Ổn: type rõ</div>
+<pre><code class="language-java">var invoice = invoiceRepository.findById(id).orElseThrow();
+var totalsByStatus = new EnumMap&lt;InvoiceStatus, BigDecimal&gt;(InvoiceStatus.class);</code></pre>
+  </div>
+  <div class="col bad">
+    <div class="col-head">Kém: type không rõ</div>
+<pre><code class="language-java">var data = client.fetch(id);
+var result = processor.process(data);</code></pre>
+  </div>
+</div>
+
+<h4>Text block cho SQL/JSON</h4>
+<pre><code class="language-java">String sql = """
+    select i.id, i.status, i.total_amount
+    from invoices i
+    where i.customer_id = :customerId
+      and i.created_at &gt;= :fromDate
+    order by i.created_at desc
+    """;</code></pre>
+</section>
+
+<section id="jpms">
+<h3>5.5 JPMS Module System: Biết Để Debug Dependency/Classpath</h3>
+<p>JPMS xuất hiện từ Java 9. Nhiều Spring application vẫn chạy trên classpath truyền thống, nhưng senior nên hiểu module path vì nó ảnh hưởng encapsulation, reflective access, split package và lỗi runtime khi migrate JDK.</p>
+
+<pre><code class="language-java">module com.acme.reporting {
+    requires java.sql;
+    requires com.fasterxml.jackson.databind;
+
+    exports com.acme.reporting.api;
+    opens com.acme.reporting.dto to com.fasterxml.jackson.databind;
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Keyword</th><th>Nghĩa</th><th>Khi nào gặp?</th></tr></thead>
+  <tbody>
+    <tr><td><code>requires</code></td><td>Module này phụ thuộc module khác</td><td>Compile/runtime module graph</td></tr>
+    <tr><td><code>exports</code></td><td>Package public cho module khác dùng compile-time</td><td>Thiết kế public API</td></tr>
+    <tr><td><code>opens</code></td><td>Cho reflective access runtime</td><td>Jackson, Hibernate, test framework</td></tr>
+    <tr><td>Unnamed module</td><td>Code chạy trên classpath truyền thống</td><td>Đa số app migration dần</td></tr>
+    <tr><td>Split package</td><td>Cùng package nằm ở nhiều module/jar</td><td>Lỗi migration, dependency conflict</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">Cách trả lời phỏng vấn</div>
+  <p>Không cần thuộc mọi option JPMS. Điểm quan trọng là hiểu khác biệt classpath/module path, vì sao reflection bị chặn mạnh hơn, và khi nào cần <code>opens</code> thay vì <code>exports</code>.</p>
+</div>
+</section>
+</section>
+
+<section id="collections">
+<h2>6. Collections Internals: Câu Hỏi Java Core Luôn Gặp</h2>
+<p>Stream và lambda là modern Java, nhưng senior interview vẫn thường quay về collections. Lý do đơn giản: hầu hết code backend dùng <code>Map</code>, <code>List</code>, <code>Set</code>, cache, grouping, deduplication. Nếu không hiểu cost model của collection, bạn có thể viết code đúng chức năng nhưng chậm, tốn memory hoặc sai trong concurrent access.</p>
+
+<section id="hashmap">
+<h3>6.1 HashMap: Hash, Bucket, Resize, Treeify</h3>
+<p><code>HashMap</code> lưu entry theo bucket. Key được hash để chọn bucket. Nếu nhiều key rơi vào cùng bucket, bucket chứa chain hoặc tree. Từ Java 8, collision chain dài có thể treeify thành red-black tree khi đủ điều kiện để tránh worst-case lookup quá tệ.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Khái niệm</th><th>Nghĩa</th><th>Bẫy phỏng vấn</th></tr></thead>
+  <tbody>
+    <tr><td><code>hashCode</code></td><td>Quyết định bucket ban đầu</td><td>Key mutable làm hash thay đổi sau khi put</td></tr>
+    <tr><td><code>equals</code></td><td>Xác định key thật sự bằng nhau</td><td>Override <code>equals</code> mà quên <code>hashCode</code></td></tr>
+    <tr><td>Load factor</td><td>Tỷ lệ size/capacity kích hoạt resize</td><td>Map lớn mà không set initial capacity gây resize nhiều</td></tr>
+    <tr><td>Resize</td><td>Tạo table lớn hơn và rehash/bin split</td><td>Chi phí cao nếu xảy ra trong hot path</td></tr>
+    <tr><td>Treeify</td><td>Bucket collision dài chuyển sang tree</td><td>Không thay thế việc thiết kế hash tốt</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-java">public record ProductKey(String tenantId, String sku) {}
+
+Map&lt;ProductKey, Product&gt; byKey = new HashMap&lt;&gt;(expectedSize * 4 / 3 + 1);
+byKey.put(new ProductKey("tenant-a", "SKU-001"), product);</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">Mutable key là lỗi rất khó debug</div>
+  <p>Nếu object dùng làm key bị đổi field tham gia <code>equals/hashCode</code> sau khi put vào map, lookup có thể fail dù object vẫn nằm trong map. Vì vậy key nên immutable: record, final fields, hoặc value object không mutate.</p>
+</div>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: mutable key</div>
+<pre><code class="language-java">class SearchKey {
+    String query;
+    int page;
+    // equals/hashCode dùng query + page
+}
+
+SearchKey key = new SearchKey("camera", 1);
+cache.put(key, result);
+key.page = 2;
+cache.get(key); // có thể null</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: immutable key</div>
+<pre><code class="language-java">record SearchKey(String query, int page) {}
+
+cache.put(new SearchKey("camera", 1), result);</code></pre>
+  </div>
+</div>
+</section>
+
+<section id="concurrenthashmap">
+<h3>6.2 ConcurrentHashMap: Atomic Theo Key, Không Phải Transaction Toàn Map</h3>
+<p><code>ConcurrentHashMap</code> cho phép access concurrent an toàn hơn <code>HashMap</code>, nhưng không biến mọi operation nhiều bước thành atomic. Các method như <code>putIfAbsent</code>, <code>compute</code>, <code>computeIfAbsent</code> atomic theo key. Nếu invariant trải qua nhiều key, bạn vẫn cần thiết kế synchronization/transaction riêng.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: check-then-act không atomic</div>
+<pre><code class="language-java">if (!cache.containsKey(id)) {
+    cache.put(id, loadProduct(id));
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng hơn: computeIfAbsent</div>
+<pre><code class="language-java">Product product = cache.computeIfAbsent(id, this::loadProduct);</code></pre>
+  </div>
+</div>
+
+<p>Function truyền vào <code>computeIfAbsent</code> nên nhanh, không giữ lock ngoài, không gọi ngược vào chính map theo cách phức tạp. Nếu load từ network/DB rất chậm, cân nhắc cache future hoặc thư viện cache có loading semantics rõ ràng để tránh block bin lâu.</p>
+
+<h4>Counter Theo Key</h4>
+<pre><code class="language-java">private final ConcurrentHashMap&lt;String, LongAdder&gt; views = new ConcurrentHashMap&lt;&gt;();
+
+public void recordView(String productId) {
+    views.computeIfAbsent(productId, ignored -&gt; new LongAdder())
+         .increment();
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>An toàn?</th><th>Ghi nhớ</th></tr></thead>
+  <tbody>
+    <tr><td><code>putIfAbsent(k, v)</code></td><td>Atomic theo key</td><td>Không overwrite value đã có</td></tr>
+    <tr><td><code>compute(k, fn)</code></td><td>Atomic theo key</td><td>Fn có thể nhận null nếu key chưa có</td></tr>
+    <tr><td><code>size()</code></td><td>Approx trong concurrent update</td><td>Không dùng làm invariant strict dưới write cao</td></tr>
+    <tr><td>Iteration</td><td>Weakly consistent</td><td>Không throw concurrent modification, nhưng không phải snapshot tuyệt đối</td></tr>
+    <tr><td>Invariant nhiều key</td><td>Không đủ</td><td>Cần lock ngoài, transaction hoặc single writer</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="arraylist-linkedlist">
+<h3>6.3 ArrayList vs LinkedList: Đừng Trả Lời Máy Móc</h3>
+<p>Câu trả lời "ArrayList đọc nhanh, LinkedList insert/delete nhanh" thường quá nông. Trong thực tế, <code>ArrayList</code> thường nhanh hơn cho rất nhiều workload vì dữ liệu contiguous, cache locality tốt, ít object allocation. <code>LinkedList</code> mỗi node là một object riêng, tốn memory và pointer chasing.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>ArrayList</th><th>LinkedList</th><th>Nhận xét thực tế</th></tr></thead>
+  <tbody>
+    <tr><td>Random access <code>get(i)</code></td><td>O(1)</td><td>O(n)</td><td>ArrayList thắng rõ</td></tr>
+    <tr><td>Append cuối list</td><td>Amortized O(1)</td><td>O(1)</td><td>ArrayList thường nhanh hơn vì locality</td></tr>
+    <tr><td>Insert giữa khi đã có iterator</td><td>O(n) shift</td><td>O(1) link</td><td>LinkedList chỉ có lợi trong case rất cụ thể</td></tr>
+    <tr><td>Memory overhead</td><td>Array backing</td><td>Node object + prev/next</td><td>LinkedList tốn memory hơn đáng kể</td></tr>
+    <tr><td>Stream splitting</td><td>Tốt</td><td>Kém hơn</td><td>ArrayList hợp parallel hơn</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>removeIf Thay Vì Remove Trong For-each</h4>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: ConcurrentModificationException</div>
+<pre><code class="language-java">for (Product product : products) {
+    if (product.discontinued()) {
+        products.remove(product);
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: removeIf</div>
+<pre><code class="language-java">products.removeIf(Product::discontinued);</code></pre>
+  </div>
+</div>
+
+<p><code>ConcurrentModificationException</code> là fail-fast best effort, không phải cơ chế thread safety. Nó giúp phát hiện modify collection sai trong cùng thread/iterator, nhưng không đảm bảo bắt mọi lỗi concurrent.</p>
+</section>
+
+<section id="treemap">
+<h3>6.4 TreeMap, HashMap, LinkedHashMap: Chọn Theo Contract</h3>
+<p>Map không chỉ khác nhau về performance. Chúng khác nhau về contract: có giữ order không, sort theo key không, cho null không, iteration cost thế nào.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Map</th><th>Order</th><th>Cost chính</th><th>Dùng khi</th></tr></thead>
+  <tbody>
+    <tr><td><code>HashMap</code></td><td>Không đảm bảo</td><td>O(1) trung bình</td><td>Lookup thông thường</td></tr>
+    <tr><td><code>LinkedHashMap</code></td><td>Insertion/access order</td><td>O(1) trung bình + linked list</td><td>Cache LRU đơn giản, output giữ order</td></tr>
+    <tr><td><code>TreeMap</code></td><td>Sorted by key</td><td>O(log n)</td><td>Range query, sorted navigation</td></tr>
+    <tr><td><code>EnumMap</code></td><td>Enum natural order</td><td>Array-backed</td><td>Key là enum, rất gọn và nhanh</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-java">NavigableMap&lt;LocalDate, List&lt;Shipment&gt;&gt; shipmentsByDate = new TreeMap&lt;&gt;();
+
+List&lt;Shipment&gt; thisWeek = shipmentsByDate
+    .subMap(startDate, true, endDate, true)
+    .values()
+    .stream()
+    .flatMap(List::stream)
+    .toList();</code></pre>
+
+<h4>LRU Mini Bằng LinkedHashMap</h4>
+<pre><code class="language-java">public class SmallLruCache&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+    private final int maxEntries;
+
+    public SmallLruCache(int maxEntries) {
+        super(16, 0.75f, true);
+        this.maxEntries = maxEntries;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry&lt;K, V&gt; eldest) {
+        return size() &gt; maxEntries;
+    }
+}</code></pre>
+
+<p>Ví dụ trên phù hợp cache nhỏ trong một thread hoặc được bảo vệ bởi lock ngoài. Với production cache multi-thread, dùng thư viện cache chuyên dụng có eviction, TTL, metrics và concurrency semantics rõ ràng.</p>
+</section>
+</section>
+
+<section id="implementation">
+<h2>7. Code Production</h2>
+
+<h3>7.1 Pipeline Báo Cáo Có Chunking</h3>
+<pre><code class="language-java">public BillingReport generateReport(Stream&lt;Invoice&gt; invoiceStream) {
+    Map&lt;InvoiceStatus, BigDecimal&gt; totals = invoiceStream
+        .filter(Objects::nonNull)
+        .filter(invoice -&gt; invoice.amount() != null)
+        .collect(Collectors.groupingBy(
+            Invoice::status,
+            Collectors.mapping(
+                Invoice::amount,
+                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+            )
+        ));
+
+    return BillingReport.from(totals);
+}</code></pre>
+<p>Nếu source là database stream, giữ trong transaction và đóng stream đúng cách. Không collect hàng triệu row nếu có thể xử lý chunk.</p>
+
+<h3>7.2 Duplicate Key Khi Collect To Map</h3>
+<pre><code class="language-java">Map&lt;String, Invoice&gt; byId = invoices.stream()
+    .collect(Collectors.toMap(
+        Invoice::id,
+        Function.identity(),
+        (first, duplicate) -&gt; first,
+        LinkedHashMap::new
+    ));</code></pre>
+<p>Không có merge function, duplicate key sẽ ném <code>IllegalStateException</code>. Đây là bug hay gặp khi dữ liệu production không sạch như test data.</p>
+
+<h3>7.3 Sealed Result Thay Vì Null/Exception Rải Rác</h3>
+<pre><code class="language-java">public sealed interface ImportResult permits ImportResult.Success, ImportResult.ValidationFailed, ImportResult.SystemFailed {
+    record Success(int importedRows) implements ImportResult {}
+    record ValidationFailed(List&lt;String&gt; errors) implements ImportResult {}
+    record SystemFailed(String message) implements ImportResult {}
+}
+
+public HttpResponse handle(ImportResult result) {
+    return switch (result) {
+        case ImportResult.Success s -&gt; HttpResponse.ok(s);
+        case ImportResult.ValidationFailed v -&gt; HttpResponse.badRequest(v.errors());
+        case ImportResult.SystemFailed f -&gt; HttpResponse.serverError(f.message());
+    };
+}</code></pre>
+
+<h3>7.4 Code Review Checklist Cho Stream Pipeline</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Câu hỏi review</th><th>Dấu hiệu tốt</th><th>Dấu hiệu xấu</th></tr></thead>
+  <tbody>
+    <tr><td>Pipeline có thể đọc như câu tiếng Anh không?</td><td>filter/map/reduce rõ intent</td><td>lambda dài nhiều dòng, nested ternary</td></tr>
+    <tr><td>Có side effect không?</td><td>Pure transform, collect result</td><td>Mutate list/map ngoài stream</td></tr>
+    <tr><td>Có xử lý duplicate key không?</td><td><code>toMap</code> có merge function nếu cần</td><td>Assume data luôn sạch</td></tr>
+    <tr><td>Có boxing không cần thiết không?</td><td>Dùng <code>mapToInt</code>/<code>mapToLong</code> khi hợp</td><td><code>Stream&lt;Integer&gt;</code> cho aggregate lớn</td></tr>
+    <tr><td>parallel có được chứng minh?</td><td>Có benchmark/profile</td><td>Thêm <code>parallelStream()</code> vì nghĩ auto nhanh</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>7.5 Refactor Một Hàm Thực Tế Theo 3 Mức</h3>
+<p>Không phải lúc nào cũng nhảy thẳng từ for-loop sang stream. Có thể refactor theo ba mức: tách predicate, đổi status string thành enum, sau đó mới cân nhắc stream.</p>
+<pre><code class="language-java">private boolean isBillable(Invoice invoice) {
+    return invoice != null
+        &amp;&amp; invoice.amount() != null
+        &amp;&amp; invoice.amount().signum() &gt; 0
+        &amp;&amp; invoice.status() == InvoiceStatus.SENT;
+}
+
+public List&lt;InvoiceId&gt; billableInvoiceIds(List&lt;Invoice&gt; invoices) {
+    return invoices.stream()
+        .filter(this::isBillable)
+        .map(Invoice::id)
+        .toList();
+}</code></pre>
+
+<h3>7.6 Large File Processing: Stream Không Đồng Nghĩa Load Hết</h3>
+<pre><code class="language-java">try (Stream&lt;String&gt; lines = Files.lines(path)) {
+    lines.skip(1)
+        .map(InvoiceCsvRow::parse)
+        .filter(InvoiceCsvRow::isValid)
+        .forEach(batchWriter::append);
+}</code></pre>
+<p><code>Files.lines</code> lazy, nhưng terminal <code>toList()</code> sẽ materialize toàn bộ file. Với file lớn, process theo dòng hoặc theo chunk.</p>
+</section>
+
+<section id="tradeoffs">
+<h2>8. Trade-offs & Anti-Patterns</h2>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP1</span><h4>Stream Với Side Effect</h4></div>
+  <div class="pb">
+<pre><code class="language-java">// Sai
+List&lt;String&gt; ids = new ArrayList&lt;&gt;();
+invoices.stream().filter(Invoice::isPaid).forEach(i -&gt; ids.add(i.id()));
+
+// Đúng
+List&lt;String&gt; ids = invoices.stream()
+    .filter(Invoice::isPaid)
+    .map(Invoice::id)
+    .toList();</code></pre>
+  </div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP2</span><h4>parallelStream Cho I/O</h4></div>
+  <div class="pb"><p><code>parallelStream</code> dùng common ForkJoinPool. Không dùng nó để gọi DB/HTTP trong lambda. Với I/O fan-out, dùng <code>CompletableFuture</code> và custom executor, hoặc WebFlux nếu reactive toàn đường đi.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP3</span><h4>Optional Everywhere</h4></div>
+  <div class="pb"><p>Optional không nên là field, parameter hoặc phần tử collection. Nó hợp nhất ở return type cho method có thể không có kết quả.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP4</span><h4>Record Cho Entity</h4></div>
+  <div class="pb"><p>Record immutable và final, không phù hợp với JPA proxy/lifecycle. Dùng record cho DTO, event, command, value object đơn giản.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP5</span><h4>Stream Quá Dài</h4></div>
+  <div class="pb"><p>Nếu pipeline cần nhiều biến tạm, nhiều nhánh, nhiều error handling và logging từng bước, tách method nhỏ hoặc dùng for-loop. Debuggability cũng là chất lượng code.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP6</span><h4>Optional.get()</h4></div>
+  <div class="pb"><p><code>optional.get()</code> gần giống null dereference phiên bản mới. Nếu chắc chắn có value, hãy dùng <code>orElseThrow</code> với exception rõ. Nếu không chắc, handle empty case.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP7</span><h4>var Làm Mất Thông Tin</h4></div>
+  <div class="pb"><p><code>var</code> tốt khi type rõ từ context. Nếu reader phải nhảy vào method khác để biết type, hãy viết type tường minh.</p></div>
+</div>
+</section>
+
+<section id="interview">
+<h2>9. Interview Framework</h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">Stream khác Collection?</span></div>
+  <p class="a">Collection lưu dữ liệu; Stream là pipeline xử lý dữ liệu. Stream lazy, chỉ chạy khi có terminal operation, và thường chỉ consume một lần.</p>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">parallelStream có luôn nhanh hơn?</span></div>
+  <p class="a">Không. Nó có overhead split/merge, dùng common pool, không hợp dataset nhỏ, I/O-bound, operation có order dependency hoặc side effect. Nó hợp CPU-bound, stateless, dataset lớn và đo đạc chứng minh nhanh hơn.</p>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Model result import file lớn</span></div>
+  <p class="a">Dùng sealed result để biểu diễn success, validation failure, system failure. Stream file theo dòng/chunk để không load hết memory. Dùng record cho row DTO immutable. Enrich DB theo batch thay vì gọi repository từng dòng.</p>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+<ul>
+  <li>Giải thích được lazy evaluation và terminal operation của Stream.</li>
+  <li>Phân biệt <code>map</code>, <code>flatMap</code>, <code>reduce</code>, <code>collect</code>.</li>
+  <li>Nêu được nơi nên/không nên dùng Optional và khác biệt <code>orElse</code>/<code>orElseGet</code>.</li>
+  <li>Biết vì sao stream side effect và parallelStream I/O là anti-pattern.</li>
+  <li>Viết được record có validation trong compact constructor.</li>
+  <li>Model được finite state bằng sealed interface + record implementations.</li>
+  <li>Giải thích được HashMap lookup, resize, collision và lỗi mutable key.</li>
+  <li>Phân biệt đúng ConcurrentHashMap atomic theo key với transaction nhiều key.</li>
+  <li>Biết vì sao ArrayList thường thực dụng hơn LinkedList trong backend code.</li>
+  <li>Chọn được HashMap, LinkedHashMap, TreeMap, EnumMap theo contract order/sort/range.</li>
+  <li>Nắm được JPMS ở mức debug migration: classpath vs module path, exports vs opens.</li>
+</ul>
+</section>
+
+<footer>
+  <span>Phase 1 - Core Java Mastery</span>
+  <span>Next: #04 Java Memory Model</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

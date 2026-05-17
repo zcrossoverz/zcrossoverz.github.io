@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#17 — Microservices Patterns | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 4 — Architecture<span class="sep">/</span><strong>#17 Microservices Patterns</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#patterns">2. 6 Patterns Cốt Lõi</a>
+    <div class="sub">
+      <a href="#discovery">Service Discovery</a>
+      <a href="#gateway">API Gateway</a>
+      <a href="#sidecar">Sidecar / Service Mesh</a>
+      <a href="#cqrs">CQRS</a>
+      <a href="#saga">Saga (Orch vs Choreo)</a>
+    </div>
+    <a href="#cascading">3. Cascading Failure — Deep Dive</a>
+    <div class="sub">
+      <a href="#circuit-breaker">Circuit Breaker</a>
+      <a href="#bulkhead">Bulkhead</a>
+      <a href="#retry">Retry + Backoff</a>
+    </div>
+    <a href="#antipatterns">4. Anti-Patterns</a>
+    <a href="#interview">5. Interview Framework</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔴 HIGH PRIORITY — System Design Round</span>
+  <h1>#17 — Microservices Patterns</h1>
+  <p class="lead">Microservices không chỉ là "tách monolith thành nhiều service". Đó là <strong>distributed systems engineering</strong> — phải hiểu service discovery, gateway, resilience patterns, cascading failures. File này dùng ví dụ <strong>ride-sharing app</strong> (kiểu Grab/Uber) để demo các pattern.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">D — Kiến Trúc</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#13 SAGA, #18 Event-Driven, #22 Resilience, #24 K8s</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">4 — Architecture</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Vì Sao Patterns Quan Trọng Trong Microservices?</h2>
+<p>Monolith có 1 process, 1 DB, 1 deployment. Mọi call là <strong>method call trong cùng JVM</strong> — không bao giờ fail vì network. Khi tách thành microservices:</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Khía cạnh</th><th>Monolith</th><th>Microservices</th></tr></thead>
+<tbody>
+<tr><td>Inter-component call</td><td>Method call (ns)</td><td>HTTP/gRPC (ms-s, có thể fail)</td></tr>
+<tr><td>Transaction</td><td>DB transaction</td><td>Distributed — không có 2PC trong thực tế</td></tr>
+<tr><td>Deploy</td><td>1 artifact</td><td>N artifacts, phải coordinate version</td></tr>
+<tr><td>Debugging</td><td>Stack trace 1 file log</td><td>Trace cross 5 services, 5 log streams</td></tr>
+<tr><td>Service location</td><td>Compile-time</td><td>Runtime — service IP có thể đổi</td></tr>
+<tr><td>Failure mode</td><td>App crash hết</td><td>Partial failure — 1 service down, others survive (hopefully)</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Mỗi khía cạnh trên cần <strong>1 pattern</strong> để giải quyết. File này dạy 6 patterns cốt lõi + deep dive về cascading failures (sai lầm chết người nhất khi mới chuyển sang microservices).</p>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Monolith-to-Microservices Migration Của Ride-Sharing App</h2>
+
+<h3>Year 1: Monolith</h3>
+<p>RideZ là startup ride-sharing. Bắt đầu với 1 Spring Boot monolith 500K LOC chứa tất cả features (trips, drivers, payment, notification, pricing, location tracking). Deploy mất 2 giờ (full test suite). Outage 1 module ảnh hưởng cả app.</p>
+
+<h3>Year 2: Tách thành 15 microservices</h3>
+
+<ul>
+<li><code>TripService</code>, <code>DriverService</code>, <code>RiderService</code></li>
+<li><code>PaymentService</code>, <code>PricingService</code> (surge pricing)</li>
+<li><code>NotificationService</code> (push to driver/rider)</li>
+<li><code>LocationService</code> (geo tracking realtime)</li>
+<li><code>RatingService</code>, <code>FraudService</code>, <code>PromoService</code>, ...</li>
+</ul>
+
+<h3>Month 6: Chaos</h3>
+
+<div class="callout danger">
+<div class="ctitle">🔥 Triệu chứng "migration gone wrong"</div>
+<ul style="margin:8px 0 0 20px">
+<li>Engineers hardcode IP: <code>http://10.0.0.15:8080/drivers</code> — server restart đổi IP → broken</li>
+<li>Auth không thống nhất: TripService validate JWT với Secret A, DriverService với Secret B → maintenance nightmare</li>
+<li>Service A gọi B sync, B gọi C, C gọi D — chain 4 timeouts = 4× latency</li>
+<li>No request tracing: user complain "ride request fail", engineer không biết service nào fail</li>
+<li>Service A crash → cascade B/C/D timeout (cùng waiting A)</li>
+<li>Mỗi service own DB: tạo trip phải atomically update TripService DB + LocationService DB + DriverService DB → không có distributed TX → data inconsistency</li>
+</ul>
+</div>
+
+<h3>5 câu hỏi cần trả lời</h3>
+<ol>
+<li>Làm sao tìm DriverService nếu IP đổi (scaling, restart)?</li>
+<li>Làm sao tránh cascading failures khi A → B → C → D?</li>
+<li>Nếu TripService và PaymentService phải cùng success/fail atomic, làm sao consistent <em>không dùng 2PC</em>?</li>
+<li>Làm sao biết service nào tốn 5s trong 1 API call 10s?</li>
+<li>Granularity đúng: 15 services (nanoservices) hay 4 bounded contexts?</li>
+</ol>
+</section>
+
+<section id="patterns">
+<h2>2. 6 Patterns Cốt Lõi</h2>
+
+<h3 id="discovery">Service Discovery — Tìm Service Dynamic</h3>
+
+<p><strong>Vấn đề</strong>: trong K8s, pod restart → IP mới. Scaling out → IP mới. Hardcoded IP = broken.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .reg{fill:#fffbeb;stroke:#d97706;stroke-width:2}
+    .svc{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .client{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#a3)}
+    .arr-q{stroke:#4f46e5;stroke-width:1.5;fill:none;marker-end:url(#a3b);stroke-dasharray:4,3}
+  </style>
+  <marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+  <marker id="a3b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/></marker></defs>
+
+  <rect x="270" y="20" width="180" height="60" rx="8" class="reg"/>
+  <text x="360" y="44" text-anchor="middle" class="lbl">Service Registry</text>
+  <text x="360" y="62" text-anchor="middle" font-size="11" fill="#92400e">(Eureka / Consul / K8s DNS)</text>
+
+  <rect x="40" y="180" width="160" height="40" rx="6" class="client"/>
+  <text x="120" y="204" text-anchor="middle" class="lbl">TripService (client)</text>
+
+  <rect x="280" y="180" width="160" height="40" rx="6" class="svc"/>
+  <text x="360" y="200" text-anchor="middle" class="lbl">DriverService instance 1</text>
+  <text x="360" y="215" text-anchor="middle" font-size="10" fill="#475569">10.0.0.5:8080</text>
+
+  <rect x="480" y="180" width="160" height="40" rx="6" class="svc"/>
+  <text x="560" y="200" text-anchor="middle" class="lbl">DriverService instance 2</text>
+  <text x="560" y="215" text-anchor="middle" font-size="10" fill="#475569">10.0.0.6:8080</text>
+
+  <!-- Services register -->
+  <line x1="360" y1="180" x2="360" y2="85" class="arr"/>
+  <text x="370" y="135" fill="#059669" font-size="11">① register</text>
+  <line x1="560" y1="180" x2="440" y2="85" class="arr"/>
+
+  <!-- Client queries -->
+  <line x1="200" y1="195" x2="280" y2="75" class="arr-q"/>
+  <text x="220" y="135" fill="#4f46e5" font-size="11">② query "DriverService?"</text>
+
+  <!-- Registry returns + client calls -->
+  <line x1="280" y1="200" x2="200" y2="200" class="arr" stroke="#059669"/>
+  <text x="222" y="190" fill="#059669" font-size="11">③ call</text>
+
+  <text x="360" y="260" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Service tự register khi startup. Registry health-check để remove dead instances. Client query → load balance → call.
+  </text>
+</svg>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Client-side vs Server-side discovery</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Client-side</strong> (Netflix Ribbon, Eureka client): client fetch instance list từ registry, tự load balance. Nhanh (no extra hop), nhưng client code phức tạp + mỗi ngôn ngữ phải có lib riêng.</li>
+  <li><strong>Server-side</strong> (K8s Service, AWS ELB): client gọi 1 stable virtual IP, LB query registry route request. Đơn giản với client (chỉ gọi DNS name), nhưng thêm 1 network hop.</li>
+  <li><strong>Modern preference</strong>: K8s + DNS. <code>http://driver-service:8080</code> tự resolve qua kube-dns → load balance to pod IPs. Service code không cần lib gì.</li>
+  </ul>
+</div>
+
+<h3 id="gateway">API Gateway — Single Entry Point</h3>
+
+<p><strong>Vấn đề</strong>: 15 microservices, mỗi service tự validate JWT, tự rate limit, tự version API. Client phải biết IP/URL của 15 services. Mobile app build cứng URL pattern → service đổi URL = rebuild app.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .client{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5}
+    .gw{fill:#fffbeb;stroke:#d97706;stroke-width:2}
+    .svc{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#a4)}
+  </style>
+  <marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="20" y="100" width="120" height="40" rx="6" class="client"/>
+  <text x="80" y="124" text-anchor="middle" class="lbl">Mobile App</text>
+
+  <rect x="200" y="60" width="200" height="120" rx="10" class="gw"/>
+  <text x="300" y="82" text-anchor="middle" class="lbl" font-size="14">API Gateway</text>
+  <text x="300" y="102" text-anchor="middle" font-size="11" fill="#92400e">• Auth (JWT)</text>
+  <text x="300" y="118" text-anchor="middle" font-size="11" fill="#92400e">• Rate limiting</text>
+  <text x="300" y="134" text-anchor="middle" font-size="11" fill="#92400e">• Routing /trips → trip-svc</text>
+  <text x="300" y="150" text-anchor="middle" font-size="11" fill="#92400e">• Tracing (X-Request-ID)</text>
+  <text x="300" y="166" text-anchor="middle" font-size="11" fill="#92400e">• SSL termination</text>
+
+  <rect x="450" y="20" width="240" height="36" rx="6" class="svc"/>
+  <text x="570" y="42" text-anchor="middle" class="lbl" font-size="11">TripService (internal /trips)</text>
+  <rect x="450" y="70" width="240" height="36" rx="6" class="svc"/>
+  <text x="570" y="92" text-anchor="middle" class="lbl" font-size="11">DriverService (internal /drivers)</text>
+  <rect x="450" y="120" width="240" height="36" rx="6" class="svc"/>
+  <text x="570" y="142" text-anchor="middle" class="lbl" font-size="11">PaymentService (internal /payments)</text>
+  <rect x="450" y="170" width="240" height="36" rx="6" class="svc"/>
+  <text x="570" y="192" text-anchor="middle" class="lbl" font-size="11">... 12 services khác</text>
+
+  <line x1="140" y1="120" x2="200" y2="120" class="arr"/>
+  <text x="155" y="112" font-size="10" fill="#475569">api.ridez.vn</text>
+
+  <line x1="400" y1="100" x2="450" y2="38" class="arr"/>
+  <line x1="400" y1="120" x2="450" y2="88" class="arr"/>
+  <line x1="400" y1="140" x2="450" y2="138" class="arr"/>
+  <line x1="400" y1="160" x2="450" y2="188" class="arr"/>
+
+  <text x="360" y="250" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Client chỉ biết 1 endpoint (api.ridez.vn). Gateway handle cross-cutting concerns ở 1 chỗ.
+  </text>
+</svg>
+</div>
+
+<pre><code class="language-java">// Spring Cloud Gateway — config routes
+@Configuration
+public class GatewayConfig {
+    @Bean
+    public RouteLocator routes(RouteLocatorBuilder builder) {
+        return builder.routes()
+            .route("trip_route", r -&gt; r
+                .path("/api/trips/**")
+                .filters(f -&gt; f
+                    .rewritePath("/api/trips/(?&lt;path&gt;.*)", "/${path}")
+                    .addRequestHeader("X-Request-ID", UUID.randomUUID().toString())
+                    .filter(new JwtAuthFilter(jwtDecoder))
+                    .requestRateLimiter(c -&gt; c
+                        .setKeyResolver(ex -&gt; Mono.just(ex.getRequest().getHeaders().getFirst("Authorization")))
+                        .setRateLimiter(new RedisRateLimiter(100, 200)))  // 100 req/sec sustained, 200 burst
+                )
+                .uri("lb://trip-service"))  // lb:// = load-balanced via service discovery
+            .route("driver_route", r -&gt; r
+                .path("/api/drivers/**")
+                .filters(f -&gt; f.rewritePath("/api/drivers/(?&lt;path&gt;.*)", "/${path}"))
+                .uri("lb://driver-service"))
+            .build();
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Gateway centralize cross-cutting concerns?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>DRY</strong>: implement auth/rate-limit 1 lần, 15 services free. Không có gateway = mỗi service copy code auth.</li>
+  <li><strong>Security at edge</strong>: invalid request bị reject ngay tại gateway, không reach internal services → giảm attack surface.</li>
+  <li><strong>Client simplicity</strong>: mobile app chỉ biết <code>api.ridez.vn</code>, không care service nào ở đâu. Backend refactor không cần update app.</li>
+  <li><strong>Observability</strong>: 1 chỗ log all traffic → tổng số request, top API, error rate dễ track.</li>
+  </ul>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Gateway anti-pattern: Smart Gateway</div>
+  <p>Đừng đưa <em>business logic</em> vào gateway (validate phone format theo VN regulation, calculate price, ...). Gateway chỉ làm cross-cutting (auth, rate, routing, tracing). Business logic ở service. Gateway smart = bottleneck + single point of failure.</p>
+</div>
+
+<h3 id="sidecar">Sidecar Pattern / Service Mesh</h3>
+
+<p><strong>Vấn đề</strong>: Cross-cutting concerns ở <em>service-to-service</em> communication (retry, mTLS, circuit breaker, tracing) — phải implement trong mỗi service code. Java có lib, Go có lib, Python có lib — duplicate effort, không consistent.</p>
+
+<p><strong>Giải pháp Sidecar</strong>: deploy proxy (Envoy) <em>cùng pod</em> với mỗi service. Service chỉ gửi HTTP plain, proxy xử lý mọi cross-cutting concerns.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .pod{fill:#f0f9ff;stroke:#0284c7;stroke-width:2}
+    .app{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .proxy{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#a5)}
+  </style>
+  <marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="40" y="40" width="280" height="140" rx="10" class="pod"/>
+  <text x="180" y="62" text-anchor="middle" class="lbl">Pod A (TripService)</text>
+  <rect x="60" y="75" width="240" height="40" rx="6" class="app"/>
+  <text x="180" y="100" text-anchor="middle" class="lbl">TripService app (plain HTTP)</text>
+  <rect x="60" y="125" width="240" height="40" rx="6" class="proxy"/>
+  <text x="180" y="150" text-anchor="middle" class="lbl" fill="#92400e">Envoy Sidecar (retry, mTLS, circuit, trace)</text>
+
+  <rect x="400" y="40" width="280" height="140" rx="10" class="pod"/>
+  <text x="540" y="62" text-anchor="middle" class="lbl">Pod B (DriverService)</text>
+  <rect x="420" y="75" width="240" height="40" rx="6" class="app"/>
+  <text x="540" y="100" text-anchor="middle" class="lbl">DriverService app</text>
+  <rect x="420" y="125" width="240" height="40" rx="6" class="proxy"/>
+  <text x="540" y="150" text-anchor="middle" class="lbl" fill="#92400e">Envoy Sidecar</text>
+
+  <line x1="300" y1="145" x2="420" y2="145" class="arr"/>
+  <text x="360" y="138" text-anchor="middle" font-size="10" fill="#475569">mTLS + retry + trace</text>
+
+  <text x="360" y="215" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Service chỉ là plain HTTP. Proxy handle networking concerns. Polyglot — works for Java, Go, Python.
+  </text>
+</svg>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Sidecar quan trọng khi scale?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Polyglot</strong>: team Java, Go, Python đều dùng cùng resilience policy. Không cần implement retry/circuit breaker N lần cho N ngôn ngữ.</li>
+  <li><strong>Consistent policy</strong>: thay đổi retry strategy = update mesh config, không touch service code. Apply uniformly.</li>
+  <li><strong>Zero-trust networking</strong>: mTLS bật globally — encrypt service-to-service traffic mà service không biết.</li>
+  <li><strong>Trade-off</strong>: thêm 1 latency hop (~1-2ms), tốn RAM (mỗi pod thêm 100MB cho sidecar). Chỉ đáng khi scale &gt; 30 services.</li>
+  </ul>
+</div>
+
+<h3 id="cqrs">CQRS — Tách Read và Write Model</h3>
+
+<p><strong>Vấn đề</strong>: TripService write data normalized (trip + trip_lines + driver_id + rider_id). Reporting query "tổng trips/ngày theo city" cần JOIN 5 tables → query 3 giây.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .write{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5}
+    .event{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .read{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#a6)}
+  </style>
+  <marker id="a6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="20" y="40" width="180" height="80" rx="8" class="write"/>
+  <text x="110" y="62" text-anchor="middle" class="lbl">Command Side</text>
+  <text x="110" y="80" text-anchor="middle" font-size="11" fill="#475569">TripService writes</text>
+  <text x="110" y="96" text-anchor="middle" font-size="11" fill="#475569">Normalized PostgreSQL</text>
+  <text x="110" y="112" text-anchor="middle" font-size="11" fill="#475569">Optimized for writes</text>
+
+  <rect x="270" y="40" width="180" height="80" rx="8" class="event"/>
+  <text x="360" y="62" text-anchor="middle" class="lbl">Event Bus</text>
+  <text x="360" y="80" text-anchor="middle" font-size="11" fill="#92400e">Kafka topic: trips</text>
+  <text x="360" y="96" text-anchor="middle" font-size="11" fill="#92400e">TripCreatedEvent</text>
+  <text x="360" y="112" text-anchor="middle" font-size="11" fill="#92400e">TripCompletedEvent</text>
+
+  <rect x="520" y="40" width="180" height="80" rx="8" class="read"/>
+  <text x="610" y="62" text-anchor="middle" class="lbl">Query Side</text>
+  <text x="610" y="80" text-anchor="middle" font-size="11" fill="#475569">Reporting reads</text>
+  <text x="610" y="96" text-anchor="middle" font-size="11" fill="#475569">Denormalized ElasticSearch</text>
+  <text x="610" y="112" text-anchor="middle" font-size="11" fill="#475569">Optimized for queries</text>
+
+  <line x1="200" y1="80" x2="270" y2="80" class="arr"/>
+  <line x1="450" y1="80" x2="520" y2="80" class="arr"/>
+
+  <text x="360" y="170" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Write: TripService → save → emit event. Event handler → update read model.
+  </text>
+  <text x="360" y="190" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Read query: chỉ touch read model, không JOIN, pre-aggregated by city/date.
+  </text>
+  <text x="360" y="218" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">
+    Trade-off: Eventual consistency (read model lag write vài ms-s)
+  </text>
+</svg>
+</div>
+
+<pre><code class="language-java">// COMMAND side
+@Service
+public class CreateTripCommandHandler {
+    @Transactional
+    public void handle(CreateTripCommand cmd) {
+        Trip trip = Trip.create(cmd);
+        tripRepo.save(trip);  // Normalized DB
+        eventBus.publish(new TripCreatedEvent(trip.id(), trip.riderId(), trip.city(), trip.amount()));
+    }
+}
+
+// QUERY side — separate service, separate DB
+@Service
+public class TripReadProjection {
+    private final TripReadRepository readRepo;  // ElasticSearch / denormalized PostgreSQL
+
+    @KafkaListener(topics = "trips")
+    public void on(TripCreatedEvent event) {
+        // Update read model — denormalized, ready for fast query
+        readRepo.save(new TripReadView(
+            event.tripId(),
+            event.city(),
+            event.amount(),
+            event.timestamp(),
+            // Pre-aggregate hourly bucket cho dashboard query
+            event.timestamp().truncatedTo(ChronoUnit.HOURS)
+        ));
+    }
+}
+
+@RestController
+public class ReportingController {
+    private final TripReadRepository readRepo;
+
+    @GetMapping("/api/reports/trips-by-city")
+    public Map&lt;String, Long&gt; tripsByCity(@RequestParam LocalDate date) {
+        // Query read model — single index scan, no JOIN
+        return readRepo.countByDateGroupByCity(date);  // 50ms vs 3s với write DB
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao CQRS có trade-off worth it?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Read và write có pattern khác nhau</strong>: write optimal cho integrity (normalize, FK), read optimal cho speed (denormalize, pre-aggregate). Một schema không thể tối ưu cả hai.</li>
+  <li><strong>Independent scaling</strong>: read 1000× write trong analytics workload. Scale read DB lên 5 replica, write DB giữ 1 primary.</li>
+  <li><strong>Independent technology</strong>: write PostgreSQL (ACID), read ElasticSearch (full-text search) hoặc ClickHouse (analytics).</li>
+  <li><strong>Cost</strong>: eventual consistency (read model lag ms-s). Không phù hợp use case cần read-your-write (user vừa update, refresh phải thấy ngay).</li>
+  </ul>
+</div>
+
+<h3 id="saga">Saga Pattern — Distributed Transaction Without 2PC</h3>
+
+<p><strong>Vấn đề</strong>: Booking trip = phải:</p>
+<ol>
+<li>Reserve driver (DriverService)</li>
+<li>Charge rider (PaymentService)</li>
+<li>Create trip (TripService)</li>
+</ol>
+<p>3 services, 3 DB khác nhau. Không có DB transaction span 3 services. Nếu step 2 fail sau step 1, driver vẫn reserved nhưng không charge → driver waste time.</p>
+
+<h4>Choice A — Orchestration (Central Coordinator)</h4>
+
+<pre><code class="language-java">@Service
+public class BookTripOrchestrator {
+    public TripId book(BookTripCommand cmd) {
+        DriverId driver = null;
+        PaymentId payment = null;
+        try {
+            // Step 1
+            driver = driverService.reserve(cmd.pickup(), cmd.vehicleType());
+
+            // Step 2
+            payment = paymentService.charge(cmd.riderId(), cmd.estimatedFare());
+
+            // Step 3
+            return tripService.create(cmd, driver, payment);
+        } catch (Exception e) {
+            // Compensate in reverse order
+            if (payment != null) paymentService.refund(payment);
+            if (driver != null) driverService.release(driver);
+            throw new BookingFailedException(e);
+        }
+    }
+}</code></pre>
+
+<h4>Choice B — Choreography (Event-Driven)</h4>
+
+<pre><code class="language-java">// TripService
+@Transactional
+public void requestTrip(BookTripCommand cmd) {
+    Trip trip = Trip.requested(cmd);
+    tripRepo.save(trip);
+    eventBus.publish(new TripRequestedEvent(trip.id(), cmd.pickup(), cmd.vehicleType()));
+}
+
+// DriverService listens
+@KafkaListener(topics = "trip-events")
+public void on(TripRequestedEvent e) {
+    try {
+        DriverId driver = driverService.reserve(e.pickup(), e.vehicleType());
+        eventBus.publish(new DriverReservedEvent(e.tripId(), driver));
+    } catch (NoDriverAvailableException ex) {
+        eventBus.publish(new DriverReservationFailedEvent(e.tripId()));
+    }
+}
+
+// PaymentService listens
+@KafkaListener(topics = "trip-events")
+public void on(DriverReservedEvent e) {
+    try {
+        PaymentId p = paymentService.charge(e.riderId(), e.estimatedFare());
+        eventBus.publish(new PaymentChargedEvent(e.tripId(), p));
+    } catch (PaymentFailedException ex) {
+        eventBus.publish(new PaymentFailedEvent(e.tripId()));
+    }
+}
+
+// TripService listens cho confirm hoặc cancel
+@KafkaListener(topics = "trip-events")
+public void on(PaymentChargedEvent e) { tripRepo.confirm(e.tripId()); }
+
+@KafkaListener(topics = "trip-events")
+public void on(PaymentFailedEvent e) {
+    tripRepo.cancel(e.tripId());
+    eventBus.publish(new TripCancelledEvent(e.tripId()));  // Trigger driver release
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Khía cạnh</th><th>Orchestration</th><th>Choreography</th></tr></thead>
+<tbody>
+<tr><td>Flow visibility</td><td>✅ Rõ ràng (1 nơi)</td><td>❌ Phân tán — đọc 5 services mới hiểu</td></tr>
+<tr><td>Add new step</td><td>Sửa orchestrator</td><td>Thêm 1 listener mới</td></tr>
+<tr><td>Debugging</td><td>Dễ — single log</td><td>Khó — phải trace events across services</td></tr>
+<tr><td>Coupling</td><td>Orchestrator coupling với mọi service</td><td>Loose — services chỉ biết events</td></tr>
+<tr><td>Scale</td><td>Orchestrator có thể là bottleneck</td><td>Tự nhiên scale (async)</td></tr>
+<tr><td>Workflow complex</td><td>Tốt — visual workflow (Camunda BPMN)</td><td>Khó — phải reason về interleaving</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Khi nào chọn cái nào?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Orchestration</strong>: workflow phức tạp 5+ steps, business rule "thực sự" có order rõ ràng (booking trip, loan approval), audit trail quan trọng (regulatory). Camunda BPMN giúp visual hóa.</li>
+  <li><strong>Choreography</strong>: workflow đơn giản 2-3 steps, services autonomous, low coupling priority. Phù hợp event-driven architecture.</li>
+  <li><strong>Hybrid</strong>: lớn thì hybrid OK — choreography cho main flow, orchestration cho complex sub-flow.</li>
+  </ul>
+</div>
+</section>
+
+<section id="cascading">
+<h2>3. Cascading Failure — Sai Lầm Chết Người Nhất</h2>
+
+<p>Đây là pattern bạn <strong>phải hiểu rõ</strong> nếu làm microservices. Hiểu sai = production outage tốn triệu đô.</p>
+
+<h3>Timeline 1 cascading failure thực tế</h3>
+
+<div class="log-card">
+<span class="ts">T+0s</span> <span class="msg">NotificationService DB slow (missing index). Response time 50ms → 3000ms</span><br><br>
+<span class="ts">T+5s</span> <span class="msg">TripService call NotificationService → thread blocked 3s</span><br>
+<span class="msg">10 concurrent requests → 10 threads blocked</span><br><br>
+<span class="ts">T+15s</span> <span class="lvl-warn">WARN</span> <span class="msg">TripService thread pool exhausted (200/200 blocked on Notification)</span><br>
+<span class="msg">New trip requests queued → timeout</span><br><br>
+<span class="ts">T+30s</span> <span class="lvl-error">ERROR</span> <span class="msg">API Gateway timeout waiting TripService (5s)</span><br>
+<span class="msg">Returns 504 Gateway Timeout to mobile app</span><br><br>
+<span class="ts">T+45s</span> <span class="lvl-error">ERROR</span> <span class="msg">RETRY STORM: 10,000 users × 3 retries = 30,000 requests</span><br>
+<span class="msg">Tệ hơn nhiều so với normal traffic</span><br><br>
+<span class="ts">T+60s</span> <span class="lvl-error">ERROR</span> <span class="msg">DriverService start failing (overwhelmed)</span><br>
+<span class="msg">PricingService queue full → drop events</span><br><br>
+<span class="ts">T+120s</span> <span class="lvl-error">ERROR</span> <span class="msg">COMPLETE OUTAGE. 5/5 services down. Root cause: 1 missing index in NotificationService DB.</span>
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Mechanism</div>
+  <p>1 slow service → block caller threads → caller's thread pool exhausted → caller fails → caller's caller fails → retry storm khuếch đại traffic → toàn bộ hệ thống chết. Đây là <strong>cascading failure</strong>.</p>
+</div>
+
+<h3 id="circuit-breaker">Circuit Breaker — Fail-Fast Khi Service Sick</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 230" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
+  <defs><style>
+    .closed{fill:#ecfdf5;stroke:#059669;stroke-width:2}
+    .open{fill:#fef2f2;stroke:#dc2626;stroke-width:2}
+    .half{fill:#fffbeb;stroke:#d97706;stroke-width:2}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#475569;stroke-width:1.5;fill:none;marker-end:url(#a7)}
+  </style>
+  <marker id="a7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs>
+
+  <rect x="40" y="80" width="180" height="60" rx="8" class="closed"/>
+  <text x="130" y="105" text-anchor="middle" class="lbl">CLOSED</text>
+  <text x="130" y="125" text-anchor="middle" font-size="11" fill="#475569">Cho requests đi qua bình thường</text>
+
+  <rect x="280" y="80" width="180" height="60" rx="8" class="open"/>
+  <text x="370" y="105" text-anchor="middle" class="lbl">OPEN</text>
+  <text x="370" y="125" text-anchor="middle" font-size="11" fill="#475569">Block requests (fail-fast)</text>
+
+  <rect x="520" y="80" width="180" height="60" rx="8" class="half"/>
+  <text x="610" y="105" text-anchor="middle" class="lbl">HALF_OPEN</text>
+  <text x="610" y="125" text-anchor="middle" font-size="11" fill="#475569">Cho vài requests để test</text>
+
+  <path d="M 220 100 Q 250 70 280 100" class="arr"/>
+  <text x="250" y="62" text-anchor="middle" font-size="10" fill="#dc2626">Failure rate &gt; 50%</text>
+
+  <path d="M 460 100 Q 490 70 520 100" class="arr"/>
+  <text x="490" y="62" text-anchor="middle" font-size="10" fill="#d97706">Sau 30s waitDuration</text>
+
+  <path d="M 600 140 Q 400 200 220 140" class="arr"/>
+  <text x="410" y="195" text-anchor="middle" font-size="10" fill="#059669">3 requests success → recovered</text>
+
+  <path d="M 540 140 Q 420 175 320 140" class="arr"/>
+  <text x="430" y="170" text-anchor="middle" font-size="10" fill="#dc2626">Fail → back to OPEN</text>
+</svg>
+</div>
+
+<pre><code class="language-java">// Resilience4j configuration
+@Configuration
+public class CircuitBreakerConfig {
+    @Bean
+    public CircuitBreakerRegistry registry() {
+        return CircuitBreakerRegistry.of(
+            CircuitBreakerConfig.custom()
+                // Khi nào CLOSED → OPEN
+                .failureRateThreshold(50)              // 50% requests fail → open
+                .slowCallRateThreshold(80)             // 80% slow → open
+                .slowCallDurationThreshold(Duration.ofSeconds(2))
+                .slidingWindowType(COUNT_BASED)
+                .slidingWindowSize(10)                 // Đánh giá trên 10 requests gần nhất
+
+                // OPEN behavior
+                .waitDurationInOpenState(Duration.ofSeconds(30))  // 30s → HALF_OPEN
+
+                // HALF_OPEN behavior
+                .permittedNumberOfCallsInHalfOpenState(3)
+                // 3 calls success → CLOSED, fail → OPEN lại
+                .build()
+        );
+    }
+}
+
+@Service
+@Slf4j
+public class DriverServiceClient {
+    private final CircuitBreaker circuitBreaker;
+    private final RestTemplate restTemplate;
+
+    public DriverInfo findNearbyDriver(Location pickup) {
+        return circuitBreaker.executeSupplier(() -&gt;
+            restTemplate.getForObject(
+                "http://driver-service/api/drivers/nearby?lat={lat}&amp;lng={lng}",
+                DriverInfo.class, pickup.lat(), pickup.lng())
+        );
+    }
+
+    // Fallback khi circuit OPEN
+    public DriverInfo findNearbyDriverFallback(Location pickup, Throwable t) {
+        log.warn("DriverService unavailable, returning cached/default. Error: {}", t.getMessage());
+        // Trả về estimated driver từ cache, hoặc default response
+        return DriverInfo.unavailable("Service temporarily unavailable, please retry");
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Circuit Breaker cứu hệ thống?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Fail-fast</strong>: khi DriverService down, caller không wait 30s timeout → trả về ngay (1ms) → caller threads không bị block.</li>
+  <li><strong>Cho service breathing room</strong>: nếu service đang struggle (high latency), block traffic 30s giúp service recover (clear queue, GC).</li>
+  <li><strong>Graceful degradation</strong>: fallback trả response "limited service" thay vì error. App vẫn usable (limited mode).</li>
+  </ul>
+</div>
+
+<h3 id="bulkhead">Bulkhead — Isolate Thread Pools</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Shared thread pool</div>
+<pre><code class="language-java">// Default Spring có 1 pool 200 threads
+// Cả call Driver + Payment dùng chung
+//
+// DriverService slow → 200 threads
+// đều bị block → Payment cũng không call được</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Isolated pools</div>
+<pre><code class="language-java">@Bean
+public ThreadPoolBulkhead driverBulkhead() {
+  return ThreadPoolBulkhead.of("driver",
+    ThreadPoolBulkheadConfig.custom()
+      .maxThreadPoolSize(20)  // Riêng 20 threads
+      .coreThreadPoolSize(10)
+      .queueCapacity(30)
+      .build());
+}
+
+@Bean
+public ThreadPoolBulkhead paymentBulkhead() {
+  return ThreadPoolBulkhead.of("payment", ...);
+  // Independent pool — Driver slow không
+  // ảnh hưởng Payment threads
+}</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao tên "Bulkhead"?</div>
+  <p>Lấy từ tàu thủy: thân tàu chia thành nhiều khoang kín (bulkheads). Khoang này ngập nước, khoang khác vẫn nổi. Tương tự: 1 service slow chỉ "ngập" pool của nó, không sink toàn bộ app.</p>
+</div>
+
+<h3 id="retry">Retry với Exponential Backoff + Jitter</h3>
+
+<pre><code class="language-java">// ❌ SAI — instant retry, no limit
+@Retryable(maxAttempts = 5)
+public void callDriverService() { /* ... */ }
+// 10,000 clients × 5 retries = 50,000 requests trong vài giây → RETRY STORM
+
+// ✅ ĐÚNG — exponential backoff + jitter + circuit breaker
+@Retryable(
+    maxAttempts = 3,
+    backoff = @Backoff(
+        delay = 1000,         // First retry sau 1s
+        multiplier = 2,       // 1s → 2s → 4s
+        maxDelay = 10000,     // Cap ở 10s
+        random = true         // Jitter: 1s ± random → spread retries không cùng lúc
+    )
+)
+@CircuitBreaker(name = "driverService")  // Nếu fail nhiều → stop retry hoàn toàn
+public void callDriverService() { /* ... */ }</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao cần jitter?</div>
+  <p>Không có jitter: 10,000 clients fail cùng T+0, retry cùng T+1s, T+2s, T+4s → 3 wave spike đồng loạt. Có jitter (random ±50%): retry phân bố [0.5s, 1.5s] → traffic smooth, dễ recover.</p>
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Combo "trinity" chống cascading failure</div>
+  <p><strong>Timeout</strong> + <strong>Circuit Breaker</strong> + <strong>Bulkhead</strong>. Thiếu 1 trong 3, hệ thống dễ chết:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Timeout</strong>: limit max wait per call (1-2s)</li>
+  <li><strong>Circuit Breaker</strong>: stop wasting calls khi downstream sick</li>
+  <li><strong>Bulkhead</strong>: isolate thread pools, contain failure</li>
+  </ul>
+  <p>Plus: retry với jitter, fallback degradation, observability để detect sớm.</p>
+</div>
+</section>
+
+<section id="antipatterns">
+<h2>4. Anti-Patterns</h2>
+
+<h3>#1 Distributed Monolith</h3>
+<pre><code class="language-text">ServiceA → sync call → ServiceB → sync call → ServiceC → sync call → ServiceD
+Latency: 4 × network hop + 4 × timeout potential
+Coupling: deploy A buộc deploy B/C/D cùng version</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao tệ?</div>
+  <p>Có cost của microservices (network, ops, debugging) nhưng <strong>không có benefit</strong> (independent deploy, scaling). Worst of both worlds. Fix: dùng async/events thay sync calls, cache data local để tránh chain.</p>
+</div>
+
+<h3>#2 Nanoservices — Tách quá nhỏ</h3>
+<p>1 service 50-100 LOC, không đủ work để justify network + ops overhead. Mỗi request touch 8 services → 8× latency.</p>
+<p><strong>Fix</strong>: group by bounded context, không phải feature.</p>
+
+<h3>#3 Shared Database</h3>
+<pre><code class="language-text">ServiceA ──┐
+            ├→ shared_db
+ServiceB ──┘</code></pre>
+<p>Schema change tightly couple 2 services. Mất hết benefit của microservices. <strong>Fix</strong>: mỗi service own DB, sync qua event hoặc API.</p>
+
+<h3>#4 No API Versioning</h3>
+<p>Service v2 đổi response schema → mobile app v1 (cũ) bị break. <strong>Fix</strong>: URI versioning (<code>/api/v1/</code>, <code>/api/v2/</code>), support multiple versions, có deprecation timeline.</p>
+
+<h3>#5 No Distributed Tracing</h3>
+<p>User complain "trip booking 10s mới response", engineer mở 5 service logs grep theo trip ID → không biết bottleneck. <strong>Fix</strong>: Jaeger/Zipkin + propagate <code>X-Trace-ID</code> qua MDC + đặt trace ID trong mọi outbound call.</p>
+
+<pre><code class="language-java">@Component
+public class TraceIdFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res,
+            FilterChain chain) throws IOException, ServletException {
+        String traceId = req.getHeader("X-Trace-ID");
+        if (traceId == null) traceId = UUID.randomUUID().toString();
+        MDC.put("traceId", traceId);
+        res.addHeader("X-Trace-ID", traceId);
+        try {
+            chain.doFilter(req, res);
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+}
+
+// Outbound: propagate trace ID
+HttpHeaders headers = new HttpHeaders();
+headers.set("X-Trace-ID", MDC.get("traceId"));
+HttpEntity&lt;?&gt; entity = new HttpEntity&lt;&gt;(null, headers);
+restTemplate.exchange(driverUrl, GET, entity, DriverInfo.class);</code></pre>
+</section>
+
+<section id="interview">
+<h2>5. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Service discovery là gì, vì sao không hardcode IP?</div>
+<div class="a">"Service discovery dynamically tìm services khi chúng scale/restart. Hardcoding break khi instance die hoặc IP đổi. Service registry (Eureka, Consul, K8s DNS) maintain list active instances. Client query registry hoặc gọi load balancer (server-side). Health check remove dead instances. Modern: K8s + DNS đơn giản nhất, không cần lib trong code."</div>
+
+<div class="q">Q: Giải thích API Gateway pattern.</div>
+<div class="a">"Single entry point cho mọi request. Gateway handle auth (JWT validation), rate limiting, request routing, SSL termination, tracing. Prevent client biết internal service locations. Simplify cross-cutting concerns — implement 1 chỗ thay vì duplicate trong 15 services. Trade-off: gateway là single point of failure (cần HA setup) và có thể là bottleneck → phải scale horizontal."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: Design booking trip API microservices. TripService, DriverService, PaymentService. Ensure atomicity.</div>
+<div class="a">"Không có DB transaction span 3 services. 2 approach:<br><br>
+<strong>Orchestration (recommended for complex)</strong>: BookingOrchestrator coordinate steps (reserve driver → charge payment → create trip). Mỗi step có compensation (release driver, refund). Camunda BPMN cho visual workflow + state persistence (recover sau crash).<br><br>
+<strong>Choreography</strong>: TripService publish TripRequestedEvent. DriverService listen, reserve, emit DriverReservedEvent. PaymentService listen, charge, emit PaymentChargedEvent. TripService confirm. Nếu fail giữa chừng, emit compensation events.<br><br>
+Trade-off: Orchestration visible nhưng tight coupling với services. Choreography decoupled nhưng flow implicit, debug khó. Choice: orchestration cho 5+ steps complex workflow (banking, booking), choreography cho 2-3 steps đơn giản."</div>
+
+<div class="q">Q: Cách prevent cascading failures khi A → B → C?</div>
+<div class="a">"<strong>Trinity</strong>: Timeout + Circuit Breaker + Bulkhead.<br><br>
+<strong>Timeout</strong>: mỗi call có max wait (1-2s). Tránh thread block vô hạn.<br>
+<strong>Circuit Breaker</strong>: nếu downstream fail rate &gt; 50% trong 10 requests → OPEN state, fail-fast 30s. HALF_OPEN cho 3 test calls, success → CLOSED (recovered).<br>
+<strong>Bulkhead</strong>: mỗi external service call có thread pool riêng (10-20 threads). Nếu DriverService slow chỉ ảnh hưởng pool của nó, không drain pool của PaymentService.<br><br>
+<strong>Thêm</strong>: retry với exponential backoff + jitter (tránh retry storm), fallback (degrade gracefully thay error), observability (Prometheus metric → alert nếu circuit OPEN).<br><br>
+<strong>Critical</strong>: thiếu 1 trong 3 của trinity → hệ thống dễ cascade. Có đủ 3 → 1 service down chỉ ảnh hưởng 1 chức năng, app vẫn hoạt động limited."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: RideZ có 20 microservices. Design observability stack: (a) service nào slow? (b) request nào fail? (c) vì sao request X fail across 5 services?</div>
+<div class="a">"<strong>4 trụ cột observability</strong>:<br><br>
+<strong>1. Distributed Tracing (Jaeger/Tempo)</strong>: trace ID propagate qua header X-Request-ID + MDC. Mỗi service log span (start/end timestamp, parent span ID). UI hiển thị waterfall: Gateway[1ms] → TripService[50ms] → DriverService[200ms slow!]. <strong>Trả lời (a) và (c)</strong>.<br><br>
+<strong>2. Structured Logs (ELK / Loki)</strong>: centralized JSON logs với traceId, service, level, message. Query trong Kibana: <code>traceId:xyz</code> → toàn bộ logs của request đó across services. <strong>Trả lời (b) và (c)</strong>.<br><br>
+<strong>3. Metrics (Prometheus + Grafana)</strong>: mỗi service expose <code>/actuator/prometheus</code> với P50/P95/P99 latency, error rate, RPS. Dashboard show top 10 slowest service realtime. <strong>Trả lời (a)</strong>.<br><br>
+<strong>4. Alerts (Alertmanager + PagerDuty)</strong>: rule như <em>"error rate &gt; 5% trong 5 min → page on-call"</em>, <em>"P99 latency &gt; 2s → warning"</em>. On-call nhận alert, mở Grafana dashboard → biết service nào, mở Jaeger trace → biết bottleneck. Mở Kibana logs → biết exception cụ thể.<br><br>
+<strong>End-to-end example</strong>: alert &quot;TripService error rate 8%&quot; → Grafana cho thấy spike từ 14:32 → Jaeger trace 14:32 cho thấy DriverService timeout 5s → Kibana log DriverService 14:32 cho thấy <code>SQLException: deadlock</code>. <strong>Root cause: DriverService DB deadlock</strong>. Total debug time: 5 phút thay vì hours.<br><br>
+<strong>Investment</strong>: setup tốn 2-4 tuần engineering. ROI: mỗi outage giảm từ hours xuống minutes, mỗi P1 incident saving thousand $ cost."</div>
+</div>
+</section>
+
+<footer>
+<div>📁 #17 Microservices Patterns · Phase 4 — Architecture</div>
+<div>Tiếp theo: #18 Event-Driven Architecture</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

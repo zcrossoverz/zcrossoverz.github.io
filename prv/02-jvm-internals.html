@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#02 - JVM Internals | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 1 - Core Java Mastery<span class="sep">/</span><strong>#02 JVM Internals</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#problem">1. Bài toán thực tế</a>
+    <a href="#memory">2. JVM memory</a>
+    <div class="sub">
+      <a href="#memory-budget">Container memory budget</a>
+      <a href="#allocation">Object allocation</a>
+      <a href="#object-layout">Object layout</a>
+    </div>
+    <a href="#gc">3. Garbage collection</a>
+    <div class="sub">
+      <a href="#gc-roots">GC roots</a>
+      <a href="#generational">Generational hypothesis</a>
+      <a href="#g1-zgc">G1GC vs ZGC</a>
+      <a href="#gc-log">Đọc GC log</a>
+    </div>
+    <a href="#leak">4. Memory leak</a>
+    <div class="sub">
+      <a href="#leak-patterns">Leak patterns</a>
+      <a href="#heap-dump">Heap dump analysis</a>
+    </div>
+    <a href="#classloader">5. ClassLoader & JIT</a>
+    <a href="#production">6. Production setup</a>
+    <a href="#profiling">7. JFR & profiling</a>
+    <div class="sub">
+      <a href="#jfr">Java Flight Recorder</a>
+      <a href="#flamegraph">Flame graph</a>
+      <a href="#gc-tuning">GC tuning cookbook</a>
+      <a href="#native-memory">Native/direct/metaspace</a>
+      <a href="#case-study">Case study</a>
+    </div>
+    <a href="#debug">8. Debug playbook</a>
+    <a href="#interview">9. Interview framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase 1 - Core Java Mastery - Production critical</span>
+  <h1>#02 - JVM Internals: GC Tuning, Memory Leak, Heap Dump, ClassLoader</h1>
+  <p class="lead">JVM là runtime vận hành code Java của bạn trong production. Senior backend cần biết JVM dùng memory thế nào, GC quyết định object sống/chết ra sao, vì sao memory leak vẫn xảy ra trong Java, và cần lấy evidence gì khi service OOM hoặc pause dài.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Production debug</div></div>
+    <div class="meta-item"><div class="k">Ví dụ chính</div><div class="v">Media processing service</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#01 Thread, #23 Performance, #26 Observability</div></div>
+    <div class="meta-item"><div class="k">Đầu ra</div><div class="v">Đọc GC log, heap dump, JVM flags</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">JVM Internals Là Kiến Thức Sống Còn Khi Production Có Sự Cố</h2>
+<p>Khi service chậm, lỗi không phải lúc nào cũng nằm ở SQL hay API bên ngoài. Có thể JVM đang dừng thế giới để GC, heap bị leak, thread stack quá nhiều, direct memory bị Netty/Kafka dùng hết, hoặc classloader giữ metadata không được unload. Nếu chỉ biết "Java có GC tự dọn rác", bạn sẽ không biết phải lấy heap dump, thread dump hay GC log trước khi restart.</p>
+<p>Bài này viết theo kiểu giáo trình vận hành: trước hết học bản đồ memory, sau đó học GC roots và reachability, rồi học cách đọc dấu hiệu leak, cuối cùng là playbook debug và cấu hình production.</p>
+
+<div class="callout why">
+  <div class="ctitle">Cách học JVM để không hiểu giả</div>
+  <p>Đừng học JVM bằng cách thuộc tên vùng nhớ. Hãy học theo câu hỏi incident: service OOM vì heap hay non-heap? GC pause dài vì allocation spike hay leak? Heap dump object nào giữ memory? GC root nào giữ nó sống? Nếu restart ngay mà không lấy evidence, bạn chỉ xóa dấu vết.</p>
+</div>
+
+<div class="pillar-grid">
+  <div class="pillar"><div class="num">Layer 1</div><h4>Memory map</h4><p>Biết vùng nào thuộc heap, vùng nào native/off-heap, vùng nào do GC quản lý.</p></div>
+  <div class="pillar"><div class="num">Layer 2</div><h4>Reachability</h4><p>GC chỉ quan tâm object còn reachable từ GC roots hay không.</p></div>
+  <div class="pillar"><div class="num">Layer 3</div><h4>Pattern recognition</h4><p>Spike rồi giảm khác với after-GC baseline tăng đều.</p></div>
+  <div class="pillar"><div class="num">Layer 4</div><h4>Forensics</h4><p>Heap dump, GC log, thread dump là dữ liệu pháp y của JVM incident.</p></div>
+</div>
+</section>
+
+<section id="problem">
+<h2>1. Bài Toán Thực Tế - Service Resize Ảnh Chết Mỗi 3 Giờ</h2>
+<p>Một service xử lý ảnh sản phẩm nhận file từ queue, resize nhiều kích thước rồi upload lên object storage. Sau deploy bản mới, service bắt đầu có pattern: heap tăng đều, CPU GC tăng, latency upload tăng từ 200ms lên 8s, rồi pod restart vì <code>OutOfMemoryError</code>.</p>
+
+<div class="log-card">
+T+00m heap after GC: 420MB<br>
+T+45m heap after GC: 920MB<br>
+T+90m heap after GC: 1.5GB<br>
+T+150m heap after GC: 2.4GB<br>
+T+180m java.lang.OutOfMemoryError: Java heap space
+</div>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: cache không giới hạn</div>
+<pre><code class="language-java">@Service
+public class ImageMetadataService {
+    private static final Map&lt;String, Metadata&gt; cache = new HashMap&lt;&gt;();
+
+    public Metadata metadata(String imageId) {
+        return cache.computeIfAbsent(imageId, this::loadMetadata);
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: bounded cache</div>
+<pre><code class="language-java">@Service
+public class ImageMetadataService {
+    private final Cache&lt;String, Metadata&gt; cache = Caffeine.newBuilder()
+        .maximumSize(20_000)
+        .expireAfterWrite(Duration.ofMinutes(30))
+        .recordStats()
+        .build();
+
+    public Metadata metadata(String imageId) {
+        return cache.get(imageId, this::loadMetadata);
+    }
+}</code></pre>
+  </div>
+</div>
+
+<p>GC không collect được object trong static map vì object vẫn reachable từ GC root. Với JVM, "không còn business value" không đồng nghĩa "garbage". Chỉ object unreachable mới là garbage.</p>
+</section>
+
+<section id="memory">
+<h2>2. JVM Memory Layout</h2>
+<p>Một JVM process không chỉ có heap. Khi debug memory trong container, phải tính heap, metaspace, thread stacks, direct memory, code cache và native overhead.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 780 360" role="img" aria-label="JVM memory layout">
+  <rect x="25" y="35" width="730" height="290" rx="12" fill="#f8fafc" stroke="#cbd5e1"></rect>
+  <text x="390" y="65" text-anchor="middle" font-size="15">JVM Process</text>
+  <rect x="55" y="90" width="330" height="190" rx="10" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="220" y="120" text-anchor="middle" font-size="14">Heap - GC managed</text>
+  <rect x="80" y="145" width="135" height="95" rx="8" fill="#dbeafe" stroke="#0284c7"></rect>
+  <text x="148" y="175" text-anchor="middle" font-size="13">Young Gen</text>
+  <text x="148" y="198" text-anchor="middle" font-size="12" fill="#475569">Eden + Survivor</text>
+  <rect x="235" y="145" width="125" height="95" rx="8" fill="#f5f3ff" stroke="#7c3aed"></rect>
+  <text x="298" y="175" text-anchor="middle" font-size="13">Old Gen</text>
+  <text x="298" y="198" text-anchor="middle" font-size="12" fill="#475569">long-lived</text>
+  <rect x="430" y="90" width="135" height="80" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="498" y="122" text-anchor="middle" font-size="13">Metaspace</text>
+  <text x="498" y="145" text-anchor="middle" font-size="12" fill="#475569">class metadata</text>
+  <rect x="590" y="90" width="135" height="80" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="658" y="122" text-anchor="middle" font-size="13">Thread Stacks</text>
+  <text x="658" y="145" text-anchor="middle" font-size="12" fill="#475569">per thread</text>
+  <rect x="430" y="200" width="135" height="80" rx="8" fill="#fef2f2" stroke="#dc2626"></rect>
+  <text x="498" y="232" text-anchor="middle" font-size="13">Direct Memory</text>
+  <text x="498" y="255" text-anchor="middle" font-size="12" fill="#475569">off-heap buffer</text>
+  <rect x="590" y="200" width="135" height="80" rx="8" fill="#f0f9ff" stroke="#0284c7"></rect>
+  <text x="658" y="232" text-anchor="middle" font-size="13">Code Cache</text>
+  <text x="658" y="255" text-anchor="middle" font-size="12" fill="#475569">JIT native code</text>
+</svg>
+<div class="caption">Container 4GB không thể set <code>-Xmx4g</code>; JVM còn cần memory ngoài heap.</div>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Vùng</th><th>Chứa gì</th><th>Triệu chứng khi lỗi</th><th>Debug bằng</th></tr></thead>
+  <tbody>
+    <tr><td>Heap</td><td>Object, array</td><td><code>Java heap space</code>, GC pause, OOM</td><td>Heap dump, GC log, MAT</td></tr>
+    <tr><td>Metaspace</td><td>Class metadata</td><td><code>Metaspace</code> OOM</td><td>Class histogram, classloader analysis</td></tr>
+    <tr><td>Thread stack</td><td>Stack frame, local variables</td><td>Native memory high, too many threads</td><td>Thread dump, OS metrics</td></tr>
+    <tr><td>Direct memory</td><td>Off-heap ByteBuffer</td><td><code>Direct buffer memory</code></td><td>NMT, Netty metrics</td></tr>
+    <tr><td>Code cache</td><td>JIT compiled code</td><td>Compilation disabled, perf drop</td><td>JIT logs, JVM flags</td></tr>
+  </tbody>
+</table>
+</div>
+
+<section id="memory-budget">
+<h3>2.1 Container Memory Budget</h3>
+<p>Một lỗi production phổ biến là set <code>-Xmx</code> gần bằng toàn bộ memory limit của container. JVM không chỉ dùng heap. Nếu container 4GB và bạn set <code>-Xmx4g</code>, process vẫn cần metaspace, thread stacks, direct buffers, code cache và native memory. Kết quả có thể là container bị OOMKilled bởi kernel mà Java không kịp ném <code>OutOfMemoryError</code>.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Container 4GB</th><th>Budget gợi ý</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td>Java heap</td><td>2.5GB - 3GB</td><td>Vùng object chính, GC quản lý.</td></tr>
+    <tr><td>Metaspace</td><td>256MB - 512MB</td><td>Class metadata, proxy, framework classes.</td></tr>
+    <tr><td>Thread stacks</td><td>200MB - 500MB</td><td>Ví dụ 400 threads * 1MB stack là 400MB.</td></tr>
+    <tr><td>Direct memory</td><td>256MB - 1GB</td><td>Netty, NIO, Kafka, compression buffers.</td></tr>
+    <tr><td>Code cache + native overhead</td><td>100MB+</td><td>JIT compiled code và JVM native structures.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">Container OOM khác Java OOM</div>
+  <p>Java OOM thường có stack trace và có thể tạo heap dump. Container OOMKilled có thể chỉ hiện trong Kubernetes event, không có heap dump. Vì vậy heap sizing phải để dư native memory.</p>
+</div>
+</section>
+
+<section id="allocation">
+<h3>2.2 Object Allocation Path</h3>
+<p>Hầu hết object mới sinh ở Eden. JVM tối ưu allocation rất mạnh bằng TLAB: mỗi thread có một vùng nhỏ trong Eden để tự cấp phát object mà không cần lock global. Allocation trong Java vì vậy thường rất rẻ; vấn đề không phải "tạo object nào cũng xấu", mà là allocation rate quá cao làm Minor GC chạy liên tục hoặc object sống quá lâu bị promote lên Old Gen.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 760 245" role="img" aria-label="Object allocation path">
+  <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <rect x="40" y="95" width="115" height="58" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="98" y="128" text-anchor="middle" font-size="12">new Object()</text>
+  <line x1="155" y1="124" x2="220" y2="124" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <rect x="220" y="95" width="115" height="58" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="278" y="128" text-anchor="middle" font-size="12">TLAB</text>
+  <line x1="335" y1="124" x2="400" y2="124" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <rect x="400" y="95" width="115" height="58" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="458" y="128" text-anchor="middle" font-size="12">Eden</text>
+  <line x1="515" y1="124" x2="580" y2="124" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <rect x="580" y="95" width="130" height="58" rx="8" fill="#f5f3ff" stroke="#7c3aed"></rect>
+  <text x="645" y="128" text-anchor="middle" font-size="12">Survivor/Old</text>
+</svg>
+<div class="caption">Object ngắn hạn chết ở Young Gen là bình thường. Object sống lâu bất thường mới đáng nghi.</div>
+</div>
+
+<p>Ví dụ: tạo DTO response ngắn hạn cho mỗi request thường ổn. Nhưng collect 2 triệu DTO vào list để export report có thể gây pressure lớn. Khi xử lý data lớn, hãy stream/chunk thay vì materialize toàn bộ.</p>
+</section>
+
+<section id="object-layout">
+<h3>2.3 Object Layout: Vì Sao Nhiều Object Nhỏ Cũng Tốn Memory</h3>
+<p>Một object Java không chỉ chứa field của bạn. Nó có object header, alignment/padding, reference fields và có thể bị nén reference hoặc không tùy heap size/JVM config. Vì vậy một object "chỉ có vài field" vẫn có overhead đáng kể.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Thành phần</th><th>Ý nghĩa</th></tr></thead>
+  <tbody>
+    <tr><td>Object header</td><td>Mark word, class pointer, lock/hash metadata.</td></tr>
+    <tr><td>Instance fields</td><td>Primitive values và references tới object khác.</td></tr>
+    <tr><td>Padding/alignment</td><td>JVM align object size theo boundary nhất định.</td></tr>
+    <tr><td>Referenced objects</td><td><code>String</code>, <code>BigDecimal</code>, <code>List</code> kéo theo object graph khác.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">Học bằng đo đạc</div>
+  <p>Khi cần biết object size thật, dùng JOL (Java Object Layout) trong môi trường lab. Đừng đoán memory chỉ bằng cách cộng field size.</p>
+</div>
+</section>
+</section>
+
+<section id="gc">
+<h2>3. Garbage Collection</h2>
+<p>GC không "xóa object bạn không dùng". GC bắt đầu từ GC roots, đi theo reference graph. Object nào reachable thì sống; object nào unreachable thì collect. Vì vậy leak trong Java là object vẫn reachable dù business không cần nữa.</p>
+
+<section id="gc-roots">
+<h3>3.1 GC Roots</h3>
+<p>GC roots là điểm bắt đầu của graph traversal. Từ roots, JVM đi theo reference tới object khác. Những object đi tới được là live. Những object không đi tới được là garbage.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>GC Root</th><th>Ví dụ</th><th>Leak thường gặp</th></tr></thead>
+  <tbody>
+    <tr><td>Thread stack</td><td>Local variable trong method đang chạy</td><td>Task giữ list lớn quá lâu trong stack frame.</td></tr>
+    <tr><td>Static field</td><td><code>static Map</code>, singleton registry</td><td>Cache không giới hạn, global list.</td></tr>
+    <tr><td>JNI/native reference</td><td>Native library giữ object</td><td>Resource wrapper không close đúng.</td></tr>
+    <tr><td>Monitor lock</td><td>Object đang bị synchronized</td><td>Ít phổ biến, nhưng object locked vẫn reachable.</td></tr>
+    <tr><td>Class metadata</td><td>Class object, classloader</td><td>ClassLoader leak khi plugin/hot reload.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<div class="diagram">
+<svg viewBox="0 0 760 290" role="img" aria-label="GC roots reachability">
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <rect x="45" y="55" width="145" height="65" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="118" y="92" text-anchor="middle" font-size="13">GC Roots</text>
+  <line x1="190" y1="88" x2="275" y2="88" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="275" y="55" width="135" height="65" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="342" y="92" text-anchor="middle" font-size="13">Static Map</text>
+  <line x1="410" y1="88" x2="500" y2="88" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="500" y="55" width="175" height="65" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="588" y="92" text-anchor="middle" font-size="13">Metadata objects</text>
+  <rect x="275" y="180" width="135" height="65" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-dasharray="6 4"></rect>
+  <text x="342" y="207" text-anchor="middle" font-size="13">Unreachable</text>
+  <text x="342" y="228" text-anchor="middle" font-size="12" fill="#475569">collected</text>
+</svg>
+<div class="caption">Leak path thường chính là đường reference từ GC root tới object chiếm heap.</div>
+</div>
+
+<section id="generational">
+<h3>3.2 Generational Hypothesis</h3>
+<p>Generational GC dựa trên quan sát: phần lớn object chết trẻ, một số ít sống lâu. Vì vậy JVM tối ưu Young Gen để collect nhanh object ngắn hạn, và Old Gen cho object sống lâu.</p>
+<ul>
+  <li><strong>Eden</strong>: object mới sinh.</li>
+  <li><strong>Survivor spaces</strong>: object sống qua một vài Minor GC.</li>
+  <li><strong>Old Gen</strong>: object sống đủ lâu hoặc object lớn được promote.</li>
+</ul>
+
+<div class="callout why">
+  <div class="ctitle">Tại sao leak thường hiện ở Old Gen?</div>
+  <p>Object leak thường sống qua nhiều GC vì vẫn reachable từ static map, queue, ThreadLocal hoặc listener. Sau vài cycle, chúng được promote lên Old Gen. Vì vậy old-gen after-GC baseline tăng đều là dấu hiệu quan trọng.</p>
+</div>
+</section>
+
+<h3>3.3 Minor GC, Major GC, Full GC</h3>
+<p>Object mới thường sinh ở Eden. Eden đầy thì Minor GC chạy, object sống được copy sang Survivor hoặc promote lên Old Gen. Old Gen đầy hoặc pressure cao thì Major/Full GC đắt hơn nhiều. Dấu hiệu leak là sau mỗi Full GC, heap used vẫn không quay về baseline.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>GC</th><th>Khi nào</th><th>Pause</th><th>Ý nghĩa khi xuất hiện nhiều</th></tr></thead>
+  <tbody>
+    <tr><td>Minor GC</td><td>Young Gen đầy</td><td>Thường ngắn</td><td>Allocation rate cao, object ngắn hạn nhiều</td></tr>
+    <tr><td>Major/Old GC</td><td>Old Gen pressure</td><td>Dài hơn</td><td>Object sống lâu nhiều, có thể leak</td></tr>
+    <tr><td>Full GC</td><td>JVM cần thu gom mạnh hoặc failure</td><td>Stop-the-world dài</td><td>Dấu hiệu nghiêm trọng nếu lặp lại</td></tr>
+  </tbody>
+</table>
+</div>
+
+<section id="g1-zgc">
+<h3>3.4 G1GC vs ZGC: Mental Model</h3>
+<p>G1GC chia heap thành nhiều region và ưu tiên collect region có nhiều garbage. Nó cố giữ pause gần mục tiêu bạn cấu hình, ví dụ <code>MaxGCPauseMillis=200</code>, nhưng đây là mục tiêu mềm, không phải SLA guarantee.</p>
+<p>ZGC thiết kế cho low-latency, làm nhiều việc concurrent với application thread để pause rất ngắn. Nó hợp với heap lớn và workload nhạy latency, nhưng yêu cầu Java version phù hợp và cần quan sát overhead thực tế.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Collector</th><th>Mục tiêu</th><th>Dùng khi</th><th>Trade-off</th></tr></thead>
+  <tbody>
+    <tr><td>G1GC</td><td>Balance throughput/latency</td><td>Service backend general purpose</td><td>Cần heap headroom, pause target không phải guarantee tuyệt đối</td></tr>
+    <tr><td>ZGC</td><td>Pause rất thấp</td><td>Latency-sensitive, heap lớn</td><td>Java version mới, overhead và tuning khác</td></tr>
+    <tr><td>Parallel GC</td><td>Throughput tối đa</td><td>Batch/offline job</td><td>Pause dài hơn, không hợp API latency nghiêm</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="gc-log">
+<h3>3.5 Đọc GC Log: Nhìn Baseline, Không Chỉ Nhìn Peak</h3>
+<p>GC log có thể trông đáng sợ, nhưng với mục tiêu interview/production debug, hãy tập trung vào vài câu hỏi: pause bao lâu, trước/sau GC còn bao nhiêu heap, Old Gen sau GC có giảm về baseline không, có Full GC lặp lại không.</p>
+<pre><code class="language-text">[12.345s][info][gc] GC(42) Pause Young (Normal) 512M-&gt;180M(2048M) 35.2ms
+[96.100s][info][gc] GC(87) Pause Young (Normal) 980M-&gt;620M(2048M) 48.1ms
+[180.222s][info][gc] GC(130) Pause Full (G1 Compaction Pause) 1900M-&gt;1780M(2048M) 2100ms</code></pre>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Quan sát</th><th>Nghĩa</th><th>Hành động</th></tr></thead>
+  <tbody>
+    <tr><td><code>512M-&gt;180M</code></td><td>GC giải phóng tốt</td><td>Bình thường nếu pause ngắn.</td></tr>
+    <tr><td><code>1900M-&gt;1780M</code></td><td>Full GC nhưng gần như không giải phóng</td><td>Nghi leak hoặc live set quá lớn.</td></tr>
+    <tr><td>Full GC lặp lại</td><td>JVM đang cố cứu heap</td><td>Lấy heap dump, giảm traffic nếu cần.</td></tr>
+    <tr><td>Young GC rất dày</td><td>Allocation rate cao</td><td>Profile allocation, xem object tạm.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section id="leak">
+<h2>4. Memory Leak: Cách Nhìn Đúng</h2>
+<p>Memory leak trong Java không phải "GC hỏng". Leak là reference graph còn giữ object. Các pattern phổ biến trong backend:</p>
+<section id="leak-patterns">
+<h3>4.1 Leak Patterns Hay Gặp</h3>
+<ul>
+  <li>Static map/list không giới hạn.</li>
+  <li>Cache thiếu eviction hoặc TTL.</li>
+  <li><code>ThreadLocal</code> không <code>remove()</code> trong thread pool.</li>
+  <li>Listener/callback đăng ký nhưng không unregister.</li>
+  <li>Queue tích tụ vì consumer chậm hơn producer.</li>
+  <li>Load toàn bộ file/report vào memory thay vì stream/chunk.</li>
+</ul>
+
+<h4>ThreadLocal Leak</h4>
+<pre><code class="language-java">public class RequestContext {
+    private static final ThreadLocal&lt;UserContext&gt; CTX = new ThreadLocal&lt;&gt;();
+
+    public static void set(UserContext context) {
+        CTX.set(context);
+    }
+
+    public static void clear() {
+        CTX.remove();
+    }
+}
+
+public void handle(Request request) {
+    try {
+        RequestContext.set(buildContext(request));
+        doHandle(request);
+    } finally {
+        RequestContext.clear(); // bắt buộc vì thread pool reuse thread
+    }
+}</code></pre>
+
+<h4>Queue Leak Do Backpressure Thiếu</h4>
+<pre><code class="language-java">// Sai: producer nhanh hơn consumer, queue unbounded
+BlockingQueue&lt;ImageJob&gt; queue = new LinkedBlockingQueue&lt;&gt;();
+
+// Đúng hơn: bounded queue + rejected/backpressure policy
+BlockingQueue&lt;ImageJob&gt; queue = new ArrayBlockingQueue&lt;&gt;(10_000);</code></pre>
+
+<h4>Listener Leak</h4>
+<p>Listener leak xảy ra khi object đăng ký callback vào publisher sống lâu hơn nó, nhưng không unregister. Publisher giữ reference tới listener, listener giữ object graph phía sau, GC không collect được.</p>
+<pre><code class="language-java">public class PreviewSession implements AutoCloseable {
+    private final EventBus eventBus;
+    private final EventListener listener;
+
+    public PreviewSession(EventBus eventBus) {
+        this.eventBus = eventBus;
+        this.listener = event -&gt; refreshPreview(event);
+        this.eventBus.register(listener);
+    }
+
+    @Override
+    public void close() {
+        eventBus.unregister(listener);
+    }
+}</code></pre>
+
+<h4>Static Cache Leak</h4>
+<pre><code class="language-java">// Sai: static cache không có eviction
+private static final Map&lt;String, byte[]&gt; thumbnails = new ConcurrentHashMap&lt;&gt;();
+
+// Tốt hơn: cache có maximum size/weight
+private final Cache&lt;String, byte[]&gt; thumbnails = Caffeine.newBuilder()
+    .maximumWeight(256 * 1024 * 1024)
+    .weigher((String key, byte[] value) -&gt; value.length)
+    .expireAfterAccess(Duration.ofMinutes(20))
+    .build();</code></pre>
+</section>
+
+<section id="heap-dump">
+<h3>4.2 Heap Dump Analysis Với MAT</h3>
+<p>Khi mở heap dump, đừng chỉ hỏi "class nào nhiều instance nhất". Hãy hỏi "object nào dominate nhiều memory nhất" và "GC root nào giữ nó sống". Dominator tree và path to GC roots thường đưa bạn tới nguyên nhân thật.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>View trong MAT</th><th>Dùng để</th><th>Câu hỏi cần trả lời</th></tr></thead>
+  <tbody>
+    <tr><td>Leak Suspects Report</td><td>Gợi ý nhanh vùng nghi leak</td><td>MAT nghi object graph nào?</td></tr>
+    <tr><td>Dominator Tree</td><td>Tìm object giữ retained heap lớn</td><td>Object nào nếu collect được sẽ giải phóng nhiều nhất?</td></tr>
+    <tr><td>Histogram</td><td>Đếm instance theo class</td><td>Class nào tăng bất thường?</td></tr>
+    <tr><td>Path to GC Roots</td><td>Tìm reference chain</td><td>Static field, thread, classloader hay queue nào giữ object?</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-text">Example retention path:
+GC Root: static field ImageMetadataService.cache
+  - ConcurrentHashMap.table
+  - Node[]
+  - Node.value
+  - Metadata
+  - byte[] embeddedPreview
+
+Conclusion: static cache giữ preview bytes, không có eviction.</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">So sánh hai heap dump</div>
+  <p>Nếu có thể, lấy heap dump lúc service mới chạy ổn và lúc gần OOM. So sánh histogram theo class instance count và retained heap để thấy class nào tăng theo thời gian.</p>
+</div>
+</section>
+</section>
+
+<section id="classloader">
+<h2>5. ClassLoader & JIT</h2>
+<h3>5.1 ClassLoader</h3>
+<p>ClassLoader nạp class metadata vào Metaspace. Parent delegation giúp tránh class core bị override sai. Với plugin/hot reload, nếu custom classloader bị giữ reference, class metadata không unload được và Metaspace tăng mãi.</p>
+<div class="diagram">
+<svg viewBox="0 0 760 250" role="img" aria-label="ClassLoader hierarchy">
+  <rect x="280" y="30" width="200" height="50" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="380" y="60" text-anchor="middle" font-size="13">Bootstrap ClassLoader</text>
+  <rect x="280" y="100" width="200" height="50" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="380" y="130" text-anchor="middle" font-size="13">Platform ClassLoader</text>
+  <rect x="280" y="170" width="200" height="50" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="380" y="200" text-anchor="middle" font-size="13">Application ClassLoader</text>
+</svg>
+<div class="caption">App classloader hỏi parent trước. Đây là parent delegation model.</div>
+</div>
+
+<h3>5.2 JIT Warm-up</h3>
+<p>Java ban đầu interpret bytecode. Method nóng được JIT compile sang native code. Vì vậy benchmark Java phải có warm-up; đo ngay sau startup thường sai. Trong production autoscaling, pod mới cũng cần warm-up trước khi nhận toàn bộ traffic.</p>
+
+<h3>5.3 ClassLoader Leak Trong Plugin/Hot Reload</h3>
+<p>Class chỉ unload khi classloader của nó unreachable. Nếu một thread, static field, ThreadLocal hoặc singleton registry còn giữ object thuộc plugin classloader, toàn bộ classloader và class metadata phía sau vẫn sống trong Metaspace.</p>
+<pre><code class="language-java">public class PluginManager {
+    private URLClassLoader currentLoader;
+
+    public void loadPlugin(Path jar) throws IOException {
+        URLClassLoader loader = new URLClassLoader(
+            new URL[] { jar.toUri().toURL() },
+            getClass().getClassLoader()
+        );
+        this.currentLoader = loader;
+    }
+
+    public void unload() throws IOException {
+        if (currentLoader != null) {
+            currentLoader.close();      // release jar/native resources
+            currentLoader = null;       // release strong reference
+        }
+    }
+}</code></pre>
+<p>Trong thực tế, unload còn cần dừng thread do plugin tạo, unregister listener, clear ThreadLocal và xóa static registry. Chỉ <code>close()</code> classloader chưa đủ nếu object graph vẫn còn reference.</p>
+
+<h3>5.4 JIT Và Benchmark Sai</h3>
+<p>Java benchmark bằng vòng for và <code>System.currentTimeMillis()</code> rất dễ sai vì JIT warm-up, dead-code elimination, constant folding, escape analysis. Với microbenchmark, dùng JMH. Với production performance, dùng profiler và metrics thật.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: đo thủ công dễ bị JIT tối ưu mất</div>
+<pre><code class="language-java">long start = System.nanoTime();
+for (int i = 0; i &lt; 1_000_000; i++) {
+    new BigDecimal("123").toString();
+}
+System.out.println(System.nanoTime() - start);</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng hướng: dùng JMH</div>
+<pre><code class="language-java">@Benchmark
+public String formatAmount() {
+    return amount.toPlainString();
+}</code></pre>
+  </div>
+</div>
+</section>
+
+<section id="production">
+<h2>6. Production Setup</h2>
+<h3>6.1 JVM Flags Cơ Bản</h3>
+<pre><code class="language-bash">java \
+  -Xms2g -Xmx2g \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:MaxMetaspaceSize=512m \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/var/log/app/heapdump.hprof \
+  -XX:+ExitOnOutOfMemoryError \
+  -Xlog:gc*:file=/var/log/app/gc.log:time,uptime:filecount=5,filesize=20m \
+  -jar app.jar</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Flag</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td><code>-Xms = -Xmx</code></td><td>Tránh resize heap gây pause và hành vi khó đoán.</td></tr>
+    <tr><td><code>MaxMetaspaceSize</code></td><td>Fail fast khi classloader leak thay vì ăn hết native memory.</td></tr>
+    <tr><td><code>HeapDumpOnOutOfMemoryError</code></td><td>Giữ evidence để post-mortem.</td></tr>
+    <tr><td><code>ExitOnOutOfMemoryError</code></td><td>Process chết sạch để orchestrator restart, tránh limping state.</td></tr>
+    <tr><td><code>Xlog:gc</code></td><td>Cho phép phân tích pause, allocation, promotion sau incident.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>6.2 Container Sizing</h3>
+<p>Không set heap bằng toàn bộ RAM container. Cần để chỗ cho metaspace, direct memory, code cache, thread stacks và native library. Với container 4GB, heap 2.5GB-3GB thường hợp lý hơn 4GB.</p>
+
+<h3>6.3 Monitoring Metrics Cần Có</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Metric</th><th>Dấu hiệu xấu</th><th>Ý nghĩa</th></tr></thead>
+  <tbody>
+    <tr><td>GC pause max/p99</td><td>Vượt SLA latency</td><td>Stop-the-world đang ảnh hưởng request.</td></tr>
+    <tr><td>Heap used after GC</td><td>Tăng đều qua thời gian</td><td>Nghi leak hoặc live set tăng.</td></tr>
+    <tr><td>Old Gen occupancy</td><td>&gt;80% kéo dài</td><td>Áp lực Old Gen, nguy cơ Full GC.</td></tr>
+    <tr><td>Allocation rate</td><td>Tăng mạnh sau release</td><td>Code mới tạo nhiều object tạm.</td></tr>
+    <tr><td>Thread count</td><td>Tăng không giảm</td><td>Thread leak hoặc executor tạo quá nhiều thread.</td></tr>
+    <tr><td>Direct memory used</td><td>Gần limit</td><td>Off-heap buffer pressure.</td></tr>
+    <tr><td>Class loaded count</td><td>Tăng đều không unload</td><td>Nghi classloader leak.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>6.4 Native Memory Tracking</h3>
+<p>Khi RSS của process cao hơn nhiều so với heap, bật Native Memory Tracking trong môi trường tái hiện để xem native memory đi đâu. NMT có overhead, không bật bừa bãi mọi nơi nếu chưa đánh giá.</p>
+<pre><code class="language-bash"># Start JVM with:
+-XX:NativeMemoryTracking=summary
+
+# Inspect:
+jcmd &lt;pid&gt; VM.native_memory summary</code></pre>
+
+<h3>6.5 Heap Dump Và Security</h3>
+<p>Heap dump có thể chứa token, email, request body, password đã parse, dữ liệu người dùng và secret trong memory. Vì vậy heap dump là artifact nhạy cảm: lưu vùng private, giới hạn quyền đọc, xóa sau khi phân tích, không gửi qua kênh chat công khai.</p>
+</section>
+
+<section id="profiling">
+<h2>7. JFR, Profiling Và GC Tuning Cookbook</h2>
+<p>Heap dump trả lời câu hỏi "ai đang giữ memory". GC log trả lời câu hỏi "GC đang làm gì". Thread dump trả lời câu hỏi "thread đang chờ ở đâu". Nhưng khi service chậm mà không OOM, bạn cần profiler: CPU đang cháy ở method nào, allocation đến từ call path nào, lock contention nằm ở monitor nào, request bị block ở socket hay database client?</p>
+
+<section id="jfr">
+<h3>7.1 Java Flight Recorder: Evidence Đầu Tiên Khi Latency Tăng</h3>
+<p>Java Flight Recorder là công cụ profiling có sẵn trong JDK, overhead thấp hơn nhiều so với cách log thủ công mọi method. JFR ghi lại event cấp JVM: CPU sample, allocation, GC, safepoint, thread park/block, socket I/O, file I/O, exception, class loading. Trong incident thật, JFR thường là artifact giàu thông tin nhất nếu service vẫn còn sống.</p>
+
+<pre><code class="language-bash"># Ghi JFR 5 phút trên process đang chạy
+jcmd &lt;pid&gt; JFR.start name=incident settings=profile duration=5m filename=/tmp/app-incident.jfr
+
+# Kiểm tra recording
+jcmd &lt;pid&gt; JFR.check
+
+# Dừng thủ công nếu không dùng duration
+jcmd &lt;pid&gt; JFR.stop name=incident filename=/tmp/app-incident.jfr</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Tab/Event trong JFR</th><th>Nhìn gì?</th><th>Kết luận thường gặp</th></tr></thead>
+  <tbody>
+    <tr><td>Method Profiling / Hot Methods</td><td>Method nào chiếm nhiều sample CPU</td><td>CPU-bound, JSON serialization nặng, regex chậm, compression, crypto</td></tr>
+    <tr><td>Allocation in new TLAB / outside TLAB</td><td>Call path tạo object nhiều</td><td>Allocation spike làm Young GC dày</td></tr>
+    <tr><td>Monitor Blocked / Thread Park</td><td>Thread chờ lock hoặc park lâu</td><td>Lock contention, pool starvation, queue chờ</td></tr>
+    <tr><td>GC Pause / Heap Summary</td><td>Pause, heap before/after, old-gen pressure</td><td>GC ảnh hưởng latency hoặc live set tăng</td></tr>
+    <tr><td>Socket Read / File Read</td><td>I/O call nào lâu</td><td>Dependency chậm, storage chậm, timeout thiếu</td></tr>
+    <tr><td>Exceptions</td><td>Exception rate cao dù bị catch</td><td>Control flow bằng exception, parse lỗi nhiều, stacktrace allocation</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">Cách đọc JFR nhanh trong 15 phút</div>
+  <p>Đầu tiên xem GC pause và heap trend để loại trừ GC. Sau đó xem Hot Methods để biết CPU đi đâu. Tiếp theo xem Allocation để tìm object churn. Cuối cùng xem Thread Park/Monitor Blocked/Socket I/O để phân biệt CPU-bound với blocking-bound.</p>
+</div>
+</section>
+
+<section id="flamegraph">
+<h3>7.2 Flame Graph: Đọc Profiling Không Bị Ngộ Nhận</h3>
+<p>Flame graph biểu diễn stack traces theo bề rộng. Khung càng rộng nghĩa là stack đó xuất hiện nhiều sample hơn, không nhất thiết method đó tự chạy lâu. Senior cần phân biệt <em>inclusive time</em> và <em>self time</em>: một method rộng có thể chỉ là wrapper gọi method con đắt đỏ.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dạng flame graph</th><th>Ý nghĩa</th><th>Hành động</th></tr></thead>
+  <tbody>
+    <tr><td>CPU flame graph</td><td>CPU sample nằm ở stack nào</td><td>Tối ưu algorithm, cache kết quả, giảm serialization/regex/compression</td></tr>
+    <tr><td>Allocation flame graph</td><td>Object được tạo từ call path nào</td><td>Giảm object churn, dùng primitive stream, reuse buffer có kiểm soát</td></tr>
+    <tr><td>Lock/block profile</td><td>Thread mất thời gian chờ ở đâu</td><td>Giảm critical section, đổi lock granularity, bounded queue</td></tr>
+    <tr><td>Wall-clock profile</td><td>Thời gian thực bao gồm sleep/I/O/blocking</td><td>Phân biệt CPU chậm với dependency chậm</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-text">Cách diễn giải:
+Wide frame at ObjectMapper.writeValueAsString
+  -> serialization chiếm nhiều CPU/allocation.
+
+Wide frame at SocketInputStream.socketRead0
+  -> thread đang chờ I/O, tối ưu CPU không giải quyết latency.
+
+Wide frame at ReentrantLock.lock
+  -> contention; cần xem ai giữ lock và critical section làm gì.</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">Bẫy khi đọc profiler</div>
+  <p>Không tối ưu method xuất hiện đầu tiên trong flame graph nếu nó chỉ là framework wrapper. Đi xuống stack tới method application hoặc library call thực sự tạo CPU/allocation/blocking. Luôn so với traffic và release gần nhất.</p>
+</div>
+</section>
+
+<section id="gc-tuning">
+<h3>7.3 GC Tuning Cookbook: Chỉnh Ít Nhưng Có Evidence</h3>
+<p>GC tuning không bắt đầu bằng việc copy flags từ internet. Nó bắt đầu bằng SLA: pause tối đa chấp nhận bao nhiêu, throughput quan trọng đến đâu, heap live set bao nhiêu, allocation rate bao nhiêu, container memory giới hạn thế nào. Mỗi flag nên trả lời một vấn đề đo được.</p>
+
+<h4>G1GC: Các Núm Chỉnh Thường Gặp</h4>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Flag/Quan sát</th><th>Dùng khi</th><th>Cẩn thận</th></tr></thead>
+  <tbody>
+    <tr><td><code>-XX:MaxGCPauseMillis=200</code></td><td>Đặt mục tiêu pause cho G1</td><td>Là target, không phải guarantee. Quá thấp có thể tăng CPU GC.</td></tr>
+    <tr><td><code>-Xms = -Xmx</code></td><td>Service ổn định, tránh heap resize</td><td>Đừng chiếm hết container memory.</td></tr>
+    <tr><td>Young GC quá dày</td><td>Allocation rate cao hoặc young gen nhỏ</td><td>Profile allocation trước khi tăng heap.</td></tr>
+    <tr><td>Mixed GC không dọn kịp Old Gen</td><td>Live set lớn, promotion cao</td><td>Xem leak, cache, object lifetime; tăng heap chỉ là biện pháp tạm.</td></tr>
+    <tr><td>Humongous allocation</td><td>Object rất lớn, ví dụ byte array lớn</td><td>Stream/chunk payload, tránh load file lớn nguyên khối.</td></tr>
+    <tr><td>Full GC G1 Compaction Pause</td><td>G1 không còn đủ region/headroom</td><td>Lấy heap dump, giảm allocation, tăng headroom hoặc đổi thiết kế memory.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>ZGC: Khi Mục Tiêu Là Pause Rất Thấp</h4>
+<p>ZGC phù hợp khi pause thấp quan trọng hơn throughput tuyệt đối và bạn chạy trên JDK hỗ trợ ổn định. Tư duy với ZGC khác G1: bạn ít chỉnh region/young/old hơn, tập trung vào đủ heap headroom, allocation rate và CPU cho concurrent GC threads.</p>
+
+<div class="compare">
+  <div class="col neutral">
+    <div class="col-head">G1 phù hợp khi</div>
+    <div class="col-body">
+      <ul>
+        <li>Backend general-purpose.</li>
+        <li>Pause mục tiêu vài chục đến vài trăm ms.</li>
+        <li>Cần collector mặc định dễ vận hành.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="col neutral">
+    <div class="col-head">ZGC phù hợp khi</div>
+    <div class="col-body">
+      <ul>
+        <li>Latency rất nhạy với stop-the-world pause.</li>
+        <li>Heap lớn, live set lớn.</li>
+        <li>Chấp nhận theo dõi CPU/headroom kỹ hơn.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h4>Quy Trình Tuning Có Kỷ Luật</h4>
+<ol>
+  <li>Định nghĩa vấn đề: p99 latency tăng, Full GC, OOM, CPU GC cao hay RSS vượt limit.</li>
+  <li>Lấy baseline: GC log, JFR, heap after-GC, allocation rate, traffic cùng thời điểm.</li>
+  <li>Đổi một biến mỗi lần: heap size, pause target, cache size, chunk size, collector.</li>
+  <li>So sánh bằng số: p95/p99, GC pause total, allocation rate, CPU, RSS, error rate.</li>
+  <li>Ghi lại decision: vì sao chọn flag, rollback khi metric nào xấu.</li>
+</ol>
+</section>
+
+<section id="native-memory">
+<h3>7.4 Native Memory, Direct Buffer Và Metaspace</h3>
+<p>Khi container bị OOMKilled nhưng heap graph vẫn bình thường, vấn đề thường nằm ngoài heap. JVM process RSS bao gồm heap, metaspace, code cache, thread stacks, direct buffers, malloc từ native library và memory mapping. GC log không đủ để kết luận.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Vùng memory</th><th>Dấu hiệu</th><th>Nguyên nhân thường gặp</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>Direct buffer</td><td>RSS tăng, heap không tăng</td><td>Netty/NIO/Kafka buffer, leak buffer release</td><td>NMT, direct buffer metric, library leak detector</td></tr>
+    <tr><td>Thread stack</td><td>Thread count tăng, RSS tăng</td><td>Executor leak, thread-per-task, scheduler tạo thread mới</td><td>Thread dump, OS thread count</td></tr>
+    <tr><td>Metaspace</td><td>Metaspace used tăng đều</td><td>Classloader leak, dynamic proxy/class generation</td><td>Class histogram, loaded class count, NMT</td></tr>
+    <tr><td>Code cache</td><td>JIT warning, performance giảm</td><td>Nhiều generated methods, warmup lớn</td><td>JFR code cache events, JVM logs</td></tr>
+    <tr><td>Mapped files</td><td>RSS lớn, heap bình thường</td><td>Memory-mapped file, search/index workload</td><td>NMT detail, OS maps</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-bash"># NMT detail cần bật từ lúc start JVM
+-XX:NativeMemoryTracking=detail
+
+# So sánh theo thời gian
+jcmd &lt;pid&gt; VM.native_memory baseline
+jcmd &lt;pid&gt; VM.native_memory detail.diff</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">Kết luận sai hay gặp</div>
+  <p>"Heap chỉ dùng 60%, vậy không phải memory problem" là kết luận thiếu. Container nhìn RSS của process, không chỉ heap. Một service có heap ổn vẫn có thể chết vì direct memory, thread stack hoặc metaspace.</p>
+</div>
+</section>
+
+<section id="case-study">
+<h3>7.5 Case Study: Media API Tăng p99 Sau Release</h3>
+<p>Bối cảnh: một API tạo thumbnail cho ảnh user upload. Sau release, p99 tăng từ 350ms lên 3s, CPU tăng, Young GC dày hơn, không có OOM. Restart tạm giảm latency nhưng sau vài giờ lại tăng.</p>
+
+<h4>Bước 1: Đọc Dashboard</h4>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Metric</th><th>Trước release</th><th>Sau release</th><th>Nhận định</th></tr></thead>
+  <tbody>
+    <tr><td>p99 latency</td><td>350ms</td><td>3s</td><td>Có regression rõ</td></tr>
+    <tr><td>Allocation rate</td><td>250MB/s</td><td>1.8GB/s</td><td>Object churn tăng mạnh</td></tr>
+    <tr><td>Young GC pause total/min</td><td>0.8s</td><td>8s</td><td>GC bị kéo theo allocation</td></tr>
+    <tr><td>Heap after GC</td><td>Ổn định</td><td>Ổn định</td><td>Không giống heap leak dài hạn</td></tr>
+    <tr><td>CPU</td><td>45%</td><td>90%</td><td>Cần CPU/allocation profile</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Bước 2: Lấy JFR Và Đọc Hot Path</h4>
+<pre><code class="language-text">JFR allocation hot path:
+ThumbnailController.upload
+  ImagePipeline.process
+    byte[] original = multipartFile.getBytes()
+    BufferedImage image = ImageIO.read(new ByteArrayInputStream(original))
+    byte[] preview = resizeAndEncode(image)
+    metadata.put("preview", Base64.getEncoder().encodeToString(preview))</code></pre>
+
+<p>Kết luận: code mới load toàn bộ upload vào byte array, tạo thêm encoded string lớn, rồi giữ preview trong metadata map để trả về response. Không phải leak, mà là allocation amplification: mỗi request tạo nhiều bản copy của cùng dữ liệu.</p>
+
+<h4>Bước 3: Fix Thiết Kế Memory</h4>
+<ul>
+  <li>Stream upload vào temp file hoặc object storage thay vì <code>getBytes()</code>.</li>
+  <li>Resize theo stream/chunk nếu library hỗ trợ, tránh giữ nhiều bản copy.</li>
+  <li>Không nhúng preview base64 lớn vào metadata response; trả URL hoặc ID.</li>
+  <li>Giới hạn kích thước upload và reject sớm.</li>
+  <li>Thêm alert allocation rate và Young GC pause total.</li>
+</ul>
+
+<h4>Bước 4: Cách Trả Lời Interview</h4>
+<p>Không nói "tăng heap". Hãy nói: "Tôi sẽ lấy GC log và JFR. Nếu after-GC baseline không tăng nhưng allocation rate tăng, tôi nghi allocation churn. Tôi mở allocation flame graph để tìm call path tạo object lớn. Fix đúng là giảm bản copy/stream dữ liệu, không chỉ tuning GC."</p>
+</section>
+</section>
+
+<section id="debug">
+<h2>8. Debug Playbook</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Bước</th><th>Làm gì</th><th>Không làm gì</th></tr></thead>
+  <tbody>
+    <tr><td>1. Stabilize</td><td>Lấy heap dump, thread dump, GC log trước khi restart nếu có thể</td><td>Restart ngay rồi mất evidence</td></tr>
+    <tr><td>2. Observe pattern</td><td>Heap sau GC tăng đều hay spike rồi giảm?</td><td>Nhìn heap used hiện tại rồi kết luận leak</td></tr>
+    <tr><td>3. Analyze dump</td><td>Dùng MAT: Leak Suspects, Dominator Tree, Path to GC roots</td><td>Chỉ nhìn class count mà không xem retention path</td></tr>
+    <tr><td>4. Fix source</td><td>Bounded cache, clear ThreadLocal, close resource, stream data</td><td>Tăng heap để che leak</td></tr>
+    <tr><td>5. Prevent</td><td>Alert GC pause, old-gen after-GC baseline, cache size</td><td>Chờ OOM mới debug</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-bash"># Snapshot nhanh
+jstat -gcutil &lt;pid&gt; 1000 10
+jcmd &lt;pid&gt; GC.heap_info
+jcmd &lt;pid&gt; Thread.print &gt; threaddump.txt
+jmap -dump:format=b,file=heapdump.hprof &lt;pid&gt;</code></pre>
+
+<h3>8.1 Playbook Theo Triệu Chứng</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Triệu chứng</th><th>Giả thuyết</th><th>Evidence ưu tiên</th></tr></thead>
+  <tbody>
+    <tr><td>Heap tăng đều, after-GC không giảm</td><td>Heap leak</td><td>Heap dump + GC log</td></tr>
+    <tr><td>RSS tăng nhưng heap bình thường</td><td>Direct/native memory leak</td><td>NMT, direct buffer metrics, Netty/Kafka config</td></tr>
+    <tr><td>Pause dài vài giây</td><td>Full GC hoặc safepoint</td><td>GC log, safepoint log, CPU profile</td></tr>
+    <tr><td>Thread count tăng đều</td><td>Thread leak/executor leak</td><td>Thread dump theo thời gian</td></tr>
+    <tr><td>Metaspace OOM</td><td>Classloader leak hoặc class generation quá nhiều</td><td>Class histogram, loaded class count, plugin lifecycle</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>8.2 Lab: Tự Tạo Và Tự Bắt Memory Leak</h3>
+<pre><code class="language-java">public class LeakLab {
+    private static final List&lt;byte[]&gt; LEAK = new ArrayList&lt;&gt;();
+
+    public static void main(String[] args) throws Exception {
+        while (true) {
+            LEAK.add(new byte[1024 * 1024]); // 1MB
+            Thread.sleep(200);
+        }
+    }
+}</code></pre>
+<pre><code class="language-bash">javac LeakLab.java
+java -Xms128m -Xmx128m -XX:+HeapDumpOnOutOfMemoryError LeakLab
+
+# Trong lúc chạy:
+jstat -gcutil &lt;pid&gt; 1000
+jmap -histo:live &lt;pid&gt; | head</code></pre>
+<p>Bài lab này giúp bạn nhìn thấy Old Gen tăng, Full GC bất lực và histogram có nhiều <code>byte[]</code>. Sau đó mở heap dump bằng MAT để xem static list giữ toàn bộ byte array.</p>
+</section>
+
+<section id="interview">
+<h2>9. Interview Framework</h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">Java có GC, sao vẫn memory leak?</span></div>
+  <p class="a">GC chỉ collect object unreachable. Nếu object không còn cần cho business nhưng vẫn được static map, ThreadLocal, listener hoặc queue giữ reference, nó vẫn reachable từ GC root nên không bị collect.</p>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">Bạn debug OOM production thế nào?</span></div>
+  <p class="a">Stabilize và lấy evidence: heap dump, thread dump, GC log. Phân tích GC log xem after-GC baseline tăng không. Mở heap dump bằng MAT, xem dominator tree và path to GC roots. Fix retention path thật: bounded cache, clear ThreadLocal, unregister listener, stream/chunk data.</p>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Cấu hình JVM cho service latency-sensitive</span></div>
+  <p class="a">Chọn G1GC hoặc ZGC tùy SLA và Java version. Set heap cố định nhưng không chiếm hết RAM container. Bật GC log, heap dump on OOM, max metaspace, exit on OOM. Monitor GC pause, heap after GC, old-gen growth, direct memory và thread count.</p>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+<ul>
+  <li>Vẽ được JVM memory layout và phân biệt heap/non-heap.</li>
+  <li>Giải thích được GC roots, reachability và vì sao static map gây leak.</li>
+  <li>Phân biệt allocation spike với memory leak tăng đều qua after-GC baseline.</li>
+  <li>Biết lấy heap dump, thread dump, GC log bằng command line.</li>
+  <li>Đọc được JVM flags production cơ bản và lý do của từng flag.</li>
+  <li>Giải thích classloader leak và vì sao Metaspace có thể OOM.</li>
+  <li>Biết dùng JFR để phân biệt CPU-bound, allocation-heavy, blocking và GC pause.</li>
+  <li>Đọc được flame graph ở mức inclusive/self time và tránh tối ưu nhầm framework wrapper.</li>
+  <li>Biết tuning G1GC theo evidence: pause target, allocation rate, live set, humongous allocation.</li>
+  <li>Phân biệt heap OOM với container OOMKilled do direct memory, thread stack hoặc metaspace.</li>
+  <li>Trình bày được một case study latency tăng từ dashboard tới JFR, kết luận và fix thiết kế.</li>
+</ul>
+</section>
+
+<footer>
+  <span>Phase 1 - Core Java Mastery</span>
+  <span>Next: #03 Java 8-17 Features</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-log.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

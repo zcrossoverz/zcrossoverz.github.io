@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#48 — Java OOP Foundation | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{--bg:#fff;--bg-elev:#f8fafc;--bg-code:#1e1e2e;--text:#0f172a;--text-muted:#475569;--text-faint:#94a3b8;--border:#e2e8f0;--border-strong:#cbd5e1;--accent:#4f46e5;--accent-soft:#eef2ff;--success:#059669;--success-soft:#ecfdf5;--warning:#d97706;--warning-soft:#fffbeb;--danger:#dc2626;--danger-soft:#fef2f2;--info:#0284c7;--info-soft:#f0f9ff;--radius:8px;--radius-lg:12px;--font-sans:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;--sidebar-w:300px;--content-max:820px}
+[data-theme="dark"]{--bg:#0b1020;--bg-elev:#131a2e;--bg-code:#0a0e1c;--text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#64748b;--border:#1e293b;--border-strong:#334155;--accent:#818cf8;--accent-soft:#1e1b4b;--success:#34d399;--success-soft:#064e3b;--warning:#fbbf24;--warning-soft:#451a03;--danger:#f87171;--danger-soft:#450a0a;--info:#38bdf8;--info-soft:#082f49}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;font-size:16px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 24px;gap:16px}
+[data-theme="dark"] .topbar{background:rgba(11,16,32,.85)}
+.topbar .crumb{color:var(--text-muted);font-size:14px;flex:1}
+.topbar .crumb strong{color:var(--text);font-weight:600}
+.topbar .crumb .sep{margin:0 8px;color:var(--text-faint)}
+.theme-toggle{background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.theme-toggle:hover{background:var(--accent-soft);border-color:var(--accent)}
+.menu-toggle{display:none}
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:calc(100vh - 60px)}
+aside.sidebar{border-right:1px solid var(--border);background:var(--bg-elev);padding:24px 20px 60px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+aside .toc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:12px;padding-left:8px}
+aside .toc a{display:block;padding:6px 10px;border-radius:6px;color:var(--text-muted);text-decoration:none;font-size:14px;border-left:2px solid transparent;transition:all .12s}
+aside .toc a:hover{background:var(--bg);color:var(--text)}
+aside .toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:500}
+aside .toc .sub{padding-left:18px;font-size:13px}
+aside .toc .sub a{padding:4px 10px}
+main{padding:48px 56px;max-width:100%;overflow-x:hidden}
+.content{max-width:var(--content-max);margin:0 auto}
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:36px}
+.hero .meta-tag{display:inline-block;padding:4px 10px;background:var(--accent-soft);color:var(--accent);border-radius:999px;font-size:12px;font-weight:600;margin-bottom:12px}
+.hero h1{font-size:2.4rem;font-weight:700;line-height:1.2;margin-bottom:16px;letter-spacing:-.02em}
+.hero .lead{color:var(--text-muted);font-size:1.05rem;line-height:1.7}
+.hero .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px}
+.hero .meta-item{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px}
+.hero .meta-item .k{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em}
+.hero .meta-item .v{font-size:14px;color:var(--text);font-weight:500;margin-top:2px}
+h2{font-size:1.6rem;font-weight:700;line-height:1.3;margin:56px 0 16px;border-top:1px solid var(--border);padding-top:36px;letter-spacing:-.01em}
+h2:first-of-type,h2.no-border{border-top:none;padding-top:8px}
+h3{font-size:1.2rem;font-weight:600;line-height:1.4;margin:36px 0 12px}
+h4{font-size:1.02rem;font-weight:600;margin:24px 0 10px}
+p{margin:0 0 14px}
+strong{font-weight:600;color:var(--text)}
+em{color:var(--text-muted)}
+ul,ol{margin:0 0 16px;padding-left:24px}
+li{margin-bottom:6px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code:not([class*="language-"]){background:var(--bg-elev);border:1px solid var(--border);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:.88em;color:var(--accent);font-weight:500}
+pre[class*="language-"]{background:var(--bg-code) !important;border-radius:var(--radius);padding:16px 18px !important;margin:16px 0 !important;font-size:.86rem !important;line-height:1.55 !important;overflow-x:auto;border:1px solid var(--border)}
+code[class*="language-"]{font-family:var(--font-mono) !important;font-size:.86rem !important}
+.code-label{display:inline-block;font-family:var(--font-mono);font-size:11px;background:var(--bg-elev);border:1px solid var(--border);color:var(--text-faint);padding:3px 10px;border-radius:4px 4px 0 0;border-bottom:0;margin:14px 0 -1px;font-weight:500}
+.code-label + pre{margin-top:0 !important;border-top-left-radius:0}
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:.95rem}
+.callout > .ctitle{font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:.95rem}
+.callout p:last-child{margin-bottom:0}
+.callout.tip{background:var(--info-soft);border-color:var(--info)} .callout.tip .ctitle{color:var(--info)}
+.callout.warn{background:var(--warning-soft);border-color:var(--warning)} .callout.warn .ctitle{color:var(--warning)}
+.callout.danger{background:var(--danger-soft);border-color:var(--danger)} .callout.danger .ctitle{color:var(--danger)}
+.callout.success{background:var(--success-soft);border-color:var(--success)} .callout.success .ctitle{color:var(--success)}
+.callout.quote{background:var(--bg-elev);border-color:var(--accent);font-style:italic;color:var(--text-muted)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--bg-elev);font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--bg-elev)}
+.diagram{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:20px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram .caption{font-size:13px;color:var(--text-muted);margin-top:12px;font-style:italic}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.compare .col{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.compare .col-head{padding:8px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.compare .bad .col-head{background:var(--danger-soft);color:var(--danger);border-bottom:1px solid var(--danger)}
+.compare .good .col-head{background:var(--success-soft);color:var(--success);border-bottom:1px solid var(--success)}
+.compare .col pre{margin:0 !important;border-radius:0 !important;border:none !important}
+.checklist{background:var(--bg-elev);border-radius:var(--radius);padding:20px 24px;margin:16px 0;border:1px solid var(--border)}
+.checklist .item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.checklist .item:last-child{border-bottom:none}
+.checklist input[type="checkbox"]{margin-top:4px;accent-color:var(--accent);width:16px;height:16px}
+.checklist label{flex:1;cursor:pointer}
+.tier{border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin:18px 0;background:var(--bg-elev)}
+.tier .tier-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.tier .badge{background:var(--accent);color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.tier.t1 .badge{background:var(--success)} .tier.t2 .badge{background:var(--warning)} .tier.t3 .badge{background:var(--accent)}
+.tier .tier-title{font-size:1.05rem;font-weight:600}
+.tier .q{font-weight:600;margin:12px 0 8px;color:var(--text)}
+.tier .a{color:var(--text-muted);background:var(--bg);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0}
+.pillar-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:20px 0}
+.pillar{border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;background:var(--bg-elev);position:relative;overflow:hidden}
+.pillar::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent)}
+.pillar .num{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em}
+.pillar h4{margin:4px 0 8px;font-size:1.1rem}
+.pillar p{font-size:.92rem;color:var(--text-muted);margin:0}
+footer{margin-top:80px;padding:32px 0 24px;border-top:1px solid var(--border);font-size:13px;color:var(--text-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+@media (max-width:980px){.layout{grid-template-columns:1fr}aside.sidebar{position:fixed;left:-300px;top:60px;width:280px;height:calc(100vh - 60px);transition:left .25s;z-index:40}aside.sidebar.open{left:0}.menu-toggle{display:flex;background:transparent;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:18px}main{padding:32px 20px}.hero h1{font-size:1.8rem}.compare,.pillar-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Nhóm N — Junior Foundation<span class="sep">/</span><strong>#48 OOP Foundation</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Vì sao file này tồn tại</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#pillars">2. 4 Trụ cột OOP</a>
+    <div class="sub">
+      <a href="#enc">Encapsulation</a>
+      <a href="#inh">Inheritance</a>
+      <a href="#poly">Polymorphism</a>
+      <a href="#abs">Abstraction</a>
+    </div>
+    <a href="#concepts">3. Concepts Junior phải master</a>
+    <div class="sub">
+      <a href="#keywords">this/super/static/final</a>
+      <a href="#abs-vs-iface">Abstract vs Interface</a>
+      <a href="#init-order">Constructor & Init order</a>
+      <a href="#access">Access modifiers</a>
+      <a href="#inner">Inner/Nested class</a>
+    </div>
+    <a href="#solid">4. SOLID</a>
+    <a href="#antipatterns">5. Anti-patterns</a>
+    <a href="#exercises">6. Exercises</a>
+    <a href="#interview">7. Interview Framework</a>
+    <a href="#checklist">8. Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔥 CRITICAL FOUNDATION</span>
+  <h1>#48 — Java OOP Foundation</h1>
+  <p class="lead">Không nắm vững OOP, mọi thứ Spring/JPA/Hibernate sẽ chỉ là "thuộc lòng API". File này dạy <strong>tư duy</strong> OOP — không phải syntax. Syntax có ở mọi sách; tư duy thì phải build qua thực hành + ví dụ thật.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">N — Junior Foundation</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1–2 tuần</div></div>
+    <div class="meta-item"><div class="k">Đối tượng</div><div class="v">Junior 0–2 năm</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#5 Spring Core, #15 DDD</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Vì Sao File Này Tồn Tại?</h2>
+<p>Sau 10+ năm review code, 90% bug "khó tìm" của junior bắt nguồn từ <strong>không thấm OOP</strong>:</p>
+<ul>
+<li>Class chỉ là "túi đựng method", không có invariant</li>
+<li>Field <code>public</code> để truy cập tiện, dẫn đến state mutation hỗn loạn</li>
+<li>Inheritance dùng vì "tiện kế thừa code", không vì "is-a" relationship</li>
+<li>Service class với 50 method static — đó là <strong>procedural code đội lốt OOP</strong></li>
+<li>Bug xảy ra → không biết bắt đầu debug từ đâu vì class không có <strong>boundary</strong> rõ ràng</li>
+</ul>
+<div class="callout tip">
+  <div class="ctitle">💡 Mục tiêu sau khi đọc xong</div>
+  <p>Bạn sẽ refactor được code procedural thành OOP đúng nghĩa, justified mỗi lần dùng <code>extends</code>, và recognize được "anemic domain model" trong code review của đồng đội.</p>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Procedural Code Đội Lốt OOP</h2>
+
+<h3>Tình huống: Junior viết "Service" cho banking, code chạy được nhưng senior reject PR</h3>
+
+<div class="code-label">❌ Code junior — chạy được, đúng output, nhưng senior reject ngay</div>
+<pre><code class="language-java">public class TransferService {
+    public static double balance1 = 0;
+    public static double balance2 = 0;
+
+    public static void deposit1(double amount) { balance1 += amount; }
+    public static void withdraw1(double amount) { balance1 -= amount; }
+    public static void deposit2(double amount) { balance2 += amount; }
+    public static void withdraw2(double amount) { balance2 -= amount; }
+
+    public static void transfer(double amount) {
+        balance1 -= amount;
+        balance2 += amount;
+    }
+
+    public static void main(String[] args) {
+        deposit1(1000);
+        transfer(300);
+        System.out.println("A: " + balance1 + ", B: " + balance2);
+    }
+}</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">💬 Senior comment trên PR (ghi đầy đủ trong feedback thật)</div>
+  <ol style="margin:8px 0 0 20px">
+  <li>Đây là <strong>procedural code đội lốt class</strong>. TransferService không có state riêng — toàn <code>static</code> field/method. Tách method ra thành <code>Account.deposit()</code> đi.</li>
+  <li>Field <code>balance1</code>, <code>balance2</code> là <strong>public + static</strong> → bất kỳ ai cũng modify được, không có invariant. Nếu có người set <code>balance1 = -1000</code> thì sao? Encapsulation đâu?</li>
+  <li><code>double</code> cho tiền tệ → mất chữ thập phân. Banking dùng <code>BigDecimal</code>.</li>
+  <li>Nếu thêm account thứ 3 phải copy-paste deposit/withdraw lần nữa? Inheritance/parametrize đi.</li>
+  <li>Transfer không atomic — nếu crash giữa 2 dòng thì sao? Đây là banking, hỏi nghiêm túc.</li>
+  <li>Test thế nào? Static method khó mock. Inject dependency đi.</li>
+  </ol>
+</div>
+
+<h3>Refactor OOP đúng</h3>
+
+<div class="code-label">✅ Account là entity có state + invariant</div>
+<pre><code class="language-java">public class Account {
+    private final String accountId;
+    private BigDecimal balance;
+    private final String currency;
+
+    public Account(String accountId, BigDecimal initialBalance, String currency) {
+        if (accountId == null || accountId.isBlank())
+            throw new IllegalArgumentException("accountId required");
+        if (initialBalance == null || initialBalance.signum() &lt; 0)
+            throw new IllegalArgumentException("balance must be &gt;= 0");
+        this.accountId = accountId;
+        this.balance = initialBalance;
+        this.currency = currency;
+    }
+
+    public void deposit(BigDecimal amount) {
+        validatePositive(amount);
+        this.balance = this.balance.add(amount);
+    }
+
+    public void withdraw(BigDecimal amount) {
+        validatePositive(amount);
+        if (this.balance.compareTo(amount) &lt; 0)
+            throw new InsufficientFundsException(accountId, amount, balance);
+        this.balance = this.balance.subtract(amount);
+    }
+
+    private void validatePositive(BigDecimal amount) {
+        if (amount == null || amount.signum() &lt;= 0)
+            throw new IllegalArgumentException("amount must be &gt; 0");
+    }
+
+    public BigDecimal getBalance() { return balance; }
+    public String getAccountId() { return accountId; }
+    public String getCurrency() { return currency; }
+}</code></pre>
+
+<div class="code-label">✅ TransferService chỉ orchestrate, không lưu state</div>
+<pre><code class="language-java">public class TransferService {
+    public void transfer(Account from, Account to, BigDecimal amount) {
+        if (!from.getCurrency().equals(to.getCurrency()))
+            throw new CurrencyMismatchException(from, to);
+        from.withdraw(amount);
+        to.deposit(amount);
+        // Atomicity ở layer @Transactional bên ngoài
+    }
+}</code></pre>
+
+<h3>Khác biệt cốt lõi</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Procedural (junior)</th><th>OOP (senior)</th></tr></thead>
+<tbody>
+<tr><td>Data + behavior tách rời</td><td>Data + behavior gắn vào nhau (<code>Account.deposit()</code>)</td></tr>
+<tr><td>State public, ai cũng modify</td><td>State private, chỉ class kiểm soát</td></tr>
+<tr><td>Invariant kiểm tra ở caller</td><td>Invariant kiểm tra trong class (constructor + method)</td></tr>
+<tr><td>Static — khó test, khó mock</td><td>Instance — dễ inject, dễ test</td></tr>
+<tr><td>Thêm account = copy code</td><td>Thêm account = <code>new Account(...)</code></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="pillars">
+<h2>2. Mental Model — 4 Trụ Cột OOP</h2>
+
+<div class="pillar-grid">
+<div class="pillar">
+  <div class="num">Pillar 1</div>
+  <h4>Encapsulation</h4>
+  <p>Class là một con thú có boundary. Field là nội tạng (private), method là cách bên ngoài tương tác.</p>
+</div>
+<div class="pillar">
+  <div class="num">Pillar 2</div>
+  <h4>Inheritance</h4>
+  <p>"Is-a" relationship, KHÔNG "tiện share code". Favor composition over inheritance.</p>
+</div>
+<div class="pillar">
+  <div class="num">Pillar 3</div>
+  <h4>Polymorphism</h4>
+  <p>Cùng API, behavior khác nhau theo type runtime. Cho phép Open-Closed.</p>
+</div>
+<div class="pillar">
+  <div class="num">Pillar 4</div>
+  <h4>Abstraction</h4>
+  <p>Caller chỉ thấy WHAT, không thấy HOW. Hide complexity, expose intent.</p>
+</div>
+</div>
+
+<h3 id="enc">Trụ cột 1: Encapsulation — "Class là một con thú có boundary"</h3>
+<p><strong>Mental model:</strong> Hãy nghĩ class như <strong>con thú trong chuồng</strong>. Field là nội tạng (private), method là cách bên ngoài tương tác (public). Nếu để nội tạng public, ai cũng "đụng vào" được → con thú dễ chết.</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Encapsulation phá vỡ</div>
+<pre><code class="language-java">public class BankAccount {
+    public BigDecimal balance;  // Ai cũng set được
+    public String status;       // Có thể set
+                                // "ALIEN_STATUS"
+}
+
+// Caller làm bậy:
+account.balance =
+    new BigDecimal("-9999999");
+// Tài khoản âm? Logic không cấm được
+account.status = "BANANA";
+// Status không hợp lệ?</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Encapsulation đúng</div>
+<pre><code class="language-java">public class BankAccount {
+    private BigDecimal balance;
+    private AccountStatus status;  // enum
+
+    public void debit(BigDecimal amount) {
+      if (status != AccountStatus.ACTIVE)
+        throw new AccountNotActiveException();
+      if (balance.compareTo(amount) &lt; 0)
+        throw new InsufficientFundsException();
+      balance = balance.subtract(amount);
+    }
+
+    public BigDecimal getBalance() {
+      return balance;
+    }
+}</code></pre>
+</div>
+</div>
+
+<h4>3 quy tắc encapsulation</h4>
+<ol>
+<li><strong>Field luôn <code>private</code></strong>, hoặc <code>protected</code> nếu thật sự cần kế thừa thấy</li>
+<li><strong>Cung cấp method</strong> thay vì cho truy cập trực tiếp field</li>
+<li><strong>Validate trong constructor + setter</strong> — class tự đảm bảo state luôn hợp lệ</li>
+</ol>
+
+<h4>Anti-pattern: getter/setter "theo phản xạ" cho mọi field</h4>
+
+<pre><code class="language-java">// ❌ JavaBean syndrome — getter/setter cho mọi field, encapsulation = 0
+public class Order {
+    private List&lt;OrderItem&gt; items;
+    public List&lt;OrderItem&gt; getItems() { return items; }
+    public void setItems(List&lt;OrderItem&gt; items) { this.items = items; }
+}
+
+// Caller phá:
+order.getItems().clear(); // Items biến mất, Order không biết!
+order.setItems(null);     // NPE chực chờ
+
+// ✅ Cho method có ý nghĩa, không expose state thô
+public class Order {
+    private final List&lt;OrderItem&gt; items = new ArrayList&lt;&gt;();
+
+    public void addItem(OrderItem item) {
+        validate(item);
+        items.add(item);
+    }
+
+    public void removeItem(String itemId) { /* ... */ }
+
+    public List&lt;OrderItem&gt; getItems() {
+        return Collections.unmodifiableList(items); // Read-only view
+    }
+}</code></pre>
+
+<div class="callout quote">
+  <div class="ctitle">📖 Quy tắc 10 năm</div>
+  <p>Trước khi viết getter/setter, hỏi <em>"Caller cần làm gì? Có thể expose method có ý nghĩa thay vì raw access không?"</em></p>
+</div>
+
+<h3 id="inh">Trụ cột 2: Inheritance — "is-a", KHÔNG "has code-a"</h3>
+<p><strong>Mental model:</strong> Inheritance là <strong>"con là một loại của cha"</strong> (Dog <strong>is-a</strong> Animal). KHÔNG phải "tôi muốn dùng code của class kia".</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Inheritance để "share code"</div>
+<pre><code class="language-java">public class StringUtils { /* utility */ }
+
+public class UserController
+    extends StringUtils {
+  // UserController là StringUtils?? KHÔNG!
+  public ResponseEntity&lt;User&gt; getUser() {
+    String trimmed = trim(input);
+    // "tiện" gọi method của parent
+  }
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Composition — DÙNG, không LÀ</div>
+<pre><code class="language-java">public class UserController {
+  public ResponseEntity&lt;User&gt; getUser() {
+    String trimmed = StringUtils.trim(input);
+    // static call — clean
+  }
+}</code></pre>
+</div>
+</div>
+
+<h4>Liskov Substitution Principle (LSP) — Vi phạm kinh điển</h4>
+<p>Subclass <strong>phải có thể thay thế</strong> parent ở mọi nơi parent xuất hiện, <strong>không phá behavior</strong>.</p>
+
+<pre><code class="language-java">// ❌ Vi phạm LSP — Square không thể thay Rectangle
+public class Rectangle {
+    protected int width, height;
+    public void setWidth(int w) { this.width = w; }
+    public void setHeight(int h) { this.height = h; }
+    public int area() { return width * height; }
+}
+
+public class Square extends Rectangle {
+    @Override
+    public void setWidth(int w) { this.width = w; this.height = w; }  // Force = nhau
+    @Override
+    public void setHeight(int h) { this.width = h; this.height = h; }
+}
+
+// Caller dùng Rectangle:
+Rectangle r = new Square();  // Polymorphism — OK?
+r.setWidth(5);
+r.setHeight(10);
+assert r.area() == 50;  // ❌ FAIL! Vì Square ép width = height, area = 100</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Bài học</div>
+  <p>Nếu subclass cần override để "chỉnh" behavior parent → có lẽ <strong>không phải</strong> "is-a", mà là quan hệ khác. Square và Rectangle về toán học cùng họ Shape, không phải Square is-a Rectangle về behavior.</p>
+</div>
+
+<h4>Inheritance vs Composition — quy tắc Effective Java</h4>
+<div class="callout quote">
+  <div class="ctitle">📖 Joshua Bloch — Effective Java</div>
+  <p>"<strong>Favor composition over inheritance</strong>."</p>
+</div>
+
+<pre><code class="language-java">// ❌ Inheritance — fragile, coupling chặt
+public class CountingHashSet&lt;E&gt; extends HashSet&lt;E&gt; {
+    private int addCount = 0;
+
+    @Override public boolean add(E e) { addCount++; return super.add(e); }
+    @Override public boolean addAll(Collection&lt;? extends E&gt; c) {
+        addCount += c.size();
+        return super.addAll(c); // BUG! HashSet.addAll() gọi add() bên trong → addCount đếm 2 lần
+    }
+}
+
+// ✅ Composition — wrap, không kế thừa
+public class CountingSet&lt;E&gt; {
+    private final Set&lt;E&gt; set;
+    private int addCount = 0;
+
+    public CountingSet(Set&lt;E&gt; set) { this.set = set; }
+    public boolean add(E e) { addCount++; return set.add(e); }
+    public boolean addAll(Collection&lt;? extends E&gt; c) {
+        addCount += c.size(); return set.addAll(c);
+    }
+    // Không phụ thuộc internal behavior của HashSet
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Khi dùng inheritance?</th><th>Khi dùng composition?</th></tr></thead>
+<tbody>
+<tr><td>"is-a" thực sự đúng (Dog is-a Animal, EmailNotification is-a Notification)</td><td>"has-a" hoặc "uses-a"</td></tr>
+<tr><td>Không thể đạt bằng composition (hiếm)</td><td>Cần flexibility (đổi implementation runtime)</td></tr>
+<tr><td>Subclass không phá invariant của parent</td><td>Code reuse mà không cần "is-a"</td></tr>
+<tr><td><em>~10% trường hợp</em></td><td><em>~90% trường hợp trong code application</em></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="poly">Trụ cột 3: Polymorphism — "Cùng API, khác behavior"</h3>
+<p><strong>Mental model:</strong> Polymorphism cho phép caller code <strong>một lần</strong>, hoạt động với <strong>nhiều type khác nhau</strong> mà không biết type cụ thể.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
+  <defs><style>
+    .iface{fill:#fffbeb;stroke:#d97706;stroke-width:2;stroke-dasharray:5,3}
+    .impl{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .client{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .edge{stroke:#94a3b8;stroke-width:1.5;fill:none}
+  </style></defs>
+
+  <rect x="280" y="120" width="160" height="50" rx="8" class="iface"/>
+  <text x="360" y="142" text-anchor="middle" class="lbl">«interface»</text>
+  <text x="360" y="160" text-anchor="middle" class="lbl" font-family="JetBrains Mono">NotificationChannel</text>
+
+  <rect x="50" y="220" width="140" height="40" rx="6" class="impl"/>
+  <text x="120" y="245" text-anchor="middle" class="lbl" font-family="JetBrains Mono">EmailChannel</text>
+  <rect x="280" y="220" width="140" height="40" rx="6" class="impl"/>
+  <text x="350" y="245" text-anchor="middle" class="lbl" font-family="JetBrains Mono">SmsChannel</text>
+  <rect x="510" y="220" width="140" height="40" rx="6" class="impl"/>
+  <text x="580" y="245" text-anchor="middle" class="lbl" font-family="JetBrains Mono">PushChannel</text>
+
+  <line x1="280" y1="170" x2="160" y2="220" class="edge"/>
+  <line x1="360" y1="170" x2="350" y2="220" class="edge"/>
+  <line x1="440" y1="170" x2="540" y2="220" class="edge"/>
+
+  <rect x="280" y="20" width="160" height="50" rx="8" class="client"/>
+  <text x="360" y="42" text-anchor="middle" class="lbl">NotificationService</text>
+  <text x="360" y="60" text-anchor="middle" font-size="11" fill="#475569">depends on interface only</text>
+
+  <line x1="360" y1="70" x2="360" y2="120" class="edge" stroke-dasharray="4,3"/>
+  <text x="375" y="98" class="lbl" font-size="11" fill="#4f46e5">uses</text>
+</svg>
+<div class="caption">Service phụ thuộc interface, không biết implementation cụ thể → swap dễ, test dễ</div>
+</div>
+
+<pre><code class="language-java">// Interface định nghĩa "API"
+public interface NotificationChannel {
+    void send(String userId, String message);
+}
+
+// 3 implementation khác nhau
+public class EmailChannel implements NotificationChannel {
+    public void send(String userId, String message) { /* Gửi email */ }
+}
+
+public class SmsChannel implements NotificationChannel {
+    public void send(String userId, String message) { /* Gửi SMS */ }
+}
+
+public class PushChannel implements NotificationChannel {
+    public void send(String userId, String message) { /* Gửi push */ }
+}
+
+// Caller — không biết Email/SMS/Push, chỉ biết NotificationChannel
+public class NotificationService {
+    private final List&lt;NotificationChannel&gt; channels;
+
+    public NotificationService(List&lt;NotificationChannel&gt; channels) {
+        this.channels = channels;
+    }
+
+    public void notifyAll(String userId, String message) {
+        for (NotificationChannel channel : channels) {
+            channel.send(userId, message); // Polymorphism!
+        }
+    }
+}</code></pre>
+
+<h4>Lợi ích</h4>
+<ol>
+<li><strong>Open-Closed Principle</strong>: thêm <code>WhatsAppChannel</code> mới → không phải sửa <code>NotificationService</code>. Chỉ thêm class mới.</li>
+<li><strong>Test dễ</strong>: mock <code>NotificationChannel</code> thay vì gọi email server thật</li>
+<li><strong>Strategy pattern</strong> built-in: switch behavior runtime bằng cách inject implementation khác</li>
+</ol>
+
+<h4>Anti-pattern: instanceof + cast</h4>
+
+<pre><code class="language-java">// ❌ Type checking thủ công — kill polymorphism
+public void send(NotificationChannel channel, String userId, String message) {
+    if (channel instanceof EmailChannel) {
+        EmailChannel email = (EmailChannel) channel;
+        email.send(userId, message);
+        email.markAsEmail();
+    } else if (channel instanceof SmsChannel) {
+        SmsChannel sms = (SmsChannel) channel;
+        sms.send(userId, message);
+        sms.markAsSMS();
+    }
+    // Thêm channel mới → phải sửa method này. Đây là Open-Closed violation.
+}
+
+// ✅ Polymorphism — method chung trong interface
+public interface NotificationChannel {
+    void send(String userId, String message);
+    void markSent();  // Mỗi implementation tự xử lý
+}</code></pre>
+
+<h3 id="abs">Trụ cột 4: Abstraction — "Hide complexity, expose intent"</h3>
+<p><strong>Mental model:</strong> Abstraction là <em>"caller chỉ thấy WHAT, không thấy HOW"</em>. Class hide chi tiết phức tạp, expose interface đơn giản có ý nghĩa.</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Caller phải hiểu HOW — leak</div>
+<pre><code class="language-java">public class TransferService {
+  public void transfer(String fromId, String toId,
+      BigDecimal amount, Connection conn,
+      TransactionTemplate tx, Logger log,
+      AuditLogger audit) {
+    tx.execute(status -&gt; {
+      try {
+        conn.prepareStatement(
+          "UPDATE accounts SET balance=...")
+          .executeUpdate();
+        // 50 dòng code DB
+      } catch (SQLException e) { /*...*/ }
+    });
+  }
+}
+// Caller phải biết Connection, TransactionTemplate,
+// Logger... → leak abstraction</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Caller chỉ thấy intent</div>
+<pre><code class="language-java">public class TransferService {
+  public void transfer(TransferRequest request) {
+    // Chi tiết DB/transaction/log ẩn bên trong
+  }
+}
+
+// Caller chỉ cần biết WHAT:
+transferService.transfer(
+  new TransferRequest(fromId, toId, amount));</code></pre>
+</div>
+</div>
+
+<h4>Quy tắc abstraction tốt</h4>
+<ol>
+<li><strong>Method name describe WHAT, không describe HOW</strong>: <code>transfer()</code> đúng, <code>executeUpdateAndCommit()</code> sai</li>
+<li><strong>Parameter ít</strong> (≤ 4): nhiều hơn → wrap thành object (<code>TransferRequest</code>)</li>
+<li><strong>Hide internal state</strong>: caller không biết class lưu data thế nào</li>
+<li><strong>Fail at right level</strong>: không leak SQLException ra ngoài, wrap thành <code>TransferFailedException</code></li>
+</ol>
+</section>
+
+<section id="concepts">
+<h2>3. Concept Quan Trọng — Junior PHẢI Master</h2>
+
+<h3 id="keywords">this, super, static, final</h3>
+<pre><code class="language-java">public class Account {
+    private static final BigDecimal MIN_BALANCE = BigDecimal.ZERO;  // static final = constant
+
+    private final String accountId;  // final = không đổi sau khi set
+    private BigDecimal balance;
+
+    public Account(String accountId, BigDecimal balance) {
+        this.accountId = accountId;  // this.x = field, x = parameter (disambiguate)
+        this.balance = balance;
+    }
+
+    public Account(String accountId) {
+        this(accountId, BigDecimal.ZERO);  // gọi constructor khác — constructor chaining
+    }
+
+    public static Account empty(String id) {  // static factory method
+        return new Account(id);
+    }
+}
+
+public class SavingsAccount extends Account {
+    private BigDecimal interestRate;
+
+    public SavingsAccount(String id, BigDecimal balance, BigDecimal rate) {
+        super(id, balance);  // super = gọi constructor parent, PHẢI là dòng đầu
+        this.interestRate = rate;
+    }
+
+    @Override
+    public void deposit(BigDecimal amount) {
+        super.deposit(amount);  // gọi method parent
+        // Có thể thêm logic riêng
+    }
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Keyword</th><th>Áp dụng cho</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><code>this</code></td><td>non-static method</td><td>reference đến instance hiện tại</td></tr>
+<tr><td><code>super</code></td><td>trong subclass</td><td>reference đến parent class</td></tr>
+<tr><td><code>static</code></td><td>field/method</td><td>thuộc class, không thuộc instance</td></tr>
+<tr><td><code>final</code> (field)</td><td>field</td><td>giá trị không đổi sau khi set</td></tr>
+<tr><td><code>final</code> (method)</td><td>method</td><td>subclass không override được</td></tr>
+<tr><td><code>final</code> (class)</td><td>class</td><td>không thể kế thừa (e.g., <code>String</code>)</td></tr>
+<tr><td><code>static final</code></td><td>field</td><td>constant — viết HOA, ví dụ <code>MAX_VALUE</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="abs-vs-iface">Abstract Class vs Interface — Khi Nào Dùng Cái Nào?</h3>
+
+<pre><code class="language-java">// Abstract class — có state + behavior chung, là "is-a" relationship
+public abstract class BankAccount {
+    protected BigDecimal balance;
+    protected String accountId;
+
+    // Concrete method — shared
+    public BigDecimal getBalance() { return balance; }
+
+    // Abstract method — subclass phải override
+    public abstract BigDecimal calculateInterest();
+}
+
+public class SavingsAccount extends BankAccount {
+    public BigDecimal calculateInterest() {
+        return balance.multiply(new BigDecimal("0.05"));
+    }
+}
+
+public class CheckingAccount extends BankAccount {
+    public BigDecimal calculateInterest() { return BigDecimal.ZERO; }
+}</code></pre>
+
+<pre><code class="language-java">// Interface — chỉ contract, không có state. Có thể implement nhiều interface
+public interface Auditable {
+    AuditLog getAuditLog();
+}
+
+public interface Encryptable {
+    void encrypt();
+    void decrypt();
+}
+
+public class SavingsAccount extends BankAccount implements Auditable, Encryptable {
+    // Java 8+: interface có default method
+}</code></pre>
+
+<h4>Decision matrix</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Tiêu chí</th><th>Abstract Class</th><th>Interface</th></tr></thead>
+<tbody>
+<tr><td>State (field)</td><td>✅ Có</td><td>⚠️ Java 8+ chỉ static field</td></tr>
+<tr><td>Constructor</td><td>✅ Có</td><td>❌ Không</td></tr>
+<tr><td>Method body</td><td>✅ Có</td><td>⚠️ Chỉ default/static method (Java 8+)</td></tr>
+<tr><td>Multiple inheritance</td><td>❌ Java cấm</td><td>✅ Implement nhiều interface</td></tr>
+<tr><td>Mục đích</td><td>"is-a" + share code</td><td>Contract / capability</td></tr>
+<tr><td>Use case banking</td><td><code>BankAccount</code> extend bởi Savings/Checking</td><td><code>Auditable</code>, <code>Encryptable</code>, <code>Notifiable</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout quote">
+  <div class="ctitle">📖 Quy tắc của tôi</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Default</strong>: dùng interface</li>
+  <li><strong>Khi cần share state + behavior</strong>: abstract class</li>
+  <li><strong>Khi cả 2 đều phù hợp</strong>: interface (flexible hơn — implement được nhiều)</li>
+  </ul>
+</div>
+
+<h3 id="init-order">Constructor & Initialization Order</h3>
+<pre><code class="language-java">public class Parent {
+    private int x = 10;
+    public Parent() { System.out.println("Parent constructor"); }
+    { System.out.println("Parent instance initializer"); }
+    static { System.out.println("Parent static block"); }
+}
+
+public class Child extends Parent {
+    private int y = 20;
+    public Child() {
+        super();  // Implicit nếu không viết
+        System.out.println("Child constructor");
+    }
+    { System.out.println("Child instance initializer"); }
+    static { System.out.println("Child static block"); }
+}
+
+// Test
+Child c = new Child();</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">🧠 Output thứ tự — nhớ luật</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><code>Parent static block</code> ← static block parent (chỉ chạy 1 lần khi class load)</li>
+  <li><code>Child static block</code> ← static block child</li>
+  <li><code>Parent instance initializer</code> ← instance init parent</li>
+  <li><code>Parent constructor</code> ← constructor parent</li>
+  <li><code>Child instance initializer</code> ← instance init child</li>
+  <li><code>Child constructor</code> ← constructor child</li>
+  </ol>
+  <p style="margin-top:8px"><strong>Nhớ thứ tự:</strong> static (parent → child) → instance init parent → constructor parent → instance init child → constructor child.</p>
+</div>
+
+<h3 id="access">Access Modifier — 4 Cấp</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Modifier</th><th>Same class</th><th>Same package</th><th>Subclass</th><th>Anywhere</th></tr></thead>
+<tbody>
+<tr><td><code>private</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td><code>(default)</code> package-private</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td><code>protected</code></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td><code>public</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+</tbody>
+</table>
+</div>
+
+<pre><code class="language-java">public class UserService {            // public — caller bên ngoài package dùng
+    private final UserRepository repo; // private — internal state
+    protected boolean validate(User u) { /* */ }  // protected — subclass override
+    void internalMethod() { /* */ }    // package-private — chỉ test/utility cùng package
+}</code></pre>
+
+<p><strong>Nguyên tắc</strong>: bắt đầu với <code>private</code>, mở rộng dần khi thật sự cần. <em>"Open by need, not by default."</em></p>
+
+<h3 id="inner">Inner Class & Static Nested Class</h3>
+<pre><code class="language-java">public class Outer {
+    private int outerField = 10;
+
+    // Inner class — gắn vào instance Outer, có thể truy cập outerField
+    public class Inner {
+        public void show() {
+            System.out.println(outerField);  // OK
+        }
+    }
+
+    // Static nested class — KHÔNG gắn instance, không truy cập outerField
+    public static class StaticNested {
+        public void show() {
+            // System.out.println(outerField);  // ❌ Compile error
+        }
+    }
+}
+
+// Tạo instance:
+Outer outer = new Outer();
+Outer.Inner inner = outer.new Inner();         // Phải có outer instance
+Outer.StaticNested nested = new Outer.StaticNested(); // Không cần outer</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">💡 Thực tế dùng khi nào?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Static nested</strong>: Builder pattern, Holder pattern</li>
+  <li><strong>Inner</strong>: hiếm dùng, dễ memory leak (giữ reference outer)</li>
+  <li><strong>Anonymous class</strong>: cho event handler, listener (Java 8+ thay bằng lambda nếu functional interface)</li>
+  </ul>
+</div>
+</section>
+
+<section id="solid">
+<h2>4. SOLID Cho Junior</h2>
+<p>5 nguyên tắc Robert C. Martin. Junior nắm 3 cái đầu (S, O, L) là đủ để code OOP đúng.</p>
+
+<h3>S — Single Responsibility Principle</h3>
+<div class="callout quote">"Mỗi class chỉ có <strong>một lý do để thay đổi</strong>."</div>
+
+<pre><code class="language-java">// ❌ Class kiêm 3 trách nhiệm
+public class User {
+    private String email;
+    public void save() { /* DB code */ }                // Persistence
+    public void sendWelcomeEmail() { /* SMTP code */ }  // Communication
+    public boolean validate() { /* validation */ }      // Business rule
+}
+// Thay đổi DB → sửa class này. Thay SMTP → sửa class này. Thay rule → sửa class này.
+// 3 lý do khác nhau để thay đổi → vi phạm SRP.
+
+// ✅ Tách trách nhiệm
+public class User { /* chỉ data */ }
+public class UserRepository { public void save(User u) { } }
+public class EmailService { public void sendWelcomeEmail(User u) { } }
+public class UserValidator { public boolean validate(User u) { } }</code></pre>
+
+<h3>O — Open-Closed Principle</h3>
+<div class="callout quote"><strong>Open</strong> for extension, <strong>closed</strong> for modification.</div>
+
+<pre><code class="language-java">// ❌ Thêm channel mới → phải sửa class
+public class NotificationService {
+    public void notify(String type, String msg) {
+        if (type.equals("EMAIL")) sendEmail(msg);
+        else if (type.equals("SMS")) sendSms(msg);
+        // Thêm "PUSH" → sửa class này
+    }
+}
+
+// ✅ Thêm channel mới = thêm class mới, không sửa code cũ
+public interface NotificationChannel { void send(String msg); }
+public class EmailChannel implements NotificationChannel { /* ... */ }
+public class SmsChannel implements NotificationChannel { /* ... */ }
+// Thêm: public class PushChannel implements NotificationChannel</code></pre>
+
+<h3>L — Liskov Substitution Principle</h3>
+<p>Subclass thay thế được parent, không phá behavior. <em>(Ví dụ Square/Rectangle ở trên đã giải thích đầy đủ.)</em></p>
+
+<h3>I — Interface Segregation Principle</h3>
+<div class="callout quote">Interface to → tách thành nhiều interface nhỏ.</div>
+
+<pre><code class="language-java">// ❌ Fat interface
+public interface Worker {
+    void work();
+    void eat();
+    void sleep();
+}
+public class Robot implements Worker {
+    public void work() { }
+    public void eat() { throw new UnsupportedOperationException(); }  // ❌ Robot không ăn
+    public void sleep() { throw new UnsupportedOperationException(); }
+}
+
+// ✅ Tách
+public interface Workable { void work(); }
+public interface Eatable { void eat(); }
+public interface Sleepable { void sleep(); }
+public class Robot implements Workable { public void work() { } }
+public class Human implements Workable, Eatable, Sleepable { /* */ }</code></pre>
+
+<h3>D — Dependency Inversion Principle</h3>
+<div class="callout quote">Phụ thuộc abstraction (interface), không phụ thuộc concrete class.</div>
+
+<pre><code class="language-java">// ❌ UserService phụ thuộc concrete MySqlUserRepository
+public class UserService {
+    private MySqlUserRepository repo = new MySqlUserRepository();
+}
+// Đổi sang Postgres → phải sửa code
+
+// ✅ Phụ thuộc interface, inject từ ngoài
+public class UserService {
+    private final UserRepository repo;  // interface
+    public UserService(UserRepository repo) { this.repo = repo; }
+}</code></pre>
+
+<div class="callout success">
+  <div class="ctitle">✨ Vì sao Spring DI mạnh</div>
+  <p>DIP là nền tảng của Spring DI. Junior hiểu DIP rồi vào Spring sẽ rất nhanh — bạn sẽ thấy <code>@Autowired</code> trên interface chính là DIP applied at framework level.</p>
+</div>
+</section>
+
+<section id="antipatterns">
+<h2>5. Trade-offs & Anti-Patterns Phổ Biến</h2>
+
+<h3>Anti-pattern #1: God Class</h3>
+<pre><code class="language-java">// ❌ Class 2000 dòng, làm đủ thứ
+public class UserManager {
+    public void createUser() { }
+    public void deleteUser() { }
+    public void sendEmail() { }
+    public void validatePayment() { }
+    public void exportToCsv() { }
+    public void calculateTax() { }
+    // ... 50 method khác
+}</code></pre>
+<p><strong>Refactor</strong>: tách theo SRP — <code>UserService</code>, <code>EmailService</code>, <code>PaymentValidator</code>, <code>CsvExporter</code>, <code>TaxCalculator</code>.</p>
+
+<h3>Anti-pattern #2: Anemic Domain Model</h3>
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Entity chỉ getter/setter</div>
+<pre><code class="language-java">public class Order {
+  private List&lt;OrderItem&gt; items;
+  private OrderStatus status;
+  // chỉ getter/setter
+}
+
+// Logic dồn về service
+public class OrderService {
+  public void cancel(Order order) {
+    if (order.getStatus() != PENDING)
+      throw new IllegalStateException();
+    order.setStatus(CANCELLED);
+  }
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Rich Domain Model</div>
+<pre><code class="language-java">public class Order {
+  private OrderStatus status;
+
+  public void cancel() {
+    if (status != PENDING)
+      throw new InvalidOrderStateException(
+        "Cannot cancel: " + status);
+    status = CANCELLED;
+  }
+}
+// Behavior gắn vào entity</code></pre>
+</div>
+</div>
+
+<h3>Anti-pattern #3: Constructor 10 Tham Số</h3>
+<pre><code class="language-java">// ❌
+public Order(Long id, String userId, BigDecimal total, String currency, OrderStatus status,
+             LocalDateTime createdAt, LocalDateTime updatedAt, String shippingAddress,
+             String billingAddress, String discountCode) { }
+
+// ✅ Builder pattern
+Order order = Order.builder()
+    .id(123L)
+    .userId("user1")
+    .total(BigDecimal.valueOf(100))
+    .currency("VND")
+    .build();</code></pre>
+
+<h3>Anti-pattern #4: Cyclic Dependency</h3>
+<pre><code class="language-java">// ❌ A phụ thuộc B, B phụ thuộc A
+public class A { private B b; }
+public class B { private A a; }
+// Khó test, khó refactor, dễ infinite loop</code></pre>
+<p><strong>Refactor</strong>: tách interface, hoặc dùng event để decouple.</p>
+
+<h3>Anti-pattern #5: Thiếu equals/hashCode khi làm Map key</h3>
+<pre><code class="language-java">// ❌ Custom class không override → HashMap.get() trả null
+class UserId { String value; }
+
+Map&lt;UserId, User&gt; map = new HashMap&lt;&gt;();
+map.put(new UserId("1"), user);
+map.get(new UserId("1"));  // null!
+
+// ✅ Override hoặc dùng Java 16 record
+record UserId(String value) { }</code></pre>
+</section>
+
+<section id="exercises">
+<h2>6. Exercises — Tự Practice</h2>
+
+<h3>Exercise 1: Refactor Procedural → OOP (Easy)</h3>
+<p>Cho code này, refactor thành OOP với 2 class <code>Book</code> và <code>Library</code>:</p>
+<pre><code class="language-java">// Input — procedural
+public class Library {
+    public static String[] titles = new String[100];
+    public static String[] authors = new String[100];
+    public static boolean[] borrowed = new boolean[100];
+    public static int count = 0;
+
+    public static void addBook(String title, String author) {
+        titles[count] = title;
+        authors[count] = author;
+        borrowed[count] = false;
+        count++;
+    }
+
+    public static void borrowBook(int index) { borrowed[index] = true; }
+    public static void returnBook(int index) { borrowed[index] = false; }
+}</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">📋 Yêu cầu refactor</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Tạo <code>Book</code> class với encapsulation</li>
+  <li><code>Library</code> class quản lý collection of Book</li>
+  <li>Validation: không borrow book đã borrowed, không add duplicate ISBN</li>
+  <li>Áp dụng <code>Optional</code> cho find method</li>
+  </ul>
+</div>
+
+<h3>Exercise 2: Áp dụng Polymorphism (Medium)</h3>
+<p>Design hệ thống tính phí giao dịch banking với 3 loại:</p>
+<ul>
+<li><code>DomesticTransfer</code> — phí 5,000 VND</li>
+<li><code>InternationalTransfer</code> — phí 0.5% × amount, tối thiểu 50,000 VND</li>
+<li><code>InternalTransfer</code> (cùng ngân hàng) — miễn phí</li>
+</ul>
+<div class="callout tip">
+  <div class="ctitle">📋 Yêu cầu</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Interface <code>Transferable</code> với method <code>calculateFee()</code></li>
+  <li>Service <code>TransferProcessor</code> không biết loại cụ thể, chỉ biết <code>Transferable</code></li>
+  <li>Thêm <code>CryptoTransfer</code> mới (phí 1% + 100,000 fixed) mà <strong>không sửa code cũ</strong></li>
+  <li>Test bằng JUnit</li>
+  </ul>
+</div>
+
+<h3>Exercise 3: SOLID Refactoring (Hard)</h3>
+<pre><code class="language-java">public class ReportGenerator {
+    public void generate(String type, List&lt;Transaction&gt; txns, String outputPath) {
+        if (type.equals("PDF")) {
+            // 50 dòng generate PDF
+            // Save to file at outputPath
+            // Send email to admin@bank.com
+            // Log to "/var/log/reports.log"
+        } else if (type.equals("EXCEL")) {
+            // 50 dòng generate Excel
+        } else if (type.equals("CSV")) {
+            // 50 dòng generate CSV
+        }
+    }
+}</code></pre>
+<div class="callout tip">
+  <div class="ctitle">📋 Yêu cầu</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>SRP</strong>: tách generator, exporter, notifier, logger</li>
+  <li><strong>OCP</strong>: thêm format mới (JSON) không sửa code</li>
+  <li><strong>DIP</strong>: dependency injection, không <code>new</code> trong class</li>
+  <li><strong>Test</strong>: mock dependency, unit test cho mỗi class</li>
+  </ul>
+</div>
+</section>
+
+<section id="interview">
+<h2>7. Interview Framework</h2>
+
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior</span></div>
+  <div class="q">Q: 4 trụ cột OOP là gì?</div>
+  <div class="a">"Encapsulation (đóng gói state, expose method có ý nghĩa, validate ở constructor), Inheritance (subclass extends parent với 'is-a' relationship), Polymorphism (cùng interface, behavior khác nhau theo type runtime), Abstraction (hide complexity, expose intent đơn giản). 4 cái này tổng hợp lại để code dễ extend, dễ test, dễ maintain."</div>
+
+  <div class="q">Q: Abstract class vs Interface khác nhau thế nào?</div>
+  <div class="a">"Abstract class có thể có state (field) + concrete method, là 'is-a' relationship, Java cấm extends nhiều. Interface là contract, không state (Java 8+ có default method), 1 class implement nhiều interface được. Thực tế: default dùng interface, abstract class khi cần share state + behavior + 'is-a' rõ."</div>
+</div>
+
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid bridge</span></div>
+  <div class="q">Q: 'Favor composition over inheritance' — tại sao?</div>
+  <div class="a">"3 lý do chính:<br><br>
+  <strong>1. Fragile base class</strong>: subclass phụ thuộc internal behavior parent. Parent đổi → subclass break (ví dụ HashSet.addAll() gọi add() bên trong, override add() trong subclass → addAll() behave khác).<br>
+  <strong>2. Tight coupling</strong>: inheritance fix relationship compile-time. Composition cho phép swap behavior runtime (Strategy pattern).<br>
+  <strong>3. Multiple inheritance limit</strong>: Java cấm extends nhiều class. Composition cho phép 'use' nhiều class.<br><br>
+  Quy tắc: 'is-a' chắc chắn → inheritance. Còn lại → composition. 90% trường hợp app dùng composition."</div>
+
+  <div class="q">Q: Liskov Substitution Principle — ví dụ vi phạm?</div>
+  <div class="a">"LSP nói subclass phải thay parent được mà không phá behavior expected.<br><br>
+  Ví dụ kinh điển: Square extends Rectangle. Rectangle có setWidth/setHeight độc lập. Square ép width = height. Caller code:<br><br>
+  <code>Rectangle r = new Square(); r.setWidth(5); r.setHeight(10); assert r.area() == 50; // FAIL với Square (area = 100)</code><br><br>
+  Square không 'is-a' Rectangle về behavior, dù về toán học là vậy. Đây là dấu hiệu inheritance sai. Refactor: cả 2 implement Shape interface, không kế thừa nhau."</div>
+</div>
+
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior signal</span></div>
+  <div class="q">Q: Tại sao Spring khuyến khích DI qua constructor, không qua field?</div>
+  <div class="a">"4 lý do:<br><br>
+  <strong>1. Immutable</strong>: field <code>final</code> chỉ set qua constructor → instance không bị thay đổi dependency runtime.<br>
+  <strong>2. Required dependency rõ ràng</strong>: nhìn constructor signature thấy ngay class cần gì. Field injection ẩn dependency.<br>
+  <strong>3. Test dễ</strong>: new object với dependency mock, không cần Spring context hay reflection.<br>
+  <strong>4. Circular dependency phát hiện sớm</strong>: constructor injection fail compile/startup time, field injection fail runtime ở chỗ ngẫu nhiên.<br><br>
+  DIP + constructor injection là combo. Field <code>@Autowired</code> là legacy, nên tránh trong code mới."</div>
+</div>
+</section>
+
+<section id="checklist">
+<h2>8. Checklist Thành Thạo</h2>
+
+<div class="checklist">
+<div class="item"><input type="checkbox" id="c1"/><label for="c1"><strong>1. Encapsulation reflex</strong>: Mọi field private, không bao giờ public. Validate trong constructor + setter.</label></div>
+<div class="item"><input type="checkbox" id="c2"/><label for="c2"><strong>2. is-a vs has-a</strong>: Phân biệt được, justified mỗi lần dùng <code>extends</code>. Default composition.</label></div>
+<div class="item"><input type="checkbox" id="c3"/><label for="c3"><strong>3. Polymorphism áp dụng</strong>: Đã viết code dùng interface + multiple implementations (như NotificationChannel example).</label></div>
+<div class="item"><input type="checkbox" id="c4"/><label for="c4"><strong>4. Abstract vs Interface</strong>: Cho 5 case study, chọn đúng cái nào.</label></div>
+<div class="item"><input type="checkbox" id="c5"/><label for="c5"><strong>5. SOLID 3 đầu</strong>: Giải thích SRP/OCP/LSP với ví dụ thực tế. Nhận ra vi phạm trong code review.</label></div>
+<div class="item"><input type="checkbox" id="c6"/><label for="c6"><strong>6. Constructor chaining + init order</strong>: Predict đúng output của test với static block + instance initializer + super().</label></div>
+<div class="item"><input type="checkbox" id="c7"/><label for="c7"><strong>7. equals/hashCode contract</strong>: Override đúng cho POJO làm Map key. Hiểu vì sao record solve auto.</label></div>
+<div class="item"><input type="checkbox" id="c8"/><label for="c8"><strong>8. Refactor exercise 1-3</strong>: Có code refactor xong, push lên GitHub để track progress.</label></div>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">📚 Tự học tiếp</div>
+  <p><strong>Sách theo thứ tự:</strong></p>
+  <ol style="margin:6px 0 0 20px">
+  <li><em>"Head First Java"</em> (Kathy Sierra) — junior 0-1 năm, dễ vào</li>
+  <li><em>"Effective Java"</em> (Joshua Bloch) — quy tắc 1-30 đủ cho năm 1, tất cả 90 cho năm 2-3</li>
+  <li><em>"Clean Code"</em> (Robert Martin) — chương 6, 10, 11 về OOP</li>
+  </ol>
+  <p style="margin-top:8px"><strong>Practice:</strong> Refactoring katas (<a href="https://github.com/emilybache/Refactoring-Katas">github.com/emilybache</a>), Design Patterns (<a href="https://refactoring.guru/design-patterns/java">refactoring.guru</a>).</p>
+</div>
+</section>
+
+<footer>
+<div>📁 #48 Java OOP Foundation · Nhóm N</div>
+<div>Hoàn thành: 2026-04-25 · File 1/5 Nhóm N</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script>
+function toggleTheme(){const h=document.documentElement;const c=h.getAttribute('data-theme');const n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);document.getElementById('themeIcon').textContent=n==='dark'?'☀️':'🌙';document.getElementById('themeText').textContent=n==='dark'?'Light':'Dark';}
+const sections=document.querySelectorAll('section[id], h3[id]');const links=document.querySelectorAll('aside .toc a');
+function updateActive(){let curr='';sections.forEach(s=>{const t=s.getBoundingClientRect().top;if(t<120)curr=s.id;});links.forEach(l=>{l.classList.toggle('active',l.getAttribute('href')==='#'+curr);});}
+window.addEventListener('scroll',updateActive);updateActive();
+document.querySelectorAll('aside .toc a').forEach(a=>a.addEventListener('click',()=>{if(window.innerWidth<980)document.querySelector('.sidebar').classList.remove('open');}));
+</script>
+</body>
+</html>

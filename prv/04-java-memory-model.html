@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#04 - Java Memory Model | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 1 - Core Java Mastery<span class="sep">/</span><strong>#04 Java Memory Model</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#problem">1. Bài toán thực tế</a>
+    <a href="#why">2. Vì sao cần JMM</a>
+    <a href="#happens-before">3. Happens-before</a>
+    <div class="sub">
+      <a href="#reordering">Reordering</a>
+      <a href="#barriers">Memory barriers</a>
+    </div>
+    <a href="#volatile">4. volatile</a>
+    <a href="#synchronized">5. synchronized</a>
+    <div class="sub">
+      <a href="#monitor-rules">Monitor rules</a>
+      <a href="#wait-notify">wait/notify</a>
+    </div>
+    <a href="#atomic">6. AtomicXxx</a>
+    <div class="sub">
+      <a href="#cas">CAS</a>
+      <a href="#longadder">LongAdder</a>
+      <a href="#aba">ABA problem</a>
+    </div>
+    <a href="#publication">7. Safe publication</a>
+    <div class="sub">
+      <a href="#final-fields">Final fields</a>
+      <a href="#escape">This escape</a>
+      <a href="#dcl">Double-checked locking</a>
+    </div>
+    <a href="#advanced">8. Advanced JMM</a>
+    <div class="sub">
+      <a href="#false-sharing">False sharing</a>
+      <a href="#varhandle">VarHandle</a>
+      <a href="#deep-immutability">Deep immutability</a>
+    </div>
+    <a href="#patterns">9. Patterns</a>
+    <a href="#debug-lab">10. Debug lab</a>
+    <a href="#interview">11. Interview framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase 1 - Core Java Mastery - Senior depth</span>
+  <h1>#04 - Java Memory Model: happens-before, volatile, synchronized, AtomicXxx</h1>
+  <p class="lead">Java Memory Model là phần lý thuyết đứng sau concurrency. Nó trả lời câu hỏi: <strong>khi nào một thread chắc chắn thấy write của thread khác?</strong> Nếu không có happens-before, code có thể chạy đúng trên máy bạn nhưng sai dưới load hoặc trên CPU nhiều core.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Visibility + ordering + atomicity</div></div>
+    <div class="meta-item"><div class="k">Pair với</div><div class="v">#01 Java Concurrency</div></div>
+    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">Notification worker</div></div>
+    <div class="meta-item"><div class="k">Đầu ra</div><div class="v">Giải thích được bug multi-core</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">JMM Là Contract Giữa Code Java Và Runtime</h2>
+<p>Developer thường nghĩ code chạy theo đúng thứ tự mình viết. Trong single-thread, compiler và CPU có thể reorder instruction mà bạn không thấy vì kết quả cuối vẫn giống nhau. Trong multi-thread, reordering và CPU cache có thể làm thread khác thấy trạng thái "lạ": flag đã true nhưng data vẫn null, object reference đã publish nhưng field chưa initialized, counter volatile vẫn mất increment.</p>
+<p>JMM không yêu cầu bạn hiểu từng CPU instruction. Nó cho bạn một contract: nếu có happens-before giữa action A và action B, thread thực hiện B phải thấy effect của A. Nếu không có happens-before, kết quả không được đảm bảo.</p>
+
+<div class="callout why">
+  <div class="ctitle">Cách học JMM đúng</div>
+  <p>Đừng học JMM như một danh sách keyword. Hãy học theo ba câu hỏi: visibility có được đảm bảo không, ordering có được đảm bảo không, operation có atomic không. Mỗi bug concurrency sâu thường là thiếu một trong ba guarantee này.</p>
+</div>
+
+<div class="pillar-grid">
+  <div class="pillar"><div class="num">1</div><h4>Visibility</h4><p>Thread B có chắc thấy write của Thread A không?</p></div>
+  <div class="pillar"><div class="num">2</div><h4>Ordering</h4><p>Thread B có thấy writes theo thứ tự an toàn không?</p></div>
+  <div class="pillar"><div class="num">3</div><h4>Atomicity</h4><p>Operation có bị interleave giữa chừng không?</p></div>
+  <div class="pillar"><div class="num">4</div><h4>Publication</h4><p>Object có được publish sau khi constructor hoàn tất không?</p></div>
+</div>
+</section>
+
+<section id="problem">
+<h2>1. Bài Toán Thực Tế - Notification Worker Báo Sent Nhưng ID Null</h2>
+<p>Một service gửi notification chạy ổn trên local. Sau khi lên server nhiều core và tải cao, log thỉnh thoảng ghi <code>sent=true</code> nhưng <code>messageId=null</code>. Không có exception, không reproduce ổn định.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: không có happens-before</div>
+<pre><code class="language-java">public class NotificationState {
+    private boolean sent = false;
+    private String messageId;
+
+    public void markSent(String id) {
+        this.messageId = id;
+        this.sent = true;
+    }
+
+    public void printIfSent() {
+        if (sent) {
+            log.info("messageId={}", messageId);
+        }
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Fix đơn giản: volatile flag đúng thứ tự</div>
+<pre><code class="language-java">public class NotificationState {
+    private String messageId;
+    private volatile boolean sent = false;
+
+    public void markSent(String id) {
+        this.messageId = id;
+        this.sent = true;
+    }
+
+    public void printIfSent() {
+        if (sent) {
+            log.info("messageId={}", messageId);
+        }
+    }
+}</code></pre>
+  </div>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">Điểm tinh tế</div>
+  <p><code>volatile sent</code> chỉ đúng nếu write data xảy ra trước volatile write. Nếu đổi thứ tự thành <code>sent = true</code> rồi mới set <code>messageId</code>, volatile không cứu được logic sai.</p>
+</div>
+</section>
+
+<section id="why">
+<h2>2. Vì Sao Cần Java Memory Model?</h2>
+<p>Máy hiện đại có nhiều tầng cache. Mỗi core có thể có cache riêng. Compiler/JIT và CPU có thể reorder instruction để tối ưu. Nếu mọi read/write đều phải đi thẳng tới main memory và giữ đúng thứ tự tuyệt đối, performance sẽ tệ. JMM cho phép tối ưu bên trong ranh giới an toàn, còn developer dùng synchronization để đặt ranh giới đó.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 780 310" role="img" aria-label="CPU cache and memory">
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <rect x="45" y="65" width="180" height="125" rx="10" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="135" y="100" text-anchor="middle" font-size="13">Core 1</text>
+  <text x="135" y="126" text-anchor="middle" font-size="12" fill="#475569">L1/L2 cache</text>
+  <text x="135" y="150" text-anchor="middle" font-size="12" fill="#475569">Thread A</text>
+  <rect x="555" y="65" width="180" height="125" rx="10" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="645" y="100" text-anchor="middle" font-size="13">Core 2</text>
+  <text x="645" y="126" text-anchor="middle" font-size="12" fill="#475569">L1/L2 cache</text>
+  <text x="645" y="150" text-anchor="middle" font-size="12" fill="#475569">Thread B</text>
+  <rect x="285" y="210" width="210" height="65" rx="10" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="390" y="248" text-anchor="middle" font-size="13">Main Memory</text>
+  <line x1="185" y1="190" x2="305" y2="220" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <line x1="595" y1="190" x2="475" y2="220" stroke="#d97706" stroke-width="2" marker-end="url(#arrow)"></line>
+</svg>
+<div class="caption">Không có synchronization, thread B không được đảm bảo thấy write mới nhất của thread A.</div>
+</div>
+
+<section id="reordering">
+<h3>2.1 Reordering: Code Viết Một Đằng, Runtime Có Thể Sắp Xếp Một Nẻo</h3>
+<p>Compiler/JIT/CPU được phép reorder nếu trong single-thread kết quả quan sát được không đổi. Vấn đề là multi-thread có thể quan sát trạng thái trung gian nếu thiếu happens-before.</p>
+<pre><code class="language-java">// Thread A
+data = loadData();
+ready = true;
+
+// Thread B
+if (ready) {
+    use(data);
+}</code></pre>
+<p>Nếu <code>ready</code> không volatile và không có lock, Thread B có thể thấy <code>ready=true</code> nhưng <code>data</code> vẫn là null hoặc stale. Đây không phải JVM "sai"; code của bạn không tạo guarantee.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Lớp tối ưu</th><th>Có thể làm gì</th><th>JMM xử lý bằng</th></tr></thead>
+  <tbody>
+    <tr><td>Compiler/JIT</td><td>Reorder, inline, eliminate dead code</td><td>Không vượt qua happens-before boundary</td></tr>
+    <tr><td>CPU</td><td>Store buffer, load reorder, cache</td><td>Memory barriers/fences</td></tr>
+    <tr><td>Runtime</td><td>Lock optimization, escape analysis</td><td>Preserve JMM semantics</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="barriers">
+<h3>2.2 Memory Barriers: Ý Nghĩa Thực Dụng</h3>
+<p>Bạn không thường viết memory barrier trực tiếp trong Java. Bạn dùng <code>volatile</code>, <code>synchronized</code>, atomic classes, concurrent collections. JVM dịch chúng thành cơ chế phù hợp để chặn reorder và flush/invalidate cache khi cần.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Java construct</th><th>Effect đơn giản hóa</th><th>Ý nghĩa</th></tr></thead>
+  <tbody>
+    <tr><td>Volatile write</td><td>Release</td><td>Writes trước đó không bị đẩy ra sau volatile write.</td></tr>
+    <tr><td>Volatile read</td><td>Acquire</td><td>Reads sau đó không bị kéo lên trước volatile read.</td></tr>
+    <tr><td>Monitor exit</td><td>Release</td><td>Flush writes trước khi unlock.</td></tr>
+    <tr><td>Monitor enter</td><td>Acquire</td><td>Đọc state fresh sau khi lock.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section id="happens-before">
+<h2>3. Happens-Before</h2>
+<p>Happens-before là quan hệ đảm bảo visibility và ordering. Nếu A happens-before B, mọi effect của A phải visible với B.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Rule</th><th>Nghĩa</th><th>Ví dụ</th></tr></thead>
+  <tbody>
+    <tr><td>Program order</td><td>Trong cùng thread, action trước hb action sau</td><td>Dòng 1 trước dòng 2 trong cùng method</td></tr>
+    <tr><td>Monitor lock</td><td><code>unlock(m)</code> hb <code>lock(m)</code> kế tiếp</td><td><code>synchronized(lock)</code></td></tr>
+    <tr><td>Volatile</td><td>Write volatile hb read volatile sau đó</td><td>Flag shutdown worker</td></tr>
+    <tr><td>Thread start</td><td><code>start()</code> hb action trong thread mới</td><td>Set config trước khi start thread</td></tr>
+    <tr><td>Thread join</td><td>Action trong thread hb <code>join()</code> return</td><td>Main thấy result sau join</td></tr>
+    <tr><td>Transitivity</td><td>A hb B, B hb C thì A hb C</td><td>Volatile flag publish non-volatile data trước nó</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 760 260" role="img" aria-label="Volatile happens before chain">
+  <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <text x="55" y="55" font-size="13">Thread A</text>
+  <rect x="140" y="30" width="150" height="50" rx="7" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="215" y="60" text-anchor="middle" font-size="12">messageId = id</text>
+  <line x1="290" y1="55" x2="370" y2="55" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <rect x="370" y="30" width="150" height="50" rx="7" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="445" y="60" text-anchor="middle" font-size="12">volatile sent=true</text>
+  <line x1="445" y1="80" x2="445" y2="165" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <text x="455" y="125" font-size="12" fill="#475569">hb</text>
+  <text x="55" y="205" font-size="13">Thread B</text>
+  <rect x="370" y="175" width="150" height="50" rx="7" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="445" y="205" text-anchor="middle" font-size="12">read volatile sent</text>
+  <line x1="370" y1="200" x2="290" y2="200" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow2)"></line>
+  <rect x="140" y="175" width="150" height="50" rx="7" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="215" y="205" text-anchor="middle" font-size="12">read messageId</text>
+</svg>
+<div class="caption">Transitivity làm non-volatile write trước volatile write visible sau volatile read.</div>
+</div>
+</section>
+
+<section id="volatile">
+<h2>4. volatile</h2>
+<p><code>volatile</code> đảm bảo visibility và ordering cho biến đó. Nó không đảm bảo mutual exclusion và không biến compound operation thành atomic.</p>
+
+<div class="compare">
+  <div class="col good">
+    <div class="col-head">Đúng: shutdown flag</div>
+<pre><code class="language-java">class Worker implements Runnable {
+    private volatile boolean running = true;
+
+    public void stop() {
+        running = false;
+    }
+
+    public void run() {
+        while (running) {
+            doWork();
+        }
+    }
+}</code></pre>
+  </div>
+  <div class="col bad">
+    <div class="col-head">Sai: compound operation</div>
+<pre><code class="language-java">class Counter {
+    private volatile int count = 0;
+
+    public void increment() {
+        count++; // read + add + write, không atomic
+    }
+}</code></pre>
+  </div>
+</div>
+
+<p>Dùng volatile khi có một giá trị/flag được một hoặc nhiều thread ghi, thread khác đọc, và operation chỉ là read/write đơn giản. Với invariant nhiều field hoặc increment, dùng lock/atomic/immutable state.</p>
+
+<h3>4.1 Volatile Recipe: Publish Data Bằng Flag</h3>
+<p>Pattern an toàn: ghi toàn bộ data non-volatile trước, rồi volatile write vào flag/reference. Reader volatile read flag/reference trước, rồi đọc data.</p>
+<pre><code class="language-java">public class ConfigHolder {
+    private Config config;
+    private volatile boolean loaded;
+
+    public void load() {
+        Config parsed = parseConfig();
+        this.config = parsed;   // normal write
+        this.loaded = true;     // volatile write publishes previous writes
+    }
+
+    public Optional&lt;Config&gt; current() {
+        if (!loaded) {          // volatile read
+            return Optional.empty();
+        }
+        return Optional.of(config);
+    }
+}</code></pre>
+
+<h3>4.2 Volatile Reference Tốt Hơn Nhiều Field Volatile</h3>
+<p>Nếu state gồm nhiều field phải nhất quán với nhau, đừng rải nhiều volatile field. Tạo immutable state object và publish bằng một volatile reference.</p>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: nhiều volatile field có thể lệch snapshot</div>
+<pre><code class="language-java">private volatile BigDecimal discountRate;
+private volatile Instant validUntil;
+private volatile String campaignId;</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: immutable snapshot</div>
+<pre><code class="language-java">private volatile CampaignSnapshot campaign = CampaignSnapshot.empty();
+
+public void reload(CampaignSnapshot next) {
+    campaign = next;
+}</code></pre>
+  </div>
+</div>
+
+<h3>4.3 Volatile Không Phải Lock Nhẹ</h3>
+<p>Nhiều người dùng volatile như "synchronized nhanh hơn". Đây là cách nghĩ sai. Volatile không đảm bảo critical section, không bảo vệ invariant nhiều field và không làm read-modify-write atomic.</p>
+</section>
+
+<section id="synchronized">
+<h2>5. synchronized</h2>
+<p><code>synchronized</code> cung cấp hai thứ: mutual exclusion và visibility. Khi thread exit synchronized block, writes được flush; thread khác enter cùng monitor sẽ thấy chúng.</p>
+
+<pre><code class="language-java">public class CartTotal {
+    private final Object lock = new Object();
+    private BigDecimal subtotal = BigDecimal.ZERO;
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    public void applyLine(BigDecimal price, BigDecimal discountLine) {
+        synchronized (lock) {
+            subtotal = subtotal.add(price);
+            discount = discount.add(discountLine);
+        }
+    }
+
+    public BigDecimal total() {
+        synchronized (lock) {
+            return subtotal.subtract(discount);
+        }
+    }
+}</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">Lock object</div>
+  <p>Dùng private final lock object thay vì lock trên string literal, boxed integer, local object mới, hoặc object public. Lock public có thể bị code ngoài vô tình giữ và gây deadlock.</p>
+</div>
+
+<section id="monitor-rules">
+<h3>5.1 Monitor Rules: Lock Và Visibility Đi Chung</h3>
+<p>Khi một thread release monitor bằng cách thoát khỏi <code>synchronized</code>, mọi write trong critical section happens-before thread khác acquire cùng monitor sau đó. Điều này chỉ đúng nếu hai bên dùng cùng một lock object.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Tình huống</th><th>Có an toàn không?</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td>Writer và reader cùng synchronized trên <code>lock</code></td><td>Có</td><td>Unlock-lock cùng monitor tạo happens-before</td></tr>
+    <tr><td>Writer synchronized, reader đọc trực tiếp không lock</td><td>Không đủ</td><td>Reader không acquire monitor nên không có visibility guarantee</td></tr>
+    <tr><td>Writer lock A, reader lock B</td><td>Không đủ</td><td>Hai monitor khác nhau, không liên quan</td></tr>
+    <tr><td>Lock trên object public</td><td>Nguy hiểm</td><td>Code ngoài có thể giữ lock, gây latency hoặc deadlock</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="wait-notify">
+<h3>5.2 wait/notify: Luôn Wait Trong Vòng while</h3>
+<p><code>wait</code> release monitor và đưa thread vào trạng thái chờ. Khi được <code>notify</code> hoặc <code>notifyAll</code>, thread phải acquire lại monitor trước khi chạy tiếp. Điều quan trọng: wakeup không đồng nghĩa condition đã đúng, nên phải kiểm tra condition trong vòng <code>while</code>.</p>
+
+<pre><code class="language-java">public class BoundedBuffer&lt;T&gt; {
+    private final Queue&lt;T&gt; queue = new ArrayDeque&lt;&gt;();
+    private final int capacity;
+
+    public BoundedBuffer(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public synchronized void put(T item) throws InterruptedException {
+        while (queue.size() == capacity) {
+            wait();
+        }
+        queue.add(item);
+        notifyAll();
+    }
+
+    public synchronized T take() throws InterruptedException {
+        while (queue.isEmpty()) {
+            wait();
+        }
+        T item = queue.remove();
+        notifyAll();
+        return item;
+    }
+}</code></pre>
+
+<p>Trong application hiện đại, bạn thường dùng <code>BlockingQueue</code>, <code>Semaphore</code>, <code>CountDownLatch</code> hoặc <code>CompletableFuture</code> thay vì tự viết wait/notify. Nhưng hiểu monitor rule giúp đọc thread dump và giải thích vì sao <code>notify</code> sai condition có thể gây treo.</p>
+</section>
+</section>
+
+<section id="atomic">
+<h2>6. AtomicXxx</h2>
+<p>Atomic classes dùng CAS: compare current value với expected, nếu khớp thì set new value trong một hardware-level atomic operation. Nếu fail, retry hoặc return false.</p>
+
+<section id="cas">
+<h3>6.1 CAS: Compare-And-Set</h3>
+<pre><code class="language-java">public class RateCounter {
+    private final AtomicInteger inFlight = new AtomicInteger();
+
+    public boolean tryAcquire(int max) {
+        while (true) {
+            int current = inFlight.get();
+            if (current &gt;= max) return false;
+            if (inFlight.compareAndSet(current, current + 1)) {
+                return true;
+            }
+        }
+    }
+
+    public void release() {
+        inFlight.decrementAndGet();
+    }
+}</code></pre>
+
+<p>CAS rất mạnh cho state transition nhỏ, nhưng không miễn phí. Khi contention cao, nhiều thread có thể fail CAS liên tục và retry, tiêu thụ CPU. Với critical section phức tạp, lock đôi khi rõ và hiệu quả hơn.</p>
+</section>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Class</th><th>Dùng cho</th><th>Ghi nhớ</th></tr></thead>
+  <tbody>
+    <tr><td><code>AtomicInteger/Long</code></td><td>Counter chính xác, sequence trong JVM</td><td>CAS có thể spin khi contention cao</td></tr>
+    <tr><td><code>LongAdder</code></td><td>Metrics counter contention cao</td><td><code>sum()</code> không phải snapshot tuyệt đối</td></tr>
+    <tr><td><code>AtomicReference</code></td><td>Swap immutable state/config</td><td>CAS trên reference</td></tr>
+    <tr><td><code>AtomicBoolean</code></td><td>One-time action, guard</td><td><code>compareAndSet(false, true)</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<section id="longadder">
+<h3>6.2 LongAdder: Counter Cho Contention Cao</h3>
+<p><code>AtomicLong</code> có một biến trung tâm, nhiều thread cùng CAS vào một điểm. <code>LongAdder</code> chia counter thành nhiều cell để giảm contention, sau đó cộng lại khi <code>sum()</code>.</p>
+<div class="compare">
+  <div class="col neutral">
+    <div class="col-head">AtomicLong: exact, contention cao hơn</div>
+<pre><code class="language-java">private final AtomicLong requests = new AtomicLong();
+
+public void record() {
+    requests.incrementAndGet();
+}</code></pre>
+  </div>
+  <div class="col neutral">
+    <div class="col-head">LongAdder: tốt cho metrics</div>
+<pre><code class="language-java">private final LongAdder requests = new LongAdder();
+
+public void record() {
+    requests.increment();
+}</code></pre>
+  </div>
+</div>
+<p>Dùng <code>LongAdder</code> cho metrics, counters không cần snapshot tuyệt đối chính xác từng nano giây. Dùng <code>AtomicLong</code> cho sequence/generation number cần giá trị chính xác ngay.</p>
+</section>
+
+<section id="aba">
+<h3>6.3 ABA Problem</h3>
+<p>CAS kiểm tra "giá trị hiện tại có bằng expected không". Nếu giá trị đi từ A sang B rồi quay lại A, CAS không biết đã có thay đổi ở giữa. Đây là ABA problem.</p>
+<pre><code class="language-java">// Conceptual example
+Thread 1 reads value A
+Thread 2 changes A -&gt; B -&gt; A
+Thread 1 CAS(A, C) succeeds, but state had changed in between</code></pre>
+<p>Trong code application bình thường, ABA ít gặp hơn so với lock-free data structure. Nếu cần version, dùng <code>AtomicStampedReference</code> hoặc thêm version field vào immutable state.</p>
+<pre><code class="language-java">record VersionedRules(long version, Rules rules) {}
+
+private final AtomicReference&lt;VersionedRules&gt; current =
+    new AtomicReference&lt;&gt;(new VersionedRules(0, Rules.empty()));
+
+public boolean update(Rules next) {
+    VersionedRules old = current.get();
+    VersionedRules updated = new VersionedRules(old.version() + 1, next);
+    return current.compareAndSet(old, updated);
+}</code></pre>
+</section>
+</section>
+
+<section id="publication">
+<h2>7. Safe Publication</h2>
+<p>Safe publication nghĩa là object được publish cho thread khác sau khi constructor hoàn tất và các field visible đúng. Nếu publish reference không an toàn, thread khác có thể thấy object ở trạng thái chưa đầy đủ.</p>
+
+<section id="final-fields">
+<h3>7.1 Final Fields</h3>
+<pre><code class="language-java">public final class ProductSnapshot {
+    private final String sku;
+    private final BigDecimal price;
+
+    public ProductSnapshot(String sku, BigDecimal price) {
+        this.sku = Objects.requireNonNull(sku);
+        this.price = Objects.requireNonNull(price);
+    }
+}</code></pre>
+<p>Final fields có guarantee đặc biệt: nếu constructor không để <code>this</code> escape, thread khác thấy reference sẽ thấy final fields initialized đúng. Guarantee này không biến object thành immutable hoàn toàn. Nếu field final trỏ tới một <code>List</code> mutable và list đó bị mutate sau khi publish, thread khác vẫn có thể thấy trạng thái thay đổi không kiểm soát.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: final reference, mutable content</div>
+<pre><code class="language-java">public final class CatalogSnapshot {
+    private final List&lt;Product&gt; products;
+
+    public CatalogSnapshot(List&lt;Product&gt; products) {
+        this.products = products; // caller vẫn có thể mutate list
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: defensive copy</div>
+<pre><code class="language-java">public final class CatalogSnapshot {
+    private final List&lt;Product&gt; products;
+
+    public CatalogSnapshot(List&lt;Product&gt; products) {
+        this.products = List.copyOf(products);
+    }
+}</code></pre>
+  </div>
+</div>
+</section>
+
+<h3>7.2 Volatile Reference + Immutable State</h3>
+<pre><code class="language-java">public class PricingRules {
+    private volatile RulesSnapshot current = RulesSnapshot.empty();
+
+    public void reload(RulesSnapshot snapshot) {
+        current = snapshot; // volatile write publish toàn snapshot immutable
+    }
+
+    public Money calculate(Cart cart) {
+        return current.apply(cart); // volatile read
+    }
+}</code></pre>
+
+<section id="escape">
+<h3>7.3 This Escape: Constructor Chưa Xong Đã Bị Nhìn Thấy</h3>
+<p><code>this escape</code> xảy ra khi object tự đưa reference của mình ra ngoài trong lúc constructor chưa hoàn tất. Ví dụ thường gặp: đăng ký listener, start thread, submit task, đưa <code>this</code> vào static registry, hoặc gọi method override-able từ constructor.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: start thread trong constructor</div>
+<pre><code class="language-java">public class ReportWarmup {
+    private final Map&lt;String, Template&gt; templates;
+
+    public ReportWarmup(Executor executor) {
+        executor.execute(this::warmup); // this escape
+        this.templates = loadTemplates();
+    }
+
+    private void warmup() {
+        templates.size(); // có thể NPE
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng: factory publish sau init</div>
+<pre><code class="language-java">public class ReportWarmup {
+    private final Map&lt;String, Template&gt; templates;
+
+    private ReportWarmup(Map&lt;String, Template&gt; templates) {
+        this.templates = Map.copyOf(templates);
+    }
+
+    public static ReportWarmup createAndStart(Executor executor) {
+        ReportWarmup warmup = new ReportWarmup(loadTemplates());
+        executor.execute(warmup::warmup);
+        return warmup;
+    }
+}</code></pre>
+  </div>
+</div>
+</section>
+
+<section id="dcl">
+<h3>7.4 Double-Checked Locking Đúng</h3>
+<p>Double-checked locking chỉ đúng khi reference là <code>volatile</code>. Volatile ở đây không để bảo vệ critical section, mà để chặn reorder và đảm bảo thread đọc thấy object đã constructed đầy đủ.</p>
+
+<pre><code class="language-java">public final class TemplateRegistry {
+    private static volatile TemplateRegistry instance;
+
+    private TemplateRegistry() {}
+
+    public static TemplateRegistry getInstance() {
+        TemplateRegistry result = instance;
+        if (result == null) {
+            synchronized (TemplateRegistry.class) {
+                result = instance;
+                if (result == null) {
+                    result = new TemplateRegistry();
+                    instance = result;
+                }
+            }
+        }
+        return result;
+    }
+}</code></pre>
+
+<p>Trong code thực tế, nếu không có lý do đặc biệt, ưu tiên static holder hoặc dependency injection hơn là tự viết singleton. Nhưng khi interviewer hỏi DCL, điểm cần nói là: thiếu <code>volatile</code> thì assignment reference có thể visible trước khi constructor effect visible.</p>
+</section>
+
+<h3>7.5 Concurrent Collections</h3>
+<p><code>ConcurrentHashMap.put</code> và <code>get</code> có synchronization nội bộ phù hợp để publish object giữa threads. Nhưng object value vẫn nên immutable hoặc thread-safe.</p>
+</section>
+
+<section id="advanced">
+<h2>8. Advanced JMM: False Sharing, VarHandle, Deep Immutability</h2>
+<p>Các phần dưới đây không phải lúc nào cũng xuất hiện trong vòng đầu interview, nhưng thường xuất hiện khi interviewer muốn phân biệt người biết keyword với người từng debug concurrency/performance thật.</p>
+
+<section id="false-sharing">
+<h3>8.1 False Sharing: Khi Hai Biến Khác Nhau Vẫn Làm Chậm Nhau</h3>
+<p>CPU cache làm việc theo cache line, thường 64 bytes. Nếu hai thread update hai biến khác nhau nhưng hai biến nằm trên cùng cache line, các core vẫn phải invalidate cache line của nhau. Đây là false sharing: không sai correctness, nhưng performance tụt mạnh.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Dễ false sharing</div>
+<pre><code class="language-java">final class Counters {
+    volatile long requests;
+    volatile long errors;
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Giảm contention bằng LongAdder</div>
+<pre><code class="language-java">final class Metrics {
+    final LongAdder requests = new LongAdder();
+    final LongAdder errors = new LongAdder();
+}</code></pre>
+  </div>
+</div>
+
+<p><code>LongAdder</code> nhanh hơn <code>AtomicLong</code> dưới contention cao vì nó phân tán update vào nhiều cell, giảm việc nhiều thread CAS vào cùng một memory location. Trade-off là <code>sum()</code> không phải snapshot tuyệt đối tại một điểm thời gian.</p>
+
+<div class="callout tip">
+  <div class="ctitle">Khi nào cần quan tâm?</div>
+  <p>Phần lớn business code không cần tự padding cache line. Nhưng metrics counter cực nóng, ring buffer, queue lock-free, high-throughput event processing có thể bị false sharing. Nếu chưa profile, đừng tối ưu kiểu này trước.</p>
+</div>
+</section>
+
+<section id="varhandle">
+<h3>8.2 VarHandle: API Thấp Hơn Atomic, Cao Hơn Unsafe</h3>
+<p><code>VarHandle</code> xuất hiện từ Java 9, cung cấp cách access field/array với memory ordering mode rõ hơn: plain, opaque, acquire/release, volatile, compare-and-set. Application backend thông thường ít cần viết trực tiếp, nhưng nên biết khi đọc code JDK, framework, queue hoặc library concurrency.</p>
+
+<pre><code class="language-java">public final class Sequence {
+    private volatile long value;
+    private static final VarHandle VALUE;
+
+    static {
+        try {
+            VALUE = MethodHandles.lookup()
+                .findVarHandle(Sequence.class, "value", long.class);
+        } catch (ReflectiveOperationException ex) {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
+
+    public long next() {
+        return (long) VALUE.getAndAdd(this, 1L) + 1L;
+    }
+
+    public boolean moveIfCurrent(long expected, long next) {
+        return VALUE.compareAndSet(this, expected, next);
+    }
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Mode</th><th>Ý nghĩa đơn giản</th><th>Dùng khi</th></tr></thead>
+  <tbody>
+    <tr><td>Plain</td><td>Gần như field access thường</td><td>Không cần cross-thread guarantee</td></tr>
+    <tr><td>Opaque</td><td>Ordering rất yếu, nhưng coherent theo variable</td><td>Low-level data structure chuyên biệt</td></tr>
+    <tr><td>Acquire/Release</td><td>Một chiều: release publish, acquire consume</td><td>Queue/ring buffer tối ưu cao</td></tr>
+    <tr><td>Volatile</td><td>Visibility + ordering mạnh như volatile</td><td>Khi cần guarantee rõ và đơn giản hơn</td></tr>
+    <tr><td>CAS</td><td>Atomic conditional update</td><td>Lock-free state transition</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Trong interview, không cần tự phô diễn VarHandle nếu câu hỏi ở mức application. Câu trả lời tốt là: Atomic classes đủ cho đa số app; VarHandle hữu ích khi xây primitive concurrency hoặc cần control memory ordering tinh hơn.</p>
+</section>
+
+<section id="deep-immutability">
+<h3>8.3 Deep Immutability: final Không Đồng Nghĩa Bất Biến Sâu</h3>
+<p><code>final</code> field đảm bảo reference không đổi sau constructor, nhưng object mà reference trỏ tới có thể vẫn mutable. Deep immutability nghĩa là toàn bộ object graph visible từ object đó không bị mutate sau khi publish.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Thiết kế</th><th>Có immutable sâu?</th><th>Lý do</th></tr></thead>
+  <tbody>
+    <tr><td><code>final List&lt;Item&gt; items</code> nhận trực tiếp từ caller</td><td>Không</td><td>Caller vẫn giữ reference và mutate list</td></tr>
+    <tr><td><code>final List&lt;Item&gt; items = List.copyOf(input)</code></td><td>Chỉ list shell</td><td>Item bên trong vẫn có thể mutable</td></tr>
+    <tr><td>Record chứa mutable collection</td><td>Không tự động</td><td>Record shallow immutable</td></tr>
+    <tr><td>Value object final fields + defensive copy + element immutable</td><td>Có</td><td>Không có đường mutate object graph</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-java">public record CatalogSnapshot(List&lt;ProductView&gt; products) {
+    public CatalogSnapshot {
+        products = List.copyOf(products);
+    }
+}
+
+public record ProductView(String sku, String name, BigDecimal price) {}</code></pre>
+
+<p>Immutable snapshot là pattern mạnh trong JMM vì writer build state mới hoàn chỉnh trong thread riêng, validate, rồi publish một lần bằng volatile/AtomicReference. Reader không cần lock vì state không đổi sau khi publish.</p>
+</section>
+</section>
+
+<section id="patterns">
+<h2>9. Patterns Và Anti-Patterns</h2>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">P1</span><h4>Volatile + Immutable Snapshot</h4></div>
+  <div class="pb"><p>Dùng cho hot reload config/rules. Update tạo object mới, gán vào volatile reference. Reader không cần lock và luôn thấy snapshot nhất quán.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">P2</span><h4>Initialization-on-demand Holder</h4></div>
+  <div class="pb">
+<pre><code class="language-java">public class ConfigRegistry {
+    private ConfigRegistry() {}
+
+    private static class Holder {
+        static final ConfigRegistry INSTANCE = new ConfigRegistry();
+    }
+
+    public static ConfigRegistry instance() {
+        return Holder.INSTANCE;
+    }
+}</code></pre>
+  </div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP1</span><h4>Double-checked Locking Thiếu volatile</h4></div>
+  <div class="pb"><p><code>new Object()</code> có thể bị reorder: allocate memory, assign reference, rồi mới chạy constructor. Thiếu volatile, thread khác có thể thấy reference không null nhưng object chưa initialized.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP2</span><h4>Lock Sai Object</h4></div>
+  <div class="pb"><p>Không lock trên <code>new Object()</code> trong method, string literal, boxed primitive, hoặc object public. Dùng private final lock.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP3</span><h4>Mix Lock Và Atomic Không Có Invariant Rõ</h4></div>
+  <div class="pb"><p>Nếu một invariant dùng nhiều field, đừng update một phần bằng lock và một phần bằng atomic rồi hy vọng chúng nhất quán. Chọn một ownership model: hoặc mọi field của invariant nằm trong cùng lock, hoặc state được gói vào một immutable object và swap bằng <code>AtomicReference</code>.</p></div>
+</div>
+
+<div class="pattern-card">
+  <div class="ph"><span class="badge">P3</span><h4>Read-Once Local Snapshot</h4></div>
+  <div class="pb">
+<pre><code class="language-java">RulesSnapshot snapshot = current;
+return snapshot.evaluate(request);</code></pre>
+<p>Khi đọc volatile reference nhiều lần trong một method, có thể mỗi lần đọc thấy snapshot khác nhau. Đọc một lần vào local variable giúp logic nhất quán trong phạm vi request hiện tại.</p>
+  </div>
+</div>
+</section>
+
+<section id="debug-lab">
+<h2>10. Debug Lab: Tự Chứng Minh JMM Bug</h2>
+<p>JMM bug khó học vì nhiều ví dụ có thể "không lỗi" trên laptop. Mục tiêu của lab không phải chứng minh JVM sai, mà là tập cách nghĩ: nếu thiếu happens-before, code không có quyền dựa vào visibility hoặc ordering.</p>
+
+<h3>10.1 Litmus Test: Reordering Có Thể Làm Cả Hai Đọc 0</h3>
+<pre><code class="language-java">public class ReorderingLab {
+    static int x, y;
+    static int r1, r2;
+
+    public static void main(String[] args) throws Exception {
+        for (int i = 0; i &lt; 1_000_000; i++) {
+            x = y = r1 = r2 = 0;
+
+            Thread t1 = new Thread(() -&gt; {
+                x = 1;
+                r1 = y;
+            });
+
+            Thread t2 = new Thread(() -&gt; {
+                y = 1;
+                r2 = x;
+            });
+
+            t1.start();
+            t2.start();
+            t1.join();
+            t2.join();
+
+            if (r1 == 0 &amp;&amp; r2 == 0) {
+                System.out.println("Observed: r1=0, r2=0 at iteration " + i);
+                break;
+            }
+        }
+    }
+}</code></pre>
+
+<p>Không phải lần chạy nào cũng thấy kết quả lạ. Nhưng về mặt JMM, kết quả đó được phép vì hai thread không có synchronization với nhau. Thêm <code>volatile</code> cho <code>x</code> và <code>y</code>, hoặc dùng lock chung, sẽ thay đổi guarantee.</p>
+
+<h3>10.2 Litmus Test: Volatile Counter Vẫn Sai</h3>
+<p>Đây là bài test chống hiểu nhầm phổ biến nhất: volatile không làm <code>++</code> atomic. Nó chỉ làm read/write visible và có ordering guarantee.</p>
+
+<pre><code class="language-java">public class VolatileCounterLab {
+    private volatile int count = 0;
+
+    public void increment() {
+        count++; // read, add, write: không atomic
+    }
+
+    public int count() {
+        return count;
+    }
+}</code></pre>
+
+<p>Fix đúng phụ thuộc use case: <code>AtomicInteger</code> nếu cần exact counter, <code>LongAdder</code> nếu là metrics dưới contention cao, hoặc lock nếu counter là một phần của invariant nhiều field.</p>
+
+<h3>10.3 Litmus Test: Unsafe Publication</h3>
+<pre><code class="language-java">public class UnsafePublicationLab {
+    static Config config;
+
+    static class Config {
+        int timeoutMillis;
+        Map&lt;String, String&gt; labels;
+
+        Config() {
+            timeoutMillis = 500;
+            labels = Map.of("source", "api");
+        }
+    }
+
+    static void writer() {
+        config = new Config(); // không có safe publication
+    }
+
+    static void reader() {
+        Config local = config;
+        if (local != null &amp;&amp; local.labels == null) {
+            System.out.println("Partially visible object");
+        }
+    }
+}</code></pre>
+
+<p>Không phải cứ chạy là thấy lỗi, nhưng JMM không đảm bảo reader thấy constructor effects nếu publish không an toàn. Fix bằng static initializer, final fields không để <code>this</code> escape, volatile reference, lock, hoặc concurrent collection.</p>
+
+<h3>10.4 Litmus Test: Broken Singleton Thiếu volatile</h3>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai</div>
+<pre><code class="language-java">private static TemplateRegistry instance;
+
+public static TemplateRegistry getInstance() {
+    if (instance == null) {
+        synchronized (TemplateRegistry.class) {
+            if (instance == null) {
+                instance = new TemplateRegistry();
+            }
+        }
+    }
+    return instance;
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng</div>
+<pre><code class="language-java">private static volatile TemplateRegistry instance;</code></pre>
+  </div>
+</div>
+
+<p>Câu giải thích cần rõ: <code>new TemplateRegistry()</code> có thể được quan sát như allocate memory, assign reference, constructor effects visible sau. <code>volatile</code> ngăn reorder nguy hiểm và tạo happens-before giữa write/read reference.</p>
+
+<h3>10.5 Debug Production: Phân Loại Triệu Chứng</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Triệu chứng</th><th>Nghi vấn JMM/concurrency</th><th>Cách kiểm tra</th></tr></thead>
+  <tbody>
+    <tr><td>Flag true nhưng payload null</td><td>Publish nhiều field không có happens-before</td><td>Tìm writer/reader, kiểm tra volatile/lock/final field</td></tr>
+    <tr><td>Counter mất số dưới tải cao</td><td>Read-modify-write không atomic</td><td>Tìm <code>++</code>, <code>get then set</code>, map update không atomic</td></tr>
+    <tr><td>Cache thỉnh thoảng trả config cũ</td><td>Reference publish không an toàn hoặc mutate sau publish</td><td>Kiểm tra immutable snapshot và volatile reference</td></tr>
+    <tr><td>Thread treo khi shutdown</td><td>Stop flag không volatile hoặc interrupt bị nuốt</td><td>Thread dump, kiểm tra loop condition và interrupt handling</td></tr>
+    <tr><td>Deadlock/blocked nhiều thread</td><td>Lock order không nhất quán hoặc lock public</td><td><code>jstack</code>, thread dump, monitor owner</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>10.6 Câu Hỏi Tự Kiểm Tra Khi Review Code</h3>
+<ul>
+  <li>Field này được write ở thread nào và read ở thread nào?</li>
+  <li>Giữa write và read có happens-before rõ ràng không?</li>
+  <li>Nếu có nhiều field, invariant của chúng được bảo vệ bởi cùng một lock hay cùng một immutable snapshot không?</li>
+  <li>Object có bị publish trước khi constructor hoàn tất không?</li>
+  <li>Mutable collection có bị share ra ngoài sau khi publish không?</li>
+  <li>Atomic operation có thật sự bao trùm toàn bộ state transition không?</li>
+</ul>
+
+<div class="callout warn">
+  <div class="ctitle">Bẫy học sai</div>
+  <p>Đừng kết luận "code này thread-safe" chỉ vì chạy stress test 10 phút không lỗi. Stress test chỉ giúp tăng xác suất bắt bug. Lập luận chính vẫn phải dựa trên happens-before, ownership của state và invariant được bảo vệ ở đâu.</p>
+</div>
+</section>
+
+<section id="interview">
+<h2>11. Interview Framework</h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">volatile làm gì?</span></div>
+  <p class="a"><code>volatile</code> đảm bảo visibility và ordering cho biến đó. Write volatile visible với read volatile sau đó. Nó không đảm bảo atomicity cho operation như <code>count++</code> và không mutual exclusion.</p>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">Happens-before là gì?</span></div>
+  <p class="a">Là quan hệ đảm bảo effect của action trước visible với action sau. Các rule quan trọng: program order, unlock-lock cùng monitor, volatile write-read, thread start, thread join, transitivity. Không có happens-before thì thread khác không được đảm bảo thấy write.</p>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế hot-reload pricing rules thread-safe</span></div>
+  <p class="a">Represent rules bằng immutable snapshot. Loader build snapshot mới đầy đủ, validate, rồi publish bằng volatile reference hoặc AtomicReference. Reader đọc snapshot một lần vào local variable rồi dùng. Không mutate map/list bên trong snapshot sau khi publish.</p>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+<ul>
+  <li>Giải thích được vì sao flag true nhưng data null có thể xảy ra.</li>
+  <li>Kể và áp dụng được ít nhất 5 happens-before rules.</li>
+  <li>Phân biệt visibility, ordering, atomicity, mutual exclusion.</li>
+  <li>Nói được khi nào volatile đủ và khi nào không đủ.</li>
+  <li>Viết được counter đúng bằng AtomicInteger hoặc LongAdder theo use case.</li>
+  <li>Giải thích được double-checked locking cần volatile.</li>
+  <li>Nêu được ít nhất 3 cách safe publication: final fields, volatile, static initializer, concurrent collection.</li>
+  <li>Nhận ra được <code>this escape</code> trong constructor, listener registration và async task.</li>
+  <li>Biết đọc code để xác định invariant được bảo vệ bằng lock, atomic reference hay immutable snapshot.</li>
+  <li>Giải thích được vì sao wait/notify phải dùng <code>while</code>, không dùng <code>if</code>.</li>
+  <li>Biết dùng thread dump để phân biệt visibility bug, blocked monitor, deadlock và loop không dừng.</li>
+  <li>Giải thích được false sharing ở mức cache line và vì sao LongAdder giảm contention.</li>
+  <li>Biết VarHandle dùng cho primitive concurrency thấp hơn Atomic classes và cao hơn Unsafe.</li>
+  <li>Phân biệt final reference, shallow immutability và deep immutability.</li>
+  <li>Viết được litmus tests cho volatile counter sai, unsafe publication và broken singleton.</li>
+</ul>
+</section>
+
+<footer>
+  <span>Phase 1 - Core Java Mastery</span>
+  <span>Next: #05 Spring Core</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

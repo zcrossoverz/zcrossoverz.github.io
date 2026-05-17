@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#06 - Spring Boot | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#06 Spring Boot</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#anti-fake">Chống hiểu giả</a>
+    <a href="#scope-map">Cần nắm vs phụ</a>
+    <a href="#problem">1. Bài toán thực tế</a>
+    <a href="#mental-model">2. Mental model</a>
+    <div class="sub">
+      <a href="#autoconfig">Auto-configuration</a>
+      <a href="#properties">Property binding</a>
+      <a href="#config-precedence">Config precedence</a>
+      <a href="#actuator">Actuator</a>
+      <a href="#starter">Custom starter</a>
+    </div>
+    <a href="#implementation">3. Code production</a>
+    <div class="sub">
+      <a href="#readiness">Readiness/liveness</a>
+      <a href="#observability">Metrics & tracing</a>
+    </div>
+    <a href="#debug">4. Debug lab</a>
+    <a href="#tradeoffs">5. Trade-offs</a>
+    <a href="#interview">6. Interview framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase 2 - Daily work - High priority</span>
+  <h1>#06 - Spring Boot: Auto-configuration, Actuator, Starter, Property Binding</h1>
+  <p class="lead">Spring Boot là lớp convention trên Spring Framework. Bạn không chỉ cần biết "Boot tự cấu hình", mà phải trace được <strong>vì sao một bean xuất hiện hoặc không xuất hiện</strong>, property được resolve từ đâu, và actuator nào an toàn cho production.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Debug auto-config</div></div>
+    <div class="meta-item"><div class="k">Dùng khi</div><div class="v">Setup service, config, deploy</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#5 Core, #22 Resilience, #26 Observability</div></div>
+    <div class="meta-item"><div class="k">Output</div><div class="v">Config fail-fast, starter reuse được</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Boot Không Thay Spring, Boot Giảm Boilerplate</h2>
+<p>Spring Framework cung cấp IoC, AOP, transaction, web, data. Spring Boot thêm auto-configuration, starter dependencies, embedded server, externalized configuration, actuator và một cách đóng gói service nhất quán.</p>
+<p>Câu trả lời phỏng vấn tốt không dừng ở "add starter là chạy". Hãy nói được: starter kéo dependency nào, auto-config class nào được load, conditional nào pass/fail, bean nào được tạo, và cách override bean mặc định mà không fork framework.</p>
+</section>
+
+<section id="anti-fake">
+<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
+<div class="callout why">
+  <div class="ctitle">Câu hỏi chống học vẹt</div>
+  <p>Với mọi starter bạn dùng, hãy tự hỏi 4 câu: dependency nào kích hoạt nó? Bean nào được tạo? Điều kiện nào khiến nó không tạo bean? Làm sao nhìn được condition report khi production lỗi?</p>
+</div>
+<div class="pillar-grid">
+  <div class="pillar"><div class="num">1</div><h4>Classpath first</h4><p>Auto-config bắt đầu từ classpath. Không có dependency thì không có condition pass.</p></div>
+  <div class="pillar"><div class="num">2</div><h4>Condition report</h4><p>Luôn biết dùng <code>/actuator/conditions</code> hoặc <code>--debug</code> để giải thích bean missing.</p></div>
+  <div class="pillar"><div class="num">3</div><h4>Config as contract</h4><p>Config quan trọng phải type-safe và validate lúc startup, không fail âm thầm.</p></div>
+  <div class="pillar"><div class="num">4</div><h4>Override by design</h4><p>Starter tốt phải dùng <code>@ConditionalOnMissingBean</code> để service có thể custom.</p></div>
+</div>
+</section>
+
+<section id="scope-map">
+<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
+  <tbody>
+    <tr><td><strong>A - Bắt buộc</strong></td><td>Auto-configuration, conditional beans, config properties, profile, actuator health/metrics</td><td>Debug được vì sao bean/config xuất hiện hoặc mất.</td></tr>
+    <tr><td><strong>B - Nên biết</strong></td><td>Config precedence, liveness/readiness, Micrometer tags, condition report, custom starter nhỏ</td><td>Vận hành service và tránh lỗi deploy.</td></tr>
+    <tr><td><strong>C - Bonus</strong></td><td>Starter platform lớn, AOT/native, custom condition phức tạp</td><td>Nhắc ngắn, không cần đào sâu trong Phase 2.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="problem">
+<h2>1. Bài Toán Thực Tế - Service Notification Start Được Nhưng Gửi Message Lỗi</h2>
+<p>Team tạo service gửi notification cho marketplace. Local chạy ổn, nhưng khi lên staging: endpoint health báo DB down, Kafka producer không inject được, và config retry không có tác dụng.</p>
+
+<pre><code class="language-yaml">spring:
+  datasource:
+    url: jdbc:postgresql://inventory-db:5432/notify
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+notification:
+  provider:
+    base-url: ${PROVIDER_URL}
+    timeout-ms: 3000</code></pre>
+
+<div class="log-card">
+<span class="ts">10:12:04</span> <span class="lvl-error">ERROR</span> <span class="msg">No qualifying bean of type 'KafkaTemplate' available</span><br>
+<span class="ts">10:12:06</span> <span class="lvl-warn">WARN</span> <span class="msg">DataSourceHealthIndicator DOWN: connection refused</span><br>
+<span class="ts">10:12:07</span> <span class="lvl-info">INFO</span> <span class="msg">notification.provider.timeout-ms = 3000</span>
+</div>
+
+<p>Các câu hỏi cần trả lời:</p>
+<ul>
+  <li><code>${DB_USERNAME}</code> lấy từ đâu? Env var có override file jar không?</li>
+  <li>Vì sao <code>KafkaTemplate</code> không có dù service khác có?</li>
+  <li>Ai tự tạo <code>DataSourceHealthIndicator</code>?</li>
+  <li>Làm sao biết auto-config nào positive match, auto-config nào negative match?</li>
+</ul>
+</section>
+
+<section id="mental-model">
+<h2>2. Mental Model</h2>
+
+<section id="autoconfig">
+<h3>2.1 Auto-configuration</h3>
+<p>Auto-configuration là một danh sách class cấu hình được Boot import tự động, rồi lọc qua điều kiện. Điều kiện phổ biến: class có trong classpath, property có bật, bean chưa tồn tại, app là servlet hay reactive.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 760 270" role="img" aria-label="Spring Boot auto configuration flow">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path>
+    </marker>
+  </defs>
+  <rect x="25" y="90" width="120" height="72" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="85" y="118" text-anchor="middle" font-size="13">Starter</text>
+  <text x="85" y="140" text-anchor="middle" font-size="12" fill="#475569">dependencies</text>
+  <line x1="145" y1="126" x2="205" y2="126" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="205" y="90" width="150" height="72" rx="8" fill="#f0f9ff" stroke="#0284c7"></rect>
+  <text x="280" y="116" text-anchor="middle" font-size="13">AutoConfiguration</text>
+  <text x="280" y="140" text-anchor="middle" font-size="12" fill="#475569">imports file</text>
+  <line x1="355" y1="126" x2="415" y2="126" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="415" y="70" width="140" height="112" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="485" y="101" text-anchor="middle" font-size="13">Conditions</text>
+  <text x="485" y="124" text-anchor="middle" font-size="12" fill="#475569">OnClass</text>
+  <text x="485" y="145" text-anchor="middle" font-size="12" fill="#475569">OnProperty</text>
+  <text x="485" y="166" text-anchor="middle" font-size="12" fill="#475569">OnMissingBean</text>
+  <line x1="555" y1="126" x2="615" y2="126" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+  <rect x="615" y="90" width="120" height="72" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="675" y="118" text-anchor="middle" font-size="13">BeanDefinition</text>
+  <text x="675" y="140" text-anchor="middle" font-size="12" fill="#475569">registered</text>
+</svg>
+<div class="caption">Không có magic: nếu điều kiện fail, bean không được register.</div>
+</div>
+
+<pre><code class="language-java">@AutoConfiguration
+@ConditionalOnClass(KafkaTemplate.class)
+@ConditionalOnProperty(prefix = "spring.kafka", name = "bootstrap-servers")
+public class KafkaAutoConfiguration {
+    @Bean
+    @ConditionalOnMissingBean
+    KafkaTemplate&lt;String, Object&gt; kafkaTemplate(ProducerFactory&lt;String, Object&gt; factory) {
+        return new KafkaTemplate&lt;&gt;(factory);
+    }
+}</code></pre>
+<p>Nếu service không có dependency <code>spring-kafka</code> hoặc không có <code>spring.kafka.bootstrap-servers</code>, <code>KafkaTemplate</code> sẽ không xuất hiện.</p>
+</section>
+
+<section id="properties">
+<h3>2.2 Property Binding</h3>
+<p>Boot merge nhiều nguồn config theo thứ tự ưu tiên. Những nguồn hay gặp nhất trong daily work:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Ưu tiên</th><th>Nguồn</th><th>Ví dụ</th><th>Ghi nhớ</th></tr></thead>
+  <tbody>
+    <tr><td>Cao</td><td>Command line</td><td><code>--server.port=9090</code></td><td>Debug nhanh, override mạnh.</td></tr>
+    <tr><td>Cao</td><td>Java system props</td><td><code>-Dspring.profiles.active=staging</code></td><td>Hay dùng trong JVM args.</td></tr>
+    <tr><td>Cao</td><td>OS env vars</td><td><code>SPRING_DATASOURCE_PASSWORD</code></td><td>Override <code>application.yml</code> trong container.</td></tr>
+    <tr><td>Trung</td><td>External config file</td><td><code>./config/application-staging.yml</code></td><td>Override file đóng trong jar.</td></tr>
+    <tr><td>Thấp</td><td>Config trong jar</td><td><code>src/main/resources/application.yml</code></td><td>Default an toàn.</td></tr>
+    <tr><td>Thấp</td><td>Default value</td><td><code>${TIMEOUT:3000}</code></td><td>Chỉ dùng cho non-critical config.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Relaxed binding cho phép <code>notification.provider.timeout-ms</code>, <code>NOTIFICATION_PROVIDER_TIMEOUT_MS</code>, và <code>notification.provider.timeoutMs</code> map vào cùng field.</p>
+</section>
+
+<section id="config-precedence">
+<h3>2.3 Config Precedence: Lỗi Deploy Hay Nằm Ở Đây</h3>
+<p>Khi cùng một key xuất hiện ở nhiều nơi, Boot chọn source có ưu tiên cao hơn. Đây là nguyên nhân phổ biến của lỗi "local đúng, staging sai": biến môi trường trong container override YAML trong jar, hoặc command line override profile file.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Dễ gây hiểu nhầm</div>
+<pre><code class="language-yaml">notification:
+  provider:
+    timeout-ms: 3000</code></pre>
+<div class="col-body"><p>Nhưng deployment lại set <code>NOTIFICATION_PROVIDER_TIMEOUT_MS=30000</code>.</p></div>
+  </div>
+  <div class="col good">
+    <div class="col-head">Debug có evidence</div>
+<pre><code class="language-bash">curl internal-host/actuator/env/notification.provider.timeout-ms
+java -jar app.jar --debug</code></pre>
+<div class="col-body"><p>Xem value cuối cùng và source nào đóng góp value đó.</p></div>
+  </div>
+</div>
+
+<p>Với secret hoặc endpoint bắt buộc, tránh default giả như <code>${PROVIDER_URL:http://localhost}</code> trong production. Hãy validate bằng <code>@NotBlank</code>, fail startup sớm, và để deployment cung cấp config thật.</p>
+</section>
+
+<section id="actuator">
+<h3>2.4 Actuator</h3>
+<p>Actuator biến service thành thứ có thể vận hành: health, metrics, info, mappings, beans, loggers, conditions. Nhưng actuator cũng có thể lộ thông tin nếu expose quá rộng.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Endpoint</th><th>Dùng để</th><th>Production</th></tr></thead>
+  <tbody>
+    <tr><td><code>/actuator/health</code></td><td>Liveness/readiness</td><td>Có thể public nội bộ.</td></tr>
+    <tr><td><code>/actuator/metrics</code></td><td>JVM, HTTP, Hikari, custom metrics</td><td>Cho Prometheus/internal.</td></tr>
+    <tr><td><code>/actuator/conditions</code></td><td>Debug auto-config</td><td>Chỉ internal, có auth.</td></tr>
+    <tr><td><code>/actuator/env</code></td><td>Xem resolved properties</td><td>Rất nhạy, hạn chế mạnh.</td></tr>
+    <tr><td><code>/actuator/heapdump</code></td><td>Debug memory</td><td>Không expose rộng.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="starter">
+<h3>2.5 Custom Starter</h3>
+<p>Starter hữu ích khi nhiều service cần cùng một năng lực: correlation ID, error response chuẩn, WebClient logging, common metrics, feature flags. Starter tốt không ép service dùng implementation duy nhất; nó cung cấp default có thể override.</p>
+</section>
+</section>
+
+<section id="implementation">
+<h2>3. Production-Grade Implementation</h2>
+
+<h3>3.1 Type-safe Configuration</h3>
+<pre><code class="language-java">@ConfigurationProperties(prefix = "notification")
+@Validated
+public class NotificationProperties {
+    @NotNull
+    private Provider provider = new Provider();
+
+    @NotNull
+    private Retry retry = new Retry();
+
+    public static class Provider {
+        @NotBlank
+        private String baseUrl;
+
+        @Min(100)
+        @Max(30000)
+        private int timeoutMs = 3000;
+    }
+
+    public static class Retry {
+        @Min(0)
+        @Max(10)
+        private int maxAttempts = 3;
+
+        @Min(10)
+        private long backoffMs = 200;
+    }
+}</code></pre>
+
+<pre><code class="language-java">@SpringBootApplication
+@ConfigurationPropertiesScan
+public class NotificationApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(NotificationApplication.class, args);
+    }
+}</code></pre>
+
+<p>Dùng <code>@ConfigurationProperties</code> thay vì rải <code>@Value</code> khắp code để config có schema, validation, autocomplete và test dễ hơn.</p>
+
+<h3>3.2 Actuator Configuration An Toàn</h3>
+<pre><code class="language-yaml">management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers,conditions
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: notification-service
+      environment: ${ENVIRONMENT:local}</code></pre>
+
+<h3>3.3 Custom Health Indicator</h3>
+<pre><code class="language-java">@Component("providerHealth")
+public class ProviderHealthIndicator implements HealthIndicator {
+    private final NotificationProviderClient client;
+
+    public ProviderHealthIndicator(NotificationProviderClient client) {
+        this.client = client;
+    }
+
+    @Override
+    public Health health() {
+        try {
+            ProviderStatus status = client.ping();
+            if (status.available()) {
+                return Health.up()
+                    .withDetail("provider", status.name())
+                    .withDetail("latencyMs", status.latencyMs())
+                    .build();
+            }
+            return Health.down().withDetail("reason", status.reason()).build();
+        } catch (Exception ex) {
+            return Health.down(ex).build();
+        }
+    }
+}</code></pre>
+
+<h3>3.4 Starter Skeleton Có Override Point</h3>
+<pre><code class="language-java">@AutoConfiguration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+@EnableConfigurationProperties(PlatformWebProperties.class)
+public class PlatformWebAutoConfiguration {
+    @Bean
+    @ConditionalOnMissingBean
+    public CorrelationIdFilter correlationIdFilter(PlatformWebProperties props) {
+        return new CorrelationIdFilter(props.getCorrelationHeader());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ApiErrorHandler apiErrorHandler() {
+        return new ApiErrorHandler();
+    }
+}</code></pre>
+
+<pre><code class="language-text"># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+com.example.platform.web.PlatformWebAutoConfiguration</code></pre>
+
+<p>Rule: mọi bean default trong starter gần như luôn cần <code>@ConditionalOnMissingBean</code>. Nếu service cần custom correlation header, custom error handler hoặc custom metric tag, họ chỉ cần tự define bean.</p>
+
+<section id="readiness">
+<h3>3.5 Liveness vs Readiness</h3>
+<p>Trong container/orchestrator, health không chỉ là "process còn sống". Liveness trả lời process có cần restart không. Readiness trả lời service đã sẵn sàng nhận traffic chưa. Lẫn hai khái niệm này có thể gây restart loop hoặc route traffic vào instance chưa warm up.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Probe</th><th>Nên báo DOWN khi</th><th>Không nên báo DOWN khi</th></tr></thead>
+  <tbody>
+    <tr><td>Liveness</td><td>App deadlock, event loop chết, state không thể phục hồi</td><td>Dependency tạm chậm vài giây</td></tr>
+    <tr><td>Readiness</td><td>DB/messaging/cache bắt buộc chưa sẵn sàng, app đang warm up</td><td>Một optional provider phụ bị lỗi</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code class="language-yaml">management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,providerHealth
+        liveness:
+          include: livenessState</code></pre>
+</section>
+
+<section id="observability">
+<h3>3.6 Metrics & Tracing Vừa Đủ Cho Daily Work</h3>
+<p>Boot tích hợp Micrometer để xuất metrics nhất quán. Senior không cần tự viết monitoring platform, nhưng phải biết service cần tối thiểu HTTP latency, error rate, JVM, datasource pool, executor, custom business counter và correlation ID trong log.</p>
+
+<pre><code class="language-java">@Service
+public class NotificationSender {
+    private final Counter sentCounter;
+    private final Timer providerTimer;
+
+    public NotificationSender(MeterRegistry registry) {
+        this.sentCounter = Counter.builder("notification.sent")
+            .description("Notifications sent successfully")
+            .register(registry);
+        this.providerTimer = Timer.builder("notification.provider.latency")
+            .publishPercentileHistogram()
+            .register(registry);
+    }
+
+    public void send(Notification notification) {
+        providerTimer.record(() -&gt; doSend(notification));
+        sentCounter.increment();
+    }
+}</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">Metric cardinality</div>
+  <p>Không dùng userId, requestId, email, documentId làm metric tag. Cardinality cao làm backend metrics phình to và dashboard chậm. Tag nên là dimension hữu hạn như provider, status, errorType, region.</p>
+</div>
+</section>
+</section>
+
+<section id="debug">
+<h2>4. Debug Lab</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Vấn đề</th><th>Lệnh/cách kiểm tra</th><th>Kết luận cần rút ra</th></tr></thead>
+  <tbody>
+    <tr><td>Bean không có</td><td><code>GET /actuator/conditions</code></td><td>Auto-config fail vì thiếu class/property hay vì đã có bean khác?</td></tr>
+    <tr><td>Property sai</td><td><code>GET /actuator/env</code> nội bộ</td><td>Source nào đang override source nào?</td></tr>
+    <tr><td>Profile không đúng</td><td>Log startup: active profiles</td><td>Config file nào được load?</td></tr>
+    <tr><td>DB health down</td><td><code>/actuator/health</code> + Hikari logs</td><td>URL, credential, network, pool hay driver?</td></tr>
+    <tr><td>Pod restart liên tục</td><td>Liveness có phụ thuộc DB/provider không?</td><td>Liveness chỉ nên phản ánh process recoverability.</td></tr>
+    <tr><td>Metrics backend quá tải</td><td>Tag có cardinality cao không?</td><td>Loại userId/requestId/resourceId khỏi metric tags.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">Drill 15 phút</div>
+  <p>Tạo app nhỏ với <code>spring-boot-starter-data-jpa</code>, sau đó remove JDBC driver. Bật <code>--debug</code> và giải thích vì sao <code>DataSourceAutoConfiguration</code> không tạo được DataSource.</p>
+</div>
+</section>
+
+<section id="tradeoffs">
+<h2>5. Trade-offs & Anti-Patterns</h2>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP1</span><h4>Expose <code>*</code> Actuator</h4></div>
+  <div class="pb"><p>Không expose toàn bộ actuator trong production. <code>env</code>, <code>heapdump</code>, <code>threaddump</code>, <code>shutdown</code> đều cần kiểm soát chặt.</p></div>
+</div>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP2</span><h4>Default Secret Trong Config</h4></div>
+  <div class="pb"><p><code>${API_KEY:demo}</code> có thể che lỗi thiếu secret. Với config bắt buộc, hãy để thiếu là fail startup hoặc validate bằng <code>@NotBlank</code>.</p></div>
+</div>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP3</span><h4>Starter Quá Nhiều Trách Nhiệm</h4></div>
+  <div class="pb"><p>Một starter gom JWT, database, logging, tracing, client, scheduler sẽ coupling mạnh. Tách theo capability: <code>platform-web-starter</code>, <code>platform-observability-starter</code>, <code>platform-client-starter</code>.</p></div>
+</div>
+</section>
+
+<section id="interview">
+<h2>6. Interview Framework</h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">Spring Boot khác Spring Framework ở đâu?</span></div>
+  <p class="a">Boot không thay Spring. Boot thêm auto-configuration, starter dependency management, embedded server, externalized config và actuator để build/deploy service nhanh hơn với convention rõ ràng.</p>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">Auto-configuration hoạt động thế nào?</span></div>
+  <p class="a">Boot đọc danh sách auto-configuration từ <code>AutoConfiguration.imports</code>, rồi filter qua <code>@ConditionalOnClass</code>, <code>@ConditionalOnProperty</code>, <code>@ConditionalOnMissingBean</code>, web app type và nhiều condition khác. Class pass mới register BeanDefinition. Debug bằng <code>/actuator/conditions</code> hoặc <code>--debug</code>.</p>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế custom starter cho 20 service</span></div>
+  <p class="a">Tách module <code>autoconfigure</code> và <code>starter</code>, dùng <code>@ConfigurationProperties</code> cho customization, dùng <code>@ConditionalOnMissingBean</code> cho override, expose versioning rõ ràng, viết integration tests bằng <code>ApplicationContextRunner</code>, và tránh kéo dependency không cần thiết vào mọi service.</p>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+<ul>
+  <li>Trace được path từ starter dependency tới auto-config class và bean được tạo.</li>
+  <li>Giải thích được <code>@ConditionalOnMissingBean</code> là cơ chế override, không phải decoration.</li>
+  <li>Biết property source nào thắng khi cùng key xuất hiện ở env var và <code>application.yml</code>.</li>
+  <li>Viết được <code>@ConfigurationProperties</code> có nested config và validation.</li>
+  <li>Biết endpoint actuator nào nên expose, endpoint nào phải bảo vệ.</li>
+  <li>Phân biệt liveness và readiness để tránh restart loop hoặc route traffic sai.</li>
+  <li>Biết tạo metric Micrometer cơ bản và tránh high-cardinality tags.</li>
+</ul>
+</section>
+
+<footer>
+  <span>Phase 2 - Spring Ecosystem</span>
+  <span>Next: #07 Spring Transaction</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

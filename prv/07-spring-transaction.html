@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#07 - Spring Transaction | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#07 Spring Transaction</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan</a>
+    <a href="#anti-fake">Chống hiểu giả</a>
+    <a href="#scope-map">Cần nắm vs phụ</a>
+    <a href="#problem">1. Bài toán thực tế</a>
+    <a href="#mental-model">2. Mental model</a>
+    <div class="sub">
+      <a href="#acid">ACID</a>
+      <a href="#isolation">Isolation</a>
+      <a href="#propagation">Propagation</a>
+      <a href="#rollback">Rollback rules</a>
+      <a href="#readonly-flush">readOnly & flush</a>
+    </div>
+    <a href="#implementation">3. Code production</a>
+    <div class="sub">
+      <a href="#tx-template">TransactionTemplate</a>
+      <a href="#after-commit">After commit/outbox</a>
+      <a href="#async-tx">Async + transaction</a>
+    </div>
+    <a href="#debug">4. Debug lab</a>
+    <a href="#tradeoffs">5. Trade-offs</a>
+    <a href="#interview">6. Interview framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase 2 - Daily work - Very high priority</span>
+  <h1>#07 - Spring Transaction: Isolation, Propagation, Rollback Rules</h1>
+  <p class="lead">Transaction là boundary của dữ liệu đúng. Trong phỏng vấn, người ta không hỏi <code>@Transactional</code> để xem bạn nhớ annotation; họ hỏi để biết bạn có hiểu <strong>commit/rollback, lock, proxy, exception và side effect</strong> hay không.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Data correctness</div></div>
+    <div class="meta-item"><div class="k">Bẫy chính</div><div class="v">Checked exception, self-invocation</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#5 AOP, #9 JPA, #13 Outbox</div></div>
+    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">E-commerce checkout</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Transaction Là Unit Of Work</h2>
+<p>Khi người dùng checkout, hệ thống phải tạo order, giữ hàng tồn kho, ghi payment intent, và phát event cho service giao hàng. Nếu chỉ một phần thành công, dữ liệu sẽ lệch: order tồn tại nhưng stock chưa giữ, hoặc stock bị trừ nhưng order fail.</p>
+<p>Spring giúp quản lý transaction bằng AOP proxy. Nhưng proxy chỉ giải quyết boundary trong cùng application và cùng resource manager. Khi chạm sang service khác, message broker, email, external API, bạn đã rời khỏi local transaction và cần pattern khác như outbox, saga hoặc retry.</p>
+</section>
+
+<section id="anti-fake">
+<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
+<div class="pillar-grid">
+  <div class="pillar"><div class="num">1</div><h4>Vẽ boundary</h4><p>Luôn chỉ ra transaction bắt đầu ở method nào, commit/rollback ở đâu.</p></div>
+  <div class="pillar"><div class="num">2</div><h4>Vẽ timeline</h4><p>Propagation chỉ rõ TX nào suspend, TX nào join, TX nào commit trước.</p></div>
+  <div class="pillar"><div class="num">3</div><h4>Phân loại exception</h4><p>Runtime rollback mặc định, checked thì không, trừ khi khai báo.</p></div>
+  <div class="pillar"><div class="num">4</div><h4>Tách side effect</h4><p>Email, Kafka, HTTP call không nằm trong DB transaction. Đừng giả vờ chúng rollback cùng DB.</p></div>
+</div>
+</section>
+
+<section id="scope-map">
+<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
+  <tbody>
+    <tr><td><strong>A - Bắt buộc</strong></td><td>Proxy boundary, rollback rules, propagation, isolation, long transaction, side effect sau commit</td><td>Thiết kế được transaction boundary đúng và debug rollback sai.</td></tr>
+    <tr><td><strong>B - Nên biết</strong></td><td><code>TransactionTemplate</code>, <code>TransactionSynchronization</code>, readOnly/flush, deadlock retry, <code>@Async</code> pitfall</td><td>Xử lý được case production không hợp annotation đơn giản.</td></tr>
+    <tr><td><strong>C - Bonus</strong></td><td>XA/2PC, saga framework chi tiết, distributed transaction tuning</td><td>Chỉ cần biết vì sao local transaction không giải quyết cross-service consistency.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="problem">
+<h2>1. Bài Toán Thực Tế - Checkout Tạo Order Nhưng Inventory Bị Lệch</h2>
+<p>Một sàn bán vé workshop gặp lỗi: khách checkout fail ở bước thanh toán, nhưng ghế vẫn bị giữ. Trường hợp khác, order đã tạo nhưng event gửi fulfillment mất, khiến kho không chuẩn bị hàng.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: transaction dài và side effect lẫn lộn</div>
+<pre><code class="language-java">@Service
+public class CheckoutService {
+    @Transactional
+    public OrderResult checkout(CheckoutRequest request) throws PaymentDeclinedException {
+        Order order = orderRepository.save(Order.from(request));
+        inventoryClient.reserve(request.items()); // HTTP call ngoài DB TX
+        paymentGateway.charge(request.payment()); // external side effect
+        kafkaTemplate.send("order-created", order.id()); // có thể publish trước commit
+        return OrderResult.success(order.id());
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng hướng: DB change + outbox cùng transaction</div>
+<pre><code class="language-java">@Service
+public class CheckoutService {
+    @Transactional(rollbackFor = Exception.class, timeout = 10)
+    public OrderResult checkout(CheckoutRequest request) {
+        Order order = orderRepository.save(Order.pending(request));
+        stockReservationRepository.saveAll(order.reservations());
+        outboxRepository.save(OutboxEvent.orderCreated(order));
+        return OrderResult.accepted(order.id());
+    }
+}</code></pre>
+  </div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">Tư duy đúng</div>
+  <p>Transaction nên bao quanh phần dữ liệu cần atomic trong một database. External side effect nên chạy sau commit hoặc qua outbox. Nếu gửi message trước commit, consumer có thể đọc order chưa commit hoặc nhận event cho order đã rollback.</p>
+</div>
+</section>
+
+<section id="mental-model">
+<h2>2. Mental Model</h2>
+
+<section id="acid">
+<h3>2.1 ACID Bằng Ngôn Ngữ Daily Work</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>ACID</th><th>Nghĩa</th><th>Ví dụ checkout</th></tr></thead>
+  <tbody>
+    <tr><td>Atomicity</td><td>Tất cả hoặc không gì cả</td><td>Order và reservation cùng commit hoặc cùng rollback.</td></tr>
+    <tr><td>Consistency</td><td>Không phá invariant</td><td>Không thể reserve số lượng âm hoặc vượt stock.</td></tr>
+    <tr><td>Isolation</td><td>Transaction song song không nhìn thấy trạng thái nguy hiểm</td><td>Hai khách không cùng giữ chiếc ghế cuối.</td></tr>
+    <tr><td>Durability</td><td>Commit xong thì tồn tại dù process crash</td><td>Order đã commit không mất sau restart.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="isolation">
+<h3>2.2 Isolation Levels</h3>
+<p>Isolation là mức "tường ngăn" giữa các transaction. Mức càng mạnh càng ít anomaly nhưng càng tốn lock/throughput.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Level</th><th>Ngăn được</th><th>Còn rủi ro</th><th>Dùng khi</th></tr></thead>
+  <tbody>
+    <tr><td>READ_UNCOMMITTED</td><td>Gần như không</td><td>Dirty read</td><td>Hiếm dùng trong app business.</td></tr>
+    <tr><td>READ_COMMITTED</td><td>Dirty read</td><td>Non-repeatable, phantom</td><td>Query thông thường, default của nhiều DB.</td></tr>
+    <tr><td>REPEATABLE_READ</td><td>Dirty + non-repeatable</td><td>Phantom tùy DB</td><td>Read-modify-write cần ổn định hơn.</td></tr>
+    <tr><td>SERIALIZABLE</td><td>Gần serial execution</td><td>Throughput giảm, retry nhiều</td><td>Report hoặc invariant rất nghiêm.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 760 255" role="img" aria-label="Lost update timeline">
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
+  <text x="40" y="45" font-size="13" fill="#0f172a">TX A</text>
+  <line x1="90" y1="40" x2="710" y2="40" stroke="#4f46e5" stroke-width="2"></line>
+  <rect x="120" y="18" width="120" height="45" rx="6" fill="#eef2ff" stroke="#4f46e5"></rect>
+  <text x="180" y="45" text-anchor="middle" font-size="12">read stock=1</text>
+  <rect x="470" y="18" width="135" height="45" rx="6" fill="#ecfdf5" stroke="#059669"></rect>
+  <text x="538" y="45" text-anchor="middle" font-size="12">write stock=0</text>
+  <text x="40" y="145" font-size="13" fill="#0f172a">TX B</text>
+  <line x1="90" y1="140" x2="710" y2="140" stroke="#d97706" stroke-width="2"></line>
+  <rect x="245" y="118" width="120" height="45" rx="6" fill="#fffbeb" stroke="#d97706"></rect>
+  <text x="305" y="145" text-anchor="middle" font-size="12">read stock=1</text>
+  <rect x="610" y="118" width="135" height="45" rx="6" fill="#fef2f2" stroke="#dc2626"></rect>
+  <text x="678" y="145" text-anchor="middle" font-size="12">write stock=0</text>
+  <text x="380" y="220" text-anchor="middle" font-size="13" fill="#475569">Cả hai nghĩ mình giữ được item cuối nếu không lock hoặc không dùng version check.</text>
+</svg>
+<div class="caption">Lost update trong inventory: kết quả cuối cùng stock=0 nhưng có 2 order được xác nhận.</div>
+</div>
+</section>
+
+<section id="propagation">
+<h3>2.3 Propagation</h3>
+<p>Propagation trả lời câu hỏi: method B được gọi khi method A đang có transaction thì B join hay tạo transaction riêng?</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Propagation</th><th>Hành vi</th><th>Dùng khi</th></tr></thead>
+  <tbody>
+    <tr><td>REQUIRED</td><td>Join TX hiện có, chưa có thì tạo mới</td><td>Default cho service method.</td></tr>
+    <tr><td>REQUIRES_NEW</td><td>Suspend TX cũ, tạo TX mới độc lập</td><td>Operation log, retry marker, audit kỹ thuật phải lưu riêng.</td></tr>
+    <tr><td>NESTED</td><td>Savepoint trong TX hiện tại</td><td>Batch import: lỗi 1 item rollback item đó.</td></tr>
+    <tr><td>MANDATORY</td><td>Bắt buộc caller đã có TX</td><td>Enforce method chỉ được gọi trong unit-of-work.</td></tr>
+    <tr><td>SUPPORTS</td><td>Có TX thì join, không có thì chạy thường</td><td>Read method linh hoạt.</td></tr>
+    <tr><td>NOT_SUPPORTED</td><td>Suspend TX, chạy ngoài TX</td><td>Generate file/report nặng không cần lock.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="log-card">
+REQUIRED: checkout TX_1 begin -> reserve() joins TX_1 -> commit/rollback cùng nhau<br>
+REQUIRES_NEW: checkout TX_1 suspend -> operationLog TX_2 begin -> TX_2 commit -> TX_1 resume
+</div>
+</section>
+
+<section id="rollback">
+<h3>2.4 Rollback Rules</h3>
+<div class="callout warn">
+  <div class="ctitle">Bẫy phỏng vấn kinh điển</div>
+  <p>Spring rollback mặc định với <code>RuntimeException</code> và <code>Error</code>. Checked exception không rollback nếu bạn không khai báo <code>rollbackFor</code>.</p>
+</div>
+<pre><code class="language-java">@Transactional
+public void reserveSeat(String showId, String seatNo) throws SeatUnavailableException {
+    seatRepository.markHeld(showId, seatNo);
+    throw new SeatUnavailableException(seatNo); // checked exception
+    // Nếu SeatUnavailableException extends Exception, TX có thể commit!
+}</code></pre>
+<p>Fix bằng cách dùng domain exception extends <code>RuntimeException</code> hoặc khai báo <code>@Transactional(rollbackFor = SeatUnavailableException.class)</code>.</p>
+</section>
+
+<section id="readonly-flush">
+<h3>2.5 readOnly, Flush Và Dirty Checking</h3>
+<p><code>@Transactional(readOnly = true)</code> không phải "cấm tuyệt đối mọi write" ở mọi database. Ý nghĩa thực dụng là nói với Spring/Hibernate rằng flow này chỉ đọc: giảm dirty checking/flush không cần thiết và giúp driver/database tối ưu nếu hỗ trợ. Đừng dựa vào nó như security rule.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Khái niệm</th><th>Nghĩa</th><th>Bẫy</th></tr></thead>
+  <tbody>
+    <tr><td>Dirty checking</td><td>Hibernate so entity managed với snapshot để update khi flush</td><td>Load nhiều entity chỉ để đọc vẫn có cost.</td></tr>
+    <tr><td>Flush</td><td>Đẩy SQL pending xuống DB trước commit hoặc trước query cần consistency</td><td>Flush không đồng nghĩa commit.</td></tr>
+    <tr><td>Commit</td><td>DB xác nhận transaction thành công</td><td>Exception sau flush vẫn rollback được nếu TX chưa commit.</td></tr>
+    <tr><td><code>readOnly=true</code></td><td>Hint cho transaction/provider</td><td>Không thay thế phân quyền write.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Với read path lớn như dashboard/report, ưu tiên DTO projection hoặc native query phù hợp thay vì load hàng nghìn entity managed rồi để Hibernate dirty-check.</p>
+</section>
+</section>
+
+<section id="implementation">
+<h2>3. Production-Grade Implementation</h2>
+
+<h3>3.1 Checkout Boundary Gọn Và Rõ</h3>
+<pre><code class="language-java">@Service
+public class CheckoutService {
+    private final OrderRepository orderRepository;
+    private final StockReservationRepository reservationRepository;
+    private final OutboxRepository outboxRepository;
+
+    @Transactional(
+        isolation = Isolation.READ_COMMITTED,
+        rollbackFor = Exception.class,
+        timeout = 10
+    )
+    public OrderResult checkout(CheckoutRequest request) {
+        Order order = Order.pending(request.customerId(), request.items());
+        orderRepository.save(order);
+
+        List&lt;StockReservation&gt; reservations = request.items().stream()
+            .map(item -&gt; StockReservation.hold(order.id(), item.sku(), item.quantity()))
+            .toList();
+        reservationRepository.saveAll(reservations);
+
+        outboxRepository.save(OutboxEvent.orderCreated(order.id()));
+        return OrderResult.accepted(order.id());
+    }
+}</code></pre>
+
+<h3>3.2 Operation Log Với REQUIRES_NEW</h3>
+<pre><code class="language-java">@Service
+public class OperationLogService {
+    private final OperationLogRepository repository;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 3)
+    public void record(String action, String entityId, String status) {
+        repository.save(OperationLog.of(action, entityId, status, Instant.now()));
+    }
+}</code></pre>
+<p>Chỉ dùng <code>REQUIRES_NEW</code> khi log này thật sự phải commit độc lập. Nếu log là một phần của business consistency, hãy để nó join transaction chính.</p>
+
+<h3>3.3 Publish Event Sau Commit</h3>
+<pre><code class="language-java">@Service
+public class OrderApplicationService {
+    private final ApplicationEventPublisher events;
+
+    @Transactional
+    public void confirmOrder(String orderId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        order.confirm();
+        events.publishEvent(new OrderConfirmedEvent(orderId));
+    }
+}
+
+@Component
+public class OrderEventPublisher {
+    private final KafkaTemplate&lt;String, Object&gt; kafkaTemplate;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderConfirmed(OrderConfirmedEvent event) {
+        kafkaTemplate.send("order-confirmed", event.orderId(), event);
+    }
+}</code></pre>
+
+<h3>3.4 Batch Import Với NESTED</h3>
+<pre><code class="language-java">@Service
+public class CatalogImportService {
+    private final ProductRowProcessor rowProcessor;
+
+    @Transactional
+    public ImportSummary importRows(List&lt;ProductRow&gt; rows) {
+        ImportSummary summary = new ImportSummary();
+        for (ProductRow row : rows) {
+            try {
+                rowProcessor.process(row);
+                summary.success(row.sku());
+            } catch (Exception ex) {
+                summary.failed(row.sku(), ex.getMessage());
+            }
+        }
+        return summary;
+    }
+}
+
+@Service
+public class ProductRowProcessor {
+    @Transactional(propagation = Propagation.NESTED)
+    public void process(ProductRow row) {
+        productRepository.save(Product.from(row));
+    }
+}</code></pre>
+
+<section id="tx-template">
+<h3>3.5 TransactionTemplate: Khi Annotation Không Đủ Rõ</h3>
+<p><code>@Transactional</code> tốt cho boundary cố định ở method public. <code>TransactionTemplate</code> hữu ích khi bạn cần transaction nhỏ nằm trong một method lớn hơn, cần bắt lỗi quanh block cụ thể, hoặc muốn code thể hiện rõ commit boundary.</p>
+
+<pre><code class="language-java">@Service
+public class ImportCoordinator {
+    private final TransactionTemplate transactionTemplate;
+    private final ProductRepository productRepository;
+
+    public ImportResult importOne(ProductRow row) {
+        return transactionTemplate.execute(status -&gt; {
+            try {
+                Product product = Product.from(row);
+                productRepository.save(product);
+                return ImportResult.success(product.id());
+            } catch (ValidationException ex) {
+                status.setRollbackOnly();
+                return ImportResult.rejected(row.sku(), ex.getMessage());
+            }
+        });
+    }
+}</code></pre>
+
+<p>Không dùng <code>TransactionTemplate</code> để né hiểu biết về propagation. Nó chỉ là cách biểu diễn boundary khác, vẫn chịu cùng rule về connection, flush, isolation và rollback.</p>
+</section>
+
+<section id="after-commit">
+<h3>3.6 After Commit Và Outbox: Đừng Publish Event Mồ Côi</h3>
+<p><code>@TransactionalEventListener(AFTER_COMMIT)</code> phù hợp khi publish event trong cùng JVM sau commit và lỗi publish có thể được xử lý riêng. Với message broker cần retry bền vững, outbox table an toàn hơn: ghi event vào DB trong transaction, worker sau commit đọc outbox và publish.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Cách</th><th>Dùng khi</th><th>Rủi ro</th></tr></thead>
+  <tbody>
+    <tr><td><code>@TransactionalEventListener</code></td><td>Side effect nhẹ, cùng process, không cần retry bền</td><td>Process chết sau commit trước khi publish.</td></tr>
+    <tr><td>Outbox table</td><td>Event/message phải publish eventually</td><td>Cần worker, retry, idempotency, cleanup.</td></tr>
+    <tr><td>Publish trong transaction</td><td>Hầu như tránh</td><td>Message có thể ra ngoài dù DB rollback.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="async-tx">
+<h3>3.7 @Async + @Transactional: Thread Khác, Context Khác</h3>
+<p>Transaction context gắn với thread. Nếu một method <code>@Transactional</code> gọi <code>@Async</code>, phần async chạy ở thread khác và không tự tham gia transaction của caller. Đây là bẫy daily work khi gửi notification, export report hoặc gọi provider sau khi lưu DB.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">Sai: tưởng async join TX caller</div>
+<pre><code class="language-java">@Transactional
+public void confirm(String orderId) {
+    order.confirm();
+    notificationService.sendAsync(orderId); // thread khác
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">Đúng hơn: sau commit hoặc outbox</div>
+<pre><code class="language-java">@Transactional
+public void confirm(String orderId) {
+    order.confirm();
+    outboxRepository.save(OutboxEvent.orderConfirmed(orderId));
+}</code></pre>
+  </div>
+</div>
+</section>
+</section>
+
+<section id="debug">
+<h2>4. Debug Lab</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Triệu chứng</th><th>Câu hỏi debug</th><th>Fix thường gặp</th></tr></thead>
+  <tbody>
+    <tr><td>Không rollback khi throw exception</td><td>Exception checked hay runtime?</td><td><code>rollbackFor</code> hoặc đổi exception hierarchy.</td></tr>
+    <tr><td>Annotation bị ignore</td><td>Call có qua Spring proxy không?</td><td>Tách method sang bean khác, public method.</td></tr>
+    <tr><td>Deadlock</td><td>Hai TX lock resource theo thứ tự khác nhau?</td><td>Lock theo thứ tự cố định, transaction ngắn.</td></tr>
+    <tr><td>Consumer nhận event nhưng DB chưa có data</td><td>Event publish trước commit?</td><td><code>@TransactionalEventListener(AFTER_COMMIT)</code> hoặc outbox.</td></tr>
+    <tr><td>Connection pool cạn</td><td>Transaction giữ connection quá lâu hoặc lạm dụng <code>REQUIRES_NEW</code>?</td><td>Rút ngắn TX, bỏ external I/O, sizing pool theo concurrency thật.</td></tr>
+    <tr><td>Async task không thấy data</td><td><code>@Async</code> có chạy trước commit hoặc ở thread khác?</td><td>Dùng after-commit/outbox, truyền ID và reload data sau commit.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="tradeoffs">
+<h2>5. Trade-offs & Anti-Patterns</h2>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP1</span><h4>Long Transaction</h4></div>
+  <div class="pb"><p>Không gọi external API, generate file lớn hoặc sleep trong transaction. Transaction dài giữ connection, giữ lock, tăng timeout và deadlock.</p></div>
+</div>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP2</span><h4>REQUIRES_NEW Vô Tội Vạ</h4></div>
+  <div class="pb"><p>Mỗi <code>REQUIRES_NEW</code> có thể cần connection riêng và phá atomicity với caller. Dùng khi dữ liệu phải commit độc lập, không dùng như cách "chắc ăn".</p></div>
+</div>
+<div class="pattern-card">
+  <div class="ph"><span class="badge">AP3</span><h4>Publish Message Trong Transaction</h4></div>
+  <div class="pb"><p>Message broker không rollback cùng DB. Dùng outbox hoặc event listener sau commit để tránh event mồ côi.</p></div>
+</div>
+</section>
+
+<section id="interview">
+<h2>6. Interview Framework</h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">REQUIRED khác REQUIRES_NEW?</span></div>
+  <p class="a"><code>REQUIRED</code> join transaction hiện có hoặc tạo mới nếu chưa có. <code>REQUIRES_NEW</code> suspend transaction hiện có và tạo transaction độc lập. Commit/rollback của TX mới không phụ thuộc TX caller.</p>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">Khi nào @Transactional không rollback?</span></div>
+  <p class="a">Khi exception là checked và không khai báo <code>rollbackFor</code>; khi method không đi qua proxy; khi annotation đặt trên private/final method; khi exception bị catch rồi không rethrow; hoặc khi object không phải Spring bean.</p>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Checkout + message broker cần consistency thế nào?</span></div>
+  <p class="a">Local DB transaction chỉ bao quanh order/reservation/outbox row. Sau commit, outbox publisher gửi message với retry. Consumer xử lý idempotent. Nếu cần rollback cross-service, dùng saga và compensating action thay vì cố dùng local <code>@Transactional</code>.</p>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+<ul>
+  <li>Vẽ được boundary transaction cho một flow checkout.</li>
+  <li>Giải thích được 4 isolation levels bằng anomaly: dirty read, non-repeatable read, phantom, lost update.</li>
+  <li>Vẽ timeline REQUIRED vs REQUIRES_NEW, gồm suspend/resume.</li>
+  <li>Biết checked exception không rollback mặc định và cách fix.</li>
+  <li>Biết vì sao message/email/API call không nên nằm trực tiếp trong DB transaction.</li>
+  <li>Phân biệt flush và commit, và biết <code>readOnly=true</code> là optimization hint chứ không phải security rule.</li>
+  <li>Dùng được <code>TransactionTemplate</code> khi cần boundary transaction nhỏ và rõ trong code.</li>
+  <li>Nhận ra bẫy <code>@Async</code> chạy khác thread nên không giữ transaction context của caller.</li>
+</ul>
+</section>
+
+<footer>
+  <span>Phase 2 - Spring Ecosystem</span>
+  <span>Next: #08 Spring Security</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#49 — Exception & Logging | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{--bg:#fff;--bg-elev:#f8fafc;--bg-code:#1e1e2e;--text:#0f172a;--text-muted:#475569;--text-faint:#94a3b8;--border:#e2e8f0;--accent:#4f46e5;--accent-soft:#eef2ff;--success:#059669;--success-soft:#ecfdf5;--warning:#d97706;--warning-soft:#fffbeb;--danger:#dc2626;--danger-soft:#fef2f2;--info:#0284c7;--info-soft:#f0f9ff;--radius:8px;--radius-lg:12px;--font-sans:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;--sidebar-w:300px;--content-max:820px}
+[data-theme="dark"]{--bg:#0b1020;--bg-elev:#131a2e;--bg-code:#0a0e1c;--text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#64748b;--border:#1e293b;--accent:#818cf8;--accent-soft:#1e1b4b;--success:#34d399;--success-soft:#064e3b;--warning:#fbbf24;--warning-soft:#451a03;--danger:#f87171;--danger-soft:#450a0a;--info:#38bdf8;--info-soft:#082f49}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;font-size:16px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 24px;gap:16px}
+[data-theme="dark"] .topbar{background:rgba(11,16,32,.85)}
+.topbar .crumb{color:var(--text-muted);font-size:14px;flex:1}
+.topbar .crumb strong{color:var(--text);font-weight:600}.topbar .crumb .sep{margin:0 8px;color:var(--text-faint)}
+.theme-toggle{background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.theme-toggle:hover{background:var(--accent-soft);border-color:var(--accent)}
+.menu-toggle{display:none}
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:calc(100vh - 60px)}
+aside.sidebar{border-right:1px solid var(--border);background:var(--bg-elev);padding:24px 20px 60px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+aside .toc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:12px;padding-left:8px;margin-top:18px}
+aside .toc-title:first-child{margin-top:0}
+aside .toc a{display:block;padding:6px 10px;border-radius:6px;color:var(--text-muted);text-decoration:none;font-size:14px;border-left:2px solid transparent}
+aside .toc a:hover{background:var(--bg);color:var(--text)}
+aside .toc a.active{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:500}
+aside .toc .sub{padding-left:18px;font-size:13px}
+aside .toc .sub a{padding:4px 10px}
+main{padding:48px 56px;max-width:100%;overflow-x:hidden}
+.content{max-width:var(--content-max);margin:0 auto}
+.hero{border-bottom:1px solid var(--border);padding-bottom:28px;margin-bottom:36px}
+.hero .meta-tag{display:inline-block;padding:4px 10px;background:var(--accent-soft);color:var(--accent);border-radius:999px;font-size:12px;font-weight:600;margin-bottom:12px}
+.hero h1{font-size:2.4rem;font-weight:700;line-height:1.2;margin-bottom:16px;letter-spacing:-.02em}
+.hero .lead{color:var(--text-muted);font-size:1.05rem;line-height:1.7}
+.hero .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px}
+.hero .meta-item{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px}
+.hero .meta-item .k{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em}
+.hero .meta-item .v{font-size:14px;color:var(--text);font-weight:500;margin-top:2px}
+h2{font-size:1.6rem;font-weight:700;line-height:1.3;margin:56px 0 16px;border-top:1px solid var(--border);padding-top:36px;letter-spacing:-.01em}
+h2:first-of-type,h2.no-border{border-top:none;padding-top:8px}
+h3{font-size:1.2rem;font-weight:600;line-height:1.4;margin:36px 0 12px}
+h4{font-size:1.02rem;font-weight:600;margin:24px 0 10px}
+p{margin:0 0 14px}
+strong{font-weight:600;color:var(--text)}
+em{color:var(--text-muted)}
+ul,ol{margin:0 0 16px;padding-left:24px}
+li{margin-bottom:6px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code:not([class*="language-"]){background:var(--bg-elev);border:1px solid var(--border);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:.88em;color:var(--accent);font-weight:500}
+pre[class*="language-"]{background:var(--bg-code) !important;border-radius:var(--radius);padding:16px 18px !important;margin:16px 0 !important;font-size:.86rem !important;line-height:1.55 !important;overflow-x:auto;border:1px solid var(--border)}
+code[class*="language-"]{font-family:var(--font-mono) !important;font-size:.86rem !important}
+.code-label{display:inline-block;font-family:var(--font-mono);font-size:11px;background:var(--bg-elev);border:1px solid var(--border);color:var(--text-faint);padding:3px 10px;border-radius:4px 4px 0 0;border-bottom:0;margin:14px 0 -1px;font-weight:500}
+.code-label + pre{margin-top:0 !important;border-top-left-radius:0}
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:.95rem}
+.callout > .ctitle{font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:.95rem}
+.callout p:last-child{margin-bottom:0}
+.callout.tip{background:var(--info-soft);border-color:var(--info)} .callout.tip .ctitle{color:var(--info)}
+.callout.warn{background:var(--warning-soft);border-color:var(--warning)} .callout.warn .ctitle{color:var(--warning)}
+.callout.danger{background:var(--danger-soft);border-color:var(--danger)} .callout.danger .ctitle{color:var(--danger)}
+.callout.success{background:var(--success-soft);border-color:var(--success)} .callout.success .ctitle{color:var(--success)}
+.callout.quote{background:var(--bg-elev);border-color:var(--accent);font-style:italic;color:var(--text-muted)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--bg-elev);font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--bg-elev)}
+.diagram{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:20px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram .caption{font-size:13px;color:var(--text-muted);margin-top:12px;font-style:italic}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.compare .col{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.compare .col-head{padding:8px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.compare .bad .col-head{background:var(--danger-soft);color:var(--danger);border-bottom:1px solid var(--danger)}
+.compare .good .col-head{background:var(--success-soft);color:var(--success);border-bottom:1px solid var(--success)}
+.compare .col pre{margin:0 !important;border-radius:0 !important;border:none !important}
+.checklist{background:var(--bg-elev);border-radius:var(--radius);padding:20px 24px;margin:16px 0;border:1px solid var(--border)}
+.checklist .item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.checklist .item:last-child{border-bottom:none}
+.checklist input[type="checkbox"]{margin-top:4px;accent-color:var(--accent);width:16px;height:16px}
+.checklist label{flex:1;cursor:pointer}
+.tier{border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin:18px 0;background:var(--bg-elev)}
+.tier .tier-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.tier .badge{background:var(--accent);color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.tier.t1 .badge{background:var(--success)} .tier.t2 .badge{background:var(--warning)} .tier.t3 .badge{background:var(--accent)}
+.tier .tier-title{font-size:1.05rem;font-weight:600}
+.tier .q{font-weight:600;margin:12px 0 8px;color:var(--text)}
+.tier .a{color:var(--text-muted);background:var(--bg);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0}
+.section-tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-right:8px;vertical-align:middle}
+.section-tag.a{background:var(--danger-soft);color:var(--danger)} .section-tag.b{background:var(--info-soft);color:var(--info)}
+.log-card{background:#1e1e2e;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin:14px 0;font-family:var(--font-mono);font-size:.82rem;color:#e2e8f0;overflow-x:auto;line-height:1.6}
+.log-card .ts{color:#94a3b8}.log-card .lvl-info{color:#38bdf8;font-weight:600}.log-card .lvl-warn{color:#fbbf24;font-weight:600}.log-card .lvl-error{color:#f87171;font-weight:600}.log-card .ctx{color:#a78bfa}.log-card .msg{color:#e2e8f0}.log-card .ex{color:#f87171}
+footer{margin-top:80px;padding:32px 0 24px;border-top:1px solid var(--border);font-size:13px;color:var(--text-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+@media (max-width:980px){.layout{grid-template-columns:1fr}aside.sidebar{position:fixed;left:-300px;top:60px;width:280px;height:calc(100vh - 60px);transition:left .25s;z-index:40}aside.sidebar.open{left:0}.menu-toggle{display:flex;background:transparent;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:18px}main{padding:32px 20px}.hero h1{font-size:1.8rem}.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Nhóm N<span class="sep">/</span><strong>#49 Exception & Logging</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Phần A — Exception</div>
+  <nav class="toc">
+    <a href="#intro">Vì sao file này tồn tại</a>
+    <a href="#a1">A.1 Bài toán thực tế</a>
+    <a href="#a2">A.2 Exception hierarchy</a>
+    <a href="#a3">A.3 try / catch / finally</a>
+    <a href="#a4">A.4 Custom exception</a>
+    <a href="#a5">A.5 7 Anti-patterns</a>
+  </nav>
+  <div class="toc-title">Phần B — Logging</div>
+  <nav class="toc">
+    <a href="#b1">B.1 Tại sao logging quan trọng</a>
+    <a href="#b2">B.2 5 Log levels</a>
+    <a href="#b3">B.3 SLF4J + Logback setup</a>
+    <a href="#b4">B.4 Logback config</a>
+    <a href="#b5">B.5 MDC — Mapped Diag Context</a>
+    <a href="#b6">B.6 Anti-patterns</a>
+    <a href="#c">C. Structured logging</a>
+  </nav>
+  <div class="toc-title">Tổng kết</div>
+  <nav class="toc">
+    <a href="#exercises">Exercises</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#checklist">Checklist</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔥 CRITICAL — Production Survival Kit</span>
+  <h1>#49 — Exception & Logging</h1>
+  <p class="lead">80% thời gian production debug đến từ <strong>exception handling sai</strong> và <strong>log thiếu</strong>. File này dạy mental model + setup chuẩn để bug không bị nuốt và log đủ để debug 3 giờ sáng.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">N — Junior Foundation</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#48 OOP, #26 Observability, #29 Security</div></div>
+    <div class="meta-item"><div class="k">File</div><div class="v">2/5 Nhóm N</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Vì Sao File Này Tồn Tại?</h2>
+<p>3 câu chuyện thật trong nghề mình đã chứng kiến:</p>
+
+<div class="callout danger">
+  <div class="ctitle">📖 Câu chuyện 1 — Stack trace biến mất</div>
+  <p>Junior catch <code>Exception e</code> rồi <code>log.error("error")</code> không có stack trace. Production crash, log chỉ có 1 dòng "error". Sếp gọi 2 giờ đêm, không tìm ra root cause, mất 8 tiếng vì phải reproduce.</p>
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">📖 Câu chuyện 2 — Log password customer</div>
+  <p>Junior log <code>log.info("User password: " + user.getPassword())</code> để debug. Code lên prod, log file có 50,000 dòng password customer. Audit phát hiện → công ty bị fine, junior bị warning.</p>
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">📖 Câu chuyện 3 — e.printStackTrace()</div>
+  <p>Junior viết <code>try { ... } catch (Exception e) { e.printStackTrace(); }</code>. Stack trace in ra <code>System.err</code>, không vào log file. Production debug = ssh vào container đã chết → vô vọng.</p>
+</div>
+
+<p>3 câu chuyện trên xảy ra vì <strong>junior thiếu mental model về exception + logging</strong>. File này lấp gap đó.</p>
+</section>
+
+<h2><span class="section-tag a">Phần A</span>Exception Handling</h2>
+
+<section id="a1">
+<h3>A.1 Bài Toán Thực Tế — Code Junior Phá Production</h3>
+
+<div class="code-label">❌ Code junior — chạy được, nhưng production sẽ chết</div>
+<pre><code class="language-java">public class TransferService {
+    public void transfer(String fromId, String toId, BigDecimal amount) {
+        try {
+            Account from = accountRepo.findById(fromId);
+            Account to = accountRepo.findById(toId);
+            from.withdraw(amount);
+            to.deposit(amount);
+            accountRepo.save(from);
+            accountRepo.save(to);
+        } catch (Exception e) {
+            // Im lặng, ai biết được
+        }
+    }
+}</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 5 vấn đề chí mạng senior phát hiện ngay</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Swallow exception</strong>: catch <code>Exception</code> → empty block. Lỗi mất hoàn toàn, caller nghĩ thành công.</li>
+  <li><strong>Catch quá rộng</strong>: bắt <code>Exception</code> → bắt cả <code>OutOfMemoryError</code>-like cases (pattern xấu).</li>
+  <li><strong>No logging</strong>: ngay cả khi log, người sau không biết exception là gì.</li>
+  <li><strong>No re-throw</strong>: caller không biết thất bại → tài khoản A trừ rồi nhưng B chưa cộng → <strong>tiền biến mất</strong>.</li>
+  <li><strong>No transaction boundary</strong>: nếu <code>save(to)</code> fail, <code>save(from)</code> đã commit → tiền <strong>thật sự</strong> biến mất.</li>
+  </ol>
+</div>
+
+<div class="code-label">✅ Refactor đúng</div>
+<pre><code class="language-java">@Service
+public class TransferService {
+    private static final Logger log = LoggerFactory.getLogger(TransferService.class);
+    private final AccountRepository accountRepo;
+
+    public TransferService(AccountRepository accountRepo) {
+        this.accountRepo = accountRepo;
+    }
+
+    @Transactional
+    public TransferResult transfer(String fromId, String toId, BigDecimal amount)
+            throws AccountNotFoundException, InsufficientFundsException {
+
+        Account from = accountRepo.findById(fromId)
+            .orElseThrow(() -&gt; new AccountNotFoundException(fromId));
+        Account to = accountRepo.findById(toId)
+            .orElseThrow(() -&gt; new AccountNotFoundException(toId));
+
+        from.withdraw(amount);  // throws InsufficientFundsException nếu không đủ
+        to.deposit(amount);
+        accountRepo.save(from);
+        accountRepo.save(to);
+
+        log.info("Transfer success: from={}, to={}, amount={}", fromId, toId, amount);
+        return new TransferResult(from.getId(), to.getId(), amount);
+    }
+}</code></pre>
+
+<p><strong>Khác biệt:</strong></p>
+<ul>
+<li>Throw checked exception specific (<code>AccountNotFoundException</code>, <code>InsufficientFundsException</code>)</li>
+<li><code>@Transactional</code> để đảm bảo atomicity</li>
+<li>Log success với context đủ để debug</li>
+<li>Caller buộc handle hoặc declare <code>throws</code></li>
+<li>Không catch — let it bubble up đến <code>@ControllerAdvice</code></li>
+</ul>
+</section>
+
+<section id="a2">
+<h3>A.2 Mental Model — Exception Hierarchy</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
+  <defs><style>
+    .root{fill:#1e293b;stroke:#0f172a;stroke-width:2}
+    .root-t{fill:#fff;font-family:'JetBrains Mono';font-weight:700}
+    .err{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5}
+    .err-t{fill:#991b1b;font-family:'JetBrains Mono';font-weight:600}
+    .exc{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .exc-t{fill:#312e81;font-family:'JetBrains Mono';font-weight:600}
+    .check{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .runtime{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .edge{stroke:#64748b;stroke-width:1.5;fill:none}
+    .note{fill:#475569;font-size:10px;font-style:italic}
+  </style></defs>
+  <rect x="310" y="10" width="140" height="36" rx="6" class="root"/>
+  <text x="380" y="34" text-anchor="middle" class="root-t">Throwable</text>
+
+  <rect x="100" y="90" width="180" height="36" rx="6" class="err"/>
+  <text x="190" y="113" text-anchor="middle" class="err-t">Error</text>
+  <text x="190" y="142" text-anchor="middle" class="note">JVM problem — ĐỪNG catch</text>
+
+  <rect x="480" y="90" width="180" height="36" rx="6" class="exc"/>
+  <text x="570" y="113" text-anchor="middle" class="exc-t">Exception</text>
+  <line x1="350" y1="46" x2="220" y2="90" class="edge"/>
+  <line x1="410" y1="46" x2="540" y2="90" class="edge"/>
+
+  <rect x="20" y="180" width="160" height="28" rx="4" class="err"/>
+  <text x="100" y="198" text-anchor="middle" class="err-t" font-size="11">OutOfMemoryError</text>
+  <rect x="200" y="180" width="160" height="28" rx="4" class="err"/>
+  <text x="280" y="198" text-anchor="middle" class="err-t" font-size="11">StackOverflowError</text>
+  <line x1="160" y1="126" x2="100" y2="180" class="edge"/>
+  <line x1="220" y1="126" x2="280" y2="180" class="edge"/>
+
+  <rect x="400" y="180" width="160" height="36" rx="6" class="runtime"/>
+  <text x="480" y="202" text-anchor="middle" class="exc-t" font-size="11">RuntimeException</text>
+  <text x="480" y="232" text-anchor="middle" class="note">UNCHECKED — không bắt buộc handle</text>
+
+  <rect x="580" y="180" width="160" height="36" rx="6" class="check"/>
+  <text x="660" y="202" text-anchor="middle" class="exc-t" font-size="11" fill="#92400e">Checked Exception</text>
+  <text x="660" y="232" text-anchor="middle" class="note">CHECKED — force handle</text>
+  <line x1="540" y1="126" x2="480" y2="180" class="edge"/>
+  <line x1="600" y1="126" x2="640" y2="180" class="edge"/>
+
+  <rect x="280" y="260" width="170" height="24" rx="4" class="runtime"/>
+  <text x="365" y="277" text-anchor="middle" class="exc-t" font-size="10">NullPointerException</text>
+  <rect x="280" y="290" width="170" height="24" rx="4" class="runtime"/>
+  <text x="365" y="307" text-anchor="middle" class="exc-t" font-size="10">IllegalArgumentException</text>
+  <rect x="280" y="320" width="170" height="24" rx="4" class="runtime"/>
+  <text x="365" y="337" text-anchor="middle" class="exc-t" font-size="10">IllegalStateException</text>
+
+  <rect x="540" y="260" width="160" height="24" rx="4" class="check"/>
+  <text x="620" y="277" text-anchor="middle" class="exc-t" font-size="10" fill="#92400e">IOException</text>
+  <rect x="540" y="290" width="160" height="24" rx="4" class="check"/>
+  <text x="620" y="307" text-anchor="middle" class="exc-t" font-size="10" fill="#92400e">SQLException</text>
+  <rect x="540" y="320" width="160" height="24" rx="4" class="check"/>
+  <text x="620" y="337" text-anchor="middle" class="exc-t" font-size="10" fill="#92400e">InterruptedException</text>
+</svg>
+<div class="caption">Exception Hierarchy — học thuộc, quan trọng cho mọi câu hỏi exception trong phỏng vấn</div>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Loại</th><th>Nghĩa</th><th>Khi nào dùng</th></tr></thead>
+<tbody>
+<tr><td><code>Error</code></td><td>JVM problem</td><td>KHÔNG catch (trừ khi biết rõ làm gì)</td></tr>
+<tr><td><code>RuntimeException</code> (unchecked)</td><td>Bug logic, không bắt buộc handle</td><td>Custom exception cho validation, business rule violation</td></tr>
+<tr><td>Checked Exception</td><td>Recoverable, caller có thể handle</td><td>I/O, DB, external service — caller "có lựa chọn" handle hoặc bubble up</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>Checked vs Unchecked — Cuộc Tranh Luận Vĩnh Cửu</h4>
+
+<div class="compare">
+<div class="col">
+  <div class="col-head" style="background:var(--info-soft);color:var(--info);border-bottom:1px solid var(--info)">🏛️ Trường phái Checked (Java truyền thống)</div>
+  <div style="padding:12px 16px"><ul style="margin:0;padding-left:18px"><li>Force caller think về error case</li><li>Compile-time safety</li><li>Self-documenting (nhìn signature biết exception nào có thể xảy ra)</li></ul></div>
+</div>
+<div class="col">
+  <div class="col-head" style="background:var(--success-soft);color:var(--success);border-bottom:1px solid var(--success)">🚀 Trường phái Unchecked (Spring, modern)</div>
+  <div style="padding:12px 16px"><ul style="margin:0;padding-left:18px"><li>Checked exception lan ra signature, code clutter (<code>throws</code> everywhere)</li><li>Caller thường wrap thành RuntimeException dù sao</li><li>Spring chuyển hết SQLException → RuntimeException (DataAccessException)</li></ul></div>
+</div>
+</div>
+
+<div class="callout quote">
+  <div class="ctitle">📖 Quy tắc thực tế</div>
+  <p>• Custom business exception → <strong>unchecked</strong> (extends RuntimeException)<br>
+  • Recoverable I/O ở layer thấp → <strong>checked</strong> (IOException)<br>
+  • Application layer → bắt checked + wrap thành domain exception unchecked<br>
+  • Controller layer → <code>@ExceptionHandler</code> convert thành HTTP response</p>
+</div>
+
+<div class="code-label">✅ Pattern: bắt checked ở layer thấp, throw domain exception unchecked</div>
+<pre><code class="language-java">public class FileStorageService {
+    public byte[] read(String path) {
+        try {
+            return Files.readAllBytes(Path.of(path));
+        } catch (IOException e) {
+            throw new StorageException("Cannot read file: " + path, e);
+        }
+    }
+}
+
+public class StorageException extends RuntimeException {
+    public StorageException(String message, Throwable cause) {
+        super(message, cause);  // ← KHÔNG quên cause!
+    }
+}</code></pre>
+</section>
+
+<section id="a3">
+<h3>A.3 Cú Pháp — try / catch / finally / try-with-resources</h3>
+
+<h4>try-with-resources (Java 7+) — Auto-close resource</h4>
+<pre><code class="language-java">// ✅ Auto-close mọi resource implements AutoCloseable
+try (FileInputStream fis = new FileInputStream("file.txt");
+     BufferedReader reader = new BufferedReader(new InputStreamReader(fis))) {
+
+    String line;
+    while ((line = reader.readLine()) != null) {
+        process(line);
+    }
+} catch (IOException e) {
+    log.error("File processing failed", e);
+    throw new ProcessingException("Failed to process file.txt", e);
+}
+// fis, reader auto-close kể cả có exception</code></pre>
+
+<h4>Multi-catch (Java 7+)</h4>
+<pre><code class="language-java">try {
+    riskyOperation();
+} catch (IOException | SQLException e) {  // 1 block xử lý 2 type
+    log.error("External resource failed", e);
+    throw new RuntimeException(e);
+}</code></pre>
+
+<h4>Bẫy finally — return bị override</h4>
+<div class="callout danger">
+  <div class="ctitle">⚠️ Câu phỏng vấn kinh điển</div>
+<pre style="margin:8px 0 0 0;background:#1e1e2e !important;padding:12px 16px !important;border:none !important"><code class="language-java">public int badExample() {
+    try {
+        return 1;
+    } finally {
+        return 2;  // ❌ Finally override return của try!
+    }
+}
+// Output: 2</code></pre>
+  <p style="margin-top:8px"><strong>Quy tắc:</strong> KHÔNG <code>return</code> trong <code>finally</code>. Chỉ cleanup, không thay đổi flow.</p>
+</div>
+</section>
+
+<section id="a4">
+<h3>A.4 Custom Exception — Banking Domain</h3>
+
+<pre><code class="language-java">// Base class cho domain exception
+public abstract class BankingException extends RuntimeException {
+    private final String errorCode;
+
+    protected BankingException(String errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    protected BankingException(String errorCode, String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+    }
+
+    public String getErrorCode() { return errorCode; }
+}
+
+// Concrete exceptions
+public class AccountNotFoundException extends BankingException {
+    public AccountNotFoundException(String accountId) {
+        super("ACC_NOT_FOUND", "Account not found: " + accountId);
+    }
+}
+
+public class InsufficientFundsException extends BankingException {
+    private final BigDecimal required;
+    private final BigDecimal available;
+
+    public InsufficientFundsException(String accountId, BigDecimal required, BigDecimal available) {
+        super("INSUFFICIENT_FUNDS",
+            String.format("Account %s: required %s, available %s", accountId, required, available));
+        this.required = required;
+        this.available = available;
+    }
+
+    public BigDecimal getRequired() { return required; }
+    public BigDecimal getAvailable() { return available; }
+}</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">📋 5 quy tắc viết custom exception</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Extend RuntimeException</strong> trừ khi caller thật sự cần handle</li>
+  <li><strong>Có errorCode</strong> để client/log machine-readable</li>
+  <li><strong>Constructor giữ cause</strong>: <code>super(message, cause)</code> — KHÔNG nuốt mất cause</li>
+  <li><strong>Message có context</strong>: ID, value, expected vs actual</li>
+  <li><strong>Field bổ sung</strong> nếu caller cần biết detail (như <code>required</code>, <code>available</code>)</li>
+  </ol>
+</div>
+
+<h4>Spring @ControllerAdvice — Map Exception → HTTP</h4>
+<pre><code class="language-java">@RestControllerAdvice
+public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleAccountNotFound(AccountNotFoundException e) {
+        log.warn("Account not found: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleInsufficientFunds(InsufficientFundsException e) {
+        log.warn("Insufficient funds: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(Exception.class)  // Catch-all cuối cùng
+    public ResponseEntity&lt;ErrorResponse&gt; handleUnexpected(Exception e) {
+        log.error("Unexpected error", e);  // log full stack trace
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ErrorResponse("INTERNAL_ERROR", "Internal server error"));
+        // ⚠️ KHÔNG leak stack trace ra response — security risk
+    }
+}</code></pre>
+</section>
+
+<section id="a5">
+<h3>A.5 Anti-Patterns — 7 Sai Lầm Junior Phổ Biến</h3>
+
+<h4>#1 Swallow exception</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Bug bị nuốt</div>
+<pre><code class="language-java">try { riskyCall(); }
+catch (Exception e) { /* empty */ }
+// Không ai biết</code></pre></div>
+<div class="col good"><div class="col-head">✅ Log + rethrow</div>
+<pre><code class="language-java">try { riskyCall(); }
+catch (Exception e) {
+    log.error("Risky call failed", e);
+    throw new RuntimeException(e);
+}</code></pre></div>
+</div>
+
+<h4>#2 Mất cause khi rethrow</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Mất stack trace gốc</div>
+<pre><code class="language-java">catch (IOException e) {
+    throw new RuntimeException(e.getMessage());
+    // ← chỉ lấy message
+}</code></pre></div>
+<div class="col good"><div class="col-head">✅ Giữ cause</div>
+<pre><code class="language-java">catch (IOException e) {
+    throw new RuntimeException(
+        "Failed to read file: " + path, e);
+    // ← truyền e
+}</code></pre></div>
+</div>
+
+<h4>#3 Catch quá rộng</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Bắt cả NPE bug</div>
+<pre><code class="language-java">try {
+  user.getProfile()
+      .getAddress().getCity();
+} catch (Exception e) {
+  return "Unknown";
+  // Bug NPE bị che mất
+}</code></pre></div>
+<div class="col good"><div class="col-head">✅ Catch specific</div>
+<pre><code class="language-java">try {
+  apiClient.fetch();
+} catch (TimeoutException e) {
+  log.warn("API timeout, return cache");
+  return cache.get();
+}</code></pre></div>
+</div>
+
+<h4>#4 e.printStackTrace()</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ In ra System.err</div>
+<pre><code class="language-java">catch (Exception e) {
+    e.printStackTrace();
+    // Production không thấy được
+}</code></pre></div>
+<div class="col good"><div class="col-head">✅ Dùng logger</div>
+<pre><code class="language-java">catch (Exception e) {
+    log.error("Operation failed", e);
+}</code></pre></div>
+</div>
+
+<h4>#5 throws Exception (lười)</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Quá generic</div>
+<pre><code class="language-java">public void process() throws Exception { }
+// Caller không biết exception nào</code></pre></div>
+<div class="col good"><div class="col-head">✅ Specific hoặc unchecked</div>
+<pre><code class="language-java">public void process()
+  throws ProcessingException,
+         ValidationException { }
+// Hoặc throws unchecked (không declare)</code></pre></div>
+</div>
+
+<h4>#6 Rethrow trống rỗng không thêm context</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Mất context</div>
+<pre><code class="language-java">catch (SQLException e) {
+    throw new RuntimeException(e);
+}</code></pre></div>
+<div class="col good"><div class="col-head">✅ Thêm context</div>
+<pre><code class="language-java">catch (SQLException e) {
+    throw new DatabaseException(
+      "Failed to update account "
+      + accountId + " balance", e);
+}</code></pre></div>
+</div>
+
+<h4>#7 Exception cho control flow</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Dùng exception thay if/else</div>
+<pre><code class="language-java">public boolean isUserExists(String id) {
+  try {
+    userRepo.findById(id).get();
+    return true;
+  } catch (NoSuchElementException e) {
+    return false;
+  }
+}
+// Exception expensive (stack trace)</code></pre></div>
+<div class="col good"><div class="col-head">✅ Optional / boolean</div>
+<pre><code class="language-java">public boolean isUserExists(String id) {
+  return userRepo.findById(id).isPresent();
+}</code></pre></div>
+</div>
+
+<div class="callout quote">
+  <div class="ctitle">📖 Quy tắc 10 năm exp</div>
+  <p>"Nếu không biết nên handle exception thế nào, <strong>let it bubble up</strong>. Để layer cao nhất (controller / global handler) quyết định. Đừng catch chỉ để log."</p>
+</div>
+</section>
+
+<h2><span class="section-tag b">Phần B</span>Logging</h2>
+
+<section id="b1">
+<h3>B.1 Bài Toán — Tại Sao Logging Quan Trọng</h3>
+
+<p><strong>Tình huống thực:</strong> 3 giờ sáng, alert PagerDuty: "Payment service P99 latency 8 giây". Bạn ssh vào server, thấy log:</p>
+
+<div class="log-card">
+<span class="lvl-error">ERROR</span><br>
+<span class="lvl-error">ERROR</span><br>
+<span class="lvl-error">ERROR</span><br>
+<span class="msg">process failed</span><br>
+<span class="msg">process failed</span><br>
+<span class="msg">something went wrong</span>
+</div>
+
+<p>→ <strong>Vô vọng.</strong> Không biết user nào, transaction nào, lỗi gì, ở đâu.</p>
+
+<p><strong>Log đúng phải như thế này:</strong></p>
+
+<div class="log-card">
+<span class="ts">2026-04-25T03:00:12.453Z</span> <span class="lvl-info">INFO</span>  <span class="ctx">[thread-pool-3] [traceId=abc123] [userId=USER_5523]</span><br>
+&nbsp;&nbsp;<span class="msg">TransferService.transfer: Initiating transfer from=ACC_001 to=ACC_009 amount=500000</span><br><br>
+<span class="ts">2026-04-25T03:00:12.487Z</span> <span class="lvl-warn">WARN</span>  <span class="ctx">[thread-pool-3] [traceId=abc123] [userId=USER_5523]</span><br>
+&nbsp;&nbsp;<span class="msg">AccountValidator.validate: Suspicious activity — user has 5 transfers in last 1 minute</span><br><br>
+<span class="ts">2026-04-25T03:00:12.523Z</span> <span class="lvl-error">ERROR</span> <span class="ctx">[thread-pool-3] [traceId=abc123] [userId=USER_5523]</span><br>
+&nbsp;&nbsp;<span class="msg">TransferService.transfer: Transfer failed</span><br>
+&nbsp;&nbsp;<span class="ex">com.bank.exceptions.InsufficientFundsException: Account ACC_001: required 500000, available 200000</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="ex">at com.bank.services.TransferService.transfer(TransferService.java:45)</span>
+</div>
+
+<p>→ Có user, có transaction (traceId), có context, có stack trace → <strong>debug được</strong>.</p>
+</section>
+
+<section id="b2">
+<h3>B.2 Mental Model — 5 Log Levels</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Level</th><th>Khi nào dùng</th><th>Production có log không?</th></tr></thead>
+<tbody>
+<tr><td><code>ERROR</code></td><td>Exception không expected, phải báo on-call</td><td>✅ Luôn</td></tr>
+<tr><td><code>WARN</code></td><td>Recoverable issue, retry, fallback, deprecated API</td><td>✅ Luôn</td></tr>
+<tr><td><code>INFO</code></td><td>Business event quan trọng (transfer, login, order create)</td><td>✅ Luôn</td></tr>
+<tr><td><code>DEBUG</code></td><td>Chi tiết để debug</td><td>❌ Không (hoặc chỉ tạm)</td></tr>
+<tr><td><code>TRACE</code></td><td>Per-step detail</td><td>❌ Không</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Junior anti-pattern</div>
+  <p>Dùng <code>INFO</code> cho mọi thứ → log file phình to, không tìm được error trong noise. <strong>Hỏi mình</strong>: "Việc này có cần ai đó nửa đêm xem không?" — nếu không, ít nhất là DEBUG.</p>
+</div>
+</section>
+
+<section id="b3">
+<h3>B.3 SLF4J + Logback — Setup Chuẩn</h3>
+
+<p><strong>Spring Boot đã include sẵn SLF4J + Logback — không cần thêm dependency.</strong></p>
+
+<h4>Cú pháp dùng SLF4J</h4>
+<pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TransferService {
+    // private static final — convention chuẩn
+    private static final Logger log = LoggerFactory.getLogger(TransferService.class);
+
+    public void transfer(String fromId, String toId, BigDecimal amount) {
+        // Parameterized logging — KHÔNG concat string
+        log.info("Transfer initiated: from={}, to={}, amount={}", fromId, toId, amount);
+
+        try {
+            // logic
+            log.info("Transfer success: txId={}", txId);
+        } catch (InsufficientFundsException e) {
+            log.warn("Transfer failed (insufficient funds): from={}, amount={}", fromId, amount);
+            throw e;
+        } catch (Exception e) {
+            log.error("Transfer failed unexpectedly: from={}, to={}", fromId, toId, e);
+            // ↑ Truyền `e` ở cuối → log full stack trace
+            throw e;
+        }
+    }
+}</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">⚠️ Quy tắc cú pháp — học thuộc</div>
+<pre style="margin:8px 0 0 0;background:#1e1e2e !important;padding:12px 16px !important;border:none !important"><code class="language-java">// ❌ String concat — luôn build string ngay cả khi log level OFF
+log.debug("User: " + user.getName() + ", id: " + user.getId());
+
+// ✅ Parameterized — chỉ build string nếu level ON
+log.debug("User: {}, id: {}", user.getName(), user.getId());
+
+// ✅ Exception ở argument cuối — log stack trace
+log.error("Failed to process user: {}", userId, exception);
+
+// ❌ Đừng put exception vào placeholder
+log.error("Failed: {}", exception);  // chỉ in toString, không stack trace</code></pre>
+</div>
+
+<h4>Lombok @Slf4j shortcut</h4>
+<pre><code class="language-java">@Slf4j  // Lombok generate `private static final Logger log` tự động
+@Service
+public class TransferService {
+    public void transfer() {
+        log.info("Working...");
+    }
+}</code></pre>
+</section>
+
+<section id="b4">
+<h3>B.4 Logback Config — logback-spring.xml</h3>
+
+<pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;configuration&gt;
+    &lt;!-- Console appender cho dev --&gt;
+    &lt;appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender"&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- File appender cho prod, rolling theo ngày --&gt;
+    &lt;appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender"&gt;
+        &lt;file&gt;logs/app.log&lt;/file&gt;
+        &lt;rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy"&gt;
+            &lt;fileNamePattern&gt;logs/app.%d{yyyy-MM-dd}.%i.log.gz&lt;/fileNamePattern&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{userId:-}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- JSON appender cho structured logging (ELK) --&gt;
+    &lt;appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender"&gt;
+        &lt;file&gt;logs/app-json.log&lt;/file&gt;
+        &lt;encoder class="net.logstash.logback.encoder.LogstashEncoder"&gt;
+            &lt;includeMdcKeyName&gt;traceId&lt;/includeMdcKeyName&gt;
+            &lt;includeMdcKeyName&gt;userId&lt;/includeMdcKeyName&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;springProfile name="dev"&gt;
+        &lt;root level="INFO"&gt;&lt;appender-ref ref="CONSOLE"/&gt;&lt;/root&gt;
+        &lt;logger name="com.mybank" level="DEBUG"/&gt;
+    &lt;/springProfile&gt;
+
+    &lt;springProfile name="prod"&gt;
+        &lt;root level="INFO"&gt;
+            &lt;appender-ref ref="FILE"/&gt;
+            &lt;appender-ref ref="JSON"/&gt;
+        &lt;/root&gt;
+        &lt;logger name="com.mybank" level="INFO"/&gt;
+        &lt;logger name="org.hibernate.SQL" level="WARN"/&gt;
+    &lt;/springProfile&gt;
+&lt;/configuration&gt;</code></pre>
+
+<h4>Pattern format giải thích</h4>
+<div class="table-wrap">
+<table>
+<tbody>
+<tr><td><code>%d{yyyy-MM-dd HH:mm:ss.SSS}</code></td><td>timestamp</td></tr>
+<tr><td><code>[%thread]</code></td><td>thread name</td></tr>
+<tr><td><code>%-5level</code></td><td>log level (5 ký tự, padded)</td></tr>
+<tr><td><code>[%X{traceId:-}]</code></td><td>MDC value (trace ID), default '-' nếu null</td></tr>
+<tr><td><code>%logger{36}</code></td><td>class name (max 36 chars)</td></tr>
+<tr><td><code>%msg</code></td><td>log message</td></tr>
+<tr><td><code>%n</code></td><td>newline</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="b5">
+<h3>B.5 MDC — Mapped Diagnostic Context (Quan Trọng Nhất)</h3>
+
+<p><strong>MDC</strong> là cách add context (như traceId, userId) vào <strong>mọi log</strong> trong cùng request mà không cần truyền tham số.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .box{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .filter{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .log{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600;font-size:12px}
+    .lbl-mono{font-family:'JetBrains Mono';font-size:11px}
+    .edge{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#arr)}
+    .ctx{fill:#7c3aed;font-family:'JetBrains Mono';font-size:11px;font-weight:600}
+  </style>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+  </marker></defs>
+
+  <rect x="20" y="80" width="120" height="50" rx="6" class="box"/>
+  <text x="80" y="100" text-anchor="middle" class="lbl">HTTP Request</text>
+  <text x="80" y="118" text-anchor="middle" class="lbl-mono" fill="#475569">X-Trace-Id: abc</text>
+
+  <rect x="180" y="80" width="160" height="50" rx="6" class="filter"/>
+  <text x="260" y="100" text-anchor="middle" class="lbl">Logging Filter</text>
+  <text x="260" y="118" text-anchor="middle" class="lbl-mono" fill="#92400e">MDC.put("traceId", ...)</text>
+
+  <rect x="380" y="80" width="160" height="50" rx="6" class="box"/>
+  <text x="460" y="100" text-anchor="middle" class="lbl">Service / Repository</text>
+  <text x="460" y="118" text-anchor="middle" class="lbl-mono" fill="#475569">log.info("Working")</text>
+
+  <rect x="580" y="80" width="120" height="50" rx="6" class="log"/>
+  <text x="640" y="100" text-anchor="middle" class="lbl">Log Output</text>
+  <text x="640" y="118" text-anchor="middle" class="ctx">[traceId=abc]</text>
+
+  <line x1="140" y1="105" x2="180" y2="105" class="edge"/>
+  <line x1="340" y1="105" x2="380" y2="105" class="edge"/>
+  <line x1="540" y1="105" x2="580" y2="105" class="edge"/>
+
+  <text x="360" y="180" text-anchor="middle" fill="#475569" font-style="italic" font-size="12">MDC dùng ThreadLocal — mọi log trong cùng request có cùng traceId, không cần truyền tham số</text>
+</svg>
+</div>
+
+<pre><code class="language-java">@Component
+public class RequestLoggingFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
+
+        String traceId = req.getHeader("X-Trace-Id");
+        if (traceId == null) traceId = UUID.randomUUID().toString();
+
+        String userId = extractUserId(req);  // từ JWT/session
+
+        try {
+            MDC.put("traceId", traceId);
+            MDC.put("userId", userId);
+
+            chain.doFilter(req, res);
+
+        } finally {
+            MDC.clear();  // ← QUAN TRỌNG: clear sau khi xong, tránh leak sang request khác
+        }
+    }
+}</code></pre>
+
+<p>Ở các class khác, không cần truyền traceId — log tự có:</p>
+<pre><code class="language-java">@Service
+public class TransferService {
+    public void transfer(...) {
+        log.info("Transfer initiated");
+        // Log sẽ tự có [traceId=abc123] [userId=USER_5523]
+    }
+}</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Bẫy MDC + thread pool</div>
+  <p>MDC dùng ThreadLocal, nếu submit task sang executor, MDC <strong>không pass tự động</strong>. Phải copy thủ công:</p>
+<pre style="margin:8px 0 0 0;background:#1e1e2e !important;padding:12px 16px !important;border:none !important"><code class="language-java">Map&lt;String, String&gt; contextMap = MDC.getCopyOfContextMap();
+executor.submit(() -&gt; {
+    MDC.setContextMap(contextMap);
+    try {
+        doWork();
+    } finally {
+        MDC.clear();
+    }
+});</code></pre>
+</div>
+</section>
+
+<section id="b6">
+<h3>B.6 Anti-Patterns — Logging Sai Cách</h3>
+
+<h4>#1 Log password / PII (CRITICAL — banking fine)</h4>
+<div class="callout danger">
+<pre style="margin:0;background:#1e1e2e !important;padding:12px 16px !important;border:none !important"><code class="language-java">// ❌ DỪNG NGAY!
+log.info("Login attempt: username={}, password={}", username, password);
+log.debug("User data: {}", user);  // user.toString() có thể chứa password, SSN, credit card
+
+// ✅
+log.info("Login attempt: username={}", username);
+log.debug("User data: id={}, email={}", user.getId(), maskEmail(user.getEmail()));</code></pre>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>NEVER log (Banking PII)</th><th>Hậu quả nếu vi phạm</th></tr></thead>
+<tbody>
+<tr><td>Password, PIN, OTP</td><td rowspan="5">• GDPR fine €20M hoặc 4% revenue<br>• PCI-DSS fine<br>• Audit fail<br>• Junior bị warning hoặc terminate</td></tr>
+<tr><td>Full credit card number (chỉ last 4)</td></tr>
+<tr><td>SSN/CMND/CCCD đầy đủ</td></tr>
+<tr><td>Account balance đầy đủ (mask 4 số cuối)</td></tr>
+<tr><td>Authentication token</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>#2 Log trong loop</h4>
+<pre><code class="language-java">// ❌ Loop 1M items, mỗi item 1 log → log file 1M dòng
+for (Transaction t : transactions) {
+    log.info("Processing transaction: {}", t.getId());
+    process(t);
+}
+
+// ✅ Log batch, hoặc DEBUG
+log.info("Processing {} transactions", transactions.size());
+for (Transaction t : transactions) {
+    log.debug("Processing transaction: {}", t.getId());  // DEBUG chỉ bật khi cần
+    process(t);
+}
+log.info("Processed {} transactions successfully", transactions.size());</code></pre>
+
+<h4>#3 Log exception nhiều lần khi bubble up</h4>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Quy tắc</div>
+  <p>Log exception <strong>1 lần</strong> ở layer cao nhất bắt nó (thường là <code>@ControllerAdvice</code>). Layer dưới chỉ throw, không log → tránh 1 exception có 3 stack trace trong log = noise.</p>
+</div>
+
+<h4>#4 log.error() khi không phải error</h4>
+<pre><code class="language-java">// ❌ Validation fail là expected, không phải error
+log.error("Invalid email: {}", email);
+
+// ✅ WARN hoặc INFO
+log.warn("Invalid email submitted: {}", email);</code></pre>
+
+<h4>#5 System.out.println</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Junior thường viết</div>
+<pre><code class="language-java">System.out.println(
+    "DEBUG: user = " + user);
+e.printStackTrace();</code></pre></div>
+<div class="col good"><div class="col-head">✅ Luôn dùng logger</div>
+<pre><code class="language-java">log.debug("User: {}", user);
+log.error("Failed", e);</code></pre></div>
+</div>
+
+<h4>#6 Log exception thiếu stack trace</h4>
+<div class="compare">
+<div class="col bad"><div class="col-head">❌ Mất stack trace</div>
+<pre><code class="language-java">catch (Exception e) {
+  log.error("Failed: " + e.getMessage());
+}</code></pre></div>
+<div class="col good"><div class="col-head">✅ Truyền exception</div>
+<pre><code class="language-java">catch (Exception e) {
+  log.error("Failed", e);
+  // Stack trace đầy đủ
+}</code></pre></div>
+</div>
+</section>
+
+<section id="c">
+<h2>C. Structured Logging — Production-Grade</h2>
+<p>JSON log thay vì plain text → ELK/Splunk/CloudWatch parse được.</p>
+
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;net.logstash.logback&lt;/groupId&gt;
+    &lt;artifactId&gt;logstash-logback-encoder&lt;/artifactId&gt;
+    &lt;version&gt;7.4&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+
+<pre><code class="language-xml">&lt;appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender"&gt;
+    &lt;encoder class="net.logstash.logback.encoder.LogstashEncoder"/&gt;
+&lt;/appender&gt;</code></pre>
+
+<p><strong>Output JSON:</strong></p>
+<pre><code class="language-json">{
+  "@timestamp": "2026-04-25T03:00:12.453Z",
+  "level": "ERROR",
+  "logger_name": "com.bank.TransferService",
+  "thread_name": "http-nio-8080-exec-1",
+  "message": "Transfer failed",
+  "traceId": "abc123",
+  "userId": "USER_5523",
+  "stack_trace": "..."
+}</code></pre>
+
+<p>→ Kibana query: <code>level:ERROR AND traceId:abc123</code> — tìm trace cụ thể trong 1 click.</p>
+</section>
+
+<section id="exercises">
+<h2>Exercises</h2>
+
+<h3>Exercise 1: Refactor Bad Exception Code (Easy)</h3>
+<pre><code class="language-java">// Refactor code này:
+public class UserService {
+    public User findUser(String id) {
+        try {
+            User u = repo.findById(id);
+            if (u == null) {
+                System.out.println("User not found");
+                return null;
+            }
+            return u;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+}</code></pre>
+<div class="callout tip">
+<div class="ctitle">📋 Yêu cầu</div>
+<ul style="margin:8px 0 0 20px"><li>Throw custom exception khi không tìm thấy</li><li>Log đúng level + có context</li><li>Không return null — dùng Optional hoặc throw</li><li>@ControllerAdvice xử lý exception</li></ul>
+</div>
+
+<h3>Exercise 2: Setup MDC + traceId (Medium)</h3>
+<p>Spring Boot project, implement:</p>
+<ul>
+<li>Filter add traceId vào MDC mỗi request</li>
+<li>Log pattern hiển thị traceId</li>
+<li>Test: gửi 3 request đồng thời, verify mỗi request có traceId riêng trong log</li>
+<li>Khi service gọi async (CompletableFuture), traceId vẫn theo</li>
+</ul>
+
+<h3>Exercise 3: Custom Exception Hierarchy (Hard)</h3>
+<p>Cho banking app, design:</p>
+<ul>
+<li>Base <code>BankingException</code> với errorCode</li>
+<li>5 concrete exception (NotFound, InsufficientFunds, AccountFrozen, DuplicateTransaction, RateLimitExceeded)</li>
+<li>@ControllerAdvice map mỗi exception → HTTP code đúng</li>
+<li>Log strategy: WARN cho expected, ERROR cho unexpected</li>
+<li>Test cho từng case</li>
+</ul>
+</section>
+
+<section id="interview">
+<h2>Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior</span></div>
+<div class="q">Q: Checked vs Unchecked exception?</div>
+<div class="a">"Checked extends Exception (trừ RuntimeException) — compiler force handle hoặc throws. Ví dụ: IOException, SQLException. Unchecked extends RuntimeException — không bắt buộc handle. Ví dụ: NPE, IllegalArgument.<br><br>
+Modern Java + Spring xu hướng dùng unchecked nhiều hơn. Spring wrap SQLException → DataAccessException unchecked. Lý do: checked clutter signature, caller thường wrap thành RuntimeException dù sao."</div>
+
+<div class="q">Q: try-with-resources hoạt động thế nào?</div>
+<div class="a">"Java 7+ feature. Resource khai báo trong <code>try (...)</code> phải implement AutoCloseable. JVM tự gọi <code>close()</code> ở finally implicit, kể cả có exception. Multi-resource thì close theo thứ tự ngược lại.<br><br>
+So với try-finally truyền thống: ngắn gọn hơn, không quên close, không cần null check, không cần try-catch nested cho close()."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid</span></div>
+<div class="q">Q: Tại sao log parameterized thay vì string concat?</div>
+<div class="a">"2 lý do:<br><br>
+<strong>1. Performance</strong>: <code>log.debug('User ' + user)</code> luôn build string, kể cả khi DEBUG OFF. <code>log.debug('User {}', user)</code> chỉ build khi DEBUG ON. Hot path log nhiều → khác biệt rõ.<br><br>
+<strong>2. Consistency</strong>: SLF4J chuẩn hóa format, parser ELK dễ hiểu placeholder.<br><br>
+Edge case: nếu argument có toString() đắt (object lớn), kể cả parameterized cũng tốn — phải <code>if (log.isDebugEnabled())</code> guard."</div>
+
+<div class="q">Q: MDC là gì? Tại sao quan trọng cho microservices?</div>
+<div class="a">"MDC là ThreadLocal map gắn key-value vào mọi log trong thread hiện tại. Trong microservices, traceId truyền qua header HTTP, mỗi service đặt traceId vào MDC → log của tất cả service trong 1 request có cùng traceId → distributed tracing.<br><br>
+Pitfall: thread pool / async — MDC không tự pass. Phải copy contextMap trước submit task. Spring Cloud Sleuth + Brave/OpenTelemetry tự động hóa được, nhưng manual code phải nhớ."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Design exception handling strategy cho microservices banking.</div>
+<div class="a">"Layer-by-layer:<br><br>
+<strong>Domain layer</strong>: throw business exception (InsufficientFunds, AccountFrozen) — extends RuntimeException + có errorCode.<br><br>
+<strong>Repository layer</strong>: catch SQLException → wrap thành DatabaseException (Spring DataAccessException nếu dùng JPA). Không expose JDBC chi tiết ra ngoài.<br><br>
+<strong>Service layer</strong>: business logic, throw domain exception. Không catch trừ khi handle có ý nghĩa (retry, fallback).<br><br>
+<strong>Controller layer</strong>: @ControllerAdvice convert exception → ResponseEntity. ErrorResponse có errorCode (machine-readable) + message (user-friendly). KHÔNG leak stack trace ra response.<br><br>
+<strong>Cross-cutting</strong>:<br>
+• All log có traceId qua MDC<br>
+• Sentry/Rollbar capture stack trace cho ERROR<br>
+• Metric counter cho mỗi error type (Prometheus)<br>
+• Alert trên error rate &gt; threshold (PagerDuty)<br><br>
+Audit log (banking compliance): mọi sensitive operation log vào append-only audit table, không vào file log thường."</div>
+</div>
+</section>
+
+<section id="checklist">
+<h2>Checklist Thành Thạo</h2>
+
+<div class="checklist">
+<div class="item"><input type="checkbox" id="c1"/><label for="c1"><strong>1. Exception hierarchy</strong>: Phân biệt Error/Checked/Unchecked, biết khi nào dùng cái nào.</label></div>
+<div class="item"><input type="checkbox" id="c2"/><label for="c2"><strong>2. try-with-resources</strong>: Convert mọi try-catch-finally cho resource sang try-with-resources.</label></div>
+<div class="item"><input type="checkbox" id="c3"/><label for="c3"><strong>3. Custom exception</strong>: Viết được hierarchy domain exception với errorCode + cause.</label></div>
+<div class="item"><input type="checkbox" id="c4"/><label for="c4"><strong>4. 7 anti-patterns exception</strong>: Liệt kê đúng + refactor mỗi cái.</label></div>
+<div class="item"><input type="checkbox" id="c5"/><label for="c5"><strong>5. SLF4J + Logback setup</strong>: Setup được logback-spring.xml với CONSOLE + FILE + JSON appender.</label></div>
+<div class="item"><input type="checkbox" id="c6"/><label for="c6"><strong>6. MDC</strong>: Implement filter add traceId, verify log có traceId xuyên suốt.</label></div>
+<div class="item"><input type="checkbox" id="c7"/><label for="c7"><strong>7. PII log</strong>: Liệt kê 5 loại data NEVER log. Verify code mình không log password/token.</label></div>
+<div class="item"><input type="checkbox" id="c8"/><label for="c8"><strong>8. @ControllerAdvice</strong>: Implement global exception handler map exception → HTTP response chuẩn.</label></div>
+</div>
+
+<div class="callout tip">
+<div class="ctitle">📚 Tự học tiếp</div>
+<p><strong>Đọc:</strong> "Effective Java" — Items 69-77 về Exceptions · Spring Boot logging docs · <a href="https://12factor.net/logs">12-Factor App Factor 11 (Logs)</a></p>
+<p style="margin-top:8px"><strong>Tools production:</strong> ELK stack (Elasticsearch + Logstash + Kibana) — local docker-compose · Sentry/Rollbar — error tracking · Spring Cloud Sleuth + Zipkin — distributed tracing</p>
+<p style="margin-top:8px"><strong>Practice ngay trên project hiện tại:</strong> Audit code có ai log password/PII không · Add MDC filter cho traceId · Setup JSON logging · Tạo <code>@ControllerAdvice</code> global</p>
+</div>
+</section>
+
+<footer>
+<div>📁 #49 Exception & Logging · Nhóm N</div>
+<div>Hoàn thành: 2026-04-25 · File 2/5 Nhóm N</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-xml-doc.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script>
+function toggleTheme(){const h=document.documentElement;const c=h.getAttribute('data-theme');const n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);document.getElementById('themeIcon').textContent=n==='dark'?'☀️':'🌙';document.getElementById('themeText').textContent=n==='dark'?'Light':'Dark';}
+const sections=document.querySelectorAll('section[id], h3[id]');const links=document.querySelectorAll('aside .toc a');
+function updateActive(){let curr='';sections.forEach(s=>{const t=s.getBoundingClientRect().top;if(t<120)curr=s.id;});links.forEach(l=>{l.classList.toggle('active',l.getAttribute('href')==='#'+curr);});}
+window.addEventListener('scroll',updateActive);updateActive();
+document.querySelectorAll('aside .toc a').forEach(a=>a.addEventListener('click',()=>{if(window.innerWidth<980)document.querySelector('.sidebar').classList.remove('open');}));
+</script>
+</body>
+</html>

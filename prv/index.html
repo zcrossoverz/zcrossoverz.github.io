@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trang chủ | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .content { max-width: 1060px; }
+  .hero h1 { letter-spacing: 0; }
+  .home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr);
+    gap: 24px;
+    align-items: end;
+  }
+  .home-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .search-wrap {
+    margin: 28px 0 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .search-input {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    background: var(--bg-elev);
+    color: var(--text);
+    font: inherit;
+  }
+  .search-input:focus {
+    outline: 2px solid var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .count-pill {
+    min-width: 76px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 9px 12px;
+    color: var(--text-muted);
+    background: var(--bg-elev);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .module-section { margin-top: 28px; }
+  .module-section h2 { margin-top: 34px; }
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .module-card {
+    display: flex;
+    min-height: 172px;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    padding: 18px;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+    transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+  }
+  .module-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+  }
+  .module-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .module-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .module-number {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 4px;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .module-status {
+    font-size: 12px;
+    color: var(--text-faint);
+    white-space: nowrap;
+  }
+  .module-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+    line-height: 1.35;
+    color: var(--text);
+  }
+  .module-card p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: .94rem;
+    line-height: 1.55;
+  }
+  .module-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .phase-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 3px 9px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .empty-state {
+    display: none;
+    margin-top: 20px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 18px;
+    color: var(--text-muted);
+    background: var(--bg-elev);
+  }
+  .empty-state.show { display: block; }
+  @media (max-width: 760px) {
+    .home-hero { grid-template-columns: 1fr; }
+    .home-actions { justify-content: flex-start; }
+    .search-wrap { grid-template-columns: 1fr; }
+    .count-pill { width: fit-content; }
+    .module-card { min-height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span><strong>Trang chủ</strong></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc" aria-label="Mục lục trang chủ">
+    <a href="#core-java">Core Java Mastery</a>
+    <a href="#spring">Spring Ecosystem</a>
+    <a href="#architecture">Architecture Core</a>
+    <a href="#foundation">Foundation & Reliability</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero home-hero">
+  <div>
+    <span class="meta-tag">Index</span>
+    <h1>Java Backend Interview Prep</h1>
+    <p class="lead">Trang chủ gom các file HTML hiện có trong thư mục này để mở nhanh từng bài học.</p>
+  </div>
+  <div class="home-actions">
+    <span class="phase-tag">17 bài</span>
+    <span class="phase-tag">HTML offline</span>
+  </div>
+</section>
+
+<div class="search-wrap">
+  <input class="search-input" id="moduleSearch" type="search" placeholder="Tìm theo số bài, tên chủ đề hoặc nhóm..." autocomplete="off">
+  <div class="count-pill" id="resultCount">17 bài</div>
+</div>
+<div class="empty-state" id="emptyState">Không có bài nào khớp với từ khóa hiện tại.</div>
+
+<section id="core-java" class="module-section">
+  <h2 class="no-border">Core Java Mastery</h2>
+  <div class="module-grid">
+    <a class="module-card" href="01-java-concurrency.html" data-search="01 java concurrency thread executor completablefuture race condition deadlock thread pool">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#01</span>
+          <span class="module-status">Concurrency</span>
+        </div>
+        <h3>Java Concurrency</h3>
+        <p>Thread, executor, CompletableFuture, race condition, deadlock và cách debug thread issue trong production.</p>
+      </div>
+      <div class="module-foot"><span>01-java-concurrency.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="02-jvm-internals.html" data-search="02 jvm internals gc tuning memory leak heap dump classloader jit metaspace">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#02</span>
+          <span class="module-status">JVM</span>
+        </div>
+        <h3>JVM Internals</h3>
+        <p>Memory layout, GC tuning, memory leak, heap dump, classloader, JIT và JVM flags cho production.</p>
+      </div>
+      <div class="module-foot"><span>02-jvm-internals.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="03-java-8-17-features.html" data-search="03 java 8 17 features stream lambda optional record sealed pattern matching">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#03</span>
+          <span class="module-status">Modern Java</span>
+        </div>
+        <h3>Java 8-17 Features</h3>
+        <p>Stream, lambda, Optional, record, sealed class, pattern matching và trade-off khi review code.</p>
+      </div>
+      <div class="module-foot"><span>03-java-8-17-features.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="04-java-memory-model.html" data-search="04 java memory model jmm happens-before volatile synchronized atomic safe publication">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#04</span>
+          <span class="module-status">JMM</span>
+        </div>
+        <h3>Java Memory Model</h3>
+        <p>Happens-before, volatile, synchronized, AtomicXxx, safe publication và các bug multi-core khó reproduce.</p>
+      </div>
+      <div class="module-foot"><span>04-java-memory-model.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="spring" class="module-section">
+  <h2>Spring Ecosystem</h2>
+  <div class="module-grid">
+    <a class="module-card" href="05-spring-core.html" data-search="05 spring core ioc di aop bean lifecycle scope proxy">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#05</span>
+          <span class="module-status">Spring Core</span>
+        </div>
+        <h3>Spring Core</h3>
+        <p>IoC container, dependency injection, bean lifecycle, scope và AOP proxy qua các bug thường gặp.</p>
+      </div>
+      <div class="module-foot"><span>05-spring-core.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="06-spring-boot.html" data-search="06 spring boot auto configuration actuator custom starter configuration properties">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#06</span>
+          <span class="module-status">Spring Boot</span>
+        </div>
+        <h3>Spring Boot</h3>
+        <p>Auto-configuration, property binding, actuator, custom starter và cách debug bean missing.</p>
+      </div>
+      <div class="module-foot"><span>06-spring-boot.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="07-spring-transaction.html" data-search="07 spring transaction isolation propagation rollback rules transactional">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#07</span>
+          <span class="module-status">Transaction</span>
+        </div>
+        <h3>Spring Transaction</h3>
+        <p>Isolation, propagation, rollback rules, event sau commit và boundary đúng cho checkout flow.</p>
+      </div>
+      <div class="module-foot"><span>07-spring-transaction.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="08-spring-security.html" data-search="08 spring security jwt oauth2 filter chain method security cors">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#08</span>
+          <span class="module-status">Security</span>
+        </div>
+        <h3>Spring Security</h3>
+        <p>JWT, filter chain, SecurityContext, method security, CORS và authorization theo ownership.</p>
+      </div>
+      <div class="module-foot"><span>08-spring-security.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="09-spring-data-jpa.html" data-search="09 spring data jpa hibernate n+1 lazy eager cache optimistic pessimistic lock">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#09</span>
+          <span class="module-status">JPA</span>
+        </div>
+        <h3>Spring Data JPA & Hibernate</h3>
+        <p>N+1, Lazy/Eager, L1/L2 cache, dirty checking, projections và locking cho daily backend work.</p>
+      </div>
+      <div class="module-foot"><span>09-spring-data-jpa.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="10-spring-webflux.html" data-search="10 spring webflux reactive project reactor mono flux backpressure webclient">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#10</span>
+          <span class="module-status">Reactive</span>
+        </div>
+        <h3>Spring WebFlux</h3>
+        <p>Reactive programming, Mono/Flux, WebClient, backpressure, schedulers và khi nào không nên dùng.</p>
+      </div>
+      <div class="module-foot"><span>10-spring-webflux.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="architecture" class="module-section">
+  <h2>Architecture Core</h2>
+  <div class="module-grid">
+    <a class="module-card" href="15-clean-architecture-ddd.html" data-search="15 clean architecture ddd domain driven design architecture">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#15</span>
+          <span class="module-status">Architecture</span>
+        </div>
+        <h3>Clean Architecture & DDD</h3>
+        <p>Boundary, domain model, use case, repository và cách giữ codebase dễ maintain khi nghiệp vụ lớn dần.</p>
+      </div>
+      <div class="module-foot"><span>15-clean-architecture-ddd.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="16-design-patterns.html" data-search="16 design patterns factory strategy observer builder adapter backend">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#16</span>
+          <span class="module-status">Design</span>
+        </div>
+        <h3>Design Patterns</h3>
+        <p>Các pattern thường gặp trong backend Java, khi nào dùng, trade-off và lỗi áp dụng quá tay.</p>
+      </div>
+      <div class="module-foot"><span>16-design-patterns.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="17-microservices-patterns.html" data-search="17 microservices patterns saga api gateway service discovery cqrs">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#17</span>
+          <span class="module-status">Distributed</span>
+        </div>
+        <h3>Microservices Patterns</h3>
+        <p>Service boundary, data ownership, saga, gateway, observability và các quyết định hay bị hỏi trong interview.</p>
+      </div>
+      <div class="module-foot"><span>17-microservices-patterns.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="18-event-driven-architecture.html" data-search="18 event driven architecture kafka messaging outbox idempotency async">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#18</span>
+          <span class="module-status">Messaging</span>
+        </div>
+        <h3>Event-Driven Architecture</h3>
+        <p>Event, command, async flow, outbox, idempotency và cách thiết kế hệ thống ít coupling hơn.</p>
+      </div>
+      <div class="module-foot"><span>18-event-driven-architecture.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="foundation" class="module-section">
+  <h2>Foundation & Reliability</h2>
+  <div class="module-grid">
+    <a class="module-card" href="47-junior-foundation-pack.html" data-search="47 junior foundation pack java backend basic web sql http git">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#47</span>
+          <span class="module-status">Foundation</span>
+        </div>
+        <h3>Junior Foundation Pack</h3>
+        <p>Nền tảng cần chắc cho junior backend: Java, web, database, Git và cách trả lời phỏng vấn căn bản.</p>
+      </div>
+      <div class="module-foot"><span>47-junior-foundation-pack.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="48-java-oop-foundation.html" data-search="48 java oop foundation class object inheritance polymorphism encapsulation abstraction">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#48</span>
+          <span class="module-status">Java</span>
+        </div>
+        <h3>Java OOP Foundation</h3>
+        <p>Class, object, abstraction, encapsulation, inheritance, polymorphism và cách dùng OOP đúng ngữ cảnh.</p>
+      </div>
+      <div class="module-foot"><span>48-java-oop-foundation.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="49-exception-logging.html" data-search="49 exception logging error handling observability log tracing java backend">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#49</span>
+          <span class="module-status">Reliability</span>
+        </div>
+        <h3>Exception & Logging</h3>
+        <p>Error handling, exception boundary, structured logging và tư duy debug production cho backend service.</p>
+      </div>
+      <div class="module-foot"><span>49-exception-logging.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <span>Trang chủ: html/index.html</span>
+  <span>Liên kết tương đối, chạy trực tiếp bằng trình duyệt.</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script>
+  (function () {
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    const themeText = document.getElementById('themeText');
+    if (saved === 'dark' || saved === 'light') {
+      root.setAttribute('data-theme', saved);
+      themeText.textContent = saved === 'dark' ? 'Light' : 'Dark';
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', function () {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      themeText.textContent = next === 'dark' ? 'Light' : 'Dark';
+    });
+
+    const sidebar = document.querySelector('.sidebar');
+    const menuBtn = document.querySelector('.menu-toggle');
+    menuBtn.addEventListener('click', function () {
+      sidebar.classList.toggle('open');
+    });
+
+    document.querySelectorAll('aside .toc a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (window.innerWidth < 980) sidebar.classList.remove('open');
+      });
+    });
+
+    const input = document.getElementById('moduleSearch');
+    const cards = Array.from(document.querySelectorAll('.module-card'));
+    const count = document.getElementById('resultCount');
+    const empty = document.getElementById('emptyState');
+
+    function normalize(value) {
+      return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function updateFilter() {
+      const query = normalize(input.value.trim());
+      let visible = 0;
+
+      cards.forEach(function (card) {
+        const text = normalize(card.textContent + ' ' + card.dataset.search);
+        const matched = text.includes(query);
+        card.style.display = matched ? '' : 'none';
+        if (matched) visible += 1;
+      });
+
+      count.textContent = visible + ' bài';
+      empty.classList.toggle('show', visible === 0);
+    }
+
+    input.addEventListener('input', updateFilter);
+  })();
+</script>
+</body>
+</html>

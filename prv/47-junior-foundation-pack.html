@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#47 — Junior Foundation Pack | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-elev: #f8fafc;
+      --bg-code: #1e1e2e;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-faint: #94a3b8;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --accent-hover: #4338ca;
+      --success: #059669;
+      --success-soft: #ecfdf5;
+      --warning: #d97706;
+      --warning-soft: #fffbeb;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --info: #0284c7;
+      --info-soft: #f0f9ff;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, .04);
+      --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, .08), 0 2px 4px -2px rgba(0, 0, 0, .04);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      --sidebar-w: 300px;
+      --content-max: 820px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b1020;
+      --bg-elev: #131a2e;
+      --bg-code: #0a0e1c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+      --border: #1e293b;
+      --border-strong: #334155;
+      --accent: #818cf8;
+      --accent-soft: #1e1b4b;
+      --accent-hover: #a5b4fc;
+      --success: #34d399;
+      --success-soft: #064e3b;
+      --warning: #fbbf24;
+      --warning-soft: #451a03;
+      --danger: #f87171;
+      --danger-soft: #450a0a;
+      --info: #38bdf8;
+      --info-soft: #082f49;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 80px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+    }
+
+    /* Top bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, .85);
+      backdrop-filter: saturate(180%) blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    [data-theme="dark"] .topbar {
+      background: rgba(11, 16, 32, .85);
+    }
+
+    .topbar .crumb {
+      color: var(--text-muted);
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .topbar .crumb strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .topbar .crumb .sep {
+      margin: 0 8px;
+      color: var(--text-faint);
+    }
+
+    .theme-toggle {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .menu-toggle {
+      display: none;
+    }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: calc(100vh - 60px);
+    }
+
+    aside.sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--bg-elev);
+      padding: 24px 20px 60px;
+      position: sticky;
+      top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+
+    aside .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-faint);
+      margin-bottom: 12px;
+      padding-left: 8px;
+    }
+
+    aside .toc a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 2px solid transparent;
+      transition: all .12s;
+    }
+
+    aside .toc a:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    aside .toc a.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+
+    aside .toc .sub {
+      padding-left: 18px;
+      font-size: 13px;
+    }
+
+    aside .toc .sub a {
+      padding: 4px 10px;
+    }
+
+    /* Main */
+    main {
+      padding: 48px 56px;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .content {
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+
+    .hero {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+
+    .hero .meta-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      letter-spacing: -.02em;
+    }
+
+    .hero .lead {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .hero .meta-item {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+    }
+
+    .hero .meta-item .k {
+      font-size: 11px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .hero .meta-item .v {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 56px 0 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 36px;
+      letter-spacing: -.01em;
+    }
+
+    h2:first-of-type,
+    h2.no-border {
+      border-top: none;
+      padding-top: 8px;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 36px 0 12px;
+    }
+
+    h4 {
+      font-size: 1.02rem;
+      font-weight: 600;
+      margin: 24px 0 10px;
+      color: var(--text);
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    p,
+    li {
+      color: var(--text);
+    }
+
+    strong {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    em {
+      color: var(--text-muted);
+    }
+
+    ul,
+    ol {
+      margin: 0 0 16px;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    li>ul,
+    li>ol {
+      margin-top: 6px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Code */
+    code:not([class*="language-"]) {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    pre[class*="language-"] {
+      background: var(--bg-code) !important;
+      border-radius: var(--radius);
+      padding: 16px 18px !important;
+      margin: 16px 0 !important;
+      font-size: 0.86rem !important;
+      line-height: 1.55 !important;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+    }
+
+    code[class*="language-"] {
+      font-family: var(--font-mono) !important;
+      font-size: 0.86rem !important;
+    }
+
+    .code-label {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+      padding: 3px 10px;
+      border-radius: 4px 4px 0 0;
+      border-bottom: 0;
+      margin: 14px 0 -1px;
+      font-weight: 500;
+    }
+
+    .code-label+pre {
+      margin-top: 0 !important;
+      border-top-left-radius: 0;
+    }
+
+    /* Callouts */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 18px 0;
+      border-left: 3px solid;
+      font-size: 0.95rem;
+    }
+
+    .callout>.ctitle {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+
+    .callout p:last-child {
+      margin-bottom: 0;
+    }
+
+    .callout.tip {
+      background: var(--info-soft);
+      border-color: var(--info);
+    }
+
+    .callout.tip .ctitle {
+      color: var(--info);
+    }
+
+    .callout.warn {
+      background: var(--warning-soft);
+      border-color: var(--warning);
+    }
+
+    .callout.warn .ctitle {
+      color: var(--warning);
+    }
+
+    .callout.danger {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .callout.danger .ctitle {
+      color: var(--danger);
+    }
+
+    .callout.success {
+      background: var(--success-soft);
+      border-color: var(--success);
+    }
+
+    .callout.success .ctitle {
+      color: var(--success);
+    }
+
+    .callout.quote {
+      background: var(--bg-elev);
+      border-color: var(--accent);
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.93rem;
+    }
+
+    th,
+    td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-elev);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: var(--bg-elev);
+    }
+
+    /* Diagram cards */
+    .diagram {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .diagram svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .diagram .caption {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-style: italic;
+    }
+
+    .mermaid {
+      background: var(--bg-elev);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    /* Comparison grid (good vs bad) */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .compare .col {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .compare .col-head {
+      padding: 8px 14px;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compare .bad .col-head {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-bottom: 1px solid var(--danger);
+    }
+
+    .compare .good .col-head {
+      background: var(--success-soft);
+      color: var(--success);
+      border-bottom: 1px solid var(--success);
+    }
+
+    .compare .col pre {
+      margin: 0 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+
+    /* Checklist */
+    .checklist {
+      background: var(--bg-elev);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+    }
+
+    .checklist .item {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .checklist .item:last-child {
+      border-bottom: none;
+    }
+
+    .checklist input[type="checkbox"] {
+      margin-top: 4px;
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+    }
+
+    .checklist label {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    /* Interview tier cards */
+    .tier {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin: 18px 0;
+      background: var(--bg-elev);
+    }
+
+    .tier .tier-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tier .badge {
+      background: var(--accent);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .tier.t1 .badge {
+      background: var(--success);
+    }
+
+    .tier.t2 .badge {
+      background: var(--warning);
+    }
+
+    .tier.t3 .badge {
+      background: var(--accent);
+    }
+
+    .tier .tier-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .tier .q {
+      font-weight: 600;
+      margin: 12px 0 8px;
+      color: var(--text);
+    }
+
+    .tier .a {
+      color: var(--text-muted);
+      background: var(--bg);
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 80px;
+      padding: 32px 0 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-faint);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside.sidebar {
+        position: fixed;
+        left: -300px;
+        top: 60px;
+        width: 280px;
+        height: calc(100vh - 60px);
+        transition: left .25s;
+        z-index: 40;
+        box-shadow: var(--shadow-md);
+      }
+
+      aside.sidebar.open {
+        left: 0;
+      }
+
+      .menu-toggle {
+        display: flex;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      main {
+        padding: 32px 20px;
+      }
+
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+
+      .compare {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Print friendly */
+    @media print {
+
+      aside.sidebar,
+      .topbar,
+      .menu-toggle {
+        display: none;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="topbar">
+    <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <div class="crumb">
+      <strong>Java Backend Interview Prep</strong>
+      <span class="sep">/</span>
+      <span>Nhóm N — Junior Foundation</span>
+      <span class="sep">/</span>
+      <strong>#47 Foundation Pack</strong>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+      <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+    </button>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="toc-title">Mục lục</div>
+      <nav class="toc">
+        <a href="#intro">Vì sao có file này</a>
+        <a href="#real-problem">1. Bài toán thực tế</a>
+        <a href="#mental-model">2. Mental Model — 6 Lớp</a>
+        <div class="sub">
+          <a href="#l1">Lớp 1 — Collections</a>
+          <a href="#l2">Lớp 2 — Generics & PECS</a>
+          <a href="#l3">Lớp 3 — Recursion</a>
+          <a href="#l4">Lớp 4 — Big-O</a>
+          <a href="#l5">Lớp 5 — equals/hashCode</a>
+          <a href="#l6">Lớp 6 — Exception</a>
+        </div>
+        <a href="#production">3. Refactor Junior → Senior</a>
+        <a href="#antipatterns">4. Anti-patterns</a>
+        <a href="#interview">5. Interview Framework</a>
+        <a href="#checklist">6. Checklist</a>
+        <a href="#roadmap">7. Lộ trình 2 tuần</a>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="content">
+
+        <section class="hero">
+          <span class="meta-tag">🔥 CRITICAL — Pre-LeetCode Foundation</span>
+          <h1>#47 — Junior Foundation Pack</h1>
+          <p class="lead">Nền tảng 6 lớp <strong>BẮT BUỘC</strong> phải solid trước khi grind LeetCode. Skip lớp này,
+            vào file #42 Patterns Mastery sẽ rối ngay từ tuần đầu. Master xong file này, file #42 vào nhanh gấp 3.</p>
+          <div class="meta-grid">
+            <div class="meta-item">
+              <div class="k">Nhóm</div>
+              <div class="v">N — Junior Foundation Deep Dive</div>
+            </div>
+            <div class="meta-item">
+              <div class="k">Thời lượng</div>
+              <div class="v">2–3 tuần</div>
+            </div>
+            <div class="meta-item">
+              <div class="k">Đối tượng</div>
+              <div class="v">Junior 0–2 năm Java</div>
+            </div>
+            <div class="meta-item">
+              <div class="k">Liên quan</div>
+              <div class="v">#1, #3, #38, #42</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="intro">
+          <h2 class="no-border">Vì sao có file này?</h2>
+          <p>Sau khi review nhiều CV junior VN apply FAANG/global tech, mình thấy 90% fail không phải vì thiếu kiến thức
+            cao siêu — mà vì <strong>6 lớp nền cơ bản chưa solid</strong>:</p>
+          <ol>
+            <li>Không biết khi nào dùng <code>ArrayList</code> vs <code>LinkedList</code> vs <code>ArrayDeque</code>
+            </li>
+            <li>Recursion code được nhưng <em>không "tin"</em> recursion (nhảy debug từng bước)</li>
+            <li>Big-O nói được lý thuyết nhưng không tự tính nhẩm khi viết code</li>
+            <li>Generics đọc được nhưng viết thì sai bound (<code>&lt;? extends T&gt;</code> vs
+              <code>&lt;? super T&gt;</code>)</li>
+            <li>Exception bắt <code>Exception e</code> cho có rồi swallow</li>
+            <li>Không phân biệt <code>==</code> vs <code>.equals()</code> cho <code>Integer</code> cached — vẫn vướng
+              bug</li>
+          </ol>
+          <div class="callout tip">
+            <div class="ctitle">💡 Cách dùng file này</div>
+            <p>Mỗi lớp đọc xong → tự code lại tay (không copy), giải thích to thành lời cho người khác hiểu. Nếu giải
+              thích được rõ ràng, mới chuyển sang lớp tiếp theo. Đọc lướt không hiệu quả với foundation.</p>
+          </div>
+        </section>
+
+        <section id="real-problem">
+          <h2>1. Bài Toán Thực Tế — 6 Lỗ Hổng Lộ Ra Trong 30 Giây</h2>
+
+          <h3>Tình huống: Junior 1 năm kinh nghiệm phỏng vấn Grab, fail vòng coding</h3>
+          <p><strong>Đề bài:</strong> "Cho list of transactions, group theo userId rồi return userId nào có tổng amount
+            &gt; 1tr."</p>
+
+          <div class="code-label">Code junior viết — chạy được, nhưng interviewer "kill" ngay</div>
+          <pre><code class="language-java">public List&lt;String&gt; findTopUsers(List&lt;Transaction&gt; txns) {
+    List&lt;String&gt; result = new ArrayList&lt;&gt;();
+    HashMap&lt;String, Long&gt; sums = new HashMap&lt;&gt;();
+
+    for (int i = 0; i &lt; txns.size(); i++) {
+        Transaction t = txns.get(i);
+        if (sums.containsKey(t.getUserId())) {
+            sums.put(t.getUserId(), sums.get(t.getUserId()) + t.getAmount());
+        } else {
+            sums.put(t.getUserId(), t.getAmount());
+        }
+    }
+
+    for (String userId : sums.keySet()) {
+        if (sums.get(userId) &gt; 1000000) {
+            result.add(userId);
+        }
+    }
+    return result;
+}</code></pre>
+
+          <p>Code chạy đúng output. Nhưng senior interviewer ngồi đối diện sẽ nghĩ những điều sau, <strong>trong vòng 30
+              giây đầu nhìn code</strong>:</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:42%">Điểm yếu trong code</th>
+                  <th>Senior nhận xét</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>for (int i = 0; ...; i++)</code> rồi <code>txns.get(i)</code></td>
+                  <td>"Sao không dùng for-each? Nếu list là <code>LinkedList</code> thì <code>.get(i)</code> là O(n²)
+                    đó."</td>
+                </tr>
+                <tr>
+                  <td><code>containsKey</code> + <code>get</code> + <code>put</code> (3 lookups)</td>
+                  <td>"1 lookup là đủ với <code>merge()</code> hoặc <code>getOrDefault()</code>. Junior thiếu fluency
+                    với Map API."</td>
+                </tr>
+                <tr>
+                  <td><code>for (String userId : sums.keySet())</code> rồi <code>sums.get(userId)</code></td>
+                  <td>"Lại 2 lookups. <code>entrySet()</code> là chuẩn. Java basics chưa solid."</td>
+                </tr>
+                <tr>
+                  <td>Trả <code>ArrayList</code> không sized</td>
+                  <td>"Đoán capacity được không? Nếu không, JVM sẽ resize nhiều lần."</td>
+                </tr>
+                <tr>
+                  <td>Dùng <code>HashMap&lt;String, Long&gt;</code> cho amount</td>
+                  <td>"Tiền tệ dùng <code>Long</code> mất chữ thập phân, dùng <code>BigDecimal</code> chứ. Banking
+                    domain chưa nghiêm túc."</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warn">
+            <div class="ctitle">⚠️ Đây là gap "senior thấy ngay trong 30 giây"</div>
+            <p>Không cần biết DP/Backtracking, chỉ cần <strong>fluent với Java Collections</strong> đã khác biệt 1
+              level. Đây là lý do junior bị reject ở vòng phỏng vấn coding mà không hiểu vì sao — "code chạy đúng mà".
+            </p>
+          </div>
+
+          <h3>5 câu hỏi tự test trước khi đọc tiếp</h3>
+          <ol>
+            <li><code>ArrayList.get(i)</code> là O(?) — <code>LinkedList.get(i)</code> là O(?). Vậy khi nào nên dùng
+              <code>LinkedList</code>?</li>
+            <li><code>HashMap.put(k, v)</code> average O(1) — worst case là O(?). Java 8 fix worst case xuống còn O(?).
+            </li>
+            <li><code>Integer a = 127; Integer b = 127; a == b</code> → <code>true</code> hay <code>false</code>? Còn
+              <code>a = 128; b = 128</code>?</li>
+            <li><code>try { return 1; } finally { return 2; }</code> — return giá trị nào?</li>
+            <li>Recursion của tree height — base case là gì? Vì sao base case quan trọng hơn recursive case?</li>
+          </ol>
+          <p>Nếu trả lời chậm hoặc không chắc bất kỳ câu nào → file này dành cho bạn. Đọc tiếp.</p>
+        </section>
+
+        <section id="mental-model">
+          <h2>2. Mental Model — 6 Lớp Nền</h2>
+
+          <h3 id="l1">Lớp 1: Collections — Bản Đồ Khi Nào Dùng Cái Nào</h3>
+
+          <p>Đây là kiến thức bạn dùng <strong>hàng ngày</strong>. Chọn sai = bug performance ẩn (chạy ngon dev, chậm
+            chết prod khi data lớn). Vẽ ra cây quyết định trong đầu để chọn nhanh:</p>
+
+          <div class="diagram">
+            <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif"
+              font-size="13">
+              <defs>
+                <style>
+                  .node {
+                    fill: #eef2ff;
+                    stroke: #4f46e5;
+                    stroke-width: 1.5;
+                  }
+
+                  .leaf {
+                    fill: #ecfdf5;
+                    stroke: #059669;
+                    stroke-width: 1.5;
+                  }
+
+                  .label {
+                    fill: #0f172a;
+                    font-weight: 600;
+                  }
+
+                  .edge {
+                    stroke: #94a3b8;
+                    stroke-width: 1.5;
+                    fill: none;
+                  }
+
+                  .edge-label {
+                    fill: #475569;
+                    font-size: 11px;
+                  }
+                </style>
+              </defs>
+              <!-- Root -->
+              <rect x="320" y="10" width="140" height="36" rx="6" class="node" />
+              <text x="390" y="33" text-anchor="middle" class="label">Cần ORDER?</text>
+              <!-- Level 2 -->
+              <rect x="120" y="80" width="140" height="36" rx="6" class="node" />
+              <text x="190" y="103" text-anchor="middle" class="label">ALLOW DUP?</text>
+              <rect x="520" y="80" width="140" height="36" rx="6" class="node" />
+              <text x="590" y="103" text-anchor="middle" class="label">ALLOW DUP?</text>
+              <path d="M 380 46 Q 250 60 200 80" class="edge" />
+              <text x="270" y="68" class="edge-label">YES</text>
+              <path d="M 400 46 Q 530 60 580 80" class="edge" />
+              <text x="510" y="68" class="edge-label">NO</text>
+              <!-- Level 3 -->
+              <rect x="40" y="150" width="100" height="36" rx="6" class="node" />
+              <text x="90" y="173" text-anchor="middle" class="label">Index?</text>
+              <rect x="220" y="150" width="100" height="36" rx="6" class="leaf" />
+              <text x="270" y="173" text-anchor="middle" class="label">Set</text>
+              <rect x="440" y="150" width="100" height="36" rx="6" class="leaf" />
+              <text x="490" y="173" text-anchor="middle" class="label">Bag (rare)</text>
+              <rect x="620" y="150" width="100" height="36" rx="6" class="node" />
+              <text x="670" y="173" text-anchor="middle" class="label">Sorted?</text>
+              <path d="M 170 116 Q 130 130 100 150" class="edge" />
+              <text x="115" y="138" class="edge-label">YES</text>
+              <path d="M 220 116 Q 240 130 260 150" class="edge" />
+              <text x="240" y="138" class="edge-label">NO</text>
+              <path d="M 560 116 Q 530 130 490 150" class="edge" />
+              <text x="500" y="138" class="edge-label">YES</text>
+              <path d="M 610 116 Q 640 130 660 150" class="edge" />
+              <text x="640" y="138" class="edge-label">NO</text>
+              <!-- Level 4 -->
+              <rect x="0" y="220" width="80" height="36" rx="6" class="leaf" />
+              <text x="40" y="243" text-anchor="middle" class="label" font-family="JetBrains Mono">ArrayList</text>
+              <rect x="100" y="220" width="100" height="36" rx="6" class="leaf" />
+              <text x="150" y="238" text-anchor="middle" class="label" font-family="JetBrains Mono"
+                font-size="11">ArrayDeque</text>
+              <text x="150" y="251" text-anchor="middle" class="label" font-size="10" fill="#475569">/ Queue</text>
+              <rect x="560" y="220" width="100" height="36" rx="6" class="leaf" />
+              <text x="610" y="243" text-anchor="middle" class="label" font-family="JetBrains Mono">TreeSet</text>
+              <rect x="680" y="220" width="80" height="36" rx="6" class="leaf" />
+              <text x="720" y="243" text-anchor="middle" class="label" font-family="JetBrains Mono">HashSet</text>
+              <path d="M 80 186 Q 50 200 40 220" class="edge" />
+              <text x="40" y="208" class="edge-label">Y</text>
+              <path d="M 110 186 Q 130 200 150 220" class="edge" />
+              <text x="155" y="208" class="edge-label">N</text>
+              <path d="M 650 186 Q 620 200 610 220" class="edge" />
+              <text x="610" y="208" class="edge-label">Y</text>
+              <path d="M 690 186 Q 710 200 720 220" class="edge" />
+              <text x="725" y="208" class="edge-label">N</text>
+              <!-- Map row -->
+              <rect x="100" y="300" width="560" height="40" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5" />
+              <text x="380" y="324" text-anchor="middle" class="label" fill="#92400e">Cần (key,value) → Map family:
+                HashMap • TreeMap • LinkedHashMap • ConcurrentHashMap</text>
+            </svg>
+            <div class="caption">Cây quyết định chọn collection theo nhu cầu nghiệp vụ</div>
+          </div>
+
+          <h4>Bảng tham chiếu nhanh — học thuộc</h4>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tình huống</th>
+                  <th>Chọn</th>
+                  <th>Lý do</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>List + index access nhanh + biết size</td>
+                  <td><code>ArrayList(initialCapacity)</code></td>
+                  <td>O(1) random access, contiguous memory, cache locality tốt</td>
+                </tr>
+                <tr>
+                  <td>List + add/remove ở đầu/cuối</td>
+                  <td><code>ArrayDeque</code></td>
+                  <td>O(1) cả 2 đầu, không có overhead Node của LinkedList</td>
+                </tr>
+                <tr>
+                  <td>List + add/remove giữa</td>
+                  <td><code>LinkedList</code> (HIẾM)</td>
+                  <td>Chỉ khi đã có Iterator ở vị trí cần insert/remove</td>
+                </tr>
+                <tr>
+                  <td>Stack</td>
+                  <td><code>ArrayDeque</code> (KHÔNG <code>Stack</code>)</td>
+                  <td><code>Stack</code> extends Vector, synchronized, legacy slow</td>
+                </tr>
+                <tr>
+                  <td>Queue</td>
+                  <td><code>ArrayDeque</code> hoặc <code>LinkedList</code></td>
+                  <td><code>LinkedList</code> implements Queue interface</td>
+                </tr>
+                <tr>
+                  <td>FIFO + thread-safe</td>
+                  <td><code>LinkedBlockingQueue</code></td>
+                  <td>Producer-consumer pattern</td>
+                </tr>
+                <tr>
+                  <td>Priority queue (min-heap default)</td>
+                  <td><code>PriorityQueue</code></td>
+                  <td>O(log n) offer/poll, root là min</td>
+                </tr>
+                <tr>
+                  <td>Set + fast contains</td>
+                  <td><code>HashSet</code></td>
+                  <td>O(1) average</td>
+                </tr>
+                <tr>
+                  <td>Set + sorted iteration</td>
+                  <td><code>TreeSet</code></td>
+                  <td>O(log n), Red-Black tree</td>
+                </tr>
+                <tr>
+                  <td>Set + insertion order</td>
+                  <td><code>LinkedHashSet</code></td>
+                  <td>O(1) + giữ thứ tự thêm</td>
+                </tr>
+                <tr>
+                  <td>Map + fast</td>
+                  <td><code>HashMap</code></td>
+                  <td>O(1) average</td>
+                </tr>
+                <tr>
+                  <td>Map + sorted by key</td>
+                  <td><code>TreeMap</code></td>
+                  <td>O(log n), range queries</td>
+                </tr>
+                <tr>
+                  <td>Map + insertion/access order</td>
+                  <td><code>LinkedHashMap</code></td>
+                  <td>LRU cache built-in</td>
+                </tr>
+                <tr>
+                  <td>Map + thread-safe</td>
+                  <td><code>ConcurrentHashMap</code></td>
+                  <td>Lock-free reads, sharded writes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>Anti-pattern phổ biến nhất</h4>
+
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ Junior — học theo sách cũ</div>
+              <pre><code class="language-java">// Stack legacy
+Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+// extends Vector → synchronized → slow
+
+// Arrays.asList rồi add → BÙM
+List&lt;String&gt; list =
+    Arrays.asList("a", "b", "c");
+list.add("d");
+// UnsupportedOperationException!
+// (fixed-size list)</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ Senior</div>
+              <pre><code class="language-java">// Deque cho stack
+Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+stack.push(1);
+stack.pop();
+stack.peek();
+
+// Mutable list đúng cách
+List&lt;String&gt; list = new ArrayList&lt;&gt;(
+    Arrays.asList("a", "b", "c"));
+// Java 9+:
+// new ArrayList&lt;&gt;(List.of("a","b","c"))</code></pre>
+            </div>
+          </div>
+
+          <h3 id="l2">Lớp 2: Generics — Đọc Được PECS</h3>
+
+          <p>Khi đọc Spring/Java standard library, bạn sẽ gặp <em>hàng trăm</em> signature như:</p>
+
+          <pre><code class="language-java">public static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src);
+public static &lt;T extends Comparable&lt;? super T&gt;&gt; void sort(List&lt;T&gt; list);</code></pre>
+
+          <p>Không hiểu PECS = không đọc được Java standard library. PECS đứng cho <strong>Producer Extends, Consumer
+              Super</strong>.</p>
+
+          <div class="callout tip">
+            <div class="ctitle">🧠 Mental model PECS</div>
+            <p><strong>Producer</strong> = source bạn <em>đọc</em> dữ liệu ra (như Iterator) → dùng
+              <code>extends</code><br>
+              <strong>Consumer</strong> = sink bạn <em>ghi</em> dữ liệu vào (như Collector) → dùng <code>super</code>
+            </p>
+          </div>
+
+          <div class="code-label">Producer — đọc từ collection, dùng extends</div>
+          <pre><code class="language-java">public double sumOfList(List&lt;? extends Number&gt; list) {
+    double sum = 0;
+    for (Number n : list) sum += n.doubleValue();  // ✅ Đọc OK
+    // list.add(...);  ❌ Compile error: không biết list là List<Integer> hay List<Double>
+    return sum;
+}
+
+// Caller có thể truyền bất kỳ List<X> với X là subclass Number
+sumOfList(List.of(1, 2, 3));            // List<Integer>
+sumOfList(List.of(1.5, 2.5));           // List<Double>
+sumOfList(List.of(new BigDecimal("1"))); // List<BigDecimal></code></pre>
+
+          <div class="code-label">Consumer — ghi vào collection, dùng super</div>
+          <div>public void addIntegers(List&lt;? super Integer&gt; list) {
+    list.add(1);  // ✅ OK: list có thể là List Integer, List Number, List Object
+    list.add(2);
+    // Integer x = list.get(0);  ❌ chỉ get được Object
+}
+
+// Caller truyền List<Integer>, List<Number>, hoặc List<Object> đều OK
+List&lt;Object&gt; objs = new ArrayList&lt;&gt;();
+addIntegers(objs);  // ✅</div>
+
+          <div class="callout warn">
+            <div class="ctitle">⚠️ Nhớ luật ngược: trong T flow, từ src → dest</div>
+            <p>Trong <code>Collections.copy(dest, src)</code>, T <em>flow</em> từ <code>src</code> (đọc — Producer
+              Extends) sang <code>dest</code> (ghi — Consumer Super). Cứ nhớ "T chảy từ extends → super" là không bao
+              giờ sai.</p>
+          </div>
+
+          <h3 id="l3">Lớp 3: Recursion — "Tin" Vào Recursive Call (Leap of Faith)</h3>
+
+          <p>Đây là <strong>lỗ hổng lớn nhất</strong> của candidate VN khi grind LeetCode. Recursive code viết được,
+            nhưng đầu vẫn cố trace từng frame stack → đến tree depth 5 là rối, fail bài Medium.</p>
+
+          <div class="callout success">
+            <div class="ctitle">✨ Mental model đúng — "Leap of Faith"</div>
+            <p>Khi viết hàm recursion, <strong>GIẢ ĐỊNH</strong> recursive call đã đúng cho input nhỏ hơn. Bạn chỉ cần
+              đảm bảo:</p>
+            <ol style="margin:8px 0 0 20px">
+              <li><strong>Base case</strong> (input nhỏ nhất) trả đúng</li>
+              <li><strong>Bước recursive</strong>: kết hợp kết quả con đúng cho input lớn hơn</li>
+            </ol>
+            <p style="margin-top:8px"><em>KHÔNG bao giờ debug bằng cách trace từng stack frame.</em></p>
+          </div>
+
+          <h4>Ví dụ — count nodes trong binary tree</h4>
+          <pre><code class="language-java">public int countNodes(TreeNode root) {
+    // Base case: cây rỗng có 0 node
+    if (root == null) return 0;
+
+    // LEAP OF FAITH:
+    //   countNodes(root.left)  → giả định trả đúng số node ở subtree trái
+    //   countNodes(root.right) → giả định trả đúng số node ở subtree phải
+    // Câu hỏi duy nhất: kết hợp 2 kết quả + node hiện tại sao cho đúng?
+
+    return 1 + countNodes(root.left) + countNodes(root.right);
+}</code></pre>
+
+          <div class="diagram">
+            <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+              <defs>
+                <style>
+                  .tn {
+                    fill: #eef2ff;
+                    stroke: #4f46e5;
+                    stroke-width: 1.5;
+                  }
+
+                  .tn-leaf {
+                    fill: #ecfdf5;
+                    stroke: #059669;
+                    stroke-width: 1.5;
+                  }
+
+                  .edge {
+                    stroke: #64748b;
+                    stroke-width: 1.5;
+                    fill: none;
+                  }
+
+                  .lbl {
+                    fill: #0f172a;
+                    font-weight: 600;
+                    font-size: 13px;
+                  }
+
+                  .calc {
+                    fill: #dc2626;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 11px;
+                  }
+                </style>
+              </defs>
+              <!-- Tree nodes -->
+              <circle cx="300" cy="40" r="22" class="tn" />
+              <text x="300" y="46" text-anchor="middle" class="lbl">A</text>
+              <text x="345" y="44" class="calc">= 1 + 3 + 3 = 7</text>
+
+              <circle cx="180" cy="120" r="22" class="tn" />
+              <text x="180" y="126" text-anchor="middle" class="lbl">B</text>
+              <text x="120" y="124" class="calc">= 1+1+1 = 3</text>
+
+              <circle cx="420" cy="120" r="22" class="tn" />
+              <text x="420" y="126" text-anchor="middle" class="lbl">C</text>
+              <text x="455" y="124" class="calc">= 1+1+1 = 3</text>
+
+              <circle cx="120" cy="200" r="20" class="tn-leaf" />
+              <text x="120" y="206" text-anchor="middle" class="lbl">D</text>
+              <text x="80" y="240" class="calc">= 1</text>
+
+              <circle cx="240" cy="200" r="20" class="tn-leaf" />
+              <text x="240" y="206" text-anchor="middle" class="lbl">E</text>
+              <text x="240" y="240" class="calc">= 1</text>
+
+              <circle cx="360" cy="200" r="20" class="tn-leaf" />
+              <text x="360" y="206" text-anchor="middle" class="lbl">F</text>
+              <text x="360" y="240" class="calc">= 1</text>
+
+              <circle cx="480" cy="200" r="20" class="tn-leaf" />
+              <text x="480" y="206" text-anchor="middle" class="lbl">G</text>
+              <text x="480" y="240" class="calc">= 1</text>
+
+              <!-- Edges -->
+              <line x1="284" y1="56" x2="196" y2="105" class="edge" />
+              <line x1="316" y1="56" x2="404" y2="105" class="edge" />
+              <line x1="166" y1="136" x2="135" y2="182" class="edge" />
+              <line x1="194" y1="136" x2="225" y2="182" class="edge" />
+              <line x1="406" y1="136" x2="375" y2="182" class="edge" />
+              <line x1="434" y1="136" x2="465" y2="182" class="edge" />
+
+              <!-- Caption box -->
+              <text x="300" y="280" text-anchor="middle" font-size="12" fill="#475569" font-style="italic">
+                Leap of Faith: tin B trả 3 và C trả 3 → A = 1 + 3 + 3 = 7. Không cần trace từng node.
+              </text>
+            </svg>
+            <div class="caption">Recursive call gọn gàng — chỉ cần logic ở 1 node, JVM lo phần còn lại</div>
+          </div>
+
+          <h4>Tự kiểm tra recursion đúng — 3 câu hỏi</h4>
+          <ol>
+            <li><strong>Base case có terminate không?</strong> (đảm bảo không infinite loop)</li>
+            <li><strong>Mỗi recursive call có làm input "nhỏ hơn"?</strong> (giảm về base case)</li>
+            <li><strong>Kết hợp con đã đúng cho cha?</strong> (đúng nếu giả định con đúng)</li>
+          </ol>
+          <p>Nếu cả 3 đều YES → recursion đúng. Không cần trace.</p>
+
+          <h4>3 pattern recursion phổ biến trong LeetCode</h4>
+          <pre><code class="language-java">// Pattern A: "Mỗi node tự xử lý + delegate cho con"
+int treePattern(TreeNode root) {
+    if (root == null) return /* base */;
+    int leftResult = treePattern(root.left);
+    int rightResult = treePattern(root.right);
+    return /* combine: leftResult + rightResult + root.val */;
+}
+
+// Pattern B: "Backtracking — chọn rồi unchoose"
+void backtrack(State current, List&lt;Result&gt; results) {
+    if (isComplete(current)) {
+        results.add(snapshot(current));
+        return;
+    }
+    for (Choice c : possibleChoices(current)) {
+        current.choose(c);
+        backtrack(current, results);
+        current.unchoose(c); // ← Bước này hay quên
+    }
+}
+
+// Pattern C: "DP top-down với memo"
+Map&lt;State, Integer&gt; memo = new HashMap&lt;&gt;();
+int dp(State s) {
+    if (isBase(s)) return baseValue(s);
+    if (memo.containsKey(s)) return memo.get(s);
+    int result = /* recursive: dp(smaller_state) */;
+    memo.put(s, result);
+    return result;
+}</code></pre>
+
+          <h3 id="l4">Lớp 4: Big-O — Tính Nhẩm Trong Đầu</h3>
+
+          <p>Senior interviewer mong candidate <strong>tự nhẩm</strong> complexity trong lúc code, không cần được nhắc.
+            Đây không phải "lý thuyết khô" — đây là phản xạ.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pattern</th>
+                  <th>Complexity</th>
+                  <th>Ghi nhớ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1 vòng for n elements</td>
+                  <td><code>O(n)</code></td>
+                  <td>Linear scan</td>
+                </tr>
+                <tr>
+                  <td>2 vòng nested for (cả 2 chạy n)</td>
+                  <td><code>O(n²)</code></td>
+                  <td>Cartesian product</td>
+                </tr>
+                <tr>
+                  <td>1 vòng for + binary search bên trong</td>
+                  <td><code>O(n log n)</code></td>
+                  <td>Sort + binary search hay đi cùng</td>
+                </tr>
+                <tr>
+                  <td>Recursion 2 nhánh, depth log n (balanced)</td>
+                  <td><code>O(n)</code></td>
+                  <td>Tree traversal balanced</td>
+                </tr>
+                <tr>
+                  <td>Recursion full split (Fibonacci ngây thơ)</td>
+                  <td><code>O(2ⁿ)</code></td>
+                  <td>Exponential — cần memo</td>
+                </tr>
+                <tr>
+                  <td><code>HashMap.put/get</code></td>
+                  <td><code>O(1)</code> avg</td>
+                  <td>Worst O(log n) sau Java 8 treeify</td>
+                </tr>
+                <tr>
+                  <td><code>TreeMap/TreeSet</code> operation</td>
+                  <td><code>O(log n)</code></td>
+                  <td>Red-Black tree</td>
+                </tr>
+                <tr>
+                  <td><code>ArrayList.contains()</code></td>
+                  <td><code>O(n)</code></td>
+                  <td>⚠️ Junior hay quên</td>
+                </tr>
+                <tr>
+                  <td><code>LinkedList.get(i)</code></td>
+                  <td><code>O(n)</code></td>
+                  <td>⚠️ Junior hay quên</td>
+                </tr>
+                <tr>
+                  <td>String concat trong loop</td>
+                  <td><code>O(n²)</code></td>
+                  <td>⚠️ Dùng <code>StringBuilder</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>Trick "code-as-you-think" complexity</h4>
+          <p>Khi viết code, <strong>ngầm thêm comment</strong> <code>// O(?)</code> trên mỗi line:</p>
+
+          <pre><code class="language-java">public List&lt;String&gt; findDuplicates(List&lt;String&gt; words) {
+    Set&lt;String&gt; seen = new HashSet&lt;&gt;();           // O(1)
+    Set&lt;String&gt; duplicates = new HashSet&lt;&gt;();     // O(1)
+
+    for (String word : words) {                   // n iterations
+        if (!seen.add(word)) {                    // O(1) add
+            duplicates.add(word);                 // O(1) add
+        }
+    }
+    // Total: O(n) time, O(n) space
+    return new ArrayList&lt;&gt;(duplicates);           // O(k) where k = #dupes
+}</code></pre>
+
+          <p>Tập 1 tuần thói quen này → tự nhẩm Big-O thành reflex.</p>
+
+          <h4>Bẫy junior hay vướng</h4>
+
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ Junior nghĩ O(n²), thực ra O(n³)</div>
+              <pre><code class="language-java">for (int i = 0; i &lt; n; i++) {      // n
+  for (int j = 0; j &lt; n; j++) {    // n
+    if (list.contains(arr[i][j])){ // O(n) ẩn!
+      // ...
+    }
+  }
+}
+// Total O(n³), không phải O(n²)</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ Convert sang O(n²) với Set</div>
+              <pre><code class="language-java">Set&lt;Integer&gt; lookup = new HashSet&lt;&gt;(list);
+for (int i = 0; i &lt; n; i++) {      // n
+  for (int j = 0; j &lt; n; j++) {    // n
+    if (lookup.contains(arr[i][j])){ // O(1)
+      // ...
+    }
+  }
+}
+// Total O(n²) — giảm 1 bậc complexity</code></pre>
+            </div>
+          </div>
+
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ String concat = O(n²) hidden</div>
+              <pre><code class="language-java">String result = "";
+for (String s : list) {
+    result += s;  // mỗi += tạo
+                  // new String, copy hết!
+}
+// String immutable — mỗi += là copy
+// toàn bộ n ký tự đã có</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ StringBuilder = O(n)</div>
+              <pre><code class="language-java">StringBuilder sb = new StringBuilder();
+for (String s : list) {
+    sb.append(s);
+}
+return sb.toString();
+// Internal char[] resize amortized O(1)
+// per append → total O(n)</code></pre>
+            </div>
+          </div>
+
+          <h3 id="l5">Lớp 5: equals / hashCode / Comparable — Contract</h3>
+
+          <p>Sai contract → <code>HashMap</code>/<code>HashSet</code> behave bất thường → bug khó tìm vì code <em>nhìn
+              có vẻ đúng</em>.</p>
+
+          <div class="callout warn">
+            <div class="ctitle">⚠️ 3 contract phải nhớ</div>
+            <ol style="margin:8px 0 0 20px">
+              <li><code>equals()</code> reflexive, symmetric, transitive, consistent</li>
+              <li><code>equals() == true</code> → <code>hashCode()</code> <strong>PHẢI</strong> equal (collision chấp
+                nhận được — không cần ngược lại)</li>
+              <li><code>compareTo()</code> consistent với equals (nên có, không bắt buộc)</li>
+            </ol>
+          </div>
+
+          <h4>Template chuẩn cho POJO làm Map key</h4>
+          <pre><code class="language-java">public class AccountId {
+    private final String value;
+
+    public AccountId(String value) { this.value = Objects.requireNonNull(value); }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AccountId)) return false;
+        AccountId other = (AccountId) o;
+        return value.equals(other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+
+    @Override
+    public String toString() { return value; }
+}</code></pre>
+
+          <h4>Java 16+ — Record giải quyết tự động</h4>
+          <pre><code class="language-java">public record AccountId(String value) { }
+// equals, hashCode, toString tự generate
+// ĐÂY là chuẩn từ Java 16 trở đi</code></pre>
+
+          <h4>Bẫy Integer cached — câu phỏng vấn kinh điển</h4>
+
+          <pre><code class="language-java">Integer a = 127, b = 127;
+System.out.println(a == b);  // true  ← cached!
+Integer c = 128, d = 128;
+System.out.println(c == d);  // false ← out of cache range [-128, 127]
+
+// ✅ Luôn dùng .equals() cho boxed types
+System.out.println(c.equals(d)); // true</code></pre>
+
+          <div class="callout tip">
+            <div class="ctitle">💡 Tại sao [-128, 127]?</div>
+            <p>JVM cache instance Integer trong khoảng này (như <code>String.intern()</code>) vì 90% code dùng số nhỏ.
+              Tiết kiệm memory + GC. Range có thể tăng bằng JVM flag <code>-XX:AutoBoxCacheMax=10000</code>, nhưng đừng
+              dựa vào — hãy luôn <code>.equals()</code>.</p>
+          </div>
+
+          <h3 id="l6">Lớp 6: Exception — Fail Loud, Fail Fast</h3>
+
+          <div class="diagram">
+            <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif"
+              font-size="13">
+              <defs>
+                <style>
+                  .root-box {
+                    fill: #1e293b;
+                    stroke: #0f172a;
+                    stroke-width: 2;
+                  }
+
+                  .root-txt {
+                    fill: white;
+                    font-weight: 700;
+                    font-family: 'JetBrains Mono', monospace;
+                  }
+
+                  .err-box {
+                    fill: #fef2f2;
+                    stroke: #dc2626;
+                    stroke-width: 1.5;
+                  }
+
+                  .err-txt {
+                    fill: #991b1b;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-weight: 600;
+                  }
+
+                  .exc-box {
+                    fill: #eef2ff;
+                    stroke: #4f46e5;
+                    stroke-width: 1.5;
+                  }
+
+                  .exc-txt {
+                    fill: #312e81;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-weight: 600;
+                  }
+
+                  .checked-box {
+                    fill: #fffbeb;
+                    stroke: #d97706;
+                    stroke-width: 1.5;
+                  }
+
+                  .runtime-box {
+                    fill: #ecfdf5;
+                    stroke: #059669;
+                    stroke-width: 1.5;
+                  }
+
+                  .edge {
+                    stroke: #64748b;
+                    stroke-width: 1.5;
+                    fill: none;
+                  }
+
+                  .note {
+                    fill: #475569;
+                    font-size: 11px;
+                    font-style: italic;
+                  }
+                </style>
+              </defs>
+              <!-- Throwable -->
+              <rect x="290" y="10" width="140" height="34" rx="6" class="root-box" />
+              <text x="360" y="32" text-anchor="middle" class="root-txt">Throwable</text>
+              <!-- Error -->
+              <rect x="100" y="80" width="180" height="34" rx="6" class="err-box" />
+              <text x="190" y="102" text-anchor="middle" class="err-txt">Error</text>
+              <text x="190" y="130" text-anchor="middle" class="note">JVM problem — đừng catch</text>
+              <!-- Exception -->
+              <rect x="440" y="80" width="180" height="34" rx="6" class="exc-box" />
+              <text x="530" y="102" text-anchor="middle" class="exc-txt">Exception</text>
+              <line x1="340" y1="44" x2="220" y2="80" class="edge" />
+              <line x1="380" y1="44" x2="500" y2="80" class="edge" />
+              <!-- Error children -->
+              <rect x="20" y="170" width="160" height="28" rx="4" class="err-box" />
+              <text x="100" y="188" text-anchor="middle" class="err-txt" font-size="11">OutOfMemoryError</text>
+              <rect x="200" y="170" width="160" height="28" rx="4" class="err-box" />
+              <text x="280" y="188" text-anchor="middle" class="err-txt" font-size="11">StackOverflowError</text>
+              <line x1="160" y1="114" x2="100" y2="170" class="edge" />
+              <line x1="220" y1="114" x2="280" y2="170" class="edge" />
+              <!-- RuntimeException + Checked -->
+              <rect x="380" y="170" width="160" height="34" rx="6" class="runtime-box" />
+              <text x="460" y="192" text-anchor="middle" class="exc-txt" font-size="11">RuntimeException</text>
+              <text x="460" y="220" text-anchor="middle" class="note">UNCHECKED — không bắt buộc handle</text>
+              <rect x="560" y="170" width="150" height="34" rx="6" class="checked-box" />
+              <text x="635" y="192" text-anchor="middle" class="exc-txt" font-size="11" fill="#92400e">Checked</text>
+              <text x="635" y="220" text-anchor="middle" class="note">CHECKED — force handle</text>
+              <line x1="500" y1="114" x2="460" y2="170" class="edge" />
+              <line x1="560" y1="114" x2="610" y2="170" class="edge" />
+              <!-- Examples -->
+              <rect x="290" y="250" width="160" height="22" rx="4" class="runtime-box" />
+              <text x="370" y="265" text-anchor="middle" class="exc-txt" font-size="10">NullPointerException</text>
+              <rect x="290" y="278" width="160" height="22" rx="4" class="runtime-box" />
+              <text x="370" y="293" text-anchor="middle" class="exc-txt" font-size="10">IllegalArgumentException</text>
+              <rect x="550" y="250" width="160" height="22" rx="4" class="checked-box" />
+              <text x="630" y="265" text-anchor="middle" class="exc-txt" font-size="10"
+                fill="#92400e">IOException</text>
+              <rect x="550" y="278" width="160" height="22" rx="4" class="checked-box" />
+              <text x="630" y="293" text-anchor="middle" class="exc-txt" font-size="10"
+                fill="#92400e">SQLException</text>
+            </svg>
+            <div class="caption">Exception Hierarchy — Error đừng catch, RuntimeException unchecked, Checked phải handle
+            </div>
+          </div>
+
+          <h4>4 anti-patterns junior phải tránh</h4>
+
+          <div class="code-label">❌ 1. Swallow exception</div>
+          <pre><code class="language-java">try {
+    riskyCall();
+} catch (Exception e) {
+    // empty — bug bị nuốt mất
+}</code></pre>
+
+          <div class="code-label">❌ 2. Catch quá rộng rồi log thôi, không rethrow</div>
+          <pre><code class="language-java">try {
+    riskyCall();
+} catch (Exception e) {
+    log.error("Error", e);
+    // không rethrow → caller nghĩ thành công
+}</code></pre>
+
+          <div class="code-label">❌ 3. Bắt rồi rethrow mất stack trace gốc</div>
+          <pre><code class="language-java">try {
+    riskyCall();
+} catch (IOException e) {
+    throw new RuntimeException(e.getMessage()); // ← MẤT cause!
+}
+
+// ✅ Đúng — giữ cause:
+catch (IOException e) {
+    throw new RuntimeException("Failed to process file: " + path, e);
+}</code></pre>
+
+          <div class="code-label">❌ 4. throws Exception — quá lười</div>
+          <pre><code class="language-java">public void process() throws Exception { }  // ← nuốt info
+
+// ✅ Đúng:
+public void process() throws TransactionFailedException, ValidationException { }
+// hoặc throws RuntimeException (không declare)</code></pre>
+
+          <div class="callout quote">
+            <div class="ctitle">📖 Quy tắc của 10 năm exp</div>
+            <p>"Nếu không biết nên handle exception thế nào, <strong>let it bubble up</strong>. Để layer cao nhất
+              (controller / global handler) quyết định. Đừng catch chỉ để log."</p>
+          </div>
+        </section>
+
+        <section id="production">
+          <h2>3. Production-Grade — Refactor Code Junior Thành Senior</h2>
+
+          <h3>Refactor #1: Group + Sum Transactions</h3>
+          <p>Lấy lại đề bài ở phần [1]. Đây là cách viết stream và imperative đều "senior-level":</p>
+
+          <div class="code-label">✅ Senior version — Stream functional</div>
+          <pre><code class="language-java">public List&lt;String&gt; findHighValueUsers(List&lt;Transaction&gt; txns, BigDecimal threshold) {
+    if (txns == null || txns.isEmpty()) return List.of();
+
+    Map&lt;String, BigDecimal&gt; sumByUser = txns.stream()
+        .collect(Collectors.groupingBy(
+            Transaction::getUserId,
+            Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
+        ));
+
+    return sumByUser.entrySet().stream()
+        .filter(e -&gt; e.getValue().compareTo(threshold) &gt; 0)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList());
+}</code></pre>
+
+          <div class="code-label">✅ Senior version — Imperative</div>
+          <pre><code class="language-java">public List&lt;String&gt; findHighValueUsers(List&lt;Transaction&gt; txns, BigDecimal threshold) {
+    if (txns == null || txns.isEmpty()) return List.of();
+
+    Map&lt;String, BigDecimal&gt; sumByUser = new HashMap&lt;&gt;();
+    for (Transaction t : txns) {
+        sumByUser.merge(t.getUserId(), t.getAmount(), BigDecimal::add);
+    }
+
+    List&lt;String&gt; result = new ArrayList&lt;&gt;();
+    for (Map.Entry&lt;String, BigDecimal&gt; e : sumByUser.entrySet()) {
+        if (e.getValue().compareTo(threshold) &gt; 0) {
+            result.add(e.getKey());
+        }
+    }
+    return result;
+}</code></pre>
+
+          <div class="callout success">
+            <div class="ctitle">✨ Khác biệt senior</div>
+            <ul style="margin:8px 0 0 20px">
+              <li><strong>Null guard ở đầu</strong>, fail fast</li>
+              <li><strong>BigDecimal</strong> cho tiền tệ (KHÔNG <code>double</code>/<code>Long</code> chia 100)</li>
+              <li><strong><code>merge()</code></strong> thay vì <code>containsKey + get + put</code> (1 lookup)</li>
+              <li><strong><code>entrySet()</code></strong> thay vì <code>keySet()</code> + <code>get()</code></li>
+              <li><strong><code>BigDecimal.compareTo()</code></strong> — KHÔNG dùng <code>==</code> hay
+                <code>.equals()</code> cho BigDecimal (equals so cả scale: <code>1.0 ≠ 1.00</code>!)</li>
+            </ul>
+          </div>
+
+          <h3>Refactor #2: Recursion Đúng Cách — LeetCode 124 Max Path Sum</h3>
+          <pre><code class="language-java">public class MaxPathSum {
+    private int maxSum = Integer.MIN_VALUE;
+
+    public int maxPathSum(TreeNode root) {
+        maxGain(root);
+        return maxSum;
+    }
+
+    /**
+     * Trả về max gain từ một node ĐI XUỐNG (1 nhánh thôi — vì path không rẽ ở giữa).
+     * Nhưng KHI ở node hiện tại, ta CÓ THỂ tạo path rẽ qua node này
+     * (left + node + right) → update maxSum.
+     */
+    private int maxGain(TreeNode node) {
+        if (node == null) return 0; // base case
+
+        // LEAP OF FAITH: tin rằng 2 dòng dưới trả đúng
+        int leftGain = Math.max(maxGain(node.left), 0);   // discard âm
+        int rightGain = Math.max(maxGain(node.right), 0); // discard âm
+
+        // Path rẽ qua node hiện tại
+        int currentMaxPath = node.val + leftGain + rightGain;
+        maxSum = Math.max(maxSum, currentMaxPath);
+
+        // Trả về cho parent: chỉ 1 nhánh thôi
+        return node.val + Math.max(leftGain, rightGain);
+    }
+}</code></pre>
+
+          <p><strong>Cách approach senior khi gặp lần đầu:</strong></p>
+          <ol>
+            <li>Define rõ: hàm recursive trả gì? (max gain từ node đi xuống — 1 nhánh)</li>
+            <li>Base case? (null → 0)</li>
+            <li>Recursive: tin con đúng → kết hợp ở node cha</li>
+            <li>Side effect (cập nhật <code>maxSum</code>) — phân biệt rõ giữa "trả về parent" và "ghi nhận global max"
+            </li>
+          </ol>
+
+          <h3>Refactor #3: Equals/HashCode + HashMap (Java 16 Record)</h3>
+          <pre><code class="language-java">// Bài: dedupe transactions theo (userId, transactionRef) pair
+public List&lt;Transaction&gt; dedupe(List&lt;Transaction&gt; txns) {
+    Set&lt;TxnKey&gt; seen = new HashSet&lt;&gt;();
+    return txns.stream()
+        .filter(t -&gt; seen.add(new TxnKey(t.getUserId(), t.getTransactionRef())))
+        .collect(Collectors.toList());
+}
+
+// ✅ Java 16 record — equals/hashCode tự generate
+record TxnKey(String userId, String transactionRef) { }</code></pre>
+        </section>
+
+        <section id="antipatterns">
+          <h2>4. Anti-Patterns Junior Phổ Biến</h2>
+
+          <h3>#1 Premature optimization</h3>
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ Tự optimize trước khi profile</div>
+              <pre><code class="language-java">HashMap&lt;String, Object&gt; map =
+    new HashMap&lt;&gt;(10_000_000);
+// Thừa memory, chưa biết có cần không</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ Default capacity</div>
+              <pre><code class="language-java">HashMap&lt;String, Object&gt; map = new HashMap&lt;&gt;();
+// Optimize khi đã biết bottleneck</code></pre>
+            </div>
+          </div>
+
+          <h3>#2 Modify collection while iterating</h3>
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ ConcurrentModificationException</div>
+              <pre><code class="language-java">List&lt;Integer&gt; list = new ArrayList&lt;&gt;(
+    List.of(1, 2, 3, 4, 5));
+for (Integer n : list) {
+    if (n % 2 == 0) list.remove(n); // CME!
+}</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ Iterator.remove() / removeIf</div>
+              <pre><code class="language-java">// Java 8+ idiomatic
+list.removeIf(n -&gt; n % 2 == 0);
+
+// Hoặc iterator thủ công
+Iterator&lt;Integer&gt; it = list.iterator();
+while (it.hasNext()) {
+    if (it.next() % 2 == 0) it.remove();
+}</code></pre>
+            </div>
+          </div>
+
+          <h3>#3 Comparing wrappers với ==</h3>
+          <div class="compare">
+            <div class="col bad">
+              <div class="col-head">❌ false vì khác reference</div>
+              <pre><code class="language-java">Long a = 200L, b = 200L;
+if (a == b) { ... }  // false!
+// Long không có cache như Integer
+// (chỉ Integer mới cache [-128, 127])</code></pre>
+            </div>
+            <div class="col good">
+              <div class="col-head">✅ Equals hoặc unbox</div>
+              <pre><code class="language-java">if (a.equals(b)) { ... }
+// Hoặc unbox:
+if (a.longValue() == b.longValue()) { ... }</code></pre>
+            </div>
+          </div>
+
+          <h3>#4 Stream khi loop đơn giản hơn</h3>
+          <div class="callout warn">
+            <div class="ctitle">⚠️ Quy tắc của tôi</div>
+            <p>Stream tốt cho transform 1-2 step, có collector ngắn. Khi chain &gt; 4 step hoặc cần debug từng item →
+              for-loop dễ đọc hơn. <em>Stream không phải lúc nào cũng "senior"</em>.</p>
+          </div>
+
+          <pre><code class="language-java">// ❌ Stream chained dài — khó debug
+List&lt;Result&gt; r = list.stream()
+    .filter(x -&gt; x.isActive())
+    .map(x -&gt; transform(x))
+    .filter(x -&gt; validate(x))
+    .map(x -&gt; convert(x))
+    .filter(Objects::nonNull)
+    .collect(Collectors.toList());
+
+// ✅ Loop khi chain phức tạp + cần debug
+List&lt;Result&gt; r = new ArrayList&lt;&gt;();
+for (X x : list) {
+    if (!x.isActive()) continue;
+    Y y = transform(x);
+    if (!validate(y)) continue;
+    Result conv = convert(y);
+    if (conv == null) continue;
+    r.add(conv);
+}</code></pre>
+
+          <h3>#5 Mutable state trong "stateless" service class</h3>
+          <pre><code class="language-java">// ❌ Field bị mutate → bug khi cùng instance ở nhiều thread
+@Service
+public class TransactionProcessor {
+    private List&lt;Transaction&gt; currentBatch = new ArrayList&lt;&gt;(); // SHARED state!
+
+    public void process(List&lt;Transaction&gt; input) {
+        currentBatch.addAll(input);
+        // ... bug ngẫu nhiên khi 2 request gọi cùng lúc
+    }
+}
+
+// ✅ Local variable, no shared state
+@Service
+public class TransactionProcessor {
+    public void process(List&lt;Transaction&gt; input) {
+        List&lt;Transaction&gt; currentBatch = new ArrayList&lt;&gt;(input);
+        // ...
+    }
+}</code></pre>
+        </section>
+
+        <section id="interview">
+          <h2>5. Interview Framework — 3 Tầng Cho Junior-to-Mid</h2>
+
+          <div class="tier t1">
+            <div class="tier-head">
+              <span class="badge">Tầng 1 — Surface</span>
+              <span class="tier-title">Junior gate question, phải trả lời được</span>
+            </div>
+            <div class="q">Q: ArrayList và LinkedList khác gì?</div>
+            <div class="a">"ArrayList lưu element trong array contiguous, <code>get(i)</code> là O(1), insert/remove ở
+              giữa là O(n) vì phải shift elements. LinkedList dùng doubly-linked node, <code>get(i)</code> là O(n) vì
+              phải traverse từ đầu, nhưng add/remove ở 2 đầu là O(1).<br><br>
+              Trong thực tế, gần như luôn dùng ArrayList vì cache locality tốt hơn — CPU cache prefetch contiguous
+              memory hiệu quả. LinkedList chỉ đáng dùng khi đã có Iterator ở vị trí cần insert/remove. Cho stack/queue,
+              dùng <code>ArrayDeque</code> chứ không dùng <code>LinkedList</code>."</div>
+
+            <div class="q">Q: HashMap hoạt động thế nào?</div>
+            <div class="a">"Dưới capot là array of buckets, default 16. Mỗi key được hash, modulo capacity ra bucket
+              index. Nếu collision (2 keys cùng bucket), Java 7 dùng linked list, Java 8+ tự convert sang Red-Black Tree
+              khi chain dài hơn 8 → worst case O(log n) thay vì O(n).<br><br>
+              Khi số element vượt 75% capacity (load factor), HashMap resize gấp đôi và rehash toàn bộ — operation O(n)
+              đắt, nên nếu biết trước size, khởi tạo <code>new HashMap&lt;&gt;(expectedSize / 0.75 + 1)</code> để tránh
+              resize."</div>
+          </div>
+
+          <div class="tier t2">
+            <div class="tier-head">
+              <span class="badge">Tầng 2 — Deep Dive</span>
+              <span class="tier-title">Mid-level, đào sâu trade-off</span>
+            </div>
+            <div class="q">Q: Recursion vs Iteration — khi nào chọn cái nào? Trade-off?</div>
+            <div class="a">"Recursion phù hợp khi bài toán có cấu trúc đệ quy tự nhiên — tree/graph traversal, divide
+              &amp; conquer (merge sort, quick sort), backtracking. Code ngắn, sạch, đúng với mental model.<br><br>
+              Iteration tốt hơn khi: depth lớn (Java default stack size ~256KB-1MB, depth 10K là tràn), hoặc hot loop
+              performance critical (function call overhead).<br><br>
+              Mọi recursion đều có thể convert sang iteration bằng explicit stack — DFS với
+              <code>Deque&lt;Node&gt;</code> thay vì recursion. Tail recursion về lý thuyết tối ưu được nhưng JVM không
+              có tail call optimization (Scala thì có), nên Java vẫn dùng iteration cho deep cases."</div>
+
+            <div class="q">Q: Stream API performance — đáng dùng không?</div>
+            <div class="a">"Stream tradeoff: code declarative, dễ đọc, parallel dễ. Nhưng có overhead từ lambda + boxing
+              — với hot loop trên primitive (int, long), <code>IntStream</code> cần thiết, không dùng
+              <code>Stream&lt;Integer&gt;</code> vì autoboxing.<br><br>
+              Trong code thường, performance gap không đáng kể (~10-30% chậm hơn loop). Trong code hot path benchmark,
+              loop nhanh hơn rõ. Quy tắc: ưu tiên readability, profile trước khi tối ưu, chỉ dùng
+              <code>parallelStream</code> khi data lớn (&gt;10K elements) và operation CPU-bound."</div>
+          </div>
+
+          <div class="tier t3">
+            <div class="tier-head">
+              <span class="badge">Tầng 3 — Architecture</span>
+              <span class="tier-title">Senior bridge — kiến thức rộng</span>
+            </div>
+            <div class="q">Q: Khi nào HashMap không đủ, cần data structure khác?</div>
+            <div class="a">"HashMap không đủ trong 5 tình huống chính:<br><br>
+              <strong>1. Cần ordered iteration</strong>: dùng <code>LinkedHashMap</code> (insertion/access order) hoặc
+              <code>TreeMap</code> (sorted by key).<br>
+              <strong>2. Cần range query</strong>: 'all keys giữa A và B' → <code>TreeMap.subMap()</code>. HashMap không
+              hỗ trợ.<br>
+              <strong>3. Cần thread-safe</strong>: <code>ConcurrentHashMap</code> — dùng CAS + synchronized per bucket,
+              throughput cao hơn <code>Collections.synchronizedMap</code> nhiều.<br>
+              <strong>4. Memory critical với primitive keys</strong>: <code>HashMap&lt;Integer, Integer&gt;</code>
+              autobox tốn memory; libraries như Eclipse Collections, fastutil có <code>IntIntHashMap</code> saves ~50%
+              memory.<br>
+              <strong>5. Approximate membership với scale lớn</strong>: Bloom Filter (Guava) — chấp nhận false positive
+              nhưng O(1) memory cố định, dùng cho 'has user X been seen?' khi 100M+ users.<br><br>
+              Senior phải biết cả 5 alternatives này, không chỉ HashMap."
+            </div>
+          </div>
+        </section>
+
+        <section id="checklist">
+          <h2>6. Checklist Thành Thạo</h2>
+          <p>Trước khi sang #43 (Mental Model), tự confirm 6 điểm sau:</p>
+
+          <div class="checklist">
+            <div class="item">
+              <input type="checkbox" id="c1" />
+              <label for="c1"><strong>1. Collections fluency</strong>: Không nhìn IDE autocomplete, viết được LRU cache
+                (LinkedHashMap), Min-heap top-K (PriorityQueue), Frequency counter (HashMap.merge), Stack với
+                ArrayDeque, Queue producer-consumer với LinkedBlockingQueue</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="c2" />
+              <label for="c2"><strong>2. PECS reading</strong>: Đọc signature
+                <code>Collections.copy(List&lt;? super T&gt;, List&lt;? extends T&gt;)</code> và giải thích vì sao mỗi
+                wildcard chọn extends/super</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="c3" />
+              <label for="c3"><strong>3. Recursion confidence</strong>: Viết đệ quy cho 5 bài LeetCode Easy KHÔNG xem
+                solution: 104 (Maximum Depth of Binary Tree), 226 (Invert Binary Tree), 110 (Balanced Binary Tree), 100
+                (Same Tree), 543 (Diameter of Binary Tree). Đo: thời gian trung bình &lt; 15 phút/bài</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="c4" />
+              <label for="c4"><strong>4. Big-O reflex</strong>: Cho 5 đoạn code random, tự nói được time + space
+                complexity trong 30 giây</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="c5" />
+              <label for="c5"><strong>5. Equals/HashCode contract</strong>: Giải thích vì sao "equals true → hashCode
+                equal" bắt buộc, nhưng ngược lại không. Hậu quả nếu vi phạm contract trong HashMap</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="c6" />
+              <label for="c6"><strong>6. Exception hygiene</strong>: Liệt kê 4 anti-patterns ở phần [4] và refactor mỗi
+                cái thành code đúng. Giải thích "let it bubble up" rule</label>
+            </div>
+          </div>
+
+          <div class="callout success">
+            <div class="ctitle">🎯 Tự đo nhanh</div>
+            <p>Solve <strong>30 LeetCode Easy</strong> không xem solution, time trung bình ≤ 20 phút/bài → sẵn sàng sang
+              #43.</p>
+          </div>
+        </section>
+
+        <section id="roadmap">
+          <h2>7. Lộ Trình 2 Tuần Tới</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tuần</th>
+                  <th>Ngày</th>
+                  <th>Nội dung</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td rowspan="3"><strong>Tuần 1</strong><br><em>Đọc + practice</em></td>
+                  <td>1–2</td>
+                  <td>Lớp 1 (Collections) + 5 bài Easy về array/hash</td>
+                </tr>
+                <tr>
+                  <td>3–4</td>
+                  <td>Lớp 2–3 (Generics + Recursion) + 5 bài Easy về tree</td>
+                </tr>
+                <tr>
+                  <td>5–7</td>
+                  <td>Lớp 4–6 (Big-O + equals + exception) + 10 bài Easy mix</td>
+                </tr>
+                <tr>
+                  <td><strong>Tuần 2</strong><br><em>Drill 30 Easy</em></td>
+                  <td>—</td>
+                  <td>Pattern recognition warmup, fluency Java syntax. Track Notion/spreadsheet: tên bài, time, mistake
+                    key. <strong>Ngưỡng pass: 25/30 bài solve không xem solution.</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>50 bài LeetCode curated cho Vietnamese junior (dễ → vừa)</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Topic</th>
+                  <th>Bài (LeetCode IDs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Arrays</strong></td>
+                  <td>1, 26, 27, 88, 121, 217, 268, 283, 485, 561</td>
+                </tr>
+                <tr>
+                  <td><strong>Strings</strong></td>
+                  <td>14, 28, 125, 242, 344, 387, 412, 415, 459, 520</td>
+                </tr>
+                <tr>
+                  <td><strong>HashMap/Set</strong></td>
+                  <td>136, 169, 202, 219, 290, 383, 409, 451, 645, 705</td>
+                </tr>
+                <tr>
+                  <td><strong>Trees</strong></td>
+                  <td>100, 104, 110, 226, 543, 572, 617, 938, 965, 993</td>
+                </tr>
+                <tr>
+                  <td><strong>Recursion</strong></td>
+                  <td>21, 70, 206, 234, 509, 700, 783, 872, 897, 938</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>Chọn 30 mạnh nhất để track. Mỗi bài luyện 2–3 lần: lần 1 hiểu, lần 2 fluent, lần 3 &lt; 10 phút.</p>
+        </section>
+
+        <footer>
+          <div>📁 #47 Junior Foundation Pack · Nhóm N — Pre-LeetCode Foundation</div>
+          <div>Hoàn thành: 2026-04-25 · Step 1/6 trong gói bổ sung FAANG</div>
+        </footer>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script>
+    // Theme toggle with localStorage-less approach (use cookie-less in-memory)
+    const stored = (function () { try { return document.documentElement.getAttribute('data-theme') } catch (e) { return 'light' } })();
+    function toggleTheme() {
+      const html = document.documentElement;
+      const curr = html.getAttribute('data-theme');
+      const next = curr === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('themeIcon').textContent = next === 'dark' ? '☀️' : '🌙';
+      document.getElementById('themeText').textContent = next === 'dark' ? 'Light' : 'Dark';
+    }
+
+    // TOC scrollspy
+    const sections = document.querySelectorAll('section[id], h3[id]');
+    const links = document.querySelectorAll('aside .toc a');
+    function updateActive() {
+      let current = '';
+      sections.forEach(s => {
+        const top = s.getBoundingClientRect().top;
+        if (top < 120) current = s.id;
+      });
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+      });
+    }
+    window.addEventListener('scroll', updateActive);
+    updateActive();
+
+    // Close sidebar on mobile after click
+    document.querySelectorAll('aside .toc a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth < 980) document.querySelector('.sidebar').classList.remove('open');
+      });
+    });
+  </script>
+</body>
+
+</html>

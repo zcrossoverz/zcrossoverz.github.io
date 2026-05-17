@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#15 — Clean Architecture & DDD | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 4 — Architecture<span class="sep">/</span><strong>#15 Clean Architecture & DDD</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#intro">Tổng quan & vì sao</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#mental-model">2. Mental Model</a>
+    <div class="sub">
+      <a href="#layers">4 Layers & Dependency Rule</a>
+      <a href="#ddd-blocks">DDD Building Blocks</a>
+      <a href="#bounded-context">Bounded Context</a>
+    </div>
+    <a href="#implementation">3. Production-grade Code</a>
+    <div class="sub">
+      <a href="#money">Money Value Object</a>
+      <a href="#aggregate">Order Aggregate</a>
+      <a href="#repo">Repository Pattern</a>
+      <a href="#usecase">Use Case / App Service</a>
+      <a href="#package">Package Structure</a>
+    </div>
+    <a href="#tradeoffs">4. Trade-offs & Anti-patterns</a>
+    <a href="#logging">5. Logging trong Clean Arch</a>
+    <a href="#migration">6. Migration Strategy</a>
+    <a href="#interview">7. Interview Framework</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🟠 HIGH PRIORITY — Senior Signal</span>
+  <h1>#15 — Clean Architecture & DDD</h1>
+  <p class="lead">Senior interview luôn probe <strong>architecture thinking</strong>. File này dạy mental model để bạn design hệ thống <em>maintainable, testable, evolution-ready</em> — không phải chỉ "code chạy được". Examples dùng <strong>e-commerce / order management</strong> để dễ liên hệ.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">D — Kiến Trúc & Thiết Kế</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần đọc + thực hành</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#16 Design Patterns, #17 Microservices, #18 Event-Driven</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">4 — Architecture</div></div>
+  </div>
+</section>
+
+<section id="intro">
+<h2 class="no-border">Tại Sao Clean Architecture + DDD?</h2>
+<p>Khi codebase nhỏ (1 controller, 1 service, 1 entity), bạn không cần bất kỳ pattern nào. Code phẳng và "chạy được" là đủ. Nhưng khi:</p>
+<ul>
+<li>Codebase phình lên <strong>50K+ dòng</strong></li>
+<li>Có <strong>5-10 dev</strong> cùng touch chung modules</li>
+<li>Business rules <strong>thay đổi liên tục</strong> theo nghiệp vụ</li>
+<li>Bạn cần <strong>swap infrastructure</strong> (đổi DB, đổi messaging) không break code</li>
+</ul>
+<p>Thì code phẳng trở thành <em>"big ball of mud"</em>: thay 1 dòng phải test 10 module, mỗi feature mới mất 1 tuần. Clean Architecture + DDD là <strong>boundary technique</strong> để giữ codebase navigable theo thời gian.</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao file này là "Senior Signal"</div>
+  <p>Junior code "làm sao chạy". Senior code "làm sao maintain 3 năm sau". Interviewer hỏi architecture không phải để check syntax — họ check xem bạn có hiểu <strong>cost của coupling</strong>, <strong>cost của swap technology</strong>, và <strong>cost của onboarding</strong>. Đây là kiến thức không học được nếu chỉ làm CRUD app.</p>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Order System Của Một Sàn TMĐT</h2>
+
+<h3>Tình huống: Sàn ShopVN có monolith hỗn loạn</h3>
+<p>Hệ thống order của sàn ShopVN có <code>OrderController</code> gọi trực tiếp <code>OrderRepository</code>, validate giỏ hàng, trừ stock, tạo invoice, ghi log, gửi email — tất cả trong 1 method controller dài 300 dòng. Khi cần thêm 1 phương thức thanh toán mới (ví dụ <em>VNPay</em> sau khi đã hỗ trợ <em>Momo</em> và <em>COD</em>), engineer phải đụng vào:</p>
+<ul>
+<li><strong>Controller</strong> (validation rules thay đổi)</li>
+<li><strong>Service layer</strong> (logic rải rác giữa <code>OrderService</code> và <code>PaymentService</code>)</li>
+<li><strong>Repository</strong> (orders table thêm column <code>payment_method</code>)</li>
+<li><strong>Entity classes</strong> (Order, Customer mọc thêm properties)</li>
+<li><strong>Database schema</strong></li>
+<li><strong>External service</strong> (fee calculator, fraud check)</li>
+</ul>
+
+<p>Business logic <strong>scatter khắp nơi</strong>: controllers validate, services orchestrate, entities mutate state của chính mình, repositories enforce rules. Thêm 1 feature = <strong>sửa 15 file</strong> + regression test 8 modules. Code review mất 3 ngày. PR conflict liên tục.</p>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Triệu chứng "Big Ball of Mud"</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Không biết business rule nằm ở đâu (Controller? Service? Entity? Stored procedure?)</li>
+  <li>Test unit phải boot full Spring context → mỗi test 5-10 giây</li>
+  <li>Đổi DB từ MySQL → PostgreSQL = rewrite 30% code</li>
+  <li>Junior mới onboard mất 3 tháng mới "biết nên sửa file nào"</li>
+  </ul>
+</div>
+
+<h3>5 câu hỏi suy ngẫm</h3>
+<ol>
+<li>Vì sao thêm 1 payment method lại cần đụng controller?</li>
+<li>Làm sao <strong>isolate</strong> "payment method logic" để có thể thay đổi mà không ảnh hưởng order/stock logic?</li>
+<li>"Bounded context" là gì và vì sao ShopVN cần <strong>nhiều bounded context</strong>?</li>
+<li>Nếu <code>Order</code> tồn tại trong cả OrderContext và ShippingContext, 2 chỗ này khác nhau thế nào?</li>
+<li>Làm sao tránh <code>Customer</code> aggregate phình lên 50 fields vì trộn lẫn nhiều concern?</li>
+</ol>
+</section>
+
+<section id="mental-model">
+<h2>2. Mental Model</h2>
+
+<h3 id="layers">4 Layers & Dependency Rule</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
+  <defs>
+    <style>
+      .ring-pres { fill: #fef2f2; stroke: #dc2626; stroke-width: 2; }
+      .ring-app { fill: #fffbeb; stroke: #d97706; stroke-width: 2; }
+      .ring-dom { fill: #ecfdf5; stroke: #059669; stroke-width: 2.5; }
+      .ring-infra { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2; }
+      .lbl { fill: #0f172a; font-weight: 700; font-size: 14px; }
+      .lbl-sm { fill: #475569; font-size: 11px; }
+      .arrow { stroke: #dc2626; stroke-width: 2; fill: none; marker-end: url(#ar); }
+    </style>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <!-- Concentric rings -->
+  <ellipse cx="360" cy="190" rx="340" ry="160" class="ring-pres"/>
+  <ellipse cx="360" cy="190" rx="280" ry="130" class="ring-app"/>
+  <ellipse cx="360" cy="190" rx="200" ry="95" class="ring-infra"/>
+  <ellipse cx="360" cy="190" rx="120" ry="60" class="ring-dom"/>
+
+  <text x="360" y="48" text-anchor="middle" class="lbl" fill="#dc2626">Presentation</text>
+  <text x="360" y="65" text-anchor="middle" class="lbl-sm">REST Controller, GraphQL, gRPC adapter</text>
+
+  <text x="360" y="92" text-anchor="middle" class="lbl" fill="#d97706">Application (Use Cases)</text>
+  <text x="360" y="108" text-anchor="middle" class="lbl-sm">Orchestrate, DTO mapping, transaction boundary</text>
+
+  <text x="360" y="135" text-anchor="middle" class="lbl" fill="#4f46e5">Infrastructure</text>
+  <text x="360" y="150" text-anchor="middle" class="lbl-sm">DB impl, Kafka, Redis, 3rd-party API client</text>
+
+  <text x="360" y="185" text-anchor="middle" class="lbl" fill="#059669">DOMAIN</text>
+  <text x="360" y="200" text-anchor="middle" class="lbl-sm">Entities, Value Objects,</text>
+  <text x="360" y="213" text-anchor="middle" class="lbl-sm">Aggregates, Repository interface</text>
+
+  <!-- Dependency arrows (always inward) -->
+  <path d="M 100 220 Q 200 250 280 220" class="arrow"/>
+  <text x="155" y="270" class="lbl-sm" fill="#dc2626" font-weight="600">Dependency Rule:</text>
+  <text x="155" y="284" class="lbl-sm" fill="#dc2626">code chỉ depend INWARD</text>
+</svg>
+<div class="caption">4 layers Clean Architecture — vòng trong (Domain) không biết gì về vòng ngoài</div>
+</div>
+
+<p><strong>Dependency Rule:</strong> Code chỉ depend <strong>INWARD</strong>. Domain layer <em>không biết</em> HTTP, database, hoặc framework. Infrastructure implement domain interface.</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Domain layer phải "pure"?</div>
+  <p>Business rules là tài sản giá trị nhất của hệ thống — chúng thể hiện <em>"công ty làm gì để kiếm tiền"</em>. Database, framework, HTTP là <strong>chi tiết kỹ thuật</strong> có thể thay đổi (MySQL → Postgres, Spring → Quarkus, REST → gRPC). Nếu domain biết về MySQL, đổi DB = rewrite business rules. Tách rời = business rules <strong>sống lâu hơn</strong> mọi technology choice.</p>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao test domain mà cần boot Spring là dấu hiệu xấu?</div>
+  <p>Test domain logic nên chạy <strong>milliseconds</strong>, không phải seconds. Nếu phải <code>@SpringBootTest</code> mới test được business rule → có nghĩa domain đang phụ thuộc framework. Mỗi PR developer chạy 200 test trong 30s vs 30 phút = khác biệt productivity rõ rệt.</p>
+</div>
+
+<h3 id="ddd-blocks">DDD Building Blocks</h3>
+
+<div class="pillar-grid">
+<div class="pillar">
+  <div class="num">Block 1</div>
+  <h4>Entity</h4>
+  <p>Có <strong>identity duy nhất</strong>. <code>Order</code> với <code>orderId</code> — mutable (status đổi từ PENDING → PAID → SHIPPED), nhưng vẫn cùng 1 order. Identity tồn tại kể cả tất cả attribute đổi.</p>
+</div>
+<div class="pillar">
+  <div class="num">Block 2</div>
+  <h4>Value Object</h4>
+  <p>Không có identity, định nghĩa bằng <strong>attributes</strong>. <code>Money(100, "VND")</code> — immutable, cần Money khác → new instance. So sánh bằng value: <code>Money(100,VND).equals(Money(100,VND))</code> → true.</p>
+</div>
+<div class="pillar">
+  <div class="num">Block 3</div>
+  <h4>Aggregate</h4>
+  <p>Cluster entities + value objects với 1 <strong>aggregate root</strong>. Transaction boundary = aggregate boundary. Save toàn bộ aggregate atomically. Không aggregate nào chứa aggregate root khác.</p>
+</div>
+<div class="pillar">
+  <div class="num">Block 4</div>
+  <h4>Repository</h4>
+  <p>Interface trong domain layer (business chỉ care abstraction). Implementation ở infrastructure. <code>OrderRepository.findById(orderId)</code> — không biết SQL/JPA/Mongo.</p>
+</div>
+<div class="pillar">
+  <div class="num">Block 5</div>
+  <h4>Domain Service</h4>
+  <p>Logic không thuộc về entity/VO nào cụ thể. Ví dụ <code>PricingDomainService.calculateOrderTotal(order, promotions, taxRules)</code> — operate trên multiple entities, không "thuộc" riêng entity nào.</p>
+</div>
+<div class="pillar">
+  <div class="num">Block 6</div>
+  <h4>Domain Event</h4>
+  <p>Something happened (<code>OrderPlaced</code>, <code>ItemShipped</code>). Immutable, publishable. Decouple bounded contexts → ShippingContext không cần biết OrderContext.</p>
+</div>
+</div>
+
+<h3 id="bounded-context">Bounded Context — Cùng từ "Order", khác nghĩa</h3>
+
+<p>Bounded context là <strong>boundary</strong> nơi 1 model áp dụng. Trong sàn ShopVN:</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Context</th><th>"Order" nghĩa là</th><th>Properties quan tâm</th></tr></thead>
+<tbody>
+<tr><td><strong>OrderContext</strong> (checkout)</td><td>Giỏ hàng đã confirm + payment intent</td><td>items, totalPrice, paymentMethod, customerId, status</td></tr>
+<tr><td><strong>InventoryContext</strong></td><td>Lệnh trừ stock</td><td>orderId, items[productId, quantity, warehouseId]</td></tr>
+<tr><td><strong>ShippingContext</strong></td><td>Đơn cần giao</td><td>orderId, address, weight, courier, trackingNumber</td></tr>
+<tr><td><strong>FinanceContext</strong></td><td>Doanh thu phải ghi nhận</td><td>orderId, invoiceNumber, taxAmount, settlementDate</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Cùng từ "Order", 4 nghĩa khác nhau.</strong> Bounded context buộc bạn <strong>dịch tường minh</strong> (Anti-Corruption Layer) khi cross boundary.</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao không gộp thành 1 "Order" mega-class?</div>
+  <p>Nếu có 1 class <code>Order</code> chứa tất cả fields (items, address, invoiceNumber, taxAmount, trackingNumber, ...) → class này có <strong>50+ fields</strong> và <strong>4 team</strong> cùng modify. Mỗi PR sẽ conflict. Mỗi test phải mock 30 dependencies. Mỗi DB query <code>SELECT * FROM orders</code> load 50 column dù chỉ cần 3. Bounded context tách thành <strong>4 model nhỏ</strong>, mỗi team own 1 context, ship features độc lập.</p>
+</div>
+</section>
+
+<section id="implementation">
+<h2>3. Production-Grade Implementation</h2>
+
+<h3 id="money">Money — Value Object (Immutable, Type-Safe)</h3>
+<pre><code class="language-java">package com.shopvn.order.domain;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Currency;
+import java.util.Objects;
+
+// Value Object: No identity, immutable, compared by value
+public final class Money {
+    private final BigDecimal amount;
+    private final Currency currency;
+
+    // Private constructor — force factory method để validate
+    private Money(BigDecimal amount, Currency currency) {
+        if (amount.signum() &lt; 0) {
+            throw new IllegalArgumentException("Money amount cannot be negative");
+        }
+        if (currency == null) {
+            throw new IllegalArgumentException("Currency cannot be null");
+        }
+        // setScale(2) → tránh floating-point error, đảm bảo 2 chữ số thập phân
+        this.amount = amount.setScale(2, RoundingMode.HALF_UP);
+        this.currency = currency;
+    }
+
+    public static Money of(BigDecimal amount, Currency currency) {
+        return new Money(amount, currency);
+    }
+
+    public Money add(Money other) {
+        // Cross-currency operation phải EXPLICIT — không silent bug
+        // (VND + USD = meaningless sum, force caller convert trước)
+        requireSameCurrency(other);
+        return new Money(this.amount.add(other.amount), this.currency);
+    }
+
+    public Money multiply(int factor) {
+        return new Money(this.amount.multiply(BigDecimal.valueOf(factor)), this.currency);
+    }
+
+    public boolean isGreaterThan(Money other) {
+        requireSameCurrency(other);
+        return this.amount.compareTo(other.amount) &gt; 0;
+    }
+
+    private void requireSameCurrency(Money other) {
+        if (!this.currency.equals(other.currency)) {
+            throw new IllegalArgumentException(
+                "Currency mismatch: " + this.currency + " vs " + other.currency);
+        }
+    }
+
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Money)) return false;
+        Money m = (Money) o;
+        return amount.equals(m.amount) && currency.equals(m.currency);
+    }
+    @Override public int hashCode() { return Objects.hash(amount, currency); }
+    @Override public String toString() { return amount.toPlainString() + " " + currency.getCurrencyCode(); }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Money là Value Object, không phải <code>BigDecimal</code> trần?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Type safety</strong>: <code>void charge(Money amount)</code> không thể truyền nhầm <code>quantity</code> (cũng là BigDecimal). Compiler bảo vệ.</li>
+  <li><strong>Currency built-in</strong>: tránh bug "trừ VND khỏi USD"</li>
+  <li><strong>Validation centralized</strong>: chỉ 1 chỗ check non-negative, scale 2, không scatter</li>
+  <li><strong>Self-documenting</strong>: <code>Money totalPrice</code> rõ ràng hơn <code>BigDecimal totalPrice</code></li>
+  </ul>
+</div>
+
+<h3 id="aggregate">Order — Aggregate Root với Domain Events</h3>
+<pre><code class="language-java">package com.shopvn.order.domain;
+
+import java.time.Instant;
+import java.util.*;
+
+// Aggregate Root: Transaction boundary. Mọi thay đổi đi qua Order.
+public class Order {
+    private final OrderId orderId;
+    private final CustomerId customerId;
+    private final List&lt;OrderLine&gt; lines;  // Entity con — Order là root
+    private Money totalPrice;
+    private OrderStatus status;
+    private final List&lt;Object&gt; domainEvents = new ArrayList&lt;&gt;();
+
+    // Private constructor — force factory
+    private Order(OrderId orderId, CustomerId customerId) {
+        this.orderId = orderId;
+        this.customerId = customerId;
+        this.lines = new ArrayList&lt;&gt;();
+        this.totalPrice = Money.of(BigDecimal.ZERO, Currency.getInstance("VND"));
+        this.status = OrderStatus.DRAFT;
+    }
+
+    // Factory method — encapsulate logic tạo + emit initial event
+    public static Order placeNewOrder(CustomerId customerId, List&lt;OrderLine&gt; items) {
+        Order order = new Order(OrderId.generate(), customerId);
+        items.forEach(order::addLine);
+        order.confirm();
+        return order;
+    }
+
+    public void addLine(OrderLine line) {
+        // Business invariant: chỉ add line khi order DRAFT
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot modify confirmed order");
+        }
+        lines.add(line);
+        recalculateTotal();
+    }
+
+    public void confirm() {
+        if (lines.isEmpty()) {
+            throw new IllegalStateException("Cannot confirm empty order");
+        }
+        this.status = OrderStatus.CONFIRMED;
+        recordEvent(new OrderConfirmedEvent(orderId, customerId, totalPrice, Instant.now()));
+    }
+
+    public void markPaid(PaymentId paymentId) {
+        if (status != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order must be CONFIRMED before payment");
+        }
+        this.status = OrderStatus.PAID;
+        recordEvent(new OrderPaidEvent(orderId, paymentId, Instant.now()));
+    }
+
+    public void cancel(String reason) {
+        if (status == OrderStatus.SHIPPED || status == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel shipped order");
+        }
+        this.status = OrderStatus.CANCELLED;
+        recordEvent(new OrderCancelledEvent(orderId, reason, Instant.now()));
+    }
+
+    private void recalculateTotal() {
+        Money sum = Money.of(BigDecimal.ZERO, Currency.getInstance("VND"));
+        for (OrderLine line : lines) sum = sum.add(line.subtotal());
+        this.totalPrice = sum;
+    }
+
+    // Record event nhưng KHÔNG publish ngay. Publish sau khi save thành công.
+    private void recordEvent(Object event) { this.domainEvents.add(event); }
+
+    public List&lt;Object&gt; pullDomainEvents() {
+        List&lt;Object&gt; events = new ArrayList&lt;&gt;(domainEvents);
+        domainEvents.clear();
+        return events;
+    }
+
+    // Getters
+    public OrderId getOrderId() { return orderId; }
+    public OrderStatus getStatus() { return status; }
+    public Money getTotalPrice() { return totalPrice; }
+    public List&lt;OrderLine&gt; getLines() { return Collections.unmodifiableList(lines); }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao methods trên Order, không phải <code>OrderService.confirm(order)</code>?</div>
+  <p>Khi method <em>thuộc về</em> entity, code có 3 lợi ích:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Discoverability</strong>: IDE auto-complete <code>order.</code> hiện tất cả operations hợp lệ. Junior mới onboard nhìn class thấy ngay nghiệp vụ.</li>
+  <li><strong>Encapsulation</strong>: validate state trong method, ai cũng không thể bypass. <code>OrderService</code> bên ngoài có thể quên check, entity thì không.</li>
+  <li><strong>Single source of truth</strong>: logic "cancel order" chỉ ở 1 nơi (Order entity), không duplicate ở 3 service.</li>
+  </ul>
+  <p>Đây là khác biệt giữa <strong>Anemic Domain Model</strong> (entity = data bag) và <strong>Rich Domain Model</strong> (entity = data + behavior).</p>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao <code>pullDomainEvents()</code> thay vì publish ngay trong method?</div>
+  <p>Nếu <code>confirm()</code> publish event ngay → DB save fail mà event đã ra ngoài → downstream tưởng order confirmed, nhưng DB chưa lưu. <strong>Bug data inconsistency.</strong></p>
+  <p>Pattern đúng: entity <em>record</em> events vào list, repository <em>publish</em> sau khi save thành công. Tách rõ "ý định emit" và "thực sự emit". Đi kèm pattern này thường có <strong>Outbox Pattern</strong> (xem #18) để guarantee delivery.</p>
+</div>
+
+<h3 id="repo">Repository Pattern — Interface trong Domain, Impl ở Infrastructure</h3>
+
+<div class="code-label">Domain layer — Interface (pure Java, no framework)</div>
+<pre><code class="language-java">package com.shopvn.order.domain;
+
+public interface OrderRepository {
+    Optional&lt;Order&gt; findById(OrderId orderId);
+    void save(Order order);
+    List&lt;Order&gt; findByCustomerId(CustomerId customerId);
+    // KHÔNG có @Query, KHÔNG có Spring Page&lt;T&gt;, KHÔNG có Specification
+    // Phức tạp hơn? Đó là việc của Read Model (xem CQRS ở #17)
+}</code></pre>
+
+<div class="code-label">Infrastructure layer — JPA Implementation</div>
+<pre><code class="language-java">package com.shopvn.order.infrastructure.persistence;
+
+import com.shopvn.order.domain.*;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class JpaOrderRepository implements OrderRepository {
+    private final SpringDataOrderRepo jpaRepo;
+    private final DomainEventPublisher eventPublisher;
+
+    public JpaOrderRepository(SpringDataOrderRepo jpaRepo, DomainEventPublisher eventPublisher) {
+        this.jpaRepo = jpaRepo;
+        this.eventPublisher = eventPublisher;
+    }
+
+    @Override
+    public Optional&lt;Order&gt; findById(OrderId orderId) {
+        return jpaRepo.findById(orderId.value())
+            .map(this::toDomain);
+    }
+
+    @Override
+    public void save(Order order) {
+        // 1. Save aggregate
+        OrderJpaEntity entity = toJpaEntity(order);
+        jpaRepo.save(entity);
+
+        // 2. Publish events SAU KHI save thành công
+        // Nếu save fail → exception throw → events không được publish
+        order.pullDomainEvents().forEach(eventPublisher::publish);
+    }
+
+    private Order toDomain(OrderJpaEntity entity) { /* ... mapping ... */ }
+    private OrderJpaEntity toJpaEntity(Order order) { /* ... mapping ... */ }
+}
+
+// Spring Data JPA interface — internal, không leak ra ngoài
+interface SpringDataOrderRepo extends JpaRepository&lt;OrderJpaEntity, String&gt; {}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao repository interface ở Domain, impl ở Infrastructure?</div>
+  <p>Đây là <strong>Dependency Inversion Principle</strong> applied. Domain <em>declare</em> what it needs ("tôi cần save Order"), Infrastructure <em>provide</em> how ("tôi dùng JPA"). Kết quả:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Test domain</strong> với <code>InMemoryOrderRepository</code> (Map&lt;OrderId, Order&gt;) — không cần boot DB</li>
+  <li><strong>Swap impl</strong>: đổi JPA → MongoDB chỉ cần viết <code>MongoOrderRepository</code> implement cùng interface</li>
+  <li><strong>Domain không "biết"</strong> JPA exist → không bị tempt sử dụng JPA-specific features (Specification, Page, etc.) lẫn vào business logic</li>
+  </ul>
+</div>
+
+<h3 id="usecase">Use Case / Application Service</h3>
+<pre><code class="language-java">package com.shopvn.order.application;
+
+import com.shopvn.order.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class PlaceOrderUseCase {
+    private final OrderRepository orderRepo;
+    private final ProductCatalog productCatalog;
+    private final InventoryService inventoryService;
+
+    public PlaceOrderUseCase(OrderRepository orderRepo, ProductCatalog productCatalog,
+                              InventoryService inventoryService) {
+        this.orderRepo = orderRepo;
+        this.productCatalog = productCatalog;
+        this.inventoryService = inventoryService;
+    }
+
+    @Transactional
+    public OrderId execute(PlaceOrderCommand command) {
+        // 1. Reserve inventory (orchestration với context khác)
+        for (var line : command.lines()) {
+            inventoryService.reserve(line.productId(), line.quantity());
+        }
+
+        // 2. Build domain objects từ command
+        List&lt;OrderLine&gt; orderLines = command.lines().stream()
+            .map(l -&gt; {
+                var product = productCatalog.findById(l.productId());
+                return new OrderLine(l.productId(), product.name(), product.price(), l.quantity());
+            })
+            .toList();
+
+        // 3. Invoke domain logic
+        Order order = Order.placeNewOrder(command.customerId(), orderLines);
+
+        // 4. Persist (repository sẽ publish events sau save)
+        orderRepo.save(order);
+
+        return order.getOrderId();
+    }
+}
+
+// Command = pure data structure, không có behavior
+public record PlaceOrderCommand(
+    CustomerId customerId,
+    List&lt;OrderLineRequest&gt; lines
+) {}
+
+public record OrderLineRequest(ProductId productId, int quantity) {}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao tách Use Case khỏi Controller?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Test không cần HTTP</strong>: unit test PlaceOrderUseCase với JUnit + Mockito, không cần MockMvc</li>
+  <li><strong>Multiple entry points</strong>: cùng use case có thể trigger từ REST, GraphQL, message queue, scheduled job — không duplicate logic</li>
+  <li><strong>Transaction boundary rõ ràng</strong>: <code>@Transactional</code> ở use case level — controller chỉ HTTP concerns, không quản lý DB transaction</li>
+  </ul>
+</div>
+
+<h3 id="package">Package Structure — Tổ chức theo Layer</h3>
+<pre><code class="language-text">com.shopvn.order
+├── domain/                          [DOMAIN LAYER — pure Java, no framework]
+│   ├── Order.java                   Aggregate root
+│   ├── OrderId.java                 Value Object
+│   ├── OrderLine.java               Entity con
+│   ├── OrderStatus.java             Enum
+│   ├── Money.java                   Value Object
+│   ├── CustomerId.java
+│   ├── OrderRepository.java         Interface only
+│   ├── PricingDomainService.java
+│   └── event/
+│       ├── OrderConfirmedEvent.java
+│       ├── OrderPaidEvent.java
+│       └── OrderCancelledEvent.java
+│
+├── application/                     [APPLICATION LAYER — orchestration]
+│   ├── PlaceOrderUseCase.java
+│   ├── CancelOrderUseCase.java
+│   ├── command/
+│   │   └── PlaceOrderCommand.java
+│   └── port/
+│       ├── DomainEventPublisher.java   Interface
+│       └── PaymentGateway.java         Interface (external service)
+│
+├── infrastructure/                  [INFRASTRUCTURE LAYER — impl details]
+│   ├── persistence/
+│   │   ├── JpaOrderRepository.java
+│   │   └── OrderJpaEntity.java
+│   ├── messaging/
+│   │   └── KafkaEventPublisher.java
+│   └── payment/
+│       └── StripePaymentGateway.java
+│
+└── presentation/                    [PRESENTATION LAYER — HTTP, gRPC, GraphQL]
+    └── rest/
+        ├── OrderController.java
+        └── dto/
+            ├── PlaceOrderRequest.java
+            └── OrderResponse.java</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">💡 Quy tắc package — Verify Dependency Rule</div>
+  <p>Dùng <strong>ArchUnit</strong> để enforce ở CI:</p>
+<pre style="margin:8px 0 0 0"><code class="language-java">@Test
+void domainShouldNotDependOnInfrastructure() {
+    noClasses().that().resideInAPackage("..domain..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "..infrastructure..", "org.springframework..", "javax.persistence.."
+        )
+        .check(importedClasses);
+}</code></pre>
+  <p style="margin-top:8px">Test này fail nếu ai đó accidentally import <code>@Entity</code> vào domain — bắt lỗi ở PR review chứ không phải production.</p>
+</div>
+</section>
+
+<section id="tradeoffs">
+<h2>4. Trade-offs & Anti-Patterns</h2>
+
+<h3>Khi nào dùng Clean Architecture + DDD?</h3>
+
+<div class="compare">
+<div class="col good">
+  <div class="col-head">✅ Dùng khi</div>
+  <div class="col-body">
+  <ul>
+  <li>Hệ thống phức tạp, business rules evolve liên tục</li>
+  <li>Nhiều team own domains khác nhau (cần bounded context tường minh)</li>
+  <li>Long-term maintenance critical (e-commerce, fintech, healthcare)</li>
+  <li>Cần swap infrastructure mà không break business</li>
+  <li>Codebase &gt; 30K LOC hoặc dự kiến grow</li>
+  </ul>
+  </div>
+</div>
+<div class="col bad">
+  <div class="col-head">❌ KHÔNG dùng nếu</div>
+  <div class="col-body">
+  <ul>
+  <li>CRUD app với 3 bảng, không có business logic phức tạp</li>
+  <li>Prototype / MVP — lean on framework conveniences trước</li>
+  <li>1 developer, simple admin tool</li>
+  <li>Team chưa nắm OOP solid (DDD là pattern OOP nâng cao)</li>
+  </ul>
+  </div>
+</div>
+</div>
+
+<h3>Anti-Pattern #1 — Anemic Domain Model</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Entity chỉ là data bag</div>
+<pre><code class="language-java">@Entity
+public class Order {
+    private Long id;
+    private BigDecimal total;
+    private String status;
+    // Chỉ getters/setters
+}
+
+@Service
+public class OrderService {
+    public void cancel(Long id) {
+        Order o = repo.findById(id);
+        if (o.getStatus().equals("SHIPPED"))
+            throw new Exception();
+        o.setStatus("CANCELLED");
+        repo.save(o);
+    }
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Rich Domain Model</div>
+<pre><code class="language-java">public class Order {
+    private OrderStatus status;
+
+    public void cancel(String reason) {
+        if (status == OrderStatus.SHIPPED)
+            throw new IllegalStateException(
+                "Cannot cancel shipped order");
+        this.status = OrderStatus.CANCELLED;
+        recordEvent(new OrderCancelledEvent(...));
+    }
+}</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Anemic Model có hại?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Logic scatter</strong>: 3 nơi gọi <code>setStatus("CANCELLED")</code> → 3 chỗ phải nhớ check shipped. Khi rule đổi → sửa 3 chỗ.</li>
+  <li><strong>No encapsulation</strong>: bất cứ ai có order reference đều set status = "BANANA" → invariant broken.</li>
+  <li><strong>Khó test</strong>: phải test thông qua service + repo, không test riêng business rule được.</li>
+  <li><strong>"Service" phình to</strong>: cuối cùng OrderService 2000 dòng — God class.</li>
+  </ul>
+</div>
+
+<h3>Anti-Pattern #2 — Repository Trả Về Infrastructure Types</h3>
+
+<pre><code class="language-java">// ❌ Domain phụ thuộc Spring Data
+public interface OrderRepository {
+    Page&lt;Order&gt; findAll(Pageable pageable);  // Page là Spring type!
+    Specification&lt;Order&gt; getActiveSpec();    // Spring Data Specification
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao sai?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Domain layer phụ thuộc Spring → test domain phải có Spring → mất point của Clean Architecture</li>
+  <li>Đổi JPA → MongoDB phải rewrite interface (vì Spring Data interface không tương thích)</li>
+  <li>Pagination là infrastructure concern (offset vs cursor) — không thuộc domain logic</li>
+  </ul>
+</div>
+
+<p><strong>Fix:</strong> Domain repo trả về <code>List&lt;Order&gt;</code> hoặc domain-specific pagination object. Pagination handle ở Application layer.</p>
+
+<h3>Anti-Pattern #3 — Use Case Gọi Use Case</h3>
+
+<pre><code class="language-java">// ❌ Tạo coupling giữa use cases
+@Service
+public class PlaceOrderUseCase {
+    public void execute(PlaceOrderCommand cmd) {
+        // ...
+        // Gửi welcome email
+        sendWelcomeEmailUseCase.execute(new WelcomeCommand(cmd.customerId()));
+        // Log audit
+        auditUseCase.execute(new AuditCommand(...));
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao sai?</div>
+  <p>Use case ban đầu chỉ <em>"place order"</em> — giờ kéo theo email + audit. Khi cần thêm SMS notification, inventory event, fraud check... use case này phình to. <strong>Tighter coupling = harder testing + harder change</strong>.</p>
+</div>
+
+<p><strong>Fix:</strong> Dùng <strong>Domain Events</strong>. Use case <em>chỉ publish event</em> <code>OrderPlacedEvent</code>. Email service, audit service, inventory service đều <em>subscribe</em> event đó độc lập.</p>
+
+<pre><code class="language-java">@EventListener(OrderPlacedEvent.class)
+public void onOrderPlaced(OrderPlacedEvent event) {
+    emailService.sendOrderConfirmation(event.customerId(), event.orderId());
+}
+
+@EventListener(OrderPlacedEvent.class)
+public void onOrderPlacedForAudit(OrderPlacedEvent event) {
+    auditService.logOrderEvent(event);
+}</code></pre>
+
+<h3>Anti-Pattern #4 — Một Bounded Context = Một Microservice (Dogma)</h3>
+
+<pre><code class="language-text">// ❌ Over-segmentation — nanoservices
+order-service/          (200 LOC)
+order-pricing-service/  (150 LOC)
+order-validation-service/ (100 LOC)
+order-audit-service/    (80 LOC)
+
+Mỗi service cần:
+- CI/CD pipeline riêng
+- Load balancer
+- Database riêng
+- Monitoring
+- On-call rotation
+// Network overhead &gt; business value</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao sai?</div>
+  <p>Microservice mang <strong>operational cost</strong> rất cao. Nếu service quá nhỏ, cost vận hành lớn hơn benefit của decoupling. Mỗi cuộc gọi giữa services = network latency + retry logic + circuit breaker + tracing setup.</p>
+</div>
+
+<p><strong>Fix:</strong> 1 microservice có thể chứa <strong>nhiều bounded context</strong> nếu cùng team own. Khi team tách → tách service. Đừng tách trước.</p>
+
+<h3>Anti-Pattern #5 — Over-Engineering DDD Cho CRUD Đơn Giản</h3>
+
+<p>Form đăng ký user 4 field (name, email, phone, address) → có người design:</p>
+<ul>
+<li><code>UserAggregate</code> với 5 value objects</li>
+<li>3 domain services để "validate"</li>
+<li>Event sourcing cho audit trail</li>
+<li>400 dòng code cho 4 fields</li>
+</ul>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao sai?</div>
+  <p>DDD designed cho <strong>complex domain</strong>. Đăng ký user là CRUD đơn giản — không có business rule phức tạp, không có invariant cross-entity. Áp DDD = onboarding nightmare (junior mở 10 file mới hiểu 1 form), tests chậm (boot container), debug khó.</p>
+</div>
+
+<p><strong>Fix:</strong> Tactical DDD cho phần <em>core domain</em> (complex business). Simple CRUD pattern cho admin/configuration/lookup tables. Mix tự nhiên trong cùng codebase.</p>
+
+<h3>Anti-Pattern #6 — Aggregate Quá Lớn</h3>
+
+<pre><code class="language-java">// ❌ Customer aggregate chứa TẤT CẢ orders + reviews + addresses
+public class Customer {
+    private CustomerId id;
+    private List&lt;Order&gt; orders;        // 500 orders trong lifetime
+    private List&lt;Review&gt; reviews;      // 200 reviews
+    private List&lt;Address&gt; addresses;   // 10 shipping addresses
+    // Load customer = load 700+ entities vào memory!
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao sai?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Memory</strong>: 1 request load 700 objects → OOM khi 1000 concurrent users</li>
+  <li><strong>Transaction lock</strong>: save 1 review = lock toàn customer aggregate → contention cao</li>
+  <li><strong>Slow loading</strong>: query 700 rows mỗi lần dù chỉ cần customer name</li>
+  </ul>
+</div>
+
+<p><strong>Fix:</strong> Order, Review là aggregate riêng. Customer aggregate chỉ chứa data cần cho business rules của chính nó (profile, status, loyalty tier). Reference cross-aggregate bằng <strong>ID</strong>, không embed:</p>
+
+<pre><code class="language-java">public class Customer {
+    private CustomerId id;
+    private String name;
+    private LoyaltyTier tier;
+    // KHÔNG có List&lt;Order&gt; — Order là aggregate riêng
+}
+
+public class Order {
+    private OrderId id;
+    private CustomerId customerId;  // Reference bằng ID
+    // ...
+}</code></pre>
+
+<div class="callout tip">
+  <div class="ctitle">📏 Rule of thumb</div>
+  <p>Aggregate nên chứa <strong>&lt; 1000 entities</strong> ở load. Hơn thì tách. Quy tắc: <em>"có gì cần consistent ngay lập tức?"</em> → trong 1 aggregate. <em>"có gì có thể eventual consistent?"</em> → aggregate riêng + domain event.</p>
+</div>
+</section>
+
+<section id="logging">
+<h2>5. Logging Trong Clean Architecture — Đặt Ở Đâu?</h2>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Log trong Domain</div>
+<pre><code class="language-java">package com.shopvn.order.domain;
+import org.slf4j.Logger;  // Domain depend SLF4J!
+
+public class Order {
+    private static final Logger log =
+        LoggerFactory.getLogger(Order.class);
+
+    public void cancel(String reason) {
+        log.info("Cancelling order {}", id);
+        // Domain không nên biết về logging
+    }
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Log ở Application layer</div>
+<pre><code class="language-java">package com.shopvn.order.application;
+
+@Service
+@Slf4j
+public class CancelOrderUseCase {
+    public void execute(CancelOrderCommand cmd) {
+        log.info("Cancel order: id={}, reason={}",
+            cmd.orderId(), cmd.reason());
+        try {
+            // ... business logic
+        } catch (IllegalStateException e) {
+            log.warn("Cancel failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+}</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Domain không nên log?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Logging framework (SLF4J/Logback) là <strong>infrastructure concern</strong>. Domain depend infrastructure = phá dependency rule.</li>
+  <li>Test domain phải mock logger → noise trong test.</li>
+  <li>Domain logic phải <em>"silent"</em> — chỉ raise events. Application layer quyết định log/notify/audit.</li>
+  </ul>
+</div>
+
+<p>Domain communicate qua <strong>Domain Events</strong>. Application layer subscribe + log:</p>
+
+<pre><code class="language-java">@Component
+@Slf4j
+public class OrderEventLogger {
+    @EventListener
+    public void onOrderConfirmed(OrderConfirmedEvent event) {
+        log.info("Order confirmed: orderId={}, customerId={}, total={}",
+            event.orderId(), event.customerId(), event.total());
+    }
+
+    @EventListener
+    public void onOrderCancelled(OrderCancelledEvent event) {
+        log.warn("Order cancelled: orderId={}, reason={}",
+            event.orderId(), event.reason());
+    }
+}</code></pre>
+</section>
+
+<section id="migration">
+<h2>6. Migration Strategy — Từ Anemic Sang Rich Domain Model</h2>
+
+<p>Không ai bắt đầu codebase mới sạch. Realistic là bạn join team với 500K LOC monolith Anemic. Migration đúng cách:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
+  <defs><style>
+    .phase{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .phase-good{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{font-weight:600;fill:#0f172a}
+    .desc{fill:#475569;font-size:11px}
+    .arrow{stroke:#4f46e5;stroke-width:2;fill:none;marker-end:url(#a)}
+  </style>
+  <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/></marker></defs>
+
+  <rect x="20" y="40" width="200" height="80" rx="8" class="phase"/>
+  <text x="120" y="64" text-anchor="middle" class="lbl">Phase 1 — Identify (2 tuần)</text>
+  <text x="120" y="84" text-anchor="middle" class="desc">Map bounded contexts</text>
+  <text x="120" y="100" text-anchor="middle" class="desc">Vẽ context map</text>
+  <text x="120" y="116" text-anchor="middle" class="desc">KHÔNG refactor code</text>
+
+  <rect x="250" y="40" width="200" height="80" rx="8" class="phase"/>
+  <text x="350" y="64" text-anchor="middle" class="lbl">Phase 2 — Strangler (4-8 tuần)</text>
+  <text x="350" y="84" text-anchor="middle" class="desc">Tạo domain layer mới</text>
+  <text x="350" y="100" text-anchor="middle" class="desc">Route new features qua đó</text>
+  <text x="350" y="116" text-anchor="middle" class="desc">Code cũ vẫn chạy song song</text>
+
+  <rect x="480" y="40" width="200" height="80" rx="8" class="phase-good"/>
+  <text x="580" y="64" text-anchor="middle" class="lbl">Phase 3 — Events (2-4 tuần)</text>
+  <text x="580" y="84" text-anchor="middle" class="desc">Add domain events</text>
+  <text x="580" y="100" text-anchor="middle" class="desc">Downstream subscribe events</text>
+  <text x="580" y="116" text-anchor="middle" class="desc">Outbox pattern</text>
+
+  <line x1="220" y1="80" x2="250" y2="80" class="arrow"/>
+  <line x1="450" y1="80" x2="480" y2="80" class="arrow"/>
+
+  <text x="350" y="180" text-anchor="middle" class="lbl" font-size="14">Vì sao Strangler Fig thay vì Big Bang Rewrite?</text>
+  <text x="350" y="205" text-anchor="middle" class="desc">Big Bang = 6 tháng không ship feature → business nói "không"</text>
+  <text x="350" y="222" text-anchor="middle" class="desc">Strangler = ship feature liên tục, refactor dần dần</text>
+  <text x="350" y="239" text-anchor="middle" class="desc">Risk thấp: domain model sai → rollback 1 aggregate, không phải toàn bộ</text>
+</svg>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Strangler Fig hiệu quả?</div>
+  <p>Code mới sống <em>"bên cạnh"</em> code cũ. Mỗi feature mới hoặc bug fix → cơ hội migrate 1 aggregate. Sau 6-12 tháng, code cũ <strong>tự nhiên "chết"</strong> vì không còn ai dùng. Pattern này tránh được "<em>chúng tôi không thể rewrite vì business cần feature</em>" — vì bạn vẫn ship feature, song song refactor.</p>
+</div>
+</section>
+
+<section id="interview">
+<h2>7. Interview Framework</h2>
+
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid-level gate</span></div>
+  <div class="q">Q: Phân biệt Entity và Value Object?</div>
+  <div class="a">"Entity có identity persist (Order với orderId — kể cả status đổi vẫn là cùng 1 order). Value Object không có identity, định nghĩa bằng value (Money = amount + currency). Entity mutable, Value Object immutable. Compare: entity bằng ID (<code>order1.id.equals(order2.id)</code>), value object bằng content (<code>money1.equals(money2)</code>)."</div>
+
+  <div class="q">Q: Repository trong DDD là gì?</div>
+  <div class="a">"Repository là interface trong domain layer, đại diện cho persistence abstraction. Caller dùng như đang lưu aggregate vào collection: <code>orderRepo.save(order)</code>, <code>orderRepo.findById(orderId)</code>. Implementation (JPA, MongoDB, in-memory) ở infrastructure — domain không biết DB cụ thể, không biết SQL/NoSQL. Lý do: domain testable không cần DB, swap DB không break business logic."</div>
+</div>
+
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+  <div class="q">Q: Design use case "place order". Yêu cầu: (a) reserve inventory + tạo order atomic, (b) emit audit trail, (c) dễ thêm payment method mới sau này.</div>
+  <div class="a">"<strong>Aggregate</strong>: Order là root, chứa OrderLine entities. Order method <code>place()</code> validate invariants (lines không empty, total &gt; 0), emit OrderConfirmedEvent.<br><br>
+  <strong>Use Case</strong>: PlaceOrderUseCase orchestrate inventory.reserve() + order.place() + orderRepo.save(). <code>@Transactional</code> ở use case → atomic giữa DB save và inventory reserve (cùng DB) hoặc dùng Saga (nếu inventory là service riêng).<br><br>
+  <strong>Audit</strong>: Event-driven — OrderConfirmedEvent published sau khi save. AuditService @EventListener subscribe và log/persist. Không pollute use case với audit logic.<br><br>
+  <strong>Payment method extensibility</strong>: PaymentMethod là Strategy pattern. PaymentGateway interface ở domain (port), implementation StripeGateway/MomoGateway/VNPayGateway ở infrastructure (adapter). Thêm method mới = add 1 implementation, không sửa use case."</div>
+
+  <div class="q">Q: Có OrderContext và ShippingContext, đều có "Order" với attributes khác nhau. Giải thích bounded context + anti-corruption layer.</div>
+  <div class="a">"Mỗi context own definition riêng của Order. OrderContext care: customerId, items, totalPrice, paymentStatus. ShippingContext care: orderId, address, weight, carrier, trackingNumber.<br><br>
+  Khi ShippingContext cần info từ OrderContext (ví dụ địa chỉ giao), dùng <strong>Anti-Corruption Layer</strong> (ACL) — 1 adapter trong ShippingContext gọi OrderContext API và <strong>translate</strong> DTO của Order Context thành ShippingOrder model.<br><br>
+  Lý do: nếu ShippingContext import OrderContext models trực tiếp → coupling chặt → OrderContext refactor tên field, ShippingContext break. ACL absorbs change. Khi OrderContext đổi <code>customerId</code> thành <code>buyerId</code>, chỉ ACL phải update."</div>
+</div>
+
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior signal</span></div>
+  <div class="q">Q: Sàn ShopVN sáp nhập với 1 sàn khác (Marketplace). Design bounded contexts cho hệ thống mới.</div>
+  <div class="a">"Identify contexts cốt lõi:<br>
+  <strong>1. CatalogContext</strong> — product master data, mỗi sàn brings existing catalog → cần unification strategy (deduplicate, merge SKUs)<br>
+  <strong>2. OrderContext</strong> — checkout, payment intent (mỗi sàn process độc lập trước, eventual merge)<br>
+  <strong>3. InventoryContext</strong> — stock của seller, cần aggregate cross-sàn để tránh oversell<br>
+  <strong>4. CustomerContext</strong> — buyer profile, KYC (unify, deduplicate by email/phone)<br>
+  <strong>5. SellerContext</strong> — vendor onboarding, payout (mỗi sàn có sellers riêng → namespace để tránh ID collision)<br>
+  <strong>6. ShippingContext</strong> — fulfillment (có thể share carriers chung)<br>
+  <strong>7. FinanceContext</strong> — consolidated revenue, settlement (new context, đọc từ OrderContext + SellerContext)<br><br>
+  <strong>Migration strategy</strong>:<br>
+  Phase 1: coexist — mỗi sàn vẫn chạy độc lập, sync data qua events (CDC từ DB cũ → Kafka → consumer).<br>
+  Phase 2: shared contexts (CustomerContext, CatalogContext) migrate trước vì có dedupe value.<br>
+  Phase 3: gradual data migration sang unified DB.<br>
+  Phase 4: retire legacy systems.<br><br>
+  Trong mỗi context, áp Clean Architecture (domain isolated). Giữa contexts: domain events + ACL. Tránh share DB cross-context — chỉ share via API/event."</div>
+</div>
+</section>
+
+<footer>
+<div>📁 #15 Clean Architecture & DDD · Phase 4 — Architecture</div>
+<div>Tiếp theo: #16 Design Patterns · #17 Microservices Patterns</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

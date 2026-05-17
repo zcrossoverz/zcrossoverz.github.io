@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#13 — Distributed Transaction | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 3 — Database<span class="sep">/</span><strong>#13 Distributed Transaction</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#dual-write">2. Dual Write Problem</a>
+    <a href="#2pc">3. 2PC — Tại sao thất bại</a>
+    <a href="#saga">4. SAGA Pattern</a>
+    <a href="#outbox">5. Outbox Pattern</a>
+    <a href="#idempotent">6. Idempotency</a>
+    <a href="#consistency">7. Eventual Consistency</a>
+    <a href="#antipatterns">8. Anti-Patterns</a>
+    <a href="#build-projects">9. Build Projects</a>
+    <a href="#interview">10. Interview Framework</a>
+    <a href="#feynman-end">11. Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔴 CRITICAL — Microservices Survival</span>
+  <h1>#13 — Distributed Transaction</h1>
+  <p class="lead">2PC, SAGA, Outbox Pattern, Eventual Consistency. Khi tách monolith → microservices, distributed transaction là vấn đề <strong>không tránh được</strong>. Hiểu sai = data inconsistency, mất tiền/order. Examples dùng <strong>e-commerce checkout</strong> và <strong>ride-sharing trip booking</strong>.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">C — Database</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần + build SAGA</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#7 Spring TX, #18 Event-Driven, #20 Kafka</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">3 — Database</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Distributed transaction là chủ đề <em>cực kỳ dễ illusion of competence</em>: đọc sách hiểu pattern, code thật không apply được. 5 quy tắc:</p>
+    <ol>
+      <li><strong>⏸ Pause &amp; Predict</strong>: trước khi đọc giải pháp, tự nghĩ cách solve scenario</li>
+      <li><strong>🧠 Misconception Check</strong>: tự audit cách hiểu về 2PC, SAGA</li>
+      <li><strong>🔬 Thử Phá Vỡ</strong>: nghĩ failure mode trước khi xem analysis</li>
+      <li><strong>🔨 Build</strong>: implement SAGA orchestrator THẬT với 3 services. Đây là pattern bạn chỉ thực sự hiểu sau khi build</li>
+      <li><strong>🎓 Feynman</strong>: vẽ saga flow trên giấy, giải thích compensation logic cho người khác</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Đọc Theo Độ Ưu Tiên</h2>
+
+<div class="roadmap">
+  <div class="roadmap-head">Path đề xuất:</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span><div><strong>Dual Write Problem</strong> — CORE: foundation, hiểu vì sao distributed TX khó</div></div>
+    <div class="roadmap-item core"><span class="step">2</span><div><strong>2PC Why It Failed</strong> — CORE: hiểu vì sao industry KHÔNG dùng 2PC trong microservices (mặc dù textbook dạy)</div></div>
+    <div class="roadmap-item core"><span class="step">3</span><div><strong>SAGA Pattern</strong> — CORE: pattern thay thế 2PC cho microservices. Phải master cả choreography và orchestration</div></div>
+    <div class="roadmap-item core"><span class="step">4</span><div><strong>Outbox Pattern</strong> — CORE: giải quyết "dual write" với reliable event publishing</div></div>
+    <div class="roadmap-item core"><span class="step">5</span><div><strong>Idempotency</strong> — CORE: foundation cho retry-safe consumer</div></div>
+    <div class="roadmap-item supp"><span class="step">6</span><div><strong>Eventual Consistency</strong> — SUPP: trade-offs, khi acceptable</div></div>
+    <div class="roadmap-item adv"><span class="step">7</span><div><strong>Compensating transactions</strong> — ADV: design compensation cho irreversible operations</div></div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Vì Sao Distributed Transaction Khó?</h2>
+
+<p>Trong monolith với 1 database, ACID transaction được DB engine guarantee:</p>
+<ul>
+<li><strong>A</strong>tomicity — all-or-nothing</li>
+<li><strong>C</strong>onsistency — invariants preserved</li>
+<li><strong>I</strong>solation — concurrent TX không thấy nhau</li>
+<li><strong>D</strong>urability — committed data không mất</li>
+</ul>
+
+<p>Trong microservices với <strong>nhiều DB</strong> (mỗi service own DB riêng), không có concept "transaction span 2 DBs". Mỗi service commit riêng. Khi step 2 fail sau step 1 đã commit → <strong>data inconsistency</strong>.</p>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử — Từ 2PC đến SAGA</div>
+  <div class="hist-timeline">
+    <strong>1978</strong> — <strong>Jim Gray</strong> publish "Notes on Database Operating Systems" mô tả Two-Phase Commit (2PC) cho distributed databases. Mục đích: ACID across multiple nodes.<br><br>
+    <strong>1980s-1990s</strong> — XA standard (X/Open) define 2PC interface, distributed databases (Oracle TPM, IBM TXSeries) implement. Banks dùng cho cross-database transactions.<br><br>
+    <strong>1987</strong> — <strong>Hector Garcia-Molina</strong> và <strong>Kenneth Salem</strong> publish "Sagas" paper tại Princeton. Mô tả pattern cho long-lived transactions. Insight: thay vì hold locks duration entire transaction (như 2PC), break thành sequence of local transactions + compensating actions.<br><br>
+    <strong>2000s</strong> — SOA, then microservices movement bắt đầu. 2PC blocking nature + SPOF coordinator → industry move away. SAGA pattern revive cho distributed systems.<br><br>
+    <strong>2014</strong> — <strong>Chris Richardson</strong> popularize Saga trong microservices context. Distinguish choreography vs orchestration. Outbox pattern emerge (Gunnar Morling, Debezium team) để solve dual-write.<br><br>
+    <strong>2016+</strong> — Camunda, Temporal, Conductor (Netflix) build mature SAGA orchestrators. Industry standard cho complex distributed workflow.<br><br>
+    <strong>Modern</strong> — 2PC dùng rất hạn chế (chỉ trong same-vendor DB cluster). SAGA + Outbox + Idempotency là combo standard cho microservices distributed transaction.<br><br>
+    <strong>Insight quan trọng</strong>: 2PC <em>không sai về lý thuyết</em> — nó sai cho microservices context vì giả định coordinator luôn alive và network reliable. SAGA chấp nhận eventual consistency để có availability.
+  </div>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — E-commerce Checkout Bị "Tiền Mất Hàng Không"</h2>
+
+<p>Sàn ShopVN đã tách monolith thành microservices. Checkout flow đụng 3 services:</p>
+
+<ul>
+<li><strong>OrderService</strong> (PostgreSQL): orders table</li>
+<li><strong>InventoryService</strong> (PostgreSQL riêng): stock table</li>
+<li><strong>PaymentService</strong> (MongoDB): payment_intents collection</li>
+</ul>
+
+<p><strong>Business requirement</strong>: khi user click "Place Order", atomic cần:</p>
+<ol>
+<li>Tạo order trong OrderService</li>
+<li>Trừ stock trong InventoryService</li>
+<li>Charge customer card trong PaymentService</li>
+</ol>
+
+<div class="code-label">❌ Code junior viết — chạy được local, fail production</div>
+<pre><code class="language-java">@RestController
+public class CheckoutController {
+    private final OrderService orderService;
+    private final InventoryService inventoryService;
+    private final PaymentService paymentService;
+
+    @PostMapping("/checkout")
+    @Transactional  // ⚠️ Junior tưởng @Transactional cover hết
+    public OrderResponse checkout(@RequestBody CheckoutRequest req) {
+        // Step 1: Create order (local DB transaction OK)
+        Order order = orderService.create(req.customerId(), req.items());
+
+        // Step 2: Reserve inventory (REMOTE HTTP call)
+        try {
+            inventoryService.reserve(req.items());
+            // → POST http://inventory-service/api/reserve
+            // → InventoryService trừ stock + COMMIT local DB của nó
+        } catch (TimeoutException e) {
+            // Order đã tạo nhưng stock chưa trừ
+            // Rollback @Transactional chỉ rollback OrderService DB
+            // → Order vẫn tồn tại (trong tx này, sẽ rollback)
+            // → Nhưng nếu retry thì có thể stock đã trừ rồi?!
+            throw e;
+        }
+
+        // Step 3: Charge payment (REMOTE call)
+        try {
+            paymentService.charge(req.customerId(), req.total());
+            // → Charge thành công, tiền đã trừ thẻ customer
+        } catch (PaymentFailedException e) {
+            // ⚠️ Order created, inventory reserved, BUT payment failed
+            // @Transactional rollback OrderService → order biến mất
+            // BUT inventory đã reserve → stock locked
+            // BUT payment có thể đã charge (network unclear)
+            // → DATA INCONSISTENCY MASSIVE
+            throw e;
+        }
+
+        return OrderResponse.from(order);
+    }
+}</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Scenarios production sẽ gặp</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Step 2 timeout</strong> nhưng InventoryService thực ra processed → next retry trừ stock 2 lần</li>
+  <li><strong>Step 3 fail</strong> sau step 1+2 commit → order ghost (created in some DB, not all), stock locked không bao giờ release</li>
+  <li><strong>Step 3 timeout</strong> — không biết payment thực sự success hay fail → manual investigation</li>
+  <li><strong>OrderService crash</strong> giữa step 2 và step 3 → inventory reserved forever, không có ai release</li>
+  <li><strong>Customer click 2 lần</strong> → 2 orders, 2× stock deduction, 2× charge</li>
+  </ol>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — BẮT BUỘC dừng</div>
+  <div class="pause-q">Trước khi đọc giải pháp, tự trả lời:</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>Vì sao <code>@Transactional</code> KHÔNG đủ ở đây? Nó cover gì và không cover gì?</li>
+  <li>Nếu propose 2PC (XA transaction) — vấn đề gì khi 1 service crash giữa phase 2?</li>
+  <li>Compensation cho step "charge payment" là gì? Đơn giản như "refund" không?</li>
+  <li>Khi customer click 2 lần (cùng cart, trong 2 giây), làm sao prevent 2 orders/charges?</li>
+  <li>Step 3 timeout — bạn assume payment success hay fail? Vì sao?</li>
+  </ol>
+  <div class="pause-hint">Distributed TX dễ trả lời sai vì có nhiều giả định ẩn. Đáp án ở sections dưới.</div>
+</div>
+</section>
+
+<section id="dual-write">
+<h2>2. Dual Write Problem <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation</strong>. Hiểu vì sao "save DB rồi publish event" KHÔNG atomic.
+</div>
+
+<p><strong>Dual write</strong>: write to 2 systems khác nhau trong 1 logical operation. Vì 2 systems không share transaction, có thể fail giữa chừng.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .svc{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .db{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .kafka{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .fail{fill:#fef2f2;stroke:#dc2626;stroke-width:2}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr-ok{stroke:#059669;stroke-width:1.5;fill:none;marker-end:url(#aok)}
+    .arr-fail{stroke:#dc2626;stroke-width:2;fill:none;marker-end:url(#afail);stroke-dasharray:5,3}
+  </style>
+  <marker id="aok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+  <marker id="afail" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker></defs>
+
+  <rect x="20" y="100" width="140" height="50" rx="6" class="svc"/>
+  <text x="90" y="124" text-anchor="middle" class="lbl">OrderService</text>
+
+  <rect x="280" y="40" width="160" height="50" rx="6" class="db"/>
+  <text x="360" y="64" text-anchor="middle" class="lbl">PostgreSQL</text>
+  <text x="360" y="80" text-anchor="middle" font-size="10" fill="#475569">orders table</text>
+
+  <rect x="280" y="160" width="160" height="50" rx="6" class="kafka"/>
+  <text x="360" y="184" text-anchor="middle" class="lbl">Kafka</text>
+  <text x="360" y="200" text-anchor="middle" font-size="10" fill="#92400e">order-events topic</text>
+
+  <line x1="160" y1="115" x2="280" y2="65" class="arr-ok"/>
+  <text x="170" y="55" font-size="11" fill="#059669">① save() — COMMIT OK</text>
+
+  <line x1="160" y1="135" x2="280" y2="185" class="arr-fail"/>
+  <text x="170" y="225" font-size="11" fill="#dc2626">② publish() — NETWORK FAIL</text>
+
+  <rect x="500" y="100" width="200" height="50" rx="6" class="fail"/>
+  <text x="600" y="120" text-anchor="middle" class="lbl" fill="#991b1b">INCONSISTENT</text>
+  <text x="600" y="138" text-anchor="middle" font-size="10" fill="#991b1b">order saved, event lost</text>
+
+  <line x1="440" y1="125" x2="500" y2="125" class="arr-fail"/>
+</svg>
+</div>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Dual write (sai pattern)</div>
+<pre><code class="language-java">@Transactional
+public void placeOrder(Cart cart) {
+  Order order = Order.create(cart);
+  orderRepo.save(order);  // Commit DB OK
+
+  // ❌ KAFKA publish NGOÀI transaction
+  kafkaTemplate.send("orders",
+    new OrderPlacedEvent(order.id()));
+  // Nếu network fail tại đây:
+  // - DB: order saved ✓
+  // - Kafka: event lost ✗
+  // - Downstream services không biết
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Outbox pattern</div>
+<pre><code class="language-java">@Transactional
+public void placeOrder(Cart cart) {
+  Order order = Order.create(cart);
+  orderRepo.save(order);
+
+  // ✅ Lưu event vào OUTBOX table
+  // CÙNG transaction với business data
+  outboxRepo.save(OutboxEvent.of(
+    "OrderPlacedEvent",
+    serialize(new OrderPlacedEvent(...))
+  ));
+  // Atomic: cả 2 commit cùng nhau hoặc rollback cùng nhau
+}
+// Async poller đọc outbox → publish Kafka
+// Retry until success</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao dual write KHÔNG thể atomic?</div>
+  <p>2 systems khác nhau (PostgreSQL, Kafka) không support distributed transaction qua network. Nếu chỉ có 1 system commit, system kia có thể fail ở mọi point:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li>DB commit, app crash trước Kafka publish → event lost forever</li>
+  <li>DB commit, Kafka network fail → có thể retry nhưng app phải có logic retry chính xác</li>
+  <li>Kafka publish, DB commit fail (constraint violation) → event published cho "order" chưa tồn tại</li>
+  </ul>
+  <p>Outbox pattern fix bằng cách <strong>chỉ write to 1 system</strong> (DB) atomic với event. Sau đó async process đọc event và publish to Kafka. Xem chi tiết section 5.</p>
+</div>
+</section>
+
+<section id="2pc">
+<h2>3. Two-Phase Commit (2PC) — Tại Sao Industry Bỏ <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Phải hiểu vì sao 2PC fail trong microservices</strong>. Câu hỏi senior interview phổ biến.
+</div>
+
+<p>2PC là <em>"the classical solution"</em> cho distributed transaction. Textbook dạy nhiều. Nhưng industry <strong>tránh dùng</strong> trong microservices. Hiểu vì sao là dấu hiệu senior.</p>
+
+<h3>How 2PC Works</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .coord{fill:#fffbeb;stroke:#d97706;stroke-width:2}
+    .svc{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .fail{fill:#fef2f2;stroke:#dc2626;stroke-width:2}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#aaa)}
+    .arr-fail{stroke:#dc2626;stroke-width:2;fill:none;marker-end:url(#aabb);stroke-dasharray:5,3}
+  </style>
+  <marker id="aaa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+  <marker id="aabb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker></defs>
+
+  <rect x="280" y="20" width="160" height="50" rx="6" class="coord"/>
+  <text x="360" y="44" text-anchor="middle" class="lbl">Coordinator</text>
+  <text x="360" y="60" text-anchor="middle" font-size="10" fill="#92400e">(SPOF)</text>
+
+  <rect x="20" y="140" width="160" height="50" rx="6" class="svc"/>
+  <text x="100" y="164" text-anchor="middle" class="lbl">OrderService</text>
+  <text x="100" y="180" text-anchor="middle" font-size="10" fill="#475569">vote: READY</text>
+
+  <rect x="280" y="140" width="160" height="50" rx="6" class="fail"/>
+  <text x="360" y="164" text-anchor="middle" class="lbl" fill="#991b1b">InventoryService</text>
+  <text x="360" y="180" text-anchor="middle" font-size="10" fill="#991b1b">CRASHED phase 2</text>
+
+  <rect x="540" y="140" width="160" height="50" rx="6" class="svc"/>
+  <text x="620" y="164" text-anchor="middle" class="lbl">PaymentService</text>
+  <text x="620" y="180" text-anchor="middle" font-size="10" fill="#475569">vote: READY, waiting...</text>
+
+  <line x1="320" y1="70" x2="100" y2="140" class="arr"/>
+  <text x="170" y="110" font-size="10" fill="#64748b">Phase 1: prepare</text>
+  <line x1="360" y1="70" x2="360" y2="140" class="arr"/>
+  <line x1="400" y1="70" x2="620" y2="140" class="arr"/>
+
+  <text x="360" y="230" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">
+    ⚠️ Phase 2: COMMIT command. InventoryService chết sau khi vote READY.
+  </text>
+  <text x="360" y="250" text-anchor="middle" fill="#dc2626" font-size="11">
+    OrderService và PaymentService HOLD LOCK chờ unblock.
+  </text>
+  <text x="360" y="270" text-anchor="middle" fill="#dc2626" font-size="11">
+    Coordinator timeout? Force abort? Manual intervention?
+  </text>
+  <text x="360" y="290" text-anchor="middle" fill="#dc2626" font-size="11">
+    → Hours of downtime, locks blocking, customer support nightmare.
+  </text>
+</svg>
+</div>
+
+<h3>4 Lý Do Industry Bỏ 2PC</h3>
+
+<ol>
+<li><strong>SPOF (Single Point of Failure)</strong>: Coordinator down → tất cả services trong limbo. Restart coordinator phải recover state — possible nhưng complex.</li>
+<li><strong>Blocking protocol</strong>: services hold lock từ phase 1 đến phase 2 (có thể seconds). Throughput thấp, latency cao. Acceptable cho banking trong 1990s, không acceptable cho web-scale modern.</li>
+<li><strong>Network partition</strong>: nếu coordinator không thể reach 1 service trong phase 2, không biết service đó commit hay abort. <em>"In-doubt transaction"</em> phải resolve manually.</li>
+<li><strong>Heterogeneous systems</strong>: 2PC require XA support. Modern systems (MongoDB, Redis, Kafka, REST APIs) không support XA. Chỉ work với XA-compliant relational DBs.</li>
+</ol>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "2PC vẫn dùng được nếu coordinator có HA"</div>
+  <div class="mc-wrong">"Coordinator HA (active-passive backup) sẽ fix SPOF. 2PC OK."</div>
+  <div class="mc-right">HA coordinator giảm nhưng KHÔNG eliminate problem. <strong>Trong khoảng thời gian failover (10-60s)</strong>, services trong "prepared" state vẫn hold locks. Worst case: locks hold cho đến khi new coordinator restore + replay log. Latency spike, throughput collapse. Plus: HA coordinator add operational complexity (consensus, leader election) — và bạn vẫn còn các vấn đề khác (blocking, network partition). <strong>Thực tế: 2PC chỉ dùng trong same-vendor cluster (Oracle RAC, SQL Server Always On) — nơi infrastructure tightly integrated. Không cho cross-service microservices.</strong></div>
+</div>
+</section>
+
+<section id="saga">
+<h2>4. SAGA Pattern <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Pattern thay thế 2PC cho microservices</strong>. Phải master cả 2 styles.
+</div>
+
+<p><strong>SAGA</strong>: sequence of local transactions. Mỗi step commit local. Nếu step N fail, run <strong>compensating transactions</strong> cho steps 1..N-1 theo thứ tự ngược.</p>
+
+<h3>Style 1: Choreography (Event-driven, decentralized)</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .svc{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .event{fill:#fffbeb;stroke:#d97706;stroke-width:1.5;rx:20;ry:20}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#4f46e5;stroke-width:1.5;fill:none;marker-end:url(#asaga)}
+  </style>
+  <marker id="asaga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/></marker></defs>
+
+  <rect x="20" y="100" width="120" height="50" rx="6" class="svc"/>
+  <text x="80" y="124" text-anchor="middle" class="lbl">OrderService</text>
+  <text x="80" y="140" text-anchor="middle" font-size="10">step 1</text>
+
+  <ellipse cx="220" cy="125" rx="50" ry="22" fill="#fffbeb" stroke="#d97706"/>
+  <text x="220" y="120" text-anchor="middle" font-size="10" fill="#92400e">OrderPlaced</text>
+  <text x="220" y="134" text-anchor="middle" font-size="10" fill="#92400e">event</text>
+
+  <rect x="300" y="100" width="120" height="50" rx="6" class="svc"/>
+  <text x="360" y="124" text-anchor="middle" class="lbl">Inventory</text>
+  <text x="360" y="140" text-anchor="middle" font-size="10">step 2</text>
+
+  <ellipse cx="500" cy="125" rx="55" ry="22" fill="#fffbeb" stroke="#d97706"/>
+  <text x="500" y="120" text-anchor="middle" font-size="10" fill="#92400e">StockReserved</text>
+  <text x="500" y="134" text-anchor="middle" font-size="10" fill="#92400e">event</text>
+
+  <rect x="580" y="100" width="120" height="50" rx="6" class="svc"/>
+  <text x="640" y="124" text-anchor="middle" class="lbl">Payment</text>
+  <text x="640" y="140" text-anchor="middle" font-size="10">step 3</text>
+
+  <line x1="140" y1="125" x2="170" y2="125" class="arr"/>
+  <line x1="270" y1="125" x2="300" y2="125" class="arr"/>
+  <line x1="420" y1="125" x2="445" y2="125" class="arr"/>
+  <line x1="555" y1="125" x2="580" y2="125" class="arr"/>
+
+  <text x="360" y="200" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Mỗi service listen events, react, publish event mới. Không có coordinator.
+  </text>
+</svg>
+</div>
+
+<pre><code class="language-java">// OrderService - step 1
+@Transactional
+public void placeOrder(Cart cart) {
+    Order order = Order.create(cart);
+    orderRepo.save(order);
+    outboxRepo.save(OutboxEvent.of(new OrderPlacedEvent(order.id(), cart.items())));
+}
+
+// InventoryService - listen OrderPlaced, do step 2
+@KafkaListener(topics = "order-events")
+@Transactional
+public void on(OrderPlacedEvent e) {
+    try {
+        inventoryRepo.reserve(e.items());  // Local TX
+        outboxRepo.save(OutboxEvent.of(new StockReservedEvent(e.orderId())));
+    } catch (OutOfStockException ex) {
+        // Failed - publish compensation trigger
+        outboxRepo.save(OutboxEvent.of(new StockReservationFailedEvent(e.orderId(), ex.reason())));
+    }
+}
+
+// PaymentService - listen StockReserved, do step 3
+@KafkaListener(topics = "order-events")
+@Transactional
+public void on(StockReservedEvent e) {
+    try {
+        paymentRepo.charge(e.customerId(), e.amount());
+        outboxRepo.save(OutboxEvent.of(new PaymentChargedEvent(e.orderId())));
+    } catch (PaymentDeclinedException ex) {
+        outboxRepo.save(OutboxEvent.of(new PaymentFailedEvent(e.orderId(), ex.reason())));
+    }
+}
+
+// OrderService - listen success
+@KafkaListener(topics = "order-events")
+public void on(PaymentChargedEvent e) {
+    orderRepo.markCompleted(e.orderId());
+}
+
+// COMPENSATION listeners
+// InventoryService listen for payment failure → release stock
+@KafkaListener(topics = "order-events")
+@Transactional
+public void on(PaymentFailedEvent e) {
+    inventoryRepo.release(e.orderId());  // Compensate step 2
+}
+
+// OrderService listen for stock failure → cancel order
+@KafkaListener(topics = "order-events")
+@Transactional
+public void on(StockReservationFailedEvent e) {
+    orderRepo.cancel(e.orderId(), e.reason());
+}</code></pre>
+
+<h3>Style 2: Orchestration (Central coordinator)</h3>
+
+<pre><code class="language-java">@Service
+public class CheckoutOrchestrator {
+    private final OrderService orderService;
+    private final InventoryService inventoryService;
+    private final PaymentService paymentService;
+
+    public OrderResult execute(CheckoutRequest req) {
+        Order order = null;
+        InventoryReservation reservation = null;
+
+        try {
+            // Step 1
+            order = orderService.create(req);
+
+            // Step 2
+            reservation = inventoryService.reserve(order.items());
+
+            // Step 3
+            Payment payment = paymentService.charge(req.customerId(), order.total());
+
+            // Success: mark complete
+            orderService.markCompleted(order.id(), payment.id());
+            return OrderResult.success(order, payment);
+
+        } catch (Exception e) {
+            // Compensate in REVERSE order
+            if (reservation != null) {
+                try {
+                    inventoryService.release(reservation.id());
+                } catch (Exception releaseEx) {
+                    log.error("CRITICAL: Failed to release inventory {}", reservation.id(), releaseEx);
+                    // Alert ops — manual cleanup needed
+                }
+            }
+            if (order != null) {
+                orderService.cancel(order.id(), e.getMessage());
+            }
+            throw new CheckoutFailedException(e);
+        }
+    }
+}</code></pre>
+
+<h3>Choreography vs Orchestration</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Khía cạnh</th><th>Choreography</th><th>Orchestration</th></tr></thead>
+<tbody>
+<tr><td>Flow visibility</td><td>❌ Phân tán across services</td><td>✅ Rõ ràng 1 nơi</td></tr>
+<tr><td>Add new step</td><td>Thêm 1 listener mới</td><td>Sửa orchestrator</td></tr>
+<tr><td>Debugging</td><td>❌ Phải trace events cross services</td><td>✅ Single log stream</td></tr>
+<tr><td>Coupling</td><td>✅ Loose, services biết events thôi</td><td>⚠️ Orchestrator depend mọi services</td></tr>
+<tr><td>Scale</td><td>✅ Natural (each service independent)</td><td>⚠️ Orchestrator có thể bottleneck</td></tr>
+<tr><td>Complex workflow</td><td>❌ Khó (chains, branches)</td><td>✅ Tốt (visual BPMN với Camunda)</td></tr>
+<tr><td>Failure recovery</td><td>⚠️ Distributed, khó audit</td><td>✅ State machine persistent</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Khi chọn cái nào?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Choreography</strong>: workflow 2-3 steps, services autonomous, low coupling priority. Event-driven architecture natural.</li>
+  <li><strong>Orchestration</strong>: workflow 5+ steps, complex compensation logic, audit trail critical, có Camunda/Temporal infrastructure.</li>
+  <li><strong>Hybrid</strong>: choreography cho main flow, orchestration cho complex sub-flow. Phổ biến nhất trong production lớn.</li>
+  </ul>
+</div>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — SAGA Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Compensation cũng fail</strong>: refund payment fail (card expired). Phải có "manual compensation queue" cho ops xử lý.</li>
+    <li><strong>Partial compensation</strong>: step 4 fail, compensate step 3 success, compensate step 2 fail → state mixed. Saga must track granular state.</li>
+    <li><strong>Out-of-order events</strong>: <code>StockReservedEvent</code> arrives BEFORE <code>OrderPlacedEvent</code> (Kafka rebalance, multi-partition). Consumer phải buffer / wait.</li>
+    <li><strong>Duplicate events</strong>: at-least-once delivery → consumer process event 2 lần. Idempotency essential (xem section 6).</li>
+    <li><strong>Long-running saga timeout</strong>: payment service slow 10s, saga stuck. Add timeout per step + automatic compensation.</li>
+    <li><strong>Compensation cho irreversible operation</strong>: email đã gửi customer "Order confirmed" — không thể "unsend". Solution: send compensating email "Order cancelled".</li>
+    <li><strong>Concurrent sagas trên cùng resource</strong>: 2 sagas reserve cùng product cuối cùng. Race condition. Solution: optimistic locking trên inventory.</li>
+    <li><strong>Saga state persistence</strong>: orchestrator crash → mất saga progress. Persist state to DB after each step. Camunda/Temporal handle automatically.</li>
+    <li><strong>Compensation order matters</strong>: refund trước release inventory hay sau? Generally: reverse order of execution. Document explicit.</li>
+    <li><strong>Schema evolution events</strong>: <code>OrderPlacedEvent</code> add field mới. Old consumers process events new format → potentially break. Versioning + backward compatibility.</li>
+  </ul>
+</div>
+</section>
+
+<section id="outbox">
+<h2>5. Outbox Pattern <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation cho reliable event publishing</strong>. Combine với SAGA cho complete distributed TX solution.
+</div>
+
+<p>Outbox pattern solve <strong>dual write problem</strong>: thay vì write 2 systems (DB + Kafka), chỉ write 1 (DB) atomic.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .svc{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .db{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .outbox{fill:#fffbeb;stroke:#d97706;stroke-width:1.5}
+    .kafka{fill:#f5f3ff;stroke:#7c3aed;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#aob)}
+    .tx{stroke:#059669;stroke-width:3;stroke-dasharray:8,4;fill:none}
+  </style>
+  <marker id="aob" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="20" y="80" width="140" height="50" rx="6" class="svc"/>
+  <text x="90" y="104" text-anchor="middle" class="lbl">OrderService</text>
+  <text x="90" y="120" text-anchor="middle" font-size="10" fill="#475569">@Transactional</text>
+
+  <rect x="220" y="30" width="180" height="40" rx="6" class="db"/>
+  <text x="310" y="54" text-anchor="middle" class="lbl">orders table</text>
+
+  <rect x="220" y="90" width="180" height="40" rx="6" class="outbox"/>
+  <text x="310" y="114" text-anchor="middle" class="lbl" fill="#92400e">outbox_events table</text>
+
+  <line x1="160" y1="95" x2="220" y2="50" class="arr"/>
+  <text x="170" y="40" font-size="10" fill="#475569">save order</text>
+
+  <line x1="160" y1="115" x2="220" y2="110" class="arr"/>
+  <text x="170" y="140" font-size="10" fill="#475569">save event</text>
+
+  <rect x="200" y="20" width="220" height="120" rx="10" class="tx"/>
+  <text x="430" y="35" font-size="11" fill="#059669" font-weight="600">Single ACID transaction</text>
+
+  <rect x="450" y="170" width="160" height="50" rx="6" class="svc"/>
+  <text x="530" y="194" text-anchor="middle" class="lbl">OutboxPoller</text>
+  <text x="530" y="210" text-anchor="middle" font-size="10" fill="#475569">scheduled job</text>
+
+  <rect x="650" y="170" width="60" height="50" rx="6" class="kafka"/>
+  <text x="680" y="194" text-anchor="middle" class="lbl" fill="#7c3aed">Kafka</text>
+
+  <line x1="400" y1="120" x2="450" y2="190" class="arr"/>
+  <text x="395" y="170" font-size="10" fill="#475569">poll unpublished</text>
+
+  <line x1="610" y1="195" x2="650" y2="195" class="arr"/>
+  <text x="600" y="185" font-size="10" fill="#475569">publish</text>
+
+  <text x="360" y="270" text-anchor="middle" fill="#059669" font-size="12" font-weight="600">
+    Guarantee: nếu order saved → event SẼ BE PUBLISHED (eventually, with retry)
+  </text>
+</svg>
+</div>
+
+<h3>Implementation</h3>
+
+<pre><code class="language-sql">-- Schema
+CREATE TABLE outbox_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    aggregate_type VARCHAR(100) NOT NULL,
+    aggregate_id VARCHAR(100) NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    published_at TIMESTAMP NULL,
+    INDEX idx_unpublished (published_at, created_at) WHERE published_at IS NULL
+);</code></pre>
+
+<pre><code class="language-java">@Service
+public class OrderService {
+    @Transactional  // SAME transaction cho cả 2 saves
+    public Order placeOrder(PlaceOrderCommand cmd) {
+        Order order = Order.create(cmd);
+        orderRepo.save(order);  // Business write
+
+        // Save event in outbox — same transaction
+        OutboxEvent event = OutboxEvent.builder()
+            .aggregateType("Order")
+            .aggregateId(order.id().value())
+            .eventType("OrderPlacedEvent")
+            .payload(json.writeValueAsString(new OrderPlacedEvent(order)))
+            .build();
+        outboxRepo.save(event);
+
+        return order;
+    }
+}
+
+@Component
+@Slf4j
+public class OutboxPoller {
+    private final OutboxEventRepository outboxRepo;
+    private final KafkaTemplate&lt;String, String&gt; kafka;
+
+    @Scheduled(fixedDelay = 1000)  // Poll mỗi 1s
+    @Transactional
+    public void publishPending() {
+        // Lock rows để tránh duplicate publish (multiple poller instances)
+        List&lt;OutboxEvent&gt; pending = outboxRepo.findUnpublishedForUpdate(100);
+
+        for (OutboxEvent event : pending) {
+            try {
+                kafka.send(topicFor(event), event.aggregateId(), event.payload()).get();
+                event.markPublished();
+                outboxRepo.save(event);
+            } catch (Exception e) {
+                log.error("Failed to publish event {}, will retry", event.id(), e);
+                // Don't update published_at → retry next cycle
+            }
+        }
+    }
+
+    private String topicFor(OutboxEvent event) {
+        return event.aggregateType().toLowerCase() + "-events";
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Outbox guarantee reliability?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Atomic</strong>: business data + event lưu cùng DB transaction. Cả 2 commit hoặc rollback. Không có "data saved but event lost".</li>
+  <li><strong>Reliable delivery</strong>: poller retry cho đến khi publish success. Crash giữa chừng? Restart, poller resume.</li>
+  <li><strong>Decoupled từ Kafka availability</strong>: Kafka down 10 phút → service vẫn ship orders. Events tích trong outbox, publish khi Kafka recover.</li>
+  <li><strong>Audit trail</strong>: outbox table = log of mọi events. Replay được history.</li>
+  </ul>
+</div>
+
+<h3>Alternative: CDC (Change Data Capture) với Debezium</h3>
+
+<p>Debezium read DB transaction log (PostgreSQL WAL, MySQL binlog) → tự động publish changes to Kafka. Không cần app code implement polling.</p>
+
+<pre><code class="language-text">DB transaction commit → write to WAL
+Debezium → read WAL → parse changes → publish to Kafka topic
+Downstream consumers → process events
+
+Pros: no app code changes, very high throughput
+Cons: infrastructure complex (Debezium + Kafka Connect), events include raw DB changes (might need transform)</code></pre>
+</section>
+
+<section id="idempotent">
+<h2>6. Idempotency <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation cho retry-safe consumer</strong>. Without idempotency, distributed TX = bug magnet.
+</div>
+
+<p>Idempotency: process cùng request/event N lần → kết quả giống lần đầu.</p>
+
+<p>Kafka/RabbitMQ deliver at-least-once → message có thể arrive 2+ lần. Consumer phải idempotent.</p>
+
+<pre><code class="language-java">@Component
+@Slf4j
+public class StockReservationConsumer {
+    private final InventoryRepository inventoryRepo;
+    private final ProcessedEventRepository processedEventRepo;
+
+    @KafkaListener(topics = "order-events")
+    @Transactional
+    public void on(OrderPlacedEvent event) {
+        // Check idempotency FIRST
+        if (processedEventRepo.exists(event.eventId())) {
+            log.info("Event {} already processed, skip", event.eventId());
+            return;
+        }
+
+        // Process
+        try {
+            inventoryRepo.reserve(event.items(), event.orderId());
+
+            // Mark processed — cùng transaction với business logic
+            processedEventRepo.save(new ProcessedEvent(event.eventId(), Instant.now()));
+        } catch (OutOfStockException e) {
+            // Don't mark processed if business logic fails — allow retry
+            // But publish failure event (separate transaction)
+            // Note: this is tricky — see edge cases
+            throw e;
+        }
+    }
+}</code></pre>
+
+<pre><code class="language-sql">CREATE TABLE processed_events (
+    event_id VARCHAR(64) PRIMARY KEY,  -- Unique constraint = atomic dedup
+    processed_at TIMESTAMP NOT NULL,
+    consumer_name VARCHAR(100) NOT NULL,
+    INDEX idx_processed_at (processed_at)  -- For cleanup
+);</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao dedup check + business logic phải atomic (cùng transaction)?</div>
+  <p>Nếu tách:</p>
+  <ol style="margin:6px 0 0 20px">
+  <li>Business logic commit (stock reserved)</li>
+  <li>Crash trước khi save ProcessedEvent</li>
+  <li>Kafka retry → check exists = false → reserve again → stock reserved 2 lần</li>
+  </ol>
+  <p>Đặt cả 2 trong cùng <code>@Transactional</code>: hoặc cả 2 commit (next retry safe) hoặc cả 2 rollback (next retry sẽ work đúng).</p>
+</div>
+
+<h3>Idempotency cho HTTP APIs (Idempotency-Key)</h3>
+
+<p>Client gửi <code>Idempotency-Key: uuid-xyz</code> header. Server cache response by key. Retry với same key → return cached response.</p>
+
+<pre><code class="language-java">@PostMapping("/api/orders")
+public OrderResponse placeOrder(
+        @RequestBody PlaceOrderRequest req,
+        @RequestHeader("Idempotency-Key") String idempotencyKey) {
+
+    Optional&lt;OrderResponse&gt; cached = idempotencyStore.get(idempotencyKey);
+    if (cached.isPresent()) {
+        return cached.get();  // Retry detected
+    }
+
+    Order order = orderService.place(req);
+    OrderResponse response = OrderResponse.from(order);
+    idempotencyStore.put(idempotencyKey, response, Duration.ofHours(24));
+    return response;
+}</code></pre>
+</section>
+
+<section id="consistency">
+<h2>7. Eventual Consistency <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Trade-off awareness</strong>. Hiểu khi acceptable.
+</div>
+
+<p>SAGA = <strong>eventual consistency</strong>. Giữa lúc step 2 commit và step 3 commit, system trong <em>inconsistent state</em>. User có thể thấy:</p>
+
+<ul>
+<li>Order created nhưng "Processing" status (chưa charge)</li>
+<li>Stock "Reserved" nhưng order chưa visible (eventual)</li>
+<li>Refund pending sau cancellation (chưa actual refund)</li>
+</ul>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Khi nào eventual consistency acceptable?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>User UX tolerant</strong>: e-commerce "We're processing your order" — user expect delay</li>
+  <li><strong>Window ngắn</strong>: inconsistency window &lt; 5s thường acceptable</li>
+  <li><strong>Compensable</strong>: nếu inconsistency cause issue, có ability rollback/notify</li>
+  <li><strong>Audit trail</strong>: log every state transition để debug</li>
+  </ul>
+  <p><strong>KHÔNG acceptable</strong>: financial settlement (money MUST balance), inventory accuracy critical (luxury items không thể oversell), compliance reports.</p>
+</div>
+</section>
+
+<section id="antipatterns">
+<h2>8. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+
+<h3>#1 @Transactional thinking it covers distributed</h3>
+<p>Spring @Transactional chỉ cover LOCAL DB transaction. KHÔNG cover remote HTTP calls. Junior assume rollback works → data inconsistent.</p>
+
+<h3>#2 Synchronous saga (call services sync, no events)</h3>
+<p>Orchestrator call service A, wait response, call B, wait, ... Mọi service must available. Latency cumulative. Một service down → entire saga fail.</p>
+
+<h3>#3 No compensation logic</h3>
+<p>Implement happy path, không có compensation. Step N fail → previous steps stuck "in progress" forever.</p>
+
+<h3>#4 Compensation throws exception → ignored</h3>
+<p>Refund fail → log error → continue. Now money taken but order cancelled. Customer support nightmare. Solution: alerting + manual queue.</p>
+
+<h3>#5 No idempotency in consumer</h3>
+<p>Kafka retry → process event 2 lần → stock trừ 2 lần. Đã cover ở section 6.</p>
+
+<h3>#6 Publish event NGOÀI transaction (dual write)</h3>
+<p>Save DB → publish Kafka. Nếu publish fail → event lost, downstream không biết. Fix: Outbox pattern.</p>
+
+<h3>#7 Saga state không persistent</h3>
+<p>Orchestrator in-memory state. Restart → lose progress. Solution: persist state to DB after each step, hoặc dùng Camunda/Temporal.</p>
+
+<h3>#8 Long-running locks across services</h3>
+<p>Service A lock row, wait service B, B wait C, C wait A → deadlock cross-service. Hard to detect/recover. Avoid locks across service boundary.</p>
+</section>
+
+<section id="build-projects">
+<h2>9. Build Projects</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Outbox Pattern Demo (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Spring Boot service implement outbox pattern, demonstrate atomic save + reliable Kafka publish.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>PostgreSQL + Kafka docker-compose</li>
+    <li>OrderService với <code>placeOrder()</code> — save order + outbox event cùng transaction</li>
+    <li>OutboxPoller scheduled job publish events to Kafka</li>
+    <li>Test: kill Kafka container, place 10 orders → verify all saved in DB</li>
+    <li>Test: restart Kafka → verify all 10 events published eventually</li>
+    <li>Test: simulate publish failure → verify retry works</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: zero events lost across Kafka downtime + app restart. Idempotent publish (events không duplicate khi retry).</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — SAGA Orchestrator E-commerce Checkout (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: 3 microservices (Order, Inventory, Payment) + Orchestrator implement saga orchestration with compensation.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>3 Spring Boot services, mỗi service own DB</li>
+    <li>CheckoutOrchestrator coordinate flow: create order → reserve stock → charge payment</li>
+    <li>Implement compensation: release stock, cancel order khi payment fail</li>
+    <li>Persistent saga state (PostgreSQL hoặc Camunda)</li>
+    <li>Test scenarios: happy path, payment fail (compensate), inventory out of stock (cancel order)</li>
+    <li>Idempotency: retry checkout với same idempotency-key → no duplicate</li>
+    <li>Observability: log saga state transitions với traceId</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: chaos test (kill random service mid-saga) → no inconsistent state. Saga either complete success hoặc fully compensated.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Choreography SAGA với Debezium CDC (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Event-driven saga sử dụng Debezium CDC publish events from DB transactions.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>3 services như Build #2 nhưng dùng choreography</li>
+    <li>Debezium connect mỗi service DB → Kafka Connect publish changes</li>
+    <li>Each service subscribe relevant events, react, write to own DB</li>
+    <li>No central orchestrator — flow emerge from events</li>
+    <li>Implement compensation events (StockReservationFailed, PaymentFailed)</li>
+    <li>Test: simulate out-of-order events, duplicate events, network partition</li>
+    <li>Compare với Build #2: pros/cons document trong README</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: detailed comparison analysis: choreography vs orchestration trade-offs based hands-on experience.</div>
+</div>
+</section>
+
+<section id="interview">
+<h2>10. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Vì sao 2PC ít dùng trong microservices?</div>
+<div class="a">"4 lý do chính:<br>
+1. <strong>SPOF</strong>: coordinator down → all services trong limbo state, hold locks.<br>
+2. <strong>Blocking protocol</strong>: hold locks từ phase 1 đến phase 2 → throughput thấp, latency cao.<br>
+3. <strong>Network partition</strong>: không reach 1 service → in-doubt transaction, không biết commit hay abort.<br>
+4. <strong>Heterogeneous systems</strong>: require XA. Modern systems (MongoDB, Kafka, REST APIs) không support XA.<br><br>
+Industry move sang SAGA pattern: chấp nhận eventual consistency để có availability."</div>
+
+<div class="q">Q: Outbox pattern là gì, solve vấn đề gì?</div>
+<div class="a">"Outbox solve <strong>dual write problem</strong>: khi cần save DB + publish event, không có distributed transaction. Pattern: thay vì publish event trực tiếp, save event vào <strong>outbox table</strong> trong CÙNG DB transaction với business data. Async poller (hoặc Debezium CDC) đọc outbox, publish to Kafka, mark as published.<br><br>
+Guarantee: atomic save (DB transaction), reliable delivery (retry until success), audit trail (outbox = event log).<br><br>
+Trade-off: thêm DB write overhead (~5-10%), thêm 1 component (poller), latency publish ~1-2s vs immediate."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: E-commerce checkout: tạo order + reserve inventory + charge payment. Design distributed transaction.</div>
+<div class="a">"<strong>SAGA pattern + Outbox + Idempotency</strong>:<br><br>
+<strong>Architecture</strong>:<br>
+• 3 services own own DB<br>
+• Orchestrator: CheckoutSaga (Camunda BPMN cho visual workflow)<br>
+• Kafka cho event delivery<br><br>
+<strong>Happy flow</strong>:<br>
+1. CheckoutSaga.start(cart) — persist saga state (PENDING)<br>
+2. Call OrderService.create() — local TX commit, outbox event<br>
+3. Call InventoryService.reserve() — local TX commit, outbox event<br>
+4. Call PaymentService.charge() — local TX commit, outbox event<br>
+5. CheckoutSaga.complete() — mark COMPLETED, publish OrderCompleted event<br><br>
+<strong>Failure paths với compensation</strong>:<br>
+• If reserve fails: cancel order (compensate step 2)<br>
+• If charge fails: release inventory + cancel order (compensate step 3, 2)<br>
+• Each compensation has retry logic + alert if fail repeatedly<br><br>
+<strong>Idempotency</strong>:<br>
+• Client send Idempotency-Key header → CheckoutSaga check before start<br>
+• Mỗi service operation idempotent qua event ID dedup<br><br>
+<strong>Outbox</strong>: mọi services dùng outbox để publish events. Kafka deliver to subscribers. Consumers idempotent.<br><br>
+<strong>Observability</strong>: traceId cross saga steps. Saga state visible via dashboard. Alert nếu saga stuck &gt; 5min."</div>
+
+<div class="q">Q: Compensation cho operation đã send email/SMS — không thể "unsend". Handle thế nào?</div>
+<div class="a">"3 strategies:<br><br>
+<strong>1. Send compensating notification</strong>: gửi email mới 'Order cancelled, refund processing'. Don't try to 'unsend' original — admit it happened, communicate update.<br><br>
+<strong>2. Delay irreversible operations</strong>: implement 'soft commit' phase. Email scheduler queue email 5 phút sau order placed. Trong window này nếu saga fail → cancel queued email. Trade-off: delay legitimate email.<br><br>
+<strong>3. Make operation reversible</strong>: virtual money đã credit → debit back. Promo code đã redeem → mark unused. Designed reversibility từ đầu.<br><br>
+<strong>Real-world hybrid</strong>: critical notifications (order confirmation, payment receipt) gửi sau khi saga COMPLETED. Promotional/marketing notifications (cross-sell) có thể gửi ngay trong saga vì compensable.<br><br>
+<strong>Document explicitly</strong>: trong design doc liệt kê operations cho saga, mark mỗi cái 'reversible' / 'compensable' / 'irreversible'. Force team think về consequences."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Design distributed transaction architecture cho ride-sharing app (book trip cần: reserve driver, charge payment, allocate vehicle, notify driver). Handle failure scenarios, scale, observability.</div>
+<div class="a">"<strong>SAGA orchestration với Camunda BPMN</strong>:<br><br>
+<strong>Components</strong>:<br>
+• TripOrchestratorService — Camunda BPMN engine cho workflow visibility<br>
+• DriverService, PaymentService, VehicleService, NotificationService — independent microservices<br>
+• Each service own PostgreSQL + outbox table<br>
+• Kafka cluster cho event bus<br>
+• Debezium CDC publish outbox → Kafka topics<br>
+• Redis cho idempotency cache<br><br>
+<strong>Workflow (Camunda BPMN)</strong>:<br>
+1. ReserveDriver — call DriverService.reserve(pickup, vehicleType)<br>
+2. ChargePayment — call PaymentService.preAuthorize(rider, estimatedFare)<br>
+3. AllocateVehicle — call VehicleService.allocate(driverId, tripId)<br>
+4. NotifyDriver — publish DriverAssignmentEvent → DriverApp consume<br>
+5. Mark trip CONFIRMED, publish TripBookedEvent<br><br>
+<strong>Compensation flows</strong>:<br>
+• ChargePayment fail → ReleaseDriver (compensate step 1)<br>
+• AllocateVehicle fail → RefundPayment + ReleaseDriver<br>
+• NotifyDriver fail (timeout) → retry 3× với exponential backoff. After 3rd fail → mark COMPLETED with warning + manual notify ops<br><br>
+<strong>Scale considerations</strong>:<br>
+• Each service horizontally scalable (independent DBs)<br>
+• Kafka partitioned by riderId → maintain ordering per user<br>
+• Outbox poller multiple instances với row-level locking (SKIP LOCKED)<br>
+• Idempotency cache Redis cluster 10K ops/sec capacity<br><br>
+<strong>Failure handling</strong>:<br>
+• Per-step timeout (3-5s): force compensation<br>
+• Service circuit breaker: fast-fail when downstream sick<br>
+• Saga state persistent in Camunda — survive orchestrator restart<br>
+• Dead letter queue for poison events → manual ops review<br><br>
+<strong>Observability</strong>:<br>
+• Jaeger distributed tracing — traceId across all services<br>
+• Saga dashboard show in-flight sagas + state distribution<br>
+• Prometheus metrics: saga success rate, compensation rate, p95 duration<br>
+• Alert: compensation rate &gt; 5% (something wrong), saga p95 &gt; 10s (degradation)<br><br>
+<strong>Audit/Compliance</strong>:<br>
+• All events persist in outbox table + Kafka topic (replay-able)<br>
+• Saga history (Camunda) audit trail of every step + decision<br>
+• Compensating events also persisted — full record of attempted + rolled-back operations<br><br>
+<strong>Edge cases</strong>:<br>
+• Driver accept request offline (network partition) — eventual consistency, sync khi reconnect<br>
+• Customer cancel during saga — graceful interrupt + compensation<br>
+• Concurrent bookings for same driver — DriverService optimistic lock<br><br>
+Total: foundational pattern stack. Mỗi component có alternative (in-house orchestrator vs Camunda vs Temporal, polling vs Debezium, etc.) — choice depend team expertise + ops capability."</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>11. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior dev trong 5 phút:<br><br>
+  Vì sao 2PC không dùng được trong microservices nhưng vẫn dùng được trong Oracle RAC?<br><br>
+  Và vì sao Outbox pattern guarantee event delivery, mà 'save + publish' không?"</div>
+  <div class="fy-rule">Không xem file. Vẽ sequence diagram trên giấy.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước khi đọc: tôi confident ___/5<br>Sau khi đọc: ___/5<br>Sau khi BUILD #2 (SAGA orchestrator): ___/5"</div>
+  <div class="fy-rule">SAGA pattern bạn chỉ thực sự hiểu sau khi build. Nếu chưa build và confident 5 → đó là illusion.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source — Đọc Thêm</div>
+  <ul>
+    <li><a href="https://microservices.io/patterns/data/saga.html" target="_blank">Chris Richardson — SAGA Pattern</a> (definitive reference)</li>
+    <li><a href="https://microservices.io/patterns/data/transactional-outbox.html" target="_blank">Chris Richardson — Outbox Pattern</a></li>
+    <li><a href="https://www.cs.cornell.edu/courses/cs5414/2017fa/papers/sagas.pdf" target="_blank">Garcia-Molina &amp; Salem (1987) — Sagas paper</a></li>
+    <li><a href="https://debezium.io/" target="_blank">Debezium</a> — CDC platform</li>
+    <li><a href="https://camunda.com/" target="_blank">Camunda</a> — BPMN workflow engine</li>
+    <li><a href="https://temporal.io/" target="_blank">Temporal</a> — modern saga orchestrator</li>
+    <li><strong>Sách</strong>: "Microservices Patterns" (Chris Richardson) — Chapter 4 (Managing transactions with sagas), 7 (Implementing queries)</li>
+    <li><strong>Sách</strong>: "Designing Data-Intensive Applications" (Kleppmann) — Chapter 7 (Transactions), 9 (Consistency)</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #13 Distributed Transaction · Phase 3 — Database</div>
+<div>Tiếp theo: #14 Redis</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

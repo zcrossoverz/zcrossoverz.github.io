@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#12 — Database Design | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 3 — Database<span class="sep">/</span><strong>#12 Database Design</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#normalization">2. Normalization (1NF–3NF)</a>
+    <a href="#denormalization">3. Denormalization có chiến lược</a>
+    <a href="#partitioning">4. Partitioning</a>
+    <a href="#sharding">5. Sharding</a>
+    <a href="#replica">6. Read Replica</a>
+    <a href="#cap">7. CAP &amp; PACELC</a>
+    <a href="#materialized">8. Materialized View</a>
+    <a href="#antipatterns">9. Anti-Patterns</a>
+    <a href="#build-projects">10. Build Projects</a>
+    <a href="#interview">11. Interview Framework</a>
+    <a href="#feynman-end">12. Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🟠 HIGH PRIORITY — System Design</span>
+  <h1>#12 — Database Design</h1>
+  <p class="lead">Normalization, Partitioning, Sharding, Read Replica. Khi data nhỏ (vài triệu rows) mọi schema đều OK. Ở 500M+ rows, schema decision quyết định <strong>tồn tại hay sập</strong>. Examples dùng <strong>e-commerce order platform</strong> và <strong>social platform user activity</strong>.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">C — Database</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần + build</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#11 SQL, #13 Distributed TX, #17 Microservices</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">3 — Database</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Database design rất dễ hiểu lý thuyết nhưng khó apply. 5 quy tắc:</p>
+    <ol>
+      <li><strong>⏸ Pause &amp; Predict</strong>: trước khi đọc giải pháp, tự design schema → so sánh với file</li>
+      <li><strong>🧠 Misconception Check</strong>: tự hỏi "tôi đang nghĩ giống cách sai không?"</li>
+      <li><strong>🔬 Thử Phá Vỡ</strong>: nghĩ 3 ways schema decision fail trước khi xem analysis</li>
+      <li><strong>🔨 Build</strong>: setup PostgreSQL local + 1M rows + thực sự test partition pruning, replication. Không thay được.</li>
+      <li><strong>🎓 Feynman</strong>: vẽ ERD trên giấy + giải thích cho người khác vì sao chọn schema này</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Đọc Theo Độ Ưu Tiên</h2>
+
+<div class="roadmap">
+  <div class="roadmap-head">Path đề xuất theo level:</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span><div><strong>Normalization (1NF-3NF)</strong> — CORE: foundation. Senior interview hỏi 100%, junior thường nắm nông.</div></div>
+    <div class="roadmap-item core"><span class="step">2</span><div><strong>Denormalization có chiến lược</strong> — CORE: khi nào break normalization. Quyết định performance.</div></div>
+    <div class="roadmap-item core"><span class="step">3</span><div><strong>Partitioning</strong> — CORE: scale lên 100M+ rows mà không phải sharding. Production daily.</div></div>
+    <div class="roadmap-item core"><span class="step">4</span><div><strong>Read Replica</strong> — CORE: pattern phổ biến nhất để scale reads. Read-after-write trap quan trọng.</div></div>
+    <div class="roadmap-item supp"><span class="step">5</span><div><strong>CAP &amp; PACELC</strong> — SUPP: framework để argue về distributed DB. Hỏi nhiều ở system design.</div></div>
+    <div class="roadmap-item supp"><span class="step">6</span><div><strong>Materialized View</strong> — SUPP: tool cho reporting. Khi nào worth.</div></div>
+    <div class="roadmap-item adv"><span class="step">7</span><div><strong>Sharding</strong> — ADV: chỉ apply khi cần thật. Junior thường premature optimize.</div></div>
+    <div class="roadmap-item adv"><span class="step">8</span><div><strong>Multi-shard fan-out</strong> — ADV: cost analysis khi sharding sai key.</div></div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Tổng Quan — Vì Sao Schema Design Critical</h2>
+<p>Senior khác junior ở 2 điểm cốt lõi với database:</p>
+<ol>
+<li><strong>Predict cost</strong> trước khi schema deploy: senior nhìn schema biết "query này sẽ chết khi 100M rows". Junior phải đợi sập mới biết.</li>
+<li><strong>Trade-off awareness</strong>: senior biết "denormalize tăng read speed, mất consistency, cần invalidation strategy". Junior chỉ thấy "đỡ JOIN cho nhanh".</li>
+</ol>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử normalization — Từ Codd đến NoSQL</div>
+  <div class="hist-timeline">
+    <strong>1970</strong> — <strong>Edgar F. Codd</strong> (IBM Research) publish paper "A Relational Model of Data for Large Shared Data Banks" — introduce relational model. Trước đó: hierarchical (IMS) và network (CODASYL) database, data redundancy cực cao.<br><br>
+    <strong>1971-1974</strong> — Codd define 1NF, 2NF, 3NF (Boyce-Codd Normal Form 1974). Mỗi level giảm 1 loại anomaly: insert anomaly, update anomaly, delete anomaly.<br><br>
+    <strong>1979-1980</strong> — Oracle (Oracle v2), IBM DB2 thương mại hóa relational DB. Normalization thành standard practice.<br><br>
+    <strong>1990s-2000s</strong> — OLAP (Online Analytical Processing) emerge, denormalized schema (star schema, snowflake) cho data warehouse. Trade-off: read-heavy reporting cần denormalized, write-heavy OLTP cần normalized.<br><br>
+    <strong>2009-2010</strong> — <strong>Eric Brewer</strong> formulate CAP theorem (2000 conjecture, 2002 proof bởi Gilbert &amp; Lynch). NoSQL movement (MongoDB, Cassandra, DynamoDB) intentionally denormalize cho scale.<br><br>
+    <strong>2013</strong> — <strong>Daniel Abadi</strong> extend CAP thành PACELC: even when no partition, có trade-off giữa Latency và Consistency.<br><br>
+    <strong>2020s</strong> — Hybrid systems (Spanner, CockroachDB) push boundary CAP, achieve "external consistency" với atomic clock + Paxos. Nhưng cho 99% app, classical relational DB + read replica vẫn đúng.<br><br>
+    <strong>Insight</strong>: Normalization là default đúng. Denormalization là <em>optimization</em> có cost. Đừng denormalize trước khi đo performance — phổ biến nhất là junior denormalize "for performance" rồi tạo bug consistency.
+  </div>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Order Platform Của ShopVN Sập Khi Scale</h2>
+
+<p>Sàn ShopVN có table <code>orders</code> tăng từ 100M rows (2024) → 500M rows (2026). Query simple từng take 100ms giờ take 30 giây. 3 engineer trong team đưa 3 giải pháp <strong>mâu thuẫn nhau</strong>:</p>
+
+<div class="callout warn">
+  <div class="ctitle">💬 Cuộc tranh luận trong team</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Engineer A (junior)</strong>: "Add more RAM. Caching sẽ fix it."</li>
+  <li><strong>Engineer B (mid)</strong>: "Add more indexes. Không có index = full table scan."</li>
+  <li><strong>Engineer C (senior)</strong>: "Partition by date. Chúng ta keep 2 năm data, query thường chỉ recent 3 tháng."</li>
+  </ul>
+  <p style="margin-top:8px">3 đều có lý nhưng không ai hoàn toàn đúng. Câu trả lời thật sự là <strong>combination</strong> + biết trade-off.</p>
+</div>
+
+<div class="code-label">Schema hiện tại</div>
+<pre><code class="language-sql">CREATE TABLE orders (
+    id BIGINT PRIMARY KEY,
+    customer_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    total_amount DECIMAL(15,2) NOT NULL,
+    status VARCHAR(20),         -- PENDING/PROCESSING/SHIPPED/DELIVERED/CANCELLED
+    payment_method VARCHAR(20),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    shipping_address TEXT,
+    customer_name VARCHAR(100),  -- ⚠️ denormalized
+    customer_email VARCHAR(200), -- ⚠️ denormalized
+    internal_notes TEXT,
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (shop_id) REFERENCES shops(id)
+);
+-- 500M rows. ~2KB/row → 1TB table.</code></pre>
+
+<div class="code-label">3 query patterns chính</div>
+<pre><code class="language-sql">-- Query A (80% traffic): order history của 1 customer, recent 30 days
+SELECT * FROM orders
+WHERE customer_id = ? AND created_at &gt; DATE_SUB(NOW(), INTERVAL 30 DAY)
+ORDER BY created_at DESC LIMIT 20;
+
+-- Query B (15% traffic): doanh thu của 1 shop trong năm
+SELECT shop_id, SUM(total_amount), COUNT(*)
+FROM orders
+WHERE shop_id = ? AND YEAR(created_at) = 2026
+GROUP BY shop_id;
+
+-- Query C (5% traffic): analytics — all orders last year
+SELECT * FROM orders
+WHERE created_at &gt; DATE_SUB(NOW(), INTERVAL 365 DAY)
+LIMIT 100000;</code></pre>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — BẮT BUỘC dừng</div>
+  <div class="pause-q">Trước khi đọc tiếp, tự trả lời (viết ra giấy):</div>
+  <ol style="margin:8px 0 0 22px">
+  <li><strong>Normalization</strong>: Có bug ngay trong schema không? Denormalized <code>customer_name</code>, <code>customer_email</code> sẽ gây vấn đề gì khi customer rename?</li>
+  <li><strong>Partitioning vs Indexing</strong>: Query A search 30 ngày trong 500M rows. Partition by <code>created_at</code> (monthly) hay composite index <code>(customer_id, created_at)</code> hiệu quả hơn? Vì sao?</li>
+  <li><strong>Read replica problem</strong>: Nếu add read replica + route reads sang đó, vấn đề gì xảy ra khi transaction write to primary rồi immediately query replica?</li>
+  <li><strong>Sharding trap</strong>: Nếu shard by <code>customer_id</code>, query B (theo shop_id) sẽ fail như thế nào? Nếu 1 shard slow, query timeout không?</li>
+  <li><strong>CAP for e-commerce</strong>: Banking chọn CP. E-commerce nên chọn CP hay AP? Vì sao? Edge case nào nguy hiểm nếu chọn sai?</li>
+  </ol>
+  <div class="pause-hint">Nếu trả lời được 4/5 → solid foundation, đọc lướt. Nếu &lt;3 → đọc kỹ.</div>
+</div>
+</section>
+
+<section id="normalization">
+<h2>2. Normalization — 1NF, 2NF, 3NF <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation</strong>. Junior thường skip đi vì "đơn giản", senior interview hỏi 100%. Hiểu cơ chế (anomaly nào được fix) quan trọng hơn memorize definition.
+</div>
+
+<h3>1NF — Atomic Values</h3>
+
+<p><strong>Rule</strong>: mỗi cell chứa 1 value không thể chia nhỏ. Không có array, list, JSON với multi-value trong column.</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Không 1NF — Multi-value column</div>
+<pre><code class="language-sql">CREATE TABLE orders (
+  id BIGINT,
+  customer_id BIGINT,
+  product_ids VARCHAR(500),  -- CSV: "P001,P003,P007"
+  quantities VARCHAR(200)     -- CSV: "2,1,5"
+);
+
+-- Query khó: tìm orders chứa P003?
+SELECT * FROM orders
+WHERE product_ids LIKE '%P003%';
+-- Index không help, full scan.
+-- Bug: LIKE '%P003%' match cả 'P0030', 'P0031', ...</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ 1NF — Atomic, separate table</div>
+<pre><code class="language-sql">CREATE TABLE orders (
+  id BIGINT,
+  customer_id BIGINT
+);
+
+CREATE TABLE order_items (
+  order_id BIGINT,
+  product_id VARCHAR(20),
+  quantity INT,
+  PRIMARY KEY (order_id, product_id),
+  FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+-- Query rõ ràng, indexable
+SELECT * FROM orders o
+JOIN order_items oi ON o.id = oi.order_id
+WHERE oi.product_id = 'P003';</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao 1NF matter?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Queryability</strong>: SQL designed cho atomic values. Multi-value columns biến SQL thành string parsing nightmare.</li>
+  <li><strong>Index ineffective</strong>: B-Tree index trên CSV column không help cho "find rows containing X".</li>
+  <li><strong>Type safety</strong>: <code>quantity</code> phải là INT. CSV string nhồi nhét types → bug khi parse.</li>
+  <li><strong>Update khó</strong>: thay đổi 1 quantity = parse string, modify, serialize lại. Race condition risk.</li>
+  </ul>
+</div>
+
+<h3>2NF — Full Functional Dependency on PK</h3>
+
+<p><strong>Rule</strong>: nếu PK là composite, mọi non-key column phải depend on <em>toàn bộ</em> PK, không phải subset. (1NF cộng thêm rule này = 2NF.)</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Không 2NF</div>
+<pre><code class="language-sql">CREATE TABLE order_items (
+  order_id BIGINT,
+  product_id VARCHAR(20),
+  quantity INT,
+  product_name VARCHAR(200),   -- ❌ depends only on product_id
+  product_category VARCHAR(50), -- ❌ depends only on product_id
+  PRIMARY KEY (order_id, product_id)
+);
+
+-- Problem: nếu product P001 rename
+-- → phải UPDATE 1M+ rows order_items
+-- → quên 1 row = data inconsistent</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ 2NF</div>
+<pre><code class="language-sql">CREATE TABLE order_items (
+  order_id BIGINT,
+  product_id VARCHAR(20),
+  quantity INT,
+  PRIMARY KEY (order_id, product_id)
+);
+
+CREATE TABLE products (
+  id VARCHAR(20) PRIMARY KEY,
+  name VARCHAR(200),
+  category VARCHAR(50)
+);
+
+-- Product rename: UPDATE 1 row in products
+UPDATE products SET name = 'New Name'
+WHERE id = 'P001';</code></pre>
+</div>
+</div>
+
+<h3>3NF — No Transitive Dependency</h3>
+
+<p><strong>Rule</strong>: non-key column không được depend on non-key column khác (transitive). Mọi non-key chỉ depend trực tiếp lên PK.</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Không 3NF</div>
+<pre><code class="language-sql">CREATE TABLE orders (
+  id BIGINT PRIMARY KEY,
+  customer_id BIGINT,
+  shop_id BIGINT,
+  shop_name VARCHAR(200),      -- ❌ depends on shop_id
+  shop_city VARCHAR(50),       -- ❌ depends on shop_id
+  shop_phone VARCHAR(20)       -- ❌ depends on shop_id
+);
+
+-- Shop "ABC Store" thay đổi phone:
+-- Phải UPDATE 50K+ orders rows
+-- Hoặc một số rows còn old phone → inconsistent</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ 3NF</div>
+<pre><code class="language-sql">CREATE TABLE orders (
+  id BIGINT PRIMARY KEY,
+  customer_id BIGINT,
+  shop_id BIGINT,
+  FOREIGN KEY (shop_id) REFERENCES shops(id)
+);
+
+CREATE TABLE shops (
+  id BIGINT PRIMARY KEY,
+  name VARCHAR(200),
+  city VARCHAR(50),
+  phone VARCHAR(20)
+);
+
+-- Update shop info: UPDATE 1 row in shops
+-- Orders tự reference qua shop_id, luôn current</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 3 anomalies mà 3NF fix</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Update anomaly</strong>: shop rename → phải update 50K rows. Forget 1 = inconsistent.</li>
+  <li><strong>Insert anomaly</strong>: thêm shop mới chưa có order → không thể insert vào orders table.</li>
+  <li><strong>Delete anomaly</strong>: xóa last order của shop → mất luôn shop info nếu chỉ ở orders table.</li>
+  </ol>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "JOIN luôn chậm, denormalize tốt hơn"</div>
+  <div class="mc-wrong">"3NF có nhiều JOIN, denormalize bỏ JOIN sẽ luôn nhanh hơn"</div>
+  <div class="mc-right">2 vấn đề với mindset này: <strong>(1)</strong> JOIN với proper index thường rất nhanh (~1-5ms cho 2-3 table). PostgreSQL/MySQL optimizer giỏi với JOIN. <strong>(2)</strong> Denormalize tạo <em>update overhead</em> và <em>data inconsistency risk</em>. Trade off thường KHÔNG worth cho OLTP. Chỉ denormalize có chiến lược (xem section 3). <strong>Default: 3NF</strong>. Denormalize là exception, không phải rule.</div>
+</div>
+</section>
+
+<section id="denormalization">
+<h2>3. Denormalization Có Chiến Lược <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Khi nào và làm sao break normalization an toàn</strong>.
+</div>
+
+<p>Denormalization <em>worth</em> khi:</p>
+
+<ul>
+<li><strong>Read-heavy</strong>: column được read 1000× hơn write</li>
+<li><strong>Rarely changes</strong>: column update &lt; 1×/tháng</li>
+<li><strong>Critical path latency</strong>: 5ms JOIN giảm xuống 1ms direct read tạo khác biệt UX</li>
+<li><strong>Có invalidation strategy</strong>: khi source change, có mechanism update denormalized copies</li>
+</ul>
+
+<h3>Pattern 1 — Denormalize "Stable" Column</h3>
+
+<pre><code class="language-sql">-- Customer's home country rất ít thay đổi (move overseas hiếm)
+-- Tax calculation cần country mỗi order → JOIN customers mỗi lần expensive
+
+ALTER TABLE orders ADD COLUMN customer_country CHAR(2);
+-- Khi insert order: copy customer.country
+INSERT INTO orders (..., customer_country) VALUES (..., 'VN');
+
+-- Khi customer move (rare):
+BEGIN;
+UPDATE customers SET country = 'US' WHERE id = ?;
+-- Async job update orders eventually (acceptable lag cho cold orders)
+COMMIT;</code></pre>
+
+<h3>Pattern 2 — CQRS Read Model (xem #17)</h3>
+
+<pre><code class="language-sql">-- Write side: 3NF orders + customers
+-- Read side: denormalized order_view với customer info joined-in
+
+CREATE MATERIALIZED VIEW order_view AS
+SELECT
+  o.id, o.total_amount, o.status, o.created_at,
+  c.name AS customer_name, c.email AS customer_email,
+  s.name AS shop_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN shops s ON o.shop_id = s.id;
+
+-- Refresh nightly hoặc on event
+REFRESH MATERIALIZED VIEW CONCURRENTLY order_view;</code></pre>
+
+<h3>Pattern 3 — Event-Driven Sync (xem #18)</h3>
+
+<pre><code class="language-java">// Customer updates email → publish event
+@EventListener
+public void on(CustomerEmailChangedEvent event) {
+    // Update denormalized copies async
+    orderRepo.updateCustomerEmail(event.customerId(), event.newEmail());
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Quy tắc 80/20</div>
+  <p>80% application: stay với 3NF + proper index. JOIN nhanh, consistency simple.<br>
+  20% high-traffic / latency-critical path: denormalize có chiến lược.<br>
+  <strong>Đừng denormalize trước khi đo</strong>. Setup monitoring → identify bottleneck thật → denormalize chỉ chỗ đó. <em>Premature denormalization là root cause của nhiều consistency bug.</em></p>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Denormalize price vào order_items</div>
+  <p style="font-size:0.93rem;margin:8px 0">"Tôi sẽ copy product price vào order_items để không cần JOIN products khi calculate total." Hãy nghĩ: đây là tốt hay xấu?</p>
+  <details>
+    <summary>Click để xem analysis</summary>
+    <div class="bi-answer">
+      <p><strong>Thực ra đây là pattern ĐÚNG cho 1 lý do quan trọng</strong> nhưng vì sao khác với những trường hợp denormalize khác:</p>
+      <p><strong>Vì sao đúng</strong>: price tại thời điểm mua phải <em>frozen forever</em>. Nếu chỉ FK đến products.price, khi shop tăng giá ngày mai → reports show historical orders với giá MỚI → wrong revenue calculation.</p>
+      <p><strong>Đây không phải "denormalization cho speed"</strong> mà là <em>"data semantic correctness"</em>. <code>order_items.price</code> không phải "copy" của <code>products.price</code> — chúng là <em>2 concepts khác nhau</em>:</p>
+      <ul style="margin:6px 0 0 20px;font-size:0.9rem">
+      <li><code>products.price</code> = "giá HIỆN TẠI của product này"</li>
+      <li><code>order_items.price</code> = "giá khi customer đã mua"</li>
+      </ul>
+      <p><strong>Insight</strong>: nhiều cases "denormalization" thực ra là 2 fields semantic khác nhau happens to có cùng value tại 1 thời điểm. Đừng merge chúng nhân danh "normalization". Tax rate khi tính tax = same pattern.</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="partitioning">
+<h2>4. Partitioning <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Scale lên 100M+ rows mà không phải sharding</strong>. Single biggest improvement cho time-series data.
+</div>
+
+<p>Partitioning = chia 1 table thành nhiều physical partition <em>trong cùng 1 database</em>. Query planner skip partition không liên quan = <strong>partition pruning</strong>.</p>
+
+<h3>3 Types — Range, List, Hash</h3>
+
+<h4>Range Partitioning (phổ biến nhất cho time-series)</h4>
+
+<pre><code class="language-sql">-- PostgreSQL syntax (modern, declarative)
+CREATE TABLE orders (
+    id BIGSERIAL,
+    customer_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    total_amount DECIMAL(15,2),
+    status VARCHAR(20),
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (id, created_at)  -- Partition key MUST be in PK
+) PARTITION BY RANGE (created_at);
+
+-- Create partitions per month
+CREATE TABLE orders_2026_01 PARTITION OF orders
+    FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE orders_2026_02 PARTITION OF orders
+    FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+-- ... etc
+
+-- Default partition cho rows nằm ngoài range
+CREATE TABLE orders_default PARTITION OF orders DEFAULT;</code></pre>
+
+<h4>Hash Partitioning (distribute evenly)</h4>
+
+<pre><code class="language-sql">CREATE TABLE user_events (
+    user_id BIGINT,
+    event_type VARCHAR(50),
+    event_data JSONB,
+    occurred_at TIMESTAMP
+) PARTITION BY HASH (user_id);
+
+CREATE TABLE user_events_p0 PARTITION OF user_events FOR VALUES WITH (MODULUS 8, REMAINDER 0);
+CREATE TABLE user_events_p1 PARTITION OF user_events FOR VALUES WITH (MODULUS 8, REMAINDER 1);
+-- ... 8 partitions total
+
+-- Query: user_id=12345 → hash(12345) % 8 → partition p3
+SELECT * FROM user_events WHERE user_id = 12345;
+-- Planner queries only p3, not all 8</code></pre>
+
+<h4>List Partitioning (discrete categories)</h4>
+
+<pre><code class="language-sql">CREATE TABLE orders_by_region (
+    id BIGSERIAL,
+    region VARCHAR(20)
+) PARTITION BY LIST (region);
+
+CREATE TABLE orders_north PARTITION OF orders_by_region
+    FOR VALUES IN ('HANOI', 'HAIPHONG', 'NAMDINH');
+CREATE TABLE orders_central PARTITION OF orders_by_region
+    FOR VALUES IN ('DANANG', 'HUE', 'QUYNHON');
+CREATE TABLE orders_south PARTITION OF orders_by_region
+    FOR VALUES IN ('HCMC', 'CANTHO', 'VUNGTAU');</code></pre>
+
+<h3>Partition Pruning — Magic Behind Performance</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .skip{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5;stroke-dasharray:4,3;opacity:0.4}
+    .scan{fill:#ecfdf5;stroke:#059669;stroke-width:2}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#059669;stroke-width:2;fill:none;marker-end:url(#aa11)}
+  </style>
+  <marker id="aa11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker></defs>
+
+  <rect x="280" y="20" width="160" height="50" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <text x="360" y="42" text-anchor="middle" class="lbl">Query Planner</text>
+  <text x="360" y="60" text-anchor="middle" font-size="11" fill="#92400e">WHERE created_at &gt;= '2026-03-01'</text>
+
+  <rect x="20" y="120" width="120" height="50" rx="6" class="skip"/>
+  <text x="80" y="142" text-anchor="middle" class="lbl">orders_2024</text>
+  <text x="80" y="158" text-anchor="middle" font-size="10" fill="#dc2626">SKIPPED</text>
+
+  <rect x="160" y="120" width="120" height="50" rx="6" class="skip"/>
+  <text x="220" y="142" text-anchor="middle" class="lbl">orders_2025</text>
+  <text x="220" y="158" text-anchor="middle" font-size="10" fill="#dc2626">SKIPPED</text>
+
+  <rect x="300" y="120" width="120" height="50" rx="6" class="skip"/>
+  <text x="360" y="142" text-anchor="middle" class="lbl">orders_2026_01</text>
+  <text x="360" y="158" text-anchor="middle" font-size="10" fill="#dc2626">SKIPPED</text>
+
+  <rect x="440" y="120" width="120" height="50" rx="6" class="scan"/>
+  <text x="500" y="142" text-anchor="middle" class="lbl">orders_2026_03</text>
+  <text x="500" y="158" text-anchor="middle" font-size="10" fill="#059669">SCANNED</text>
+
+  <rect x="580" y="120" width="120" height="50" rx="6" class="scan"/>
+  <text x="640" y="142" text-anchor="middle" class="lbl">orders_2026_04</text>
+  <text x="640" y="158" text-anchor="middle" font-size="10" fill="#059669">SCANNED</text>
+
+  <line x1="380" y1="70" x2="500" y2="120" class="arr"/>
+  <line x1="400" y1="70" x2="640" y2="120" class="arr"/>
+
+  <text x="360" y="230" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Thay vì scan 500M rows (mọi partition), chỉ scan 2 partitions = ~30M rows. 15× faster.
+  </text>
+</svg>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao partition pruning critical với time-series?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Locality of access</strong>: 95% queries hit recent data (last 30-90 days). Old data hiếm khi query nhưng vẫn cần keep.</li>
+  <li><strong>Partition pruning = automatic optimization</strong>: developer không cần biết partition exists. Query với <code>WHERE created_at &gt; X</code> tự skip irrelevant partitions.</li>
+  <li><strong>Archive cheap</strong>: drop old partition = O(1) operation. <code>DROP TABLE orders_2020;</code> trong &lt;1s thay vì <code>DELETE FROM orders WHERE created_at &lt; '2021'</code> mất hàng giờ + bloat.</li>
+  <li><strong>Index riêng per partition</strong>: smaller indexes → faster lookups within partition.</li>
+  </ul>
+</div>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Partitioning Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Query without partition key → SCAN ALL PARTITIONS</strong>: <code>WHERE customer_id = X</code> không có <code>created_at</code> filter → planner phải scan mọi partition. Partition pruning <em>defeated</em>. Solution: train team luôn include partition key trong WHERE.</li>
+    <li><strong>Partition key trong PK</strong>: PostgreSQL/MySQL require partition column trong PK. Conflict với existing <code>PRIMARY KEY (id)</code> — phải đổi thành <code>(id, created_at)</code>. Side effect: FK reference phức tạp hơn.</li>
+    <li><strong>UNIQUE constraint cross-partition</strong>: <code>UNIQUE (email)</code> không enforce được nếu email không trong partition key. Workaround: separate unique table, hoặc trigger-based check.</li>
+    <li><strong>Partition explosion</strong>: forget to create future partitions → INSERT fail với "no partition exists". Auto-create partition với pg_partman hoặc cron job.</li>
+    <li><strong>Default partition trap</strong>: rows match default partition → khi tạo partition mới phải <code>DETACH</code> default, move rows, <code>ATTACH</code> lại. Downtime nếu không careful.</li>
+    <li><strong>Cross-partition JOIN expensive</strong>: JOIN với non-partitioned table OK, nhưng JOIN 2 partitioned tables có thể cause Cartesian explosion. Verify EXPLAIN.</li>
+    <li><strong>Foreign key cross-partition</strong>: order_items reference orders.id — nếu orders partitioned, FK constraint có thể fail hoặc slow. Solution: include partition key trong FK, hoặc remove FK + enforce ở app level.</li>
+    <li><strong>VACUUM mỗi partition độc lập</strong>: cần monitor + tune per partition. Old partitions không cần vacuum often.</li>
+    <li><strong>Backup strategy</strong>: backup per partition vs full table. Per-partition cho incremental backup nhanh hơn (recent partitions change, old stable).</li>
+  </ul>
+</div>
+</section>
+
+<section id="sharding">
+<h2>5. Sharding <span class="k-tag advanced">ADVANCED</span></h2>
+
+<div class="k-banner advanced">
+  <strong>ADVANCED — Premature sharding là root cause của nhiều system disaster</strong>. Chỉ áp dụng khi đã tối đa hóa partitioning + read replica + caching.
+</div>
+
+<p>Sharding = chia data <strong>across multiple databases/servers</strong> (vs partitioning chỉ trong 1 DB). Mục đích: scale beyond 1 server.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .app{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .router{fill:#fffbeb;stroke:#d97706;stroke-width:2}
+    .shard{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#aa12)}
+  </style>
+  <marker id="aa12" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="20" y="100" width="140" height="50" rx="6" class="app"/>
+  <text x="90" y="124" text-anchor="middle" class="lbl">Application</text>
+  <text x="90" y="142" text-anchor="middle" font-size="10" fill="#475569">order request</text>
+
+  <rect x="220" y="100" width="160" height="50" rx="6" class="router"/>
+  <text x="300" y="120" text-anchor="middle" class="lbl">Shard Router</text>
+  <text x="300" y="138" text-anchor="middle" font-size="10" fill="#92400e">hash(customer_id) % 4</text>
+
+  <rect x="440" y="20" width="120" height="40" rx="6" class="shard"/>
+  <text x="500" y="44" text-anchor="middle" class="lbl">Shard 0</text>
+  <rect x="440" y="70" width="120" height="40" rx="6" class="shard"/>
+  <text x="500" y="94" text-anchor="middle" class="lbl">Shard 1</text>
+  <rect x="440" y="120" width="120" height="40" rx="6" class="shard"/>
+  <text x="500" y="144" text-anchor="middle" class="lbl">Shard 2</text>
+  <rect x="440" y="170" width="120" height="40" rx="6" class="shard"/>
+  <text x="500" y="194" text-anchor="middle" class="lbl">Shard 3</text>
+
+  <line x1="160" y1="125" x2="220" y2="125" class="arr"/>
+  <line x1="380" y1="125" x2="440" y2="40" class="arr"/>
+  <line x1="380" y1="125" x2="440" y2="90" class="arr"/>
+  <line x1="380" y1="125" x2="440" y2="140" class="arr"/>
+  <line x1="380" y1="125" x2="440" y2="190" class="arr"/>
+
+  <text x="370" y="240" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">
+    Mỗi shard là 1 database riêng. 4 shards = scale 4× nhưng query không thuộc shard key cần fan-out.
+  </text>
+</svg>
+</div>
+
+<h3>Shard Key Selection — Quyết Định Sống Còn</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Shard by sequential ID</div>
+<pre><code class="language-java">int shard = (int)(orderId % 4);
+// Order ID auto-increment
+// Order 1-100 → shard 1,2,3,0,1,...
+// Order 1M-1.001M → shard 0,1,2,3,...
+// BUT: new orders luôn đi vào shard cuối
+// → Hot shard, contention</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Shard by content hash</div>
+<pre><code class="language-java">int shard = Math.abs(customerId.hashCode()) % 4;
+// Hash distributes evenly
+// Customer 12345 → consistent shard
+// Customer 12346 → potentially different shard
+// → Load balanced</code></pre>
+</div>
+</div>
+
+<h3>Multi-Shard Fan-Out Trap</h3>
+
+<pre><code class="language-java">// Sharded by customer_id
+// Query: "Top 100 orders by total_amount in last 24h" → KHÔNG có customer_id filter
+// → Must query ALL 4 shards
+
+@Service
+public class OrderQueryService {
+    public List&lt;Order&gt; topOrdersLast24h() {
+        List&lt;CompletableFuture&lt;List&lt;Order&gt;&gt;&gt; futures = new ArrayList&lt;&gt;();
+        for (int shard = 0; shard &lt; 4; shard++) {
+            ShardConnection conn = shardManager.get(shard);
+            futures.add(CompletableFuture.supplyAsync(() -&gt;
+                conn.query("SELECT * FROM orders WHERE created_at &gt; ? ORDER BY total_amount DESC LIMIT 100",
+                    Instant.now().minus(Duration.ofHours(24)))));
+        }
+
+        // Wait for ALL shards (or timeout)
+        try {
+            List&lt;Order&gt; merged = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -&gt; futures.stream()
+                    .map(CompletableFuture::join)
+                    .flatMap(List::stream)
+                    .sorted(comparing(Order::totalAmount).reversed())
+                    .limit(100)
+                    .toList())
+                .get(5, TimeUnit.SECONDS);
+            return merged;
+        } catch (TimeoutException e) {
+            // 1 shard slow → entire query fail
+            throw new ShardQueryTimeoutException("Fan-out query timeout", e);
+        }
+    }
+}
+// Latency = MAX of all shards
+// If shard 2 has 5s latency và 3 shards khác 50ms → total 5s
+// 1 shard down → entire query fail</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Sharding cost reality check</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Operational complexity 10×</strong>: 4 databases backup, monitoring, schema migration, version sync</li>
+  <li><strong>Cross-shard transaction impossible</strong>: phải dùng SAGA (xem #13)</li>
+  <li><strong>Query không có shard key = expensive fan-out</strong>: nếu &gt; 20% queries fan-out, sharding losses outweigh benefits</li>
+  <li><strong>Re-sharding painful</strong>: thay đổi shard count = data migration weeks/months</li>
+  <li><strong>Cost &gt; benefit thường xuyên</strong>: 90% cases có thể avoid bằng partitioning + read replica + caching</li>
+  </ul>
+  <p><strong>Rule</strong>: chỉ shard khi single DB đã hit hardware limits (CPU 100%, IOPS saturated) và mọi optimization khác đã thử. Đừng shard "for the future".</p>
+</div>
+</section>
+
+<section id="replica">
+<h2>6. Read Replica <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Pattern phổ biến nhất để scale reads</strong>. Phải hiểu replication lag + read-after-write trap.
+</div>
+
+<h3>Setup</h3>
+
+<pre><code class="language-text">Application
+  ├─ Write requests → PostgreSQL Primary (master)
+  ├─ Read requests → PostgreSQL Replica (1+ replicas)
+  └─ Async replication: Primary WAL → Replica (typical lag 10-500ms)</code></pre>
+
+<h3>Read-After-Write Trap — Bug Phổ Biến Nhất</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Sai — Read sau write từ replica</div>
+<pre><code class="language-java">@Transactional
+public OrderResponse placeOrder(Cart cart) {
+  // Write to PRIMARY
+  Order order = orderService.create(cart);
+  orderRepo.save(order);
+
+  // Read from REPLICA (lag 100ms!)
+  // Replica chưa replicate xong → return null
+  Order saved = orderRepo.findById(order.getId());
+  return OrderResponse.from(saved); // NPE!
+}</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Đúng — Read after write từ Primary</div>
+<pre><code class="language-java">@Transactional  // Routes to PRIMARY
+public OrderResponse placeOrder(Cart cart) {
+  Order order = orderService.create(cart);
+  orderRepo.save(order);
+
+  // Same transaction = PRIMARY
+  // Hoặc explicit primary route
+  Order saved = orderRepo.findById(order.getId());
+  return OrderResponse.from(saved); // OK
+}
+
+@Transactional(readOnly = true)  // Routes to REPLICA
+public List&lt;Order&gt; orderHistory(Long customerId) {
+  // Stale data tolerable cho history
+  return orderRepo.findByCustomerId(customerId);
+}</code></pre>
+</div>
+</div>
+
+<h3>3 Strategies Cho Read-After-Write</h3>
+
+<ol>
+<li><strong>Route writes + immediate reads to Primary</strong>: dùng <code>@Transactional</code> với readOnly flag. Spring AOP auto-route.</li>
+<li><strong>Sticky session</strong>: user sau write → next N seconds routes to primary. Cookie hoặc header tracking.</li>
+<li><strong>Wait for replication</strong>: write trả về LSN (log sequence number), replica catch up to LSN trước khi read. Highest consistency, highest latency.</li>
+</ol>
+
+<h3>Implementation — AbstractRoutingDataSource</h3>
+
+<pre><code class="language-java">@Component
+public class RoutingDataSource extends AbstractRoutingDataSource {
+    private static final ThreadLocal&lt;String&gt; routingKey =
+        ThreadLocal.withInitial(() -&gt; "primary");
+
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return routingKey.get();
+    }
+
+    public static void routeToReplica() { routingKey.set("replica"); }
+    public static void routeToPrimary() { routingKey.set("primary"); }
+    public static void clear() { routingKey.remove(); }
+}
+
+@Aspect
+@Component
+public class TransactionRoutingAspect {
+    @Before("@annotation(org.springframework.transaction.annotation.Transactional)")
+    public void route(JoinPoint jp) {
+        Method m = ((MethodSignature)jp.getSignature()).getMethod();
+        Transactional tx = m.getAnnotation(Transactional.class);
+        if (tx != null && tx.readOnly()) {
+            RoutingDataSource.routeToReplica();
+        } else {
+            RoutingDataSource.routeToPrimary();
+        }
+    }
+
+    @After("@annotation(org.springframework.transaction.annotation.Transactional)")
+    public void cleanup(JoinPoint jp) {
+        RoutingDataSource.clear();
+    }
+}</code></pre>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Read Replica Production</div>
+  <ul class="ec-list">
+    <li><strong>Replication lag spike</strong>: heavy write burst → replica fall behind 10+ seconds. Reads return very stale data. Monitor lag, alert &gt; 1s.</li>
+    <li><strong>Replica down</strong>: failover to primary (graceful degradation) hoặc reject reads. App must handle both modes.</li>
+    <li><strong>Replica promoted to primary</strong>: failover scenario. Connection pool cần re-discover topology. Pgpool/HAProxy/AWS RDS handle automatically.</li>
+    <li><strong>Read-after-write within session</strong>: user X submit form, redirect, GET → có thể hit replica với stale data. Sticky session by user.</li>
+    <li><strong>Cross-region replica</strong>: lag 100ms-1s do network. Acceptable cho dashboard, NOT cho transactional reads.</li>
+    <li><strong>Replica thread pool exhaustion</strong>: heavy reporting query trên replica → block other reads. Separate replica cho analytics vs OLTP.</li>
+    <li><strong>Schema migration</strong>: ALTER TABLE on primary có thể block replication 10+ minutes. Test migration on replica first.</li>
+    <li><strong>Cache invalidation timing</strong>: invalidate cache sau write to primary. Nếu cache reload từ replica → load stale value back into cache. Wait for replication lag trước invalidate.</li>
+  </ul>
+</div>
+</section>
+
+<section id="cap">
+<h2>7. CAP Theorem &amp; PACELC <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Framework để argue về distributed DB</strong>. System design interview hỏi nhiều.
+</div>
+
+<h3>CAP — Brewer's Theorem</h3>
+
+<p>Trong distributed system, chỉ có thể chọn <strong>2 trong 3</strong> khi network partition xảy ra:</p>
+
+<ul>
+<li><strong>C</strong>onsistency: mọi node thấy cùng data tại cùng thời điểm</li>
+<li><strong>A</strong>vailability: mọi request nhận response (kể cả stale)</li>
+<li><strong>P</strong>artition tolerance: system continue work despite network split</li>
+</ul>
+
+<p><strong>P không phải lựa chọn</strong> — network partition <em>sẽ</em> xảy ra (cable đứt, switch fail, region down). Vì vậy real choice là <strong>C hay A</strong>:</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>System</th><th>Choice</th><th>Behavior khi partition</th></tr></thead>
+<tbody>
+<tr><td>PostgreSQL (single primary)</td><td>CP</td><td>Replica từ chối write nếu partition khỏi primary → consistency preserved, availability mất</td></tr>
+<tr><td>Cassandra (default)</td><td>AP</td><td>Mỗi node accept writes → eventual consistency, luôn available</td></tr>
+<tr><td>MongoDB (modern, w=majority)</td><td>CP</td><td>Write require majority quorum, minority partition không write được</td></tr>
+<tr><td>DynamoDB</td><td>AP (tunable)</td><td>Configurable consistency level</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>PACELC — Extended CAP</h3>
+
+<p>Daniel Abadi (2013): <em>"CAP only applies when partition. But even without partition, có trade-off giữa Latency và Consistency."</em></p>
+
+<pre><code class="language-text">If Partition (P), choose Availability (A) or Consistency (C)
+Else (E) — normal operation, choose Latency (L) or Consistency (C)
+
+Examples:
+- PostgreSQL: PC/EC — consistency in both cases
+- DynamoDB: PA/EL — availability under partition, low latency normally
+- MongoDB (read preference primary): PC/EC
+- MongoDB (read preference nearest): PC/EL</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 E-commerce nên chọn CAP nào?</div>
+  <p><strong>Phụ thuộc operation</strong>:</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Order placement / payment</strong>: CP. Better fail than double-charge or oversell. User retry vs lifetime support ticket.</li>
+  <li><strong>Inventory count display</strong>: AP. Stale "5 in stock" OK; better show stale than blank page.</li>
+  <li><strong>Search</strong>: AP. Outdated results acceptable; key UX = responsiveness.</li>
+  <li><strong>Cart</strong>: AP. Best-effort sync across devices; conflicts rare và resolvable.</li>
+  </ul>
+  <p><strong>Insight</strong>: CAP không phải decision cho toàn system, mà cho mỗi feature. Modern architecture: critical paths CP (payment), UX paths AP (search, browse).</p>
+</div>
+</section>
+
+<section id="materialized">
+<h2>8. Materialized View <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Tool cho reporting / analytics</strong>. Khi nào worth.
+</div>
+
+<p>Materialized view = pre-computed query result lưu như table. Refresh định kỳ. Trade computation upfront cho fast reads.</p>
+
+<pre><code class="language-sql">-- Reporting query slow: total revenue per shop per day
+CREATE MATERIALIZED VIEW shop_daily_revenue AS
+SELECT
+    shop_id,
+    DATE(created_at) AS order_date,
+    COUNT(*) AS order_count,
+    SUM(total_amount) AS revenue,
+    AVG(total_amount) AS avg_order_value
+FROM orders
+WHERE status = 'DELIVERED'
+GROUP BY shop_id, DATE(created_at);
+
+-- Add index trên MV cho query nhanh
+CREATE INDEX idx_mv_shop_date ON shop_daily_revenue(shop_id, order_date);
+
+-- Refresh nightly (cron job)
+REFRESH MATERIALIZED VIEW CONCURRENTLY shop_daily_revenue;
+-- CONCURRENTLY: no lock, slower refresh nhưng reads vẫn work</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Worth khi nào?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Reporting query slow</strong>: aggregation trên 100M+ rows, take seconds-minutes</li>
+  <li><strong>Stale acceptable</strong>: hourly/daily refresh OK cho dashboard</li>
+  <li><strong>Read 1000× hơn write</strong>: ROI cao</li>
+  <li><strong>Stable schema</strong>: query không thay đổi often</li>
+  </ul>
+  <p><strong>KHÔNG worth</strong>: query thay đổi liên tục, real-time data required, write-heavy table (refresh contention).</p>
+</div>
+</section>
+
+<section id="antipatterns">
+<h2>9. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+
+<h3>#1 Premature sharding</h3>
+<p>Team với 5M rows quyết định shard "for future". Operational complexity 10× tăng. 3 năm sau vẫn 10M rows (under-estimate growth). Wasted complexity, slower development.</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Khi nào thực sự cần shard?</div>
+  <p>Khi single DB hit hardware limits: CPU 100%, IOPS saturated, không thể scale up. Optimize partitioning + replica + caching trước. Sharding là last resort.</p>
+</div>
+
+<h3>#2 Partitioning without query update</h3>
+<p>Partition by date, nhưng query <code>SELECT * FROM orders WHERE customer_id = X</code> không include date → scan ALL partitions. Pruning defeated, performance same hoặc tệ hơn.</p>
+
+<h3>#3 Denormalize without invalidation strategy</h3>
+<p>Copy customer_name vào orders. Customer rename → 50K rows trong orders vẫn old name. Reports show wrong stats. Fix: event-driven invalidation hoặc async sync job.</p>
+
+<h3>#4 Sharding by sequential ID</h3>
+<p>Hot shard với new data. Load không balanced. Fix: hash-based shard key.</p>
+
+<h3>#5 Ignoring replication lag</h3>
+<p>Read sau write từ replica → stale data → user thấy "thao tác fail" mặc dù success. Fix: route critical reads to primary.</p>
+
+<h3>#6 Cross-shard JOIN</h3>
+<p>Sharded data, JOIN 2 sharded tables → fan-out × fan-out = Cartesian explosion. Solution: denormalize, hoặc materialize JOIN result.</p>
+
+<h3>#7 No partition cleanup</h3>
+<p>Partitions tích lũy mãi. 5 năm sau có 60+ partitions, metadata overhead. Fix: scheduled DROP old partitions, archive to cold storage.</p>
+
+<h3>#8 3NF queries on reporting tables</h3>
+<p>4-JOIN query trên 500M rows table = 2 phút. Fix: materialized view denormalized cho reporting.</p>
+</section>
+
+<section id="build-projects">
+<h2>10. Build Projects</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Partitioning Benchmark (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Repo GitHub với PostgreSQL Docker, 10M orders table, before/after partition benchmark.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Script tạo orders table 10M rows (1 năm data, 30K/day random)</li>
+    <li>Run 3 queries: by date range, by customer, by status — record timings</li>
+    <li>Partition table by month (12 partitions)</li>
+    <li>Run cùng 3 queries — record timings</li>
+    <li>EXPLAIN ANALYZE cho mỗi query trước/sau, show partition pruning</li>
+    <li>README có comparison table + analysis (vì sao queries không có date filter không cải thiện)</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: clear demonstration query with date filter ≥ 5× faster after partitioning. Query without date filter same speed (no benefit).</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Read Replica với Spring Boot (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Spring Boot app với PostgreSQL primary + replica (docker-compose), AbstractRoutingDataSource routing, integration test verify behavior.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>docker-compose với postgres primary + replica (streaming replication)</li>
+    <li>Spring Boot 2 datasources, AbstractRoutingDataSource</li>
+    <li>Aspect intercept <code>@Transactional(readOnly = true/false)</code> route accordingly</li>
+    <li>Integration test:<br>
+      &nbsp;&nbsp;• Write to primary, immediately read from replica → demonstrate stale<br>
+      &nbsp;&nbsp;• Write + read with readOnly=false → consistent<br>
+      &nbsp;&nbsp;• Read-only query routed to replica (verify via log)</li>
+    <li>Metrics endpoint show count writes vs reads, primary vs replica</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: test prove read-after-write stale problem reproducible. Solution prove correctness. Documentation explain trade-offs.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Sharding Proof-of-Concept (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: 4-shard PostgreSQL setup (docker), Spring Boot app với shard router, demonstrate single-shard vs fan-out queries.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>4 PostgreSQL containers, each acts as shard</li>
+    <li>ShardRouter component hash customer_id, route to correct shard</li>
+    <li>Insert 1M orders distributed across shards</li>
+    <li>Implement 2 query types:<br>
+      &nbsp;&nbsp;• Single-shard: by customer_id → 1 shard query<br>
+      &nbsp;&nbsp;• Fan-out: by date range → query all 4 shards parallel, merge</li>
+    <li>Benchmark latency cho both query types</li>
+    <li>Simulate 1 shard slow (add delay) → measure fan-out latency degradation</li>
+    <li>Demonstrate cross-shard transaction limitation (SAGA prep cho #13)</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: benchmark shows fan-out latency = MAX(shards). Slow shard degrades entire query. Write postmortem analysis về complexity vs benefit trade-off.</div>
+</div>
+</section>
+
+<section id="interview">
+<h2>11. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Khác biệt giữa 3NF và denormalization? Khi nào denormalize?</div>
+<div class="a">"3NF: mọi non-key column depend trực tiếp lên PK, không có transitive dependency. Tránh data anomalies. Denormalization: cố ý lặp data cho performance.<br><br>
+Denormalize khi: (1) column được read &gt; 1000× hơn write, (2) column rarely changes (&lt; 1×/month), (3) JOIN cost ảnh hưởng critical path latency, (4) có invalidation strategy (event-driven hoặc async job).<br><br>
+<strong>Default: 3NF</strong>. Denormalize là exception, không phải rule. Premature denormalization tạo consistency bug nhiều hơn solve performance."</div>
+
+<div class="q">Q: Partition pruning là gì, vì sao useful?</div>
+<div class="a">"Partition pruning: query planner skip scanning partitions không liên quan dựa trên WHERE conditions. Ví dụ: orders table partition by year. Query <code>WHERE created_at &gt; '2026-01-01'</code> → planner chỉ scan 2026 partition (không scan 2023/2024/2025).<br><br>
+Useful vì: (1) scan 1-2 partitions thay vì all → I/O ít hơn nhiều, (2) smaller index per partition → faster lookups, (3) old partitions có thể archive/drop easily.<br><br>
+<strong>Pitfall</strong>: nếu query KHÔNG có partition key trong WHERE → planner phải scan TẤT CẢ partitions → pruning defeated. Team phải train để luôn include partition key."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: 500M rows orders table, queries slow. 3 options: add indexes, partition by date, add read replicas. Choose nào và vì sao?</div>
+<div class="a">"<strong>Multi-layer approach, theo thứ tự ROI:</strong><br><br>
+<strong>1. Index trước (1-2 tuần, lowest risk, highest immediate impact)</strong><br>
+• Run EXPLAIN ANALYZE trên top queries để identify missing indexes<br>
+• Composite index theo query pattern, ví dụ <code>(customer_id, status, created_at DESC)</code><br>
+• Có thể giảm latency 100× cho queries selective<br>
+• Trade-off: write latency +5-10%, storage +1-2GB<br><br>
+<strong>2. Partition by date (3-4 tuần, medium risk)</strong><br>
+• Range partition by month/quarter<br>
+• Recent queries (last 30 days) chỉ scan 1-2 partitions<br>
+• Old data drop dễ: <code>DROP TABLE orders_2023</code><br>
+• Trade-off: schema migration painful, queries phải include date filter, FK reference phức tạp<br><br>
+<strong>3. Read replica (2-3 tuần)</strong><br>
+• Route SELECT queries cho replica<br>
+• Giảm load primary cho writes critical<br>
+• Trade-off: replication lag 100ms-1s, read-after-write trap<br><br>
+<strong>Order matters</strong>: index nhanh nhất implement và biggest immediate impact. Partition cần schema rework. Replica cần infrastructure setup. Layer build trên nhau.<br><br>
+<strong>Monitoring</strong>: setup pg_stat_statements, alert khi p95 &gt; SLA. Iterate based data."</div>
+
+<div class="q">Q: Denormalize <code>customer_name</code> trong orders cho performance. Customer rename → ensure consistency thế nào?</div>
+<div class="a">"<strong>3 approaches, trade-off khác nhau:</strong><br><br>
+<strong>Option 1 — Async batch update</strong>:<br>
+• Customer update name → save<br>
+• Async job hourly: <code>UPDATE orders SET customer_name = ? WHERE customer_id = ?</code><br>
+• Pros: simple, không ảnh hưởng write latency<br>
+• Cons: inconsistency window 1 hour. Reports trong window show mix old/new names.<br><br>
+<strong>Option 2 — Event-driven (recommended cho most cases)</strong>:<br>
+• Customer service publish <code>CustomerNameChangedEvent</code> sau update<br>
+• OrderService listen, async update denormalized rows<br>
+• Outbox pattern guarantee delivery (xem #18)<br>
+• Pros: near real-time, decoupled<br>
+• Cons: complex setup, eventual consistency<br><br>
+<strong>Option 3 — Don't denormalize, use materialized view</strong>:<br>
+• Keep 3NF orders table<br>
+• Materialized view JOIN orders + customers, refresh nightly<br>
+• Pros: consistency trong MV, simple invalidation (full refresh)<br>
+• Cons: MV stale until refresh, full refresh expensive<br><br>
+<strong>Recommendation</strong>: nếu nguyên nhân denormalize là OLTP read performance, dùng Option 2. Nếu cho reporting, dùng Option 3 (MV). Option 1 chỉ khi không có event infrastructure."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Design database architecture cho ShopVN platform. Handle 500M orders, scale to 1B. Consistency required (no oversell). Queries: by-customer (80%), by-shop (15%), analytics (5%).</div>
+<div class="a">"<strong>Multi-tier database architecture</strong>:<br><br>
+<strong>Tier 1 — OLTP (Primary + Replica)</strong><br>
+• PostgreSQL primary cho writes (orders, payment, inventory)<br>
+• 3 read replicas cho reads (geographically distributed)<br>
+• Replication lag &lt; 500ms (monitor + alert)<br>
+• Read-after-write: routes to primary via @Transactional(readOnly=false)<br><br>
+<strong>Tier 2 — Schema design</strong><br>
+• 3NF: orders, customers, shops, products tables separate<br>
+• Composite indexes per query pattern (xem #11)<br>
+• Range partition orders by month → auto-prune recent queries<br>
+• Denormalize selectively: customer_country trong orders (rarely changes, used for tax), product_price_snapshot trong order_items (frozen at purchase)<br><br>
+<strong>Tier 3 — Caching</strong><br>
+• Redis cho hot data: customer profile (5min TTL), product info (10min TTL)<br>
+• Cache invalidation event-driven: <code>CustomerUpdatedEvent</code> → evict cache<br>
+• Cache-aside pattern, không write-through (avoid stale write)<br><br>
+<strong>Tier 4 — Analytics (separate)</strong><br>
+• ClickHouse hoặc BigQuery cho analytics queries (5% traffic)<br>
+• ETL nightly từ OLTP → analytics DB<br>
+• Materialized views cho top dashboards (refresh hourly)<br>
+• Không ảnh hưởng OLTP performance<br><br>
+<strong>Consistency strategy</strong>:<br>
+• Order placement: CP — better fail than oversell (use SERIALIZABLE isolation hoặc optimistic locking)<br>
+• Inventory display: AP — show stale OK<br>
+• Cart sync across devices: AP với conflict resolution<br><br>
+<strong>Sharding decision</strong>:<br>
+• <strong>500M rows</strong>: chưa cần shard. Partition by month đủ.<br>
+• <strong>1B rows + hardware saturated</strong>: shard by customer_id (most query có customer filter)<br>
+• Fan-out queries (by-shop) chấp nhận 2-3× latency<br>
+• Cross-shard transactions dùng SAGA<br><br>
+<strong>Roadmap</strong>:<br>
+• Phase 1 (1 tháng): optimize indexes, setup pg_stat_statements monitoring<br>
+• Phase 2 (2 tháng): partition by month, archive old partitions<br>
+• Phase 3 (1 tháng): read replica + routing<br>
+• Phase 4 (2 tháng): caching layer + invalidation<br>
+• Phase 5 (3 tháng nếu reach hardware limit): sharding<br><br>
+<strong>Expected outcome</strong>: p95 query &lt; 50ms hot data, &lt; 500ms cold. Handle 10× current load."</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>12. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior dev (chưa biết database design) trong 5 phút:<br><br>
+  Vì sao chúng ta default 3NF mà không phải denormalized?<br><br>
+  Và vì sao partitioning by date thường tốt hơn sharding cho time-series data?"</div>
+  <div class="fy-rule">Không xem file. Vẽ ERD trên giấy. Nếu lắp bắp → quay lại đọc.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước khi đọc: tôi confident ___/5<br>Sau khi đọc: tôi confident ___/5<br>Sau khi LÀM Build #1: tôi confident ___/5"</div>
+  <div class="fy-rule">Nếu trước = sau = 5 nhưng chưa LÀM benchmark thật → illusion. Đọc-only không thay được hands-on.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source — Đọc Thêm</div>
+  <ul>
+    <li><a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank">PostgreSQL Documentation — Table Partitioning</a></li>
+    <li><a href="https://www.postgresql.org/docs/current/warm-standby.html" target="_blank">PostgreSQL — High Availability, Load Balancing, Replication</a></li>
+    <li><a href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html" target="_blank">Martin Kleppmann — Stop Calling Databases CP or AP</a> (nuanced view of CAP)</li>
+    <li><a href="https://www.cs.umd.edu/~abadi/papers/abadi-pacelc.pdf" target="_blank">Daniel Abadi — PACELC paper</a></li>
+    <li><strong>Sách</strong>: "Designing Data-Intensive Applications" (Martin Kleppmann) — Chapter 5 (Replication), 6 (Partitioning), 9 (Consistency)</li>
+    <li><strong>Sách</strong>: "Database Internals" (Alex Petrov) — deep dive vào B-Tree, LSM, replication algorithms</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #12 Database Design · Phase 3 — Database</div>
+<div>Tiếp theo: #13 Distributed Transaction · #14 Redis</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

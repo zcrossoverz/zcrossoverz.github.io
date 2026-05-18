@@ -65,7 +65,7 @@ const explosion = new Image();
 explosion.src = 'bang.png';
 function handleCollision(){
     let i = Math.floor(score/10);
-    let message = ['ngu vãi lồn, bạn như thiểu năng chơi game','được '+score+' điểm, đỡ hơn chút nhưng vẫn ngu!','được '+score+' cũng tạm đấy','được '+score+' điểm, bạn chơi cũng không tệ','good job ờ mây ding, '+score+' điểm','kỷ luc thế giới '+score+' điểm','hay vãi cặc '+score+' điểm','bạn đạt kỷ lục thế giới con mẹ nó rồi'];
+    let message = ['nguuuu','được '+score+' điểm, đỡ hơn chút nhưng vẫn ngu!','được '+score+' cũng tạm đấy','được '+score+' điểm, bạn chơi cũng không tệ','good job ờ mây ding, '+score+' điểm','kỷ luc thế giới '+score+' điểm','hay vl '+score+' điểm','bạn đạt kỷ lục thế giới con mẹ nó rồi'];
     if(i>=message.length) {
         let msg = message[message.length - 1];
     }else{

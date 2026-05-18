@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#14 — Redis | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 3 — Database<span class="sep">/</span><strong>#14 Redis</strong></div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#real-problem">1. Bài toán thực tế</a>
+    <a href="#data-structures">2. Data Structures</a>
+    <a href="#cache-patterns">3. Caching Patterns</a>
+    <a href="#stampede">4. Cache Stampede Prevention</a>
+    <a href="#invalidation">5. Invalidation Strategies</a>
+    <a href="#distributed-lock">6. Distributed Lock</a>
+    <a href="#pubsub">7. Pub/Sub &amp; Streams</a>
+    <a href="#persistence">8. Persistence &amp; HA</a>
+    <a href="#antipatterns">9. Anti-Patterns</a>
+    <a href="#build-projects">10. Build Projects</a>
+    <a href="#interview">11. Interview Framework</a>
+    <a href="#feynman-end">12. Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">🔴 CRITICAL — Daily Production Tool</span>
+  <h1>#14 — Redis</h1>
+  <p class="lead">Caching patterns, Distributed lock, Pub/Sub, Data structures. Redis xuất hiện trong <strong>99% modern backend</strong>. Hiểu sai = cache stampede, distributed lock buggy, memory OOM. Examples dùng <strong>e-commerce flash sale</strong>, <strong>social platform feed</strong>, <strong>ride-sharing live tracking</strong>.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">C — Database</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần + build</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#1 Concurrency, #13 Outbox, #33 Idempotency</div></div>
+    <div class="meta-item"><div class="k">Phase</div><div class="v">3 — Database</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Redis cực kỳ phổ biến → AI content rất nhiều nhưng đa số shallow. 5 quy tắc:</p>
+    <ol>
+      <li><strong>⏸ Pause &amp; Predict</strong>: trước khi đọc giải pháp, tự design cache strategy</li>
+      <li><strong>🧠 Misconception Check</strong>: Redis nhiều myth (TTL guarantee, distributed lock easy, etc.)</li>
+      <li><strong>🔬 Thử Phá Vỡ</strong>: cache invalidation là 1 trong 2 hard things trong CS — phải nghĩ failure modes</li>
+      <li><strong>🔨 Build</strong>: setup Redis local + Java client + simulate cache stampede thật. Không thay được.</li>
+      <li><strong>🎓 Feynman</strong>: vẽ cache-aside flow, distributed lock sequence — giải thích trade-offs</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Đọc Theo Độ Ưu Tiên</h2>
+<div class="roadmap">
+  <div class="roadmap-head">Path đề xuất:</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span><div><strong>Data Structures</strong> — CORE: chọn đúng = 10× performance. Misconception phổ biến: chỉ dùng String</div></div>
+    <div class="roadmap-item core"><span class="step">2</span><div><strong>Cache-aside pattern</strong> — CORE: pattern dùng nhiều nhất production</div></div>
+    <div class="roadmap-item core"><span class="step">3</span><div><strong>Cache Stampede Prevention</strong> — CORE: bug kinh điển khi hot key expire</div></div>
+    <div class="roadmap-item core"><span class="step">4</span><div><strong>Invalidation Strategies</strong> — CORE: TTL không đủ, phải biết event-driven</div></div>
+    <div class="roadmap-item core"><span class="step">5</span><div><strong>Distributed Lock</strong> — CORE: Redlock controversy, SETNX gotchas</div></div>
+    <div class="roadmap-item supp"><span class="step">6</span><div><strong>Pub/Sub &amp; Streams</strong> — SUPP: lightweight messaging. Khi nào dùng vs Kafka</div></div>
+    <div class="roadmap-item adv"><span class="step">7</span><div><strong>Persistence (RDB/AOF) &amp; HA</strong> — ADV: ops-level, dev nên biết khi nào worry</div></div>
+    <div class="roadmap-item adv"><span class="step">8</span><div><strong>Memory eviction policies</strong> — ADV: LRU/LFU/TTL strategies</div></div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Tổng Quan — Vì Sao Redis Critical</h2>
+<p>Redis = <strong>in-memory data store</strong>. Đọc/ghi 100K-1M ops/sec per node (vs PostgreSQL 5-10K). Latency &lt;1ms (vs DB 10-100ms). Cost: data trong RAM (volatile), nhỏ hơn DB capacity.</p>
+
+<p>Modern backend dùng Redis cho:</p>
+<ul>
+<li><strong>Cache</strong>: giảm load DB cho hot data</li>
+<li><strong>Session store</strong>: user session, JWT blacklist</li>
+<li><strong>Rate limiter</strong>: per-user request quota</li>
+<li><strong>Distributed lock</strong>: coordinate access trong distributed system</li>
+<li><strong>Counter/leaderboard</strong>: real-time stats (likes, views, ranks)</li>
+<li><strong>Pub/Sub</strong>: lightweight messaging giữa services</li>
+<li><strong>Job queue</strong>: lightweight task queue (Sidekiq, Bull)</li>
+</ul>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử Redis — Từ side project đến industry standard</div>
+  <div class="hist-timeline">
+    <strong>2009</strong> — <strong>Salvatore Sanfilippo</strong> (alias "antirez", Italian developer) tạo Redis ban đầu để solve scaling issue cho startup Lloogg (real-time web analytics). Frustrated với MySQL không handle được write throughput cao. Build C-based in-memory key-value store với data structures.<br><br>
+    <strong>2010</strong> — VMware hire Sanfilippo, sponsor Redis development full-time. Redis grow rapidly trong web 2.0 era — Twitter, Instagram, GitHub dùng cho cache + counter.<br><br>
+    <strong>2013</strong> — Pivotal spin off, sau đó Redis Labs (now Redis Inc.) founded để commercialize. Open source core vẫn maintain.<br><br>
+    <strong>2015</strong> — Redis Cluster GA — sharding built-in. Trước đó phải dùng client-side sharding hoặc Twemproxy.<br><br>
+    <strong>2018</strong> — Redis Streams introduced (Redis 5.0) — competitor cho Kafka cho lightweight messaging use case.<br><br>
+    <strong>2020</strong> — <strong>Martin Kleppmann</strong> publish famous "How to do distributed locking" critique của Redlock algorithm. Sanfilippo respond. Cuộc tranh luận nổi tiếng giúp community hiểu sâu hơn về distributed locks limitations.<br><br>
+    <strong>2024</strong> — Redis Inc. license change từ BSD sang dual SSPL/RSAL. AWS, Google fork Valkey để maintain Apache 2.0 version. Industry divided. Underlying tech vẫn cùng.<br><br>
+    <strong>Insight</strong>: Redis success không phải vì invent new algorithm (most data structures classical) — mà vì <em>practical engineering</em>: single-thread model simple, ridiculously fast, rich data structures. Trade-off: single-thread cho throughput per-core. Multi-core via clustering/replication.
+  </div>
+</div>
+</section>
+
+<section id="real-problem">
+<h2>1. Bài Toán Thực Tế — Flash Sale Của Sàn TMĐT Sập</h2>
+
+<p>Sàn ShopVN tổ chức flash sale: iPhone 15 giảm 50%, 100 units, bắt đầu 12:00 trưa. Marketing push notification cho 5 triệu users.</p>
+
+<h3>Timeline disaster</h3>
+
+<div class="log-card">
+<span class="ts">11:58</span> <span class="lvl-info">INFO</span> System normal, 5K QPS<br>
+<span class="ts">11:59</span> <span class="lvl-info">INFO</span> Pre-warming, cache loaded<br>
+<span class="ts">12:00:00</span> <span class="lvl-warn">WARN</span> Traffic spike: 50K QPS<br>
+<span class="ts">12:00:03</span> <span class="lvl-warn">WARN</span> Traffic: 250K QPS, DB connections 95% used<br>
+<span class="ts">12:00:08</span> <span class="lvl-error">ERROR</span> Traffic: 800K QPS, DB connection pool exhausted<br>
+<span class="ts">12:00:15</span> <span class="lvl-error">ERROR</span> Cache stampede: hot key "product:iphone15" expired, 50K concurrent DB queries<br>
+<span class="ts">12:00:30</span> <span class="lvl-error">ERROR</span> 502 Bad Gateway errors, DB crash<br>
+<span class="ts">12:01:00</span> <span class="lvl-error">ERROR</span> Distributed lock for inventory deduction: 500 concurrent threads holding lock with 5s timeout, deadlock-like state<br>
+<span class="ts">12:05:00</span> <span class="lvl-error">ERROR</span> Inventory shows 50 sold, payment confirmed 87. Oversell by 37 units.<br>
+<span class="ts">12:15:00</span> <span class="lvl-error">ERROR</span> Customer complaints, refund process triggered for 37 orders
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 5 bug Redis-related cùng lúc xảy ra</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Cache stampede</strong>: hot key expire → 50K concurrent DB queries</li>
+  <li><strong>Distributed lock bug</strong>: SETNX không có TTL → lock held forever khi worker crash</li>
+  <li><strong>Cache không cover all hot data</strong>: product detail cached, inventory count không cached</li>
+  <li><strong>No fallback</strong>: Redis down → app crash thay vì degrade</li>
+  <li><strong>Memory not limited</strong>: Redis OOM khi spike traffic, evict random keys</li>
+  </ol>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — BẮT BUỘC dừng</div>
+  <div class="pause-q">Trước khi đọc giải pháp, tự trả lời:</div>
+  <ol style="margin:8px 0 0 22px">
+  <li><strong>Cache stampede</strong>: 1000 requests arrive cùng moment cache expire → tất cả miss → 1000 DB queries. Cách prevent?</li>
+  <li><strong>Distributed lock</strong>: <code>SETNX key 1</code> để lock. Worker process xong → <code>DEL key</code>. Vấn đề gì nếu worker crash giữa chừng?</li>
+  <li><strong>Inventory deduction</strong>: cần atomic check-and-decrement (nếu stock &gt; 0 thì giảm 1). Làm sao với Redis?</li>
+  <li><strong>Redis down</strong>: app fall back thế nào? Show error, fallback to DB, hoặc serve stale data?</li>
+  <li><strong>Data structure</strong>: cache product detail (10 fields), recent orders (last 50), leaderboard top sellers — chọn structure nào cho mỗi case?</li>
+  </ol>
+  <div class="pause-hint">Nếu trả lời được 4/5 → bạn solid về Redis production. Nếu &lt;3 → đọc kỹ.</div>
+</div>
+</section>
+
+<section id="data-structures">
+<h2>2. Data Structures <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Chọn đúng structure = 10× performance</strong>. Junior thường chỉ dùng String, miss out major benefits.
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Structure</th><th>Use case e-commerce/social</th><th>Time complexity</th></tr></thead>
+<tbody>
+<tr><td><code>String</code></td><td>Cache product detail (JSON serialized), counter, rate limit</td><td>GET/SET O(1), INCR O(1)</td></tr>
+<tr><td><code>Hash</code></td><td>User session (multiple fields), cart contents</td><td>HGET/HSET O(1), HGETALL O(n)</td></tr>
+<tr><td><code>List</code></td><td>Recent activity feed, comment timeline, job queue</td><td>LPUSH/RPOP O(1), LRANGE O(n)</td></tr>
+<tr><td><code>Set</code></td><td>Tags, unique visitors, friends list (intersection)</td><td>SADD/SISMEMBER O(1), SINTER O(min)</td></tr>
+<tr><td><code>Sorted Set</code></td><td>Leaderboard, top sellers, time-ranked feed</td><td>ZADD O(log n), ZRANGE O(log n + m)</td></tr>
+<tr><td><code>Stream</code></td><td>Event log, time-series, message queue replacement</td><td>XADD O(1), XRANGE O(log n + m)</td></tr>
+<tr><td><code>HyperLogLog</code></td><td>Approximate unique count (page views, daily actives)</td><td>PFADD/PFCOUNT O(1), 12KB memory</td></tr>
+<tr><td><code>Bitmap</code></td><td>User flags (online status, premium feature toggle)</td><td>SETBIT O(1), BITCOUNT O(n)</td></tr>
+<tr><td><code>Geospatial</code></td><td>Nearby driver search, restaurant within radius</td><td>GEOADD O(log n), GEOSEARCH O(N+log m)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Case Study — Leaderboard với Sorted Set</h3>
+
+<p>Social platform cần "Top 100 most-liked posts trong 24h". Với <strong>1M posts</strong>:</p>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ DB query mỗi request</div>
+<pre><code class="language-sql">SELECT post_id, like_count
+FROM posts
+WHERE created_at &gt; NOW() - INTERVAL '24h'
+ORDER BY like_count DESC
+LIMIT 100;
+-- Scan 1M rows, sort, take top 100
+-- ~500ms per query
+-- Index on (created_at, like_count) help
+-- nhưng vẫn slow vì sort large set
+-- 10K QPS → DB chết</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Sorted Set</div>
+<pre><code class="language-bash"># When post receive like
+ZINCRBY top_posts_24h 1 "post_42"
+
+# When fetching leaderboard
+ZREVRANGE top_posts_24h 0 99 WITHSCORES
+# O(log n + m) = O(log 1M + 100)
+# ~1ms per query
+# Reset daily: DEL + recompute</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Sorted Set magic cho leaderboard?</div>
+  <p>Sorted Set = skip list + hash table internally. <code>ZADD</code> insert + maintain sort order O(log n). <code>ZRANGE</code> get top N O(log n + N). <code>ZINCRBY</code> atomic update score + reorder. Tất cả memory, không disk I/O. DB sort 1M rows tốn 500ms; sorted set query 1ms — <strong>500× faster</strong>. Trade-off: phải maintain song song với DB (truth source), sync via event.</p>
+</div>
+
+<h3>Case Study — Geospatial cho Ride-Sharing</h3>
+
+<pre><code class="language-bash"># Driver report location mỗi 5s
+GEOADD drivers:available 106.6297 10.8231 "driver_001"
+GEOADD drivers:available 106.6307 10.8241 "driver_002"
+# Auto-index lat/lng → geohash
+
+# Khi rider request, tìm 10 drivers gần nhất trong 2km
+GEOSEARCH drivers:available
+  FROMLONLAT 106.6300 10.8235
+  BYRADIUS 2 km
+  COUNT 10 ASC
+  WITHCOORD WITHDIST
+# Returns top 10 sorted by distance
+# ~5ms per query</code></pre>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "Lưu mọi thứ vào String JSON, đơn giản"</div>
+  <div class="mc-wrong">"Tôi serialize entire user object thành JSON, GET/SET với String. Đơn giản, không cần học data structures khác."</div>
+  <div class="mc-right">3 vấn đề với cách này:<br>
+  <strong>(1)</strong> Update 1 field = deserialize full JSON, modify, re-serialize, SET back → O(n) thay vì O(1) với Hash.<br>
+  <strong>(2)</strong> Concurrent updates → lost write (last writer wins). Hash atomic per field.<br>
+  <strong>(3)</strong> Wasted bandwidth: GET 10KB JSON khi chỉ cần 1 field.<br>
+  Hash dùng nhiều ngay nếu object có 5+ fields và update partial common.</div>
+</div>
+</section>
+
+<section id="cache-patterns">
+<h2>3. Caching Patterns <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Pattern phổ biến nhất production</strong>. Phải master cả 4 patterns + trade-offs.
+</div>
+
+<h3>Pattern 1: Cache-Aside (Lazy Loading) — phổ biến nhất</h3>
+
+<div class="diagram">
+<svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .app{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
+    .cache{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5}
+    .db{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
+    .lbl{fill:#0f172a;font-weight:600}
+    .arr{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#aca)}
+  </style>
+  <marker id="aca" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>
+
+  <rect x="20" y="100" width="140" height="50" rx="6" class="app"/>
+  <text x="90" y="124" text-anchor="middle" class="lbl">App</text>
+
+  <rect x="280" y="40" width="140" height="50" rx="6" class="cache"/>
+  <text x="350" y="64" text-anchor="middle" class="lbl">Redis</text>
+  <text x="350" y="80" text-anchor="middle" font-size="10" fill="#475569">Cache</text>
+
+  <rect x="280" y="170" width="140" height="50" rx="6" class="db"/>
+  <text x="350" y="194" text-anchor="middle" class="lbl">PostgreSQL</text>
+  <text x="350" y="210" text-anchor="middle" font-size="10" fill="#475569">Source of truth</text>
+
+  <line x1="160" y1="115" x2="280" y2="65" class="arr"/>
+  <text x="175" y="100" font-size="10" fill="#475569">① GET cache</text>
+
+  <line x1="280" y1="80" x2="160" y2="125" class="arr"/>
+  <text x="180" y="155" font-size="10" fill="#dc2626">② MISS</text>
+
+  <line x1="160" y1="135" x2="280" y2="195" class="arr"/>
+  <text x="175" y="175" font-size="10" fill="#475569">③ SELECT DB</text>
+
+  <line x1="280" y1="210" x2="160" y2="150" class="arr"/>
+  <text x="180" y="225" font-size="10" fill="#059669">④ data</text>
+
+  <line x1="160" y1="115" x2="280" y2="50" class="arr" stroke="#7c3aed"/>
+  <text x="195" y="50" font-size="10" fill="#7c3aed">⑤ SET cache</text>
+</svg>
+</div>
+
+<pre><code class="language-java">@Service
+public class ProductService {
+    private final RedisTemplate&lt;String, String&gt; redis;
+    private final ProductRepository repo;
+    private final ObjectMapper json;
+
+    public Product findById(String productId) {
+        String key = "product:" + productId;
+
+        // 1. Try cache
+        String cached = redis.opsForValue().get(key);
+        if (cached != null) {
+            return json.readValue(cached, Product.class);
+        }
+
+        // 2. Cache miss — load from DB
+        Product product = repo.findById(productId)
+            .orElseThrow(() -&gt; new ProductNotFoundException(productId));
+
+        // 3. Write to cache (with TTL)
+        redis.opsForValue().set(key, json.writeValueAsString(product), Duration.ofMinutes(5));
+
+        return product;
+    }
+
+    // Update: write to DB, invalidate cache
+    public Product update(String productId, ProductUpdate update) {
+        Product product = repo.update(productId, update);
+        redis.delete("product:" + productId);  // Invalidate
+        return product;
+    }
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao Cache-Aside phổ biến nhất?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>App control flow</strong>: app quyết định khi nào cache, không phụ thuộc framework magic</li>
+  <li><strong>Cache failure tolerant</strong>: cache down → fall back DB tự nhiên (slow but works)</li>
+  <li><strong>Selective caching</strong>: chọn data nào cache, TTL khác nhau per case</li>
+  <li><strong>Simple mental model</strong>: GET → MISS → LOAD → SET</li>
+  </ul>
+  <p><strong>Trade-off</strong>: invalidation phải explicit (dễ quên), first-time hit luôn slow (warm-up).</p>
+</div>
+
+<h3>Pattern 2: Read-Through Cache</h3>
+
+<p>Cache layer transparent giữa app và DB. App chỉ gọi cache; cache miss → cache tự load từ DB. Spring <code>@Cacheable</code> dùng pattern này.</p>
+
+<pre><code class="language-java">@Cacheable(value = "products", key = "#productId")
+public Product findById(String productId) {
+    return repo.findById(productId).orElseThrow();
+}
+// Spring intercept: check cache, miss → call method, store result</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Cache-Aside vs Read-Through?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Read-Through (Spring @Cacheable)</strong>: declarative, ít code, nhưng "magic" — debug hard, flexibility kém</li>
+  <li><strong>Cache-Aside (manual)</strong>: nhiều code hơn, control nhiều hơn — production thường prefer</li>
+  </ul>
+  <p>Khi nào dùng cái nào: simple CRUD, prototype → Spring annotation. Production critical path → manual cache-aside.</p>
+</div>
+
+<h3>Pattern 3: Write-Through</h3>
+
+<p>Write to cache → cache write to DB synchronously. Cache always fresh.</p>
+
+<pre><code class="language-java">public Product save(Product product) {
+    redis.opsForValue().set("product:" + product.id(), serialize(product), Duration.ofMinutes(5));
+    return repo.save(product);  // Sync write to DB
+}</code></pre>
+
+<p><strong>Pros</strong>: cache always consistent với DB. <strong>Cons</strong>: write latency tăng (cache + DB), cache pollution (write rare-read data into cache).</p>
+
+<h3>Pattern 4: Write-Behind (Write-Back)</h3>
+
+<p>Write to cache → return immediately. Cache async batch write to DB.</p>
+
+<pre><code class="language-java">// Write goes to cache only
+public void recordPageView(String pageId) {
+    redis.opsForValue().increment("pageviews:" + pageId);
+}
+
+// Async job batch-write to DB
+@Scheduled(fixedDelay = 60000)
+public void flushPageViewsToDb() {
+    Set&lt;String&gt; keys = redis.keys("pageviews:*");
+    for (String key : keys) {
+        Long count = redis.opsForValue().get(key);
+        pageViewRepo.upsert(extractPageId(key), count);
+        redis.delete(key);
+    }
+}</code></pre>
+
+<p><strong>Pros</strong>: blazing fast writes. <strong>Cons</strong>: data loss risk nếu cache crash trước flush. Chỉ dùng cho non-critical data (analytics, counters).</p>
+</section>
+
+<section id="stampede">
+<h2>4. Cache Stampede Prevention <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Bug kinh điển khi hot key expire</strong>. Hiểu xảy ra như thế nào và 3 cách prevent.
+</div>
+
+<h3>The Problem</h3>
+
+<p>Hot key "product:iphone15" có TTL 5 phút. Tại moment expire:</p>
+
+<ol>
+<li>Request 1 arrive → cache MISS → start DB query (50ms)</li>
+<li>Request 2 arrive (10μs sau) → cache vẫn MISS → start DB query</li>
+<li>...continue...</li>
+<li>Request 5000 (50ms sau, before Request 1 finishes) → vẫn MISS → start DB query</li>
+<li>= 5000 concurrent DB queries cho cùng key → DB overload</li>
+</ol>
+
+<div class="diagram">
+<svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
+  <defs><style>
+    .timeline{stroke:#94a3b8;stroke-width:1.5;fill:none}
+    .req{fill:#fef2f2;stroke:#dc2626}
+    .lbl{fill:#0f172a;font-weight:600}
+    .crit{fill:#dc2626;font-weight:600}
+  </style></defs>
+
+  <line x1="40" y1="100" x2="680" y2="100" class="timeline"/>
+  <text x="20" y="105" font-size="11" fill="#475569">time</text>
+
+  <line x1="100" y1="90" x2="100" y2="110" stroke="#dc2626" stroke-width="2"/>
+  <text x="100" y="80" text-anchor="middle" class="crit" font-size="11">T=0</text>
+  <text x="100" y="130" text-anchor="middle" font-size="10" fill="#dc2626">cache EXPIRES</text>
+
+  <circle cx="120" cy="100" r="4" class="req"/>
+  <circle cx="135" cy="100" r="4" class="req"/>
+  <circle cx="150" cy="100" r="4" class="req"/>
+  <circle cx="165" cy="100" r="4" class="req"/>
+  <circle cx="180" cy="100" r="4" class="req"/>
+  <circle cx="200" cy="100" r="4" class="req"/>
+  <circle cx="220" cy="100" r="4" class="req"/>
+  <circle cx="240" cy="100" r="4" class="req"/>
+  <circle cx="260" cy="100" r="4" class="req"/>
+  <text x="190" y="155" text-anchor="middle" font-size="10" fill="#dc2626">5000+ requests trong 50ms,</text>
+  <text x="190" y="170" text-anchor="middle" font-size="10" fill="#dc2626">tất cả MISS, tất cả query DB</text>
+
+  <line x1="540" y1="90" x2="540" y2="110" stroke="#059669" stroke-width="2"/>
+  <text x="540" y="80" text-anchor="middle" font-size="11" fill="#059669">T=50ms</text>
+  <text x="540" y="130" text-anchor="middle" font-size="10" fill="#059669">DB query 1 done</text>
+  <text x="540" y="150" text-anchor="middle" font-size="10" fill="#059669">cache populated</text>
+  <text x="540" y="170" text-anchor="middle" font-size="10" fill="#dc2626">— too late, DB đã crash</text>
+</svg>
+</div>
+
+<h3>Solution 1: Lock pattern (Single-Flight)</h3>
+
+<pre><code class="language-java">public Product findByIdSafe(String productId) {
+    String key = "product:" + productId;
+    String lockKey = "lock:" + key;
+
+    // Check cache
+    String cached = redis.opsForValue().get(key);
+    if (cached != null) return deserialize(cached);
+
+    // Cache miss — try acquire lock
+    Boolean locked = redis.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(10));
+
+    if (Boolean.TRUE.equals(locked)) {
+        try {
+            // We won the lock — load from DB
+            Product product = repo.findById(productId).orElseThrow();
+            redis.opsForValue().set(key, serialize(product), Duration.ofMinutes(5));
+            return product;
+        } finally {
+            redis.delete(lockKey);
+        }
+    } else {
+        // Lock held by someone else — wait briefly + retry cache
+        Thread.sleep(50);
+        String retryCache = redis.opsForValue().get(key);
+        if (retryCache != null) return deserialize(retryCache);
+        // Fallback: query DB (degraded path)
+        return repo.findById(productId).orElseThrow();
+    }
+}</code></pre>
+
+<h3>Solution 2: Probabilistic Early Refresh (XFetch)</h3>
+
+<p>Refresh cache trước khi expire với probability tăng theo time-to-expire. Chỉ 1 request refresh, others serve stale.</p>
+
+<pre><code class="language-java">public Product findByIdWithEarlyRefresh(String productId) {
+    String key = "product:" + productId;
+    CachedProduct cached = getCachedWithMetadata(key);
+
+    if (cached == null) {
+        return loadAndCache(productId);  // True miss
+    }
+
+    long ttl = cached.expiresAt() - System.currentTimeMillis();
+    long delta = cached.lastFetchDuration();  // How long last DB query took
+    double beta = 1.0;  // Tuning parameter
+
+    // Probabilistic refresh — likelihood tăng khi gần expire
+    // Formula: now() - delta * beta * ln(rand()) &gt;= expiresAt
+    if (System.currentTimeMillis() - delta * beta * Math.log(Math.random()) &gt;= cached.expiresAt()) {
+        // Refresh async, return stale value
+        CompletableFuture.runAsync(() -&gt; loadAndCache(productId));
+    }
+
+    return cached.product();
+}</code></pre>
+
+<h3>Solution 3: Two-Level TTL (Soft + Hard)</h3>
+
+<pre><code class="language-java">// Hard TTL: actual expiry (10 min)
+// Soft TTL: stored in value, app refresh proactively at 8 min
+
+public Product findById(String productId) {
+    String key = "product:" + productId;
+    CachedValue cached = getCachedWithSoftTtl(key);
+
+    if (cached == null) {
+        // Hard miss
+        return loadAndCacheWithTtls(productId, Duration.ofMinutes(10), Duration.ofMinutes(8));
+    }
+
+    if (cached.isSoftExpired()) {
+        // Async refresh — others continue to serve stale value
+        CompletableFuture.runAsync(() -&gt; loadAndCacheWithTtls(productId, ...));
+    }
+    return cached.product();
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Khi chọn strategy nào?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Lock pattern</strong>: simple, work cho most cases. Trade-off: extra Redis round-trip cho mỗi miss.</li>
+  <li><strong>Probabilistic early refresh</strong>: smooth, no thundering herd, no lock overhead. Trade-off: complex math, tuning.</li>
+  <li><strong>Two-level TTL</strong>: simple, predictable. Trade-off: app code phức tạp hơn.</li>
+  </ul>
+  <p>Production lớn (Facebook, Twitter) thường combine: lock cho first-load, probabilistic cho refresh.</p>
+</div>
+</section>
+
+<section id="invalidation">
+<h2>5. Invalidation Strategies <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — "Cache invalidation là 1 trong 2 hard things trong CS"</strong> (Phil Karlton). 4 strategies, mỗi cái có failure mode riêng.
+</div>
+
+<h3>Strategy 1: TTL Only — Simplest</h3>
+
+<pre><code class="language-java">redis.opsForValue().set(key, value, Duration.ofMinutes(5));
+// Stale data tolerable trong 5 min window</code></pre>
+
+<p><strong>Pros</strong>: simple, no coordination. <strong>Cons</strong>: stale data window (5 min), khó cho real-time data.</p>
+
+<h3>Strategy 2: Write-Through Invalidation</h3>
+
+<pre><code class="language-java">@Transactional
+public Product update(String productId, ProductUpdate update) {
+    Product product = repo.update(productId, update);
+    redis.delete("product:" + productId);  // Invalidate ngay
+    return product;
+}</code></pre>
+
+<p><strong>Pros</strong>: cache fresh ngay sau write. <strong>Cons</strong>: dual-write problem — nếu DB commit OK nhưng Redis DELETE fail (Redis down), cache có stale data đến TTL expire.</p>
+
+<h3>Strategy 3: Event-Driven Invalidation</h3>
+
+<pre><code class="language-java">// Producer
+@Transactional
+public Product update(String productId, ProductUpdate update) {
+    Product product = repo.update(productId, update);
+    // Save event vào outbox table (cùng transaction)
+    outboxRepo.save(OutboxEvent.of(new ProductUpdatedEvent(productId)));
+    return product;
+}
+
+// Consumer (separate service hoặc background poller)
+@KafkaListener(topics = "product-events")
+public void on(ProductUpdatedEvent event) {
+    redis.delete("product:" + event.productId());
+}</code></pre>
+
+<p><strong>Pros</strong>: reliable invalidation (Outbox guarantees). Scale to many cache instances. <strong>Cons</strong>: complex setup (event infrastructure).</p>
+
+<h3>Strategy 4: Version-Based</h3>
+
+<pre><code class="language-java">// Key includes version
+String key = "product:" + productId + ":v" + currentVersion;
+
+// On update, bump version (atomic)
+Long newVersion = redis.opsForValue().increment("product_version:" + productId);
+// Old keys still exist, expire via TTL
+// New reads use new key, miss → load fresh</code></pre>
+
+<p><strong>Pros</strong>: no invalidation race condition. <strong>Cons</strong>: memory bloat (old versions linger), need version tracking.</p>
+
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Cache Invalidation Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Race condition</strong>: Thread A read DB → Thread B update DB + DELETE cache → Thread A SET cache với old value. <em>Now cache stale forever (until TTL)</em>. Fix: cache-aside với version check, hoặc dùng Redis transaction (MULTI/EXEC).</li>
+    <li><strong>Distributed cache</strong>: 3 Redis instances. UPDATE invalidate chỉ 1 instance → 2 còn lại serve stale. Fix: invalidate all instances qua pub/sub event.</li>
+    <li><strong>Cascade invalidation</strong>: product updated → invalidate product cache. Nhưng order details cache include product info → cũng stale. Track dependencies hoặc dùng tag-based invalidation.</li>
+    <li><strong>Mass invalidation thundering herd</strong>: deploy new product catalog version → DELETE 100K keys một lúc → next reads all miss → DB stampede. Fix: gradual invalidation (10K/min) hoặc soft TTL.</li>
+    <li><strong>Cache poison</strong>: bug code write wrong value to cache. TTL chưa hết → all users see wrong data. Fix: version key trong code (deploy = increment version → old cache abandoned).</li>
+    <li><strong>Memory pressure</strong>: Redis hit maxmemory → eviction policy kick in. LRU evict hot keys không expected → cache miss spike. Monitor evictions.</li>
+    <li><strong>Negative cache</strong>: 404 response cached → real product created sau → 404 vẫn return từ cache đến TTL. Fix: short TTL cho negative cache (30s), invalidate on insert.</li>
+    <li><strong>Cache stale do clock skew</strong>: app server clock lệch Redis → TTL calculation sai. Sync time với NTP.</li>
+  </ul>
+</div>
+</section>
+
+<section id="distributed-lock">
+<h2>6. Distributed Lock <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Cực kỳ dễ bug</strong>. Hiểu SETNX gotchas + Redlock controversy là dấu hiệu senior.
+</div>
+
+<h3>Naive Implementation — Bug Everywhere</h3>
+
+<div class="compare">
+<div class="col bad">
+  <div class="col-head">❌ Naive SETNX</div>
+<pre><code class="language-java">// Acquire lock
+Boolean ok = redis.opsForValue()
+    .setIfAbsent("lock:order:123", "1");
+if (Boolean.TRUE.equals(ok)) {
+    try {
+        processOrder();
+    } finally {
+        redis.delete("lock:order:123");
+    }
+}
+// Bugs:
+// 1. No TTL → worker crash → lock held forever
+// 2. No owner check → DEL by wrong process
+// 3. No retry strategy</code></pre>
+</div>
+<div class="col good">
+  <div class="col-head">✅ Proper distributed lock</div>
+<pre><code class="language-java">String lockKey = "lock:order:123";
+String lockValue = UUID.randomUUID().toString();
+Duration ttl = Duration.ofSeconds(30);
+
+// Atomic SET với NX (only if not exists) + EX (TTL)
+Boolean acquired = redis.opsForValue()
+    .setIfAbsent(lockKey, lockValue, ttl);
+
+if (Boolean.TRUE.equals(acquired)) {
+    try {
+        processOrder();
+    } finally {
+        // Release ONLY if we still own (atomic Lua)
+        String luaScript = """
+            if redis.call('get', KEYS[1]) == ARGV[1]
+            then return redis.call('del', KEYS[1])
+            else return 0 end
+            """;
+        redis.execute(new DefaultRedisScript&lt;&gt;(luaScript, Long.class),
+            List.of(lockKey), lockValue);
+    }
+}</code></pre>
+</div>
+</div>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao "check ownership" qua Lua script?</div>
+  <p>Scenario without ownership check:</p>
+  <ol style="margin:8px 0 0 20px">
+  <li>Worker A acquire lock với TTL 30s</li>
+  <li>Worker A pause (GC, network) 35s</li>
+  <li>Lock TTL expire</li>
+  <li>Worker B acquire lock với same key</li>
+  <li>Worker A resume → tưởng vẫn hold lock → call DELETE → <strong>delete lock của Worker B!</strong></li>
+  </ol>
+  <p>Ownership check (compare value before delete) ngăn this. Lua script ensure atomicity của check + delete (không race condition giữa GET và DEL).</p>
+</div>
+
+<h3>Redlock Controversy</h3>
+
+<p>Sanfilippo propose <strong>Redlock</strong> algorithm cho distributed lock across multiple Redis instances. Martin Kleppmann publish famous critique 2016. Tóm tắt:</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Concern (Kleppmann)</th><th>Response (Sanfilippo)</th></tr></thead>
+<tbody>
+<tr><td>Clock skew between Redis nodes affect TTL correctness</td><td>Reasonable bounded clock skew acceptable cho most use cases</td></tr>
+<tr><td>GC pause của client &gt; TTL → lock expire while client think holding</td><td>Add fencing token, validate at resource side</td></tr>
+<tr><td>Network partition + master/slave failover → lock duplicate</td><td>Multi-node algorithm reduces this risk</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Practical guidance</div>
+  <p>Distributed lock với Redis (single or Redlock) <strong>OK cho "efficiency"</strong> (avoid duplicate work) nhưng <strong>NOT OK cho "correctness"</strong> (mutual exclusion guarantee critical).</p>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Efficiency use case</strong>: cache regeneration (2 workers regenerate cache cùng lúc = waste, không critical). Redis lock đủ.</li>
+  <li><strong>Correctness use case</strong>: financial transactions, inventory deduction. Cần fencing tokens + resource-side validation. Hoặc dùng database transaction trực tiếp.</li>
+  </ul>
+  <p>Library recommend: <strong>Redisson</strong> (Java) — implement Redlock + auto-renew + fair lock. Production-tested.</p>
+</div>
+
+<pre><code class="language-java">// Redisson example — production-ready
+@Autowired RedissonClient redisson;
+
+public void processOrder(String orderId) {
+    RLock lock = redisson.getLock("order:lock:" + orderId);
+    try {
+        // Wait up to 5s, hold lock 30s, auto-renew nếu thread alive
+        boolean acquired = lock.tryLock(5, 30, TimeUnit.SECONDS);
+        if (!acquired) {
+            throw new LockAcquisitionFailedException();
+        }
+        // Process safely
+        processOrder();
+    } finally {
+        if (lock.isHeldByCurrentThread()) lock.unlock();
+    }
+}</code></pre>
+
+<h3>Inventory Deduction — Atomic Without Lock</h3>
+
+<p>Cho flash sale "100 units", thay vì lock + check-decrement, dùng Lua atomic:</p>
+
+<pre><code class="language-java">String luaScript = """
+    local stock = tonumber(redis.call('get', KEYS[1]))
+    if stock == nil or stock &lt;= 0 then
+        return -1
+    end
+    redis.call('decr', KEYS[1])
+    return stock - 1
+    """;
+
+Long remaining = redis.execute(new DefaultRedisScript&lt;&gt;(luaScript, Long.class),
+    List.of("inventory:iphone15"));
+
+if (remaining &lt; 0) {
+    throw new OutOfStockException();
+}
+// remaining = current stock after decrement</code></pre>
+
+<p>Lua script execute atomically trong Redis single-thread → no race. Không cần distributed lock cho check-decrement pattern.</p>
+</section>
+
+<section id="pubsub">
+<h2>7. Pub/Sub &amp; Streams <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Lightweight messaging</strong>. Khi nào dùng vs Kafka.
+</div>
+
+<h3>Pub/Sub — Fire-and-Forget</h3>
+
+<pre><code class="language-java">// Publisher
+redis.convertAndSend("channel:notifications", "New order from user 123");
+
+// Subscriber
+@RedisListener(topic = "channel:notifications")
+public void onNotification(String message) {
+    log.info("Received: {}", message);
+}</code></pre>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Pub/Sub limitations</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>No persistence</strong>: subscriber offline → miss messages forever</li>
+  <li><strong>No acknowledgment</strong>: publisher không biết subscribers nhận thành công</li>
+  <li><strong>No replay</strong>: không thể re-process old messages</li>
+  </ul>
+  <p>Phù hợp cho: real-time notifications không critical (chat presence, live update), cache invalidation events.</p>
+</div>
+
+<h3>Streams (Redis 5+) — Kafka-like Persistence</h3>
+
+<pre><code class="language-java">// Publisher
+Map&lt;String, String&gt; data = Map.of("orderId", "123", "amount", "500000");
+redis.opsForStream().add("orders", data);
+
+// Consumer with consumer group (load balance, ack)
+redis.opsForStream().createGroup("orders", ReadOffset.from("0"), "order-processors");
+
+List&lt;MapRecord&lt;String, String, String&gt;&gt; records = redis.opsForStream()
+    .read(Consumer.from("order-processors", "worker-1"),
+          StreamOffset.create("orders", ReadOffset.lastConsumed()));
+
+for (var record : records) {
+    process(record.getValue());
+    redis.opsForStream().acknowledge("orders", "order-processors", record.getId());
+}</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Redis Streams vs Kafka?</div>
+  <ul style="margin:8px 0 0 20px">
+  <li><strong>Redis Streams</strong>: simpler setup, lower latency, suitable up to ~50K msg/sec. Persistence via RDB/AOF. Best cho moderate-scale event streaming.</li>
+  <li><strong>Kafka</strong>: high throughput (millions msg/sec), better durability guarantees, ecosystem (Kafka Streams, Connect). Required cho large-scale.</li>
+  </ul>
+  <p>Rule of thumb: if &lt; 10K events/sec và đã có Redis → Streams. If &gt; 100K events/sec → Kafka. Between: depends on existing infrastructure.</p>
+</div>
+</section>
+
+<section id="persistence">
+<h2>8. Persistence &amp; HA <span class="k-tag advanced">ADVANCED</span></h2>
+
+<div class="k-banner advanced">
+  <strong>ADVANCED — Ops-level concern</strong>. Dev cần biết khi nào worry.
+</div>
+
+<h3>RDB vs AOF</h3>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th></th><th>RDB (snapshot)</th><th>AOF (append-only log)</th></tr></thead>
+<tbody>
+<tr><td>Format</td><td>Binary snapshot</td><td>Append every write command</td></tr>
+<tr><td>Recovery</td><td>Fast load</td><td>Replay log, slower</td></tr>
+<tr><td>Data loss window</td><td>Minutes (interval)</td><td>1 second (fsync every sec)</td></tr>
+<tr><td>Disk usage</td><td>Compact</td><td>Larger (grows with writes)</td></tr>
+<tr><td>Use case</td><td>Backup, lower durability</td><td>High durability needed</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Production recommendation</strong>: enable cả hai. RDB cho fast restore, AOF cho minimal data loss. Trade-off: write performance ~10% slower với AOF.</p>
+
+<h3>HA Setup — Redis Sentinel vs Redis Cluster</h3>
+
+<ul>
+<li><strong>Sentinel</strong>: 1 master + N replicas + sentinel nodes monitor. Auto-failover. Same data, no sharding. Good cho &lt;= 50GB data.</li>
+<li><strong>Cluster</strong>: sharded (16384 slots). Auto-failover per shard. Linear scale. Required cho data &gt; 50GB hoặc throughput &gt; 100K ops/sec.</li>
+</ul>
+</section>
+
+<section id="antipatterns">
+<h2>9. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+
+<h3>#1 Using Redis as Primary Database</h3>
+<p>"Redis fast, lưu all data đó." Sai vì: data in RAM (lost if crash), expensive vs disk, không có ACID transactions full, query capabilities limited. Redis là cache/auxiliary, not primary store.</p>
+
+<h3>#2 KEYS command in production</h3>
+<pre><code class="language-bash"># ❌ KEYS blocks entire Redis O(n)
+KEYS user:*
+# Production với 1M keys → 5s block → all clients timeout
+
+# ✅ SCAN cursor-based
+SCAN 0 MATCH user:* COUNT 100</code></pre>
+
+<h3>#3 Storing huge values</h3>
+<p>1MB value = 1MB network transfer per GET. Redis single-thread blocked. Latency spike. Solution: split, paginate, hoặc reconsider use case.</p>
+
+<h3>#4 No memory limit</h3>
+<p>Redis grow indefinitely → OOM kill → data loss. <strong>Always set</strong> <code>maxmemory</code> + eviction policy (<code>allkeys-lru</code> for cache, <code>noeviction</code> for primary store).</p>
+
+<h3>#5 Hot key</h3>
+<p>1 key receive 90% traffic (celebrity user, hot product). Single shard overloaded. Solutions: client-side cache, replicate key with multiple suffixes (<code>product:42:#1</code>, <code>product:42:#2</code>), application-level sharding.</p>
+
+<h3>#6 Pipeline misuse</h3>
+<p>Forget to pipeline → N round trips for N ops. Use <code>MULTI/EXEC</code> hoặc client pipeline để batch.</p>
+
+<h3>#7 Not handling connection failures</h3>
+<p>Network blip → Redis client throw exception → app crash. Use connection pool with retry, circuit breaker, fallback to DB.</p>
+
+<h3>#8 Forgetting TTL on session keys</h3>
+<p>User session stored forever → memory bloat. Always TTL.</p>
+</section>
+
+<section id="build-projects">
+<h2>10. Build Projects</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Cache-Aside với Stampede Prevention (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Spring Boot service implement cache-aside + simulate stampede + apply lock pattern fix.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>PostgreSQL + Redis docker-compose</li>
+    <li>ProductService với cache-aside pattern</li>
+    <li>Simulate flash sale: 1000 concurrent requests cho 1 product key</li>
+    <li>Measure DB queries: without stampede prevention vs with lock pattern</li>
+    <li>Implement 2 strategies: lock + probabilistic refresh, compare</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: clear demonstration: naive cache → ~1000 DB queries trên cache miss; with lock → ~1 DB query. JMH benchmark.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Distributed Lock với Redisson (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: E-commerce inventory deduction service handle concurrent flash sale, prevent oversell.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Inventory in Redis (atomic counter)</li>
+    <li>2 implementations: (1) Lua atomic DECR, (2) Redisson distributed lock</li>
+    <li>Simulate flash sale 100 units, 10K concurrent buy attempts</li>
+    <li>Verify: exactly 100 successful, 9900 OutOfStock</li>
+    <li>Compare performance: Lua atomic vs distributed lock</li>
+    <li>Bonus: implement fencing token cho correctness guarantee</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: zero oversell across 10K concurrent requests. Document approach analysis trong README.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Multi-Level Cache với Caffeine + Redis (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: 2-level cache (L1 Caffeine in-memory, L2 Redis distributed) với cache invalidation pub/sub.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>L1: Caffeine cache per-app instance (1ms latency, limited size)</li>
+    <li>L2: Redis shared (5ms latency, larger size)</li>
+    <li>Read flow: L1 → L2 → DB; populate up the chain</li>
+    <li>Invalidation: write → invalidate L2 + publish event → other instances invalidate L1</li>
+    <li>3 Spring Boot instances cùng dùng cache, verify invalidation propagate</li>
+    <li>Metrics: hit rate L1, L2, miss rate, latency percentiles</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: invalidation propagate &lt; 100ms across instances. Document hit rate analysis after 1 hour test.</div>
+</div>
+</section>
+
+<section id="interview">
+<h2>11. Interview Framework</h2>
+
+<div class="tier t1">
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Cache-aside pattern là gì, vì sao phổ biến?</div>
+<div class="a">"Cache-aside: app explicit manage cache. Read flow: GET cache → MISS → SELECT DB → SET cache. Write flow: UPDATE DB → DELETE cache.<br><br>
+Phổ biến vì: app control (chọn data nào cache, TTL khác nhau), failure tolerant (Redis down → fall back DB), simple mental model. Trade-off: invalidation explicit (dễ quên), first-time always slow.<br><br>
+Alternatives: Read-through (Spring @Cacheable — transparent nhưng magic), Write-through (write to cache + DB sync), Write-behind (write cache, async write DB — fast but data loss risk)."</div>
+
+<div class="q">Q: Khi nào dùng Hash vs String?</div>
+<div class="a">"String cho simple key-value (counter, single-field cache, JSON-serialized object nhỏ).<br><br>
+Hash khi object có 5+ fields và need partial update. Lý do: với String JSON, update 1 field = deserialize all → modify → re-serialize → SET. O(n). Hash có HSET per field, O(1), atomic.<br><br>
+Plus: HGETALL bandwidth có thể hơn String GET 1 large JSON.<br><br>
+Example: session cache với 20 fields (last_active, ip, role, ...) → Hash. Cache product với 5 fields rarely update → String OK."</div>
+</div>
+
+<div class="tier t2">
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: Cache stampede là gì, design solution.</div>
+<div class="a">"<strong>Cache stampede</strong>: hot key expire → nhiều concurrent requests miss cache → tất cả hit DB simultaneously → DB overload.<br><br>
+<strong>Concrete</strong>: product 'iPhone 15' TTL 5 min. Mỗi giây receive 5K requests. Tại moment expire, 5K requests cùng miss → 5K concurrent DB queries → connection pool exhausted → DB crash.<br><br>
+<strong>3 Solutions</strong>:<br><br>
+<strong>1. Lock pattern (single-flight)</strong>: first request acquire Redis lock, load DB + populate cache. Others wait briefly + retry cache, hoặc serve stale fallback. Simple, work cho most cases.<br><br>
+<strong>2. Probabilistic early refresh (XFetch)</strong>: refresh cache trước khi expire với probability tăng theo time-to-expire. Chỉ 1 request refresh, others serve stale. Smoother no thundering herd.<br><br>
+<strong>3. Two-level TTL</strong>: hard TTL 10 min (actual expiry), soft TTL 8 min (stored trong value). Khi soft expire → async refresh, return stale. No miss spike.<br><br>
+<strong>Production combine</strong>: lock cho first load, probabilistic cho refresh. Plus monitoring để detect stampede risk.<br><br>
+<strong>Additional</strong>: rate limit cache miss path, circuit breaker on DB if overloaded."</div>
+
+<div class="q">Q: Distributed lock với Redis — naive vs production-ready?</div>
+<div class="a">"<strong>Naive SETNX has 3 critical bugs</strong>:<br>
+1. No TTL → worker crash → lock held forever, deadlock<br>
+2. No ownership check → wrong process can DELETE other's lock<br>
+3. No retry strategy → caller hard-fails<br><br>
+<strong>Production fix</strong>:<br>
+• <code>SET key uuid NX EX 30</code> — atomic SET with TTL + check-not-exists<br>
+• Release với Lua script: check ownership (GET match UUID) before DELETE — atomic in Redis single-thread<br>
+• Use library like Redisson for fair lock, auto-renewal, etc.<br><br>
+<strong>Redlock controversy</strong>: Kleppmann critique (clock skew, GC pause). Sanfilippo defend. Practical guidance:<br>
+• OK for <strong>efficiency</strong> (avoid duplicate work, e.g., cache regeneration)<br>
+• NOT OK for <strong>correctness</strong> (financial mutex). Use database transaction or fencing tokens.<br><br>
+<strong>Alternative for inventory deduction</strong>: Lua atomic DECR check (no lock needed). Redis single-thread guarantees atomicity."</div>
+</div>
+
+<div class="tier t3">
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Design Redis architecture cho e-commerce platform handling flash sales (1M concurrent users, 100K QPS). Hot products, inventory deduction, cache invalidation, fault tolerance.</div>
+<div class="a">"<strong>Multi-tier Redis architecture</strong>:<br><br>
+<strong>Tier 1 — L1 Cache (in-process Caffeine)</strong><br>
+• Per-app-instance JVM cache, ~10K entries, 60s TTL<br>
+• Latency &lt; 1ms<br>
+• Reduce Redis load 70-80% for super-hot keys<br>
+• Invalidate via Redis pub/sub event<br><br>
+<strong>Tier 2 — Redis Cluster (L2)</strong><br>
+• 6-node cluster (3 master + 3 replica), 16384 slots<br>
+• Sharded by product_id hash<br>
+• 100GB+ capacity, 1M ops/sec aggregate<br>
+• maxmemory + allkeys-lru eviction<br><br>
+<strong>Tier 3 — PostgreSQL (truth source)</strong><br>
+• Behind L1 + L2<br>
+• Read-only access from app (writes through Redis for hot data)<br><br>
+<strong>Hot product handling</strong>:<br>
+• Replicate hot key with suffixes: product:iphone15:#1 through #10 (sharded by user_id % 10)<br>
+• L1 hot cache absorb most reads<br>
+• Pre-warm cache before flash sale start<br><br>
+<strong>Inventory deduction (flash sale 100 units)</strong>:<br>
+• Lua atomic script: DECR if &gt; 0<br>
+• Redis single-thread guarantees no oversell<br>
+• Async sync to DB for persistence + reporting<br>
+• Idempotency check to handle network retry<br><br>
+<strong>Cache invalidation</strong>:<br>
+• Event-driven: product update → publish to Kafka → consumer invalidate Redis + broadcast to L1<br>
+• Outbox pattern guarantee delivery<br>
+• &lt; 200ms propagation cross all app instances<br><br>
+<strong>Cache stampede prevention</strong>:<br>
+• Two-level TTL (hard + soft)<br>
+• Lock pattern fallback<br>
+• Rate limit cache miss path to DB<br><br>
+<strong>Failure tolerance</strong>:<br>
+• Circuit breaker: Redis down → degrade to DB direct (limited capacity, queue requests)<br>
+• Stale-while-revalidate: serve old cache value if Redis temporarily unavailable<br>
+• Sentinel auto-failover for cluster nodes<br><br>
+<strong>Observability</strong>:<br>
+• Metrics: hit rate L1/L2, eviction rate, latency p50/p95/p99, hot keys (CLUSTER COUNTKEYSINSLOT)<br>
+• Alerts: hit rate &lt; 80%, latency p99 &gt; 10ms, evictions &gt; 1000/min<br>
+• Tracing across L1 → L2 → DB chain<br><br>
+<strong>Capacity planning</strong>:<br>
+• L1: 10K entries × 5KB = 50MB per instance × 50 instances = 2.5GB total<br>
+• L2: 1M products × 5KB = 5GB; 10M sessions × 2KB = 20GB; total ~30GB → 6-node cluster với 8GB each<br>
+• Network: 100K QPS × 5KB avg = 500MB/sec → 4Gbps network adequate"</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>12. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior dev trong 5 phút:<br><br>
+  Vì sao naive SETNX distributed lock buggy?<br><br>
+  Và vì sao cache stampede xảy ra, có 3 cách nào prevent?"</div>
+  <div class="fy-rule">Không xem file. Vẽ timeline trên giấy.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước khi đọc: tôi confident ___/5<br>Sau khi đọc: ___/5<br>Sau khi BUILD #2 (distributed lock): ___/5"</div>
+  <div class="fy-rule">Distributed lock chỉ thực sự hiểu sau khi reproduce race condition và fix. Build không thay được.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source — Đọc Thêm</div>
+  <ul>
+    <li><a href="https://redis.io/docs/" target="_blank">Redis Official Documentation</a></li>
+    <li><a href="https://redis.io/docs/manual/patterns/distributed-locks/" target="_blank">Redis — Distributed Locks (Sanfilippo)</a></li>
+    <li><a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html" target="_blank">Martin Kleppmann — How to do distributed locking</a> (Redlock critique)</li>
+    <li><a href="http://antirez.com/news/101" target="_blank">Sanfilippo Response — Is Redlock safe?</a></li>
+    <li><a href="https://redisson.org/" target="_blank">Redisson</a> — production-ready Java client</li>
+    <li><a href="https://github.com/redis/redis/blob/unstable/src/commands/" target="_blank">Redis source code</a> — commands implementation</li>
+    <li><strong>Sách</strong>: "Redis in Action" (Josiah Carlson) — comprehensive, hands-on</li>
+    <li><strong>Sách</strong>: "Designing Data-Intensive Applications" (Kleppmann) — Chapter 8 (Distributed System Trouble)</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #14 Redis · Phase 3 — Database</div>
+<div>HOÀN THÀNH Phase 3 ✅ (11→14) · Phase tiếp theo: 1 / 2 / 5</div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

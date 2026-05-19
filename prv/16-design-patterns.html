@@ -22,20 +22,21 @@
 <aside class="sidebar">
   <div class="toc-title">Mục lục</div>
   <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
     <a href="#intro">Tổng quan</a>
     <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#patterns">2. 6 Patterns Thực Dụng</a>
-    <div class="sub">
-      <a href="#strategy">Strategy</a>
-      <a href="#factory">Factory</a>
-      <a href="#builder">Builder</a>
-      <a href="#observer">Observer / Event</a>
-      <a href="#decorator">Decorator</a>
-      <a href="#chain">Chain of Responsibility</a>
-    </div>
-    <a href="#when-to-use">3. Khi nào dùng — bảng tổng kết</a>
-    <a href="#antipatterns">4. Anti-Patterns</a>
-    <a href="#interview">5. Interview Framework</a>
+    <a href="#strategy">2. Strategy</a>
+    <a href="#factory">3. Factory</a>
+    <a href="#builder">4. Builder</a>
+    <a href="#observer">5. Observer / Event</a>
+    <a href="#decorator">6. Decorator</a>
+    <a href="#chain">7. Chain of Responsibility</a>
+    <a href="#when-to-use">8. Bảng tổng kết</a>
+    <a href="#antipatterns">9. Anti-Patterns</a>
+    <a href="#build-projects">10. Build Projects</a>
+    <a href="#interview">11. Interview Framework</a>
+    <a href="#feynman-end">12. Feynman Closing</a>
   </nav>
 </aside>
 
@@ -43,20 +44,50 @@
 <div class="content">
 
 <section class="hero">
-  <span class="meta-tag">🟠 Trung bình–Cao · Code design test</span>
-  <h1>#16 — Design Patterns Trong Thực Tế</h1>
-  <p class="lead">Patterns không phải để "thuộc lòng GoF" — mà là <strong>vocabulary chung</strong> để team communicate. Khi senior nói "đây nên là Strategy", junior hiểu ngay. File này dạy 6 pattern phổ biến nhất qua ví dụ <strong>e-commerce, ride-sharing, content streaming</strong>, kèm <em>"vì sao chọn pattern này"</em>.</p>
+  <span class="meta-tag">🟠 Trung bình–Cao · Code Design Test</span>
+  <h1>#16 — Design Patterns</h1>
+  <p class="lead">Patterns không phải để "thuộc lòng GoF" — mà là <strong>vocabulary chung</strong> để team communicate. Khi senior nói "đây nên là Strategy", junior hiểu ngay. File này dạy 6 pattern phổ biến nhất qua ví dụ <strong>e-commerce, ride-sharing, content streaming, social platform</strong>, kèm <em>"vì sao chọn pattern này"</em>.</p>
   <div class="meta-grid">
     <div class="meta-item"><div class="k">Nhóm</div><div class="v">D — Kiến Trúc & Thiết Kế</div></div>
     <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1–2 tuần</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#15 DDD, #36 SOLID</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#15 DDD, #36 SOLID, #48 OOP</div></div>
     <div class="meta-item"><div class="k">Phase</div><div class="v">4 — Architecture</div></div>
   </div>
 </section>
 
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Patterns rất dễ "đọc trôi" — feels obvious sau khi xem giải pháp. Nhưng <em>recognize pattern</em> trong code đồng đội + trong yêu cầu mới mới là kỹ năng thật. 5 quy tắc:</p>
+    <ol>
+      <li><strong>⏸ Pause &amp; Predict</strong>: trước khi đọc giải pháp, tự design solution. So sánh với pattern.</li>
+      <li><strong>🧠 Misconception Check</strong>: patterns có nhiều myth (overuse, factory cho mọi thứ)</li>
+      <li><strong>🔬 Thử Phá Vỡ</strong>: nghĩ "pattern này fail khi nào?" trước khi xem analysis</li>
+      <li><strong>🔨 Build</strong>: refactor 1 dự án cũ của bạn áp dụng 2-3 patterns. Không thay được.</li>
+      <li><strong>🎓 Feynman</strong>: cuối mỗi section, đóng máy, giải thích "vì sao pattern này, không phải pattern khác" cho người không biết code</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Đọc Theo Độ Ưu Tiên</h2>
+<div class="roadmap">
+  <div class="roadmap-head">Path đề xuất:</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span><div><strong>Strategy</strong> — CORE: pattern phổ biến nhất production. Replace if-else chain với polymorphism. Xuất hiện trong 90% Spring codebase.</div></div>
+    <div class="roadmap-item core"><span class="step">2</span><div><strong>Factory</strong> — CORE: centralize object creation. Foundation cho DI containers.</div></div>
+    <div class="roadmap-item core"><span class="step">3</span><div><strong>Observer / Event</strong> — CORE: foundation cho event-driven. Spring Events, Kafka pub/sub đều dùng pattern này.</div></div>
+    <div class="roadmap-item supp"><span class="step">4</span><div><strong>Builder</strong> — SUPP: clean object creation. Lombok <code>@Builder</code> auto-generate.</div></div>
+    <div class="roadmap-item supp"><span class="step">5</span><div><strong>Decorator</strong> — SUPP: add cross-cutting concerns. Spring AOP = dynamic decorator.</div></div>
+    <div class="roadmap-item adv"><span class="step">6</span><div><strong>Chain of Responsibility</strong> — ADV: pipeline processing. Spring filter chain, HTTP middleware.</div></div>
+  </div>
+</div>
+</section>
+
 <section id="intro">
-<h2 class="no-border">Vì Sao Học Patterns?</h2>
-<p>Có 2 sai lầm phổ biến với design patterns:</p>
+<h2>Vì Sao Patterns Quan Trọng?</h2>
+
+<p>2 sai lầm phổ biến với design patterns:</p>
 <ol>
 <li><strong>Pattern Fever</strong>: học GoF rồi áp dụng mọi nơi → over-engineer simple problems</li>
 <li><strong>Pattern Allergy</strong>: tránh patterns → code rối, junior khác không hiểu intent</li>
@@ -67,65 +98,122 @@
   <p>Patterns là <strong>solution name cho recurring problem</strong>. Bạn không "đi tìm chỗ áp dụng Strategy" — bạn gặp 5 phương thức tính phí khác nhau và <em>recognize</em> đây là vấn đề Strategy giải quyết tốt. Mục tiêu: học để <strong>recognize pattern</strong> trong code đồng đội + trong yêu cầu mới, không phải để "thêm pattern vào code".</p>
 </div>
 
-<p>File này chọn 6 patterns được dùng nhiều nhất trong production Java:</p>
-<ul>
-<li><strong>Strategy</strong> — chọn 1 trong nhiều algorithm runtime</li>
-<li><strong>Factory</strong> — tạo object phức tạp</li>
-<li><strong>Builder</strong> — construct object với nhiều optional fields</li>
-<li><strong>Observer / Event</strong> — decouple producer khỏi consumers</li>
-<li><strong>Decorator</strong> — add behavior mà không sửa class gốc</li>
-<li><strong>Chain of Responsibility</strong> — pipeline xử lý</li>
-</ul>
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử Design Patterns — Từ kiến trúc xây dựng đến software</div>
+  <div class="hist-timeline">
+    <strong>1977</strong> — <strong>Christopher Alexander</strong> (architect, không phải software engineer) publish "A Pattern Language" — book về design patterns cho <em>kiến trúc xây dựng</em>. Mô tả 253 patterns cho design cities, buildings, rooms. Cốt lõi: "every pattern describes a problem which occurs over and over again... and then describes the core of the solution".<br><br>
+    <strong>1987</strong> — <strong>Kent Beck</strong> và <strong>Ward Cunningham</strong> apply ideas của Alexander vào software, present tại OOPSLA conference. First documented use trong programming context.<br><br>
+    <strong>1994</strong> — <strong>"Gang of Four" (Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides)</strong> publish "Design Patterns: Elements of Reusable Object-Oriented Software". 23 patterns được catalog chính thức. Sách dùng C++ và Smalltalk, nhưng patterns universal.<br><br>
+    <strong>1995-2000s</strong> — Patterns explode trong Java community (Sun Microsystems, IBM). EJB, J2EE patterns book series. Sometimes over-applied → "Pattern Fever" era.<br><br>
+    <strong>2004</strong> — <strong>Joshua Bloch</strong> publish "Effective Java" — moderate approach. Item 1: "Consider static factory methods instead of constructors". Item 2: "Consider a builder when faced with many constructor parameters". Patterns from GoF revisited với Java-specific lens.<br><br>
+    <strong>2010s</strong> — Spring Framework biến patterns thành <em>built-in</em>: <code>@Component</code> (Factory + Singleton), <code>@EventListener</code> (Observer), <code>@Async</code>/<code>@Transactional</code> (Decorator via AOP). Patterns vẫn matter, nhưng implementation invisible.<br><br>
+    <strong>2020s</strong> — Functional programming influence: nhiều patterns (Strategy, Command, Visitor) trở thành lambdas/functions. Java 8+ <code>Function&lt;T,R&gt;</code> thay class implement Strategy interface.<br><br>
+    <strong>Insight cốt lõi</strong>: GoF patterns không phải "rules to follow" — là <em>"names for solutions that already work"</em>. Recognize chúng trong existing codebases (Spring source, JDK) giúp bạn understand intent nhanh hơn. Apply chúng thoughtfully để code đồng đội recognize cùng intent.
+  </div>
+</div>
 </section>
 
 <section id="real-problem">
-<h2>1. Bài Toán Thực Tế — Shipping Fee Của Sàn TMĐT</h2>
+<h2>1. Bài Toán Thực Tế — Shipping Fee Của Sàn TMĐT Mọc Tự Phát</h2>
 
-<h3>Năm 1: Chỉ có Standard Shipping</h3>
+<h3>Năm 1 — Chỉ có Standard Shipping</h3>
 <p>Sàn ShopVN khởi nghiệp với 1 phương thức ship: Standard (giao 3-5 ngày). Code 50 dòng trong <code>OrderService.calculateShippingFee()</code> — fee = base 30,000 VND + 5,000 VND/kg.</p>
 
-<h3>Năm 2: Express Shipping</h3>
+<h3>Năm 2 — Express Shipping</h3>
 <p>Add Express (giao 1-2 ngày, fee gấp 1.5x). <code>OrderService</code> giờ có if-else:</p>
-<pre><code class="language-java">if (shippingType.equals("STANDARD")) {
-    fee = base + weight * 5000;
-} else if (shippingType.equals("EXPRESS")) {
-    fee = (base + weight * 5000) * 1.5;
+
+<pre><code class="language-java">// Year 2 code
+public Money calculateShippingFee(Order order) {
+    String type = order.shippingType();
+    if (type.equals("STANDARD")) {
+        return base.add(perKg.multiply(order.weightKg()));
+    } else if (type.equals("EXPRESS")) {
+        return base.add(perKg.multiply(order.weightKg())).multiply(1.5);
+    }
+    throw new IllegalArgumentException();
 }</code></pre>
 
-<h3>Năm 3: Same-Day, International, COD-Pickup</h3>
+<h3>Năm 3 — Same-Day, International, COD-Pickup</h3>
 <p>Bây giờ <code>OrderService.calculateShippingFee()</code> dài <strong>800 dòng</strong>, 6 nesting levels:</p>
-<ul>
-<li>Same-Day: chỉ available nội thành HN/HCM, fee tính theo zone (innerCity vs outerCity)</li>
-<li>International: dùng API DHL/FedEx, fee phụ thuộc country + customs declaration</li>
-<li>COD-Pickup: ship miễn phí nhưng phụ thu 2% giá trị đơn hàng</li>
-</ul>
 
-<h3>Năm 4: "Add Pickup-At-Store trong 1 tuần, không sửa code cũ"</h3>
+<pre><code class="language-java">// Year 3 monstrosity (snippet)
+public Money calculateShippingFee(Order order) {
+    String type = order.shippingType();
+    if (type.equals("STANDARD")) { /* 50 lines */ }
+    else if (type.equals("EXPRESS")) {
+        if (order.weightKg() &gt; 30) {
+            // Heavy item express handling
+            if (order.fragile()) { /* 30 lines */ }
+            else { /* 20 lines */ }
+        } else { /* 25 lines */ }
+    } else if (type.equals("SAME_DAY")) {
+        if (!city.isInnerCityHCM() &amp;&amp; !city.isInnerCityHN()) {
+            throw new UnsupportedException();
+        }
+        // Zone-based pricing
+        if (city.isInnerCityHCM()) { /* 40 lines */ }
+        else { /* 40 lines */ }
+    } else if (type.equals("INTERNATIONAL")) {
+        // Call DHL API
+        DhlQuote quote = dhl.quote(...);
+        if (quote.status() == ERROR) {
+            // Fallback to FedEx
+            FedexQuote fq = fedex.quote(...);
+            // ... 80 lines fallback logic
+        }
+        // ... 100 lines customs declaration logic
+    } else if (type.equals("COD_PICKUP")) {
+        // Free ship + 2% surcharge on order value
+        // ... 50 lines
+    }
+    // ... 6 more shipping types
+    throw new IllegalArgumentException("Unknown shipping type: " + type);
+}</code></pre>
+
+<h3>Năm 4 — Requirement: "Add Pickup-At-Store trong 1 tuần, không sửa code cũ"</h3>
 
 <div class="callout danger">
-<div class="ctitle">🔥 Triệu chứng của code không có pattern</div>
-<ul style="margin:8px 0 0 20px">
-<li>Thêm method #6 phải hiểu toàn bộ 800 dòng để không break</li>
-<li>Regression test cả 5 methods cũ → 2 ngày test manual</li>
-<li>Fee logic scatter: 1 phần trong service, 1 phần trong DB config, 1 phần trong DHL SDK</li>
-<li>Junior touch nhầm tab → SameDay tính nhầm fee như Express → mất tiền</li>
-</ul>
+  <div class="ctitle">🔥 Triệu chứng của code không có pattern</div>
+  <ul style="margin:8px 0 0 20px">
+  <li>Thêm method #6 phải hiểu toàn bộ 800 dòng để không break</li>
+  <li>Regression test cả 5 methods cũ → 2 ngày test manual</li>
+  <li>Fee logic scatter: 1 phần trong service, 1 phần trong DB config, 1 phần trong DHL SDK</li>
+  <li>Junior touch nhầm tab → SameDay tính nhầm fee như Express → mất tiền</li>
+  <li>Unit test class này = setup 30 mock objects, test runtime &gt; 60s</li>
+  <li>Code review &gt; 3 ngày vì reviewer phải mentally trace 800-line method</li>
+  </ul>
 </div>
 
-<h3>5 câu hỏi suy ngẫm</h3>
-<ol>
-<li>Pattern nào tách fee calculation logic để mỗi shipping method <strong>độc lập</strong>?</li>
-<li>Làm sao tránh massive if-else chain?</li>
-<li>Processor objects nên create 1 lần (singleton) hay per-request?</li>
-<li>Làm sao test shipping logic mà không gọi thật DHL/FedEx API?</li>
-<li>Pattern nào cho phép add <strong>logging/metrics</strong> mà không sửa processor code?</li>
-</ol>
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — BẮT BUỘC dừng</div>
+  <div class="pause-q">Trước khi đọc giải pháp, tự trả lời (viết ra giấy):</div>
+  <ol style="margin:8px 0 0 22px">
+  <li>Pattern nào tách fee calculation logic để mỗi shipping method <strong>độc lập</strong>?</li>
+  <li>Làm sao tránh massive if-else chain mà không tạo "factory cho mọi thứ"?</li>
+  <li>Processor objects nên create 1 lần (singleton) hay per-request? Vì sao?</li>
+  <li>Làm sao test shipping logic mà không gọi thật DHL/FedEx API?</li>
+  <li>Pattern nào cho phép add <strong>logging/metrics/retry</strong> cho mọi shipping methods mà không sửa từng class?</li>
+  </ol>
+  <div class="pause-hint">Trả lời được 4/5 → solid foundation patterns. &lt;3 → đọc kỹ.</div>
+</div>
 </section>
 
-<section id="patterns">
-<h2>2. 6 Patterns Thực Dụng</h2>
+<section id="strategy">
+<h2>2. Strategy Pattern <span class="k-tag core">CORE</span></h2>
 
-<h3 id="strategy">Strategy Pattern — "Cùng task, khác algorithm"</h3>
+<div class="k-banner core">
+  <strong>★ CORE — Pattern phổ biến nhất production</strong>. Xuất hiện 90% Spring codebase. Replace if-else với polymorphism.
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Strategy Pattern — From GoF 1994</div>
+  <div class="hist-timeline">
+    <strong>GoF Definition (1994)</strong>: "Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it."<br><br>
+    <strong>Original example trong GoF book</strong>: text formatting algorithms (line breaking) — different strategies cho different output devices.<br><br>
+    <strong>Java/Spring evolution</strong>: với functional interfaces từ Java 8, Strategy có thể là 1 lambda <code>Function&lt;T,R&gt;</code> thay vì interface + class. Spring <code>@Qualifier</code> + <code>List&lt;StrategyInterface&gt;</code> = idiomatic Strategy injection.<br><br>
+    <strong>Insight</strong>: bất kỳ chỗ nào code có <code>if (type.equals(X)) ... else if ...</code> với 4+ branches, mỗi branch có logic không trivial — đó là signal cho Strategy.
+  </div>
+</div>
 
 <div class="diagram">
 <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
@@ -169,69 +257,152 @@
 <div class="caption">Strategy: 1 interface, N implementations. Context không biết implementation cụ thể.</div>
 </div>
 
-<pre><code class="language-java">// Interface — định nghĩa "task"
+<h3>Implementation Full Depth</h3>
+
+<pre><code class="language-java">// 1. Interface định nghĩa "task"
 public interface ShippingFeeStrategy {
     Money calculateFee(ShippingContext ctx);
+    ShippingType supportedType();  // Để factory map đúng strategy
 }
 
-// Implementations — mỗi method là 1 class
+public record ShippingContext(
+    Money declaredValue,
+    BigDecimal weightKg,
+    Address from,
+    Address to,
+    boolean fragile,
+    boolean isInternational
+) {}
+
+// 2. Implementations — mỗi method là 1 class
+@Component
 public class StandardShippingStrategy implements ShippingFeeStrategy {
     private static final Money BASE = Money.of(30_000, VND);
     private static final Money PER_KG = Money.of(5_000, VND);
 
     @Override
     public Money calculateFee(ShippingContext ctx) {
-        return BASE.add(PER_KG.multiply(ctx.weightKg()));
+        Money byWeight = PER_KG.multiply(ctx.weightKg().intValue());
+        Money fee = BASE.add(byWeight);
+
+        // Surcharge cho fragile items
+        if (ctx.fragile()) {
+            fee = fee.add(Money.of(20_000, VND));
+        }
+        return fee;
     }
+
+    @Override
+    public ShippingType supportedType() { return ShippingType.STANDARD; }
 }
 
+@Component
 public class ExpressShippingStrategy implements ShippingFeeStrategy {
     private final ShippingFeeStrategy standardCalc;
+    private static final BigDecimal EXPRESS_MULTIPLIER = BigDecimal.valueOf(1.5);
 
-    public ExpressShippingStrategy(ShippingFeeStrategy standardCalc) {
+    public ExpressShippingStrategy(@Qualifier("standardShippingStrategy") ShippingFeeStrategy standardCalc) {
         this.standardCalc = standardCalc;
     }
 
     @Override
     public Money calculateFee(ShippingContext ctx) {
-        // Express = 1.5x standard. Compose strategy thay vì duplicate logic.
-        return standardCalc.calculateFee(ctx).multiply(BigDecimal.valueOf(1.5));
+        // Compose strategy thay vì duplicate logic — Strategy có thể nested
+        return standardCalc.calculateFee(ctx).multiply(EXPRESS_MULTIPLIER);
     }
+
+    @Override
+    public ShippingType supportedType() { return ShippingType.EXPRESS; }
 }
 
+@Component
 public class SameDayShippingStrategy implements ShippingFeeStrategy {
+    private static final Money INNER_CITY_FEE = Money.of(80_000, VND);
+
     @Override
     public Money calculateFee(ShippingContext ctx) {
-        if (!ctx.city().isInnerCityHCM() && !ctx.city().isInnerCityHN()) {
-            throw new UnsupportedShippingException("Same-day chỉ trong nội thành HCM/HN");
+        if (!ctx.to().isInnerCityHCM() &amp;&amp; !ctx.to().isInnerCityHN()) {
+            throw new UnsupportedShippingException(
+                "Same-day chỉ trong nội thành HCM/HN, address: " + ctx.to());
         }
-        return Money.of(80_000, VND);  // Flat fee
+        // Flat fee, plus weight surcharge nếu &gt; 5kg
+        Money fee = INNER_CITY_FEE;
+        if (ctx.weightKg().compareTo(BigDecimal.valueOf(5)) &gt; 0) {
+            BigDecimal extraKg = ctx.weightKg().subtract(BigDecimal.valueOf(5));
+            fee = fee.add(Money.of(10_000, VND).multiply(extraKg.intValue()));
+        }
+        return fee;
     }
+
+    @Override
+    public ShippingType supportedType() { return ShippingType.SAME_DAY; }
 }
 
+@Component
 public class InternationalShippingStrategy implements ShippingFeeStrategy {
     private final DhlApiClient dhl;
+    private final FedexApiClient fedex;
+    private final CircuitBreaker dhlCircuitBreaker;
 
-    public InternationalShippingStrategy(DhlApiClient dhl) { this.dhl = dhl; }
+    public InternationalShippingStrategy(DhlApiClient dhl, FedexApiClient fedex,
+            CircuitBreakerRegistry registry) {
+        this.dhl = dhl;
+        this.fedex = fedex;
+        this.dhlCircuitBreaker = registry.circuitBreaker("dhl");
+    }
 
     @Override
     public Money calculateFee(ShippingContext ctx) {
-        // External API call — strategy hide complexity từ caller
-        return dhl.quote(ctx.destinationCountry(), ctx.weightKg(), ctx.declaredValue());
+        // Try DHL first, fallback to FedEx if circuit broken
+        try {
+            return dhlCircuitBreaker.executeSupplier(
+                () -&gt; dhl.quote(ctx.to().country(), ctx.weightKg(), ctx.declaredValue()));
+        } catch (Exception e) {
+            log.warn("DHL unavailable, fallback to FedEx", e);
+            return fedex.quote(ctx.to().country(), ctx.weightKg(), ctx.declaredValue());
+        }
+    }
+
+    @Override
+    public ShippingType supportedType() { return ShippingType.INTERNATIONAL; }
+}
+
+// 3. Strategy factory — auto-discover all strategies
+@Component
+public class ShippingStrategyRegistry {
+    private final Map&lt;ShippingType, ShippingFeeStrategy&gt; strategies;
+
+    // Spring inject ALL @Component implementing ShippingFeeStrategy
+    public ShippingStrategyRegistry(List&lt;ShippingFeeStrategy&gt; allStrategies) {
+        this.strategies = allStrategies.stream()
+            .collect(Collectors.toMap(
+                ShippingFeeStrategy::supportedType,
+                Function.identity(),
+                (a, b) -&gt; {
+                    throw new IllegalStateException(
+                        "Duplicate strategy for type: " + a.supportedType());
+                }
+            ));
+    }
+
+    public ShippingFeeStrategy get(ShippingType type) {
+        ShippingFeeStrategy strategy = strategies.get(type);
+        if (strategy == null) {
+            throw new UnsupportedShippingException("No strategy for type: " + type);
+        }
+        return strategy;
     }
 }
 
-// Context — không biết implementation cụ thể
+// 4. Context — không biết implementation cụ thể
+@Service
 public class CheckoutService {
-    private final ShippingFeeStrategy shippingStrategy;
-
-    public CheckoutService(ShippingFeeStrategy shippingStrategy) {
-        this.shippingStrategy = shippingStrategy;
-    }
+    private final ShippingStrategyRegistry strategyRegistry;
 
     public Money totalCost(Order order) {
         Money items = order.itemsTotal();
-        Money shipping = shippingStrategy.calculateFee(order.shippingContext());
+        ShippingFeeStrategy strategy = strategyRegistry.get(order.shippingType());
+        Money shipping = strategy.calculateFee(order.shippingContext());
         return items.add(shipping);
     }
 }</code></pre>
@@ -239,48 +410,107 @@ public class CheckoutService {
 <div class="callout why">
   <div class="ctitle">🎯 Vì sao Strategy &gt; if-else?</div>
   <ul style="margin:8px 0 0 20px">
-  <li><strong>Open-Closed</strong>: thêm method #6 (Pickup-At-Store) = thêm 1 class mới, KHÔNG sửa <code>CheckoutService</code>. Code cũ không bị regression.</li>
-  <li><strong>Testability</strong>: mỗi strategy test riêng. <code>StandardShippingStrategyTest</code> không cần biết Express tồn tại.</li>
-  <li><strong>Single Responsibility</strong>: mỗi class chỉ 1 reason to change (logic của method đó). Khi DHL đổi pricing → chỉ sửa <code>InternationalShippingStrategy</code>.</li>
+  <li><strong>Open-Closed Principle</strong>: thêm method #6 (Pickup-At-Store) = thêm 1 class mới + Spring auto-discover. <em>KHÔNG sửa <code>CheckoutService</code></em>. Code cũ không bị regression risk.</li>
+  <li><strong>Testability</strong>: mỗi strategy test riêng. <code>StandardShippingStrategyTest</code> không cần biết Express tồn tại. Mock dependencies dễ.</li>
+  <li><strong>Single Responsibility</strong>: mỗi class chỉ 1 reason to change. DHL đổi pricing → chỉ sửa <code>InternationalShippingStrategy</code>.</li>
   <li><strong>Polymorphism &gt; conditional</strong>: code đọc tự nhiên hơn. <code>strategy.calculateFee(ctx)</code> rõ intent hơn <code>switch(type)</code>.</li>
+  <li><strong>Composable</strong>: Express dùng Standard + multiplier. Code reuse mà không inherit.</li>
+  <li><strong>Auto-discovery</strong>: Spring inject <code>List&lt;ShippingFeeStrategy&gt;</code> tự pick up mọi <code>@Component</code> implementing interface — zero config thêm strategy.</li>
   </ul>
 </div>
 
-<div class="callout warn">
-  <div class="ctitle">⚠️ Khi nào KHÔNG dùng Strategy?</div>
-  <p>2–3 case đơn giản, logic 1-2 dòng → if-else đủ. Đừng over-engineer:</p>
-<pre style="margin:8px 0 0 0"><code class="language-java">// OK — không cần Strategy
-Money fee = isVip ? Money.ZERO : Money.of(20_000, VND);</code></pre>
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "Strategy cho mọi if-else"</div>
+  <div class="mc-wrong">"Tôi học Strategy, giờ replace mọi if-else trong code thành Strategy."</div>
+  <div class="mc-right">2-3 case đơn giản, logic 1-2 dòng → if-else đủ. Strategy có cost: thêm interface + N classes + factory + DI wiring. Benefits chỉ pay off khi:<br>
+  <strong>(1)</strong> Algorithm variants &gt; 4-5<br>
+  <strong>(2)</strong> Mỗi variant có logic phức tạp (&gt; 20 lines)<br>
+  <strong>(3)</strong> Variants có thể thêm/sửa độc lập theo thời gian<br>
+  <strong>(4)</strong> Cần testability per-variant<br><br>
+  Ví dụ KHÔNG cần Strategy: <code>Money fee = isVip ? Money.ZERO : Money.of(20_000, VND);</code> — if-else 1-line, không thêm variant trong tương lai. Strategy đây = over-engineering.</div>
 </div>
 
-<h3 id="factory">Factory Pattern — "Centralize object creation"</h3>
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Strategy có shared state</div>
+  <p style="font-size:0.93rem;margin:8px 0">"Tôi cần track count requests per strategy. Add <code>private int counter</code> vào mỗi strategy class." Đoán: pattern nào sẽ break?</p>
+  <details>
+    <summary>Click để xem analysis</summary>
+    <div class="bi-answer">
+      <p><strong>Concurrent access bug</strong>. Spring beans default singleton-scoped → 1 instance share across all threads. <code>counter++</code> không atomic → lost updates trong high concurrency.</p>
+      <p><strong>Worse</strong>: strategies thường stateless trong design. Junior add field → break implicit contract → next dev assume stateless → bug subtle.</p>
+      <p><strong>Fix options</strong>:</p>
+      <ol style="margin:6px 0 0 20px;font-size:0.9rem">
+      <li><code>AtomicInteger counter</code> nếu cần count tại strategy</li>
+      <li><strong>Better</strong>: extract counting concern ra Decorator hoặc AOP aspect — strategies remain stateless</li>
+      <li><strong>Best</strong>: use Micrometer metrics — strategies không own monitoring concern</li>
+      </ol>
+      <p><strong>Insight</strong>: Strategies should be stateless để safe trong DI containers. Stateful concerns extract ra (Decorator, AOP, Observer).</p>
+    </div>
+  </details>
+</div>
 
-<p>Khi đã có 5+ strategies, làm sao caller chọn đúng implementation dựa trên runtime input (như <code>shippingType</code> từ user)?</p>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Strategy Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Strategy với external dependency</strong>: <code>InternationalShippingStrategy</code> call DHL API. API down → strategy throw. Wrap với circuit breaker, có fallback strategy.</li>
+    <li><strong>Strategy selection key conflict</strong>: 2 strategies cùng <code>supportedType()</code> = <code>STANDARD</code>. Spring inject cả 2, registry build map throw. Fix: validate ở registry constructor + clear error message.</li>
+    <li><strong>Strategy missing for new type</strong>: enum <code>ShippingType.PICKUP_AT_STORE</code> added, quên implement strategy → runtime exception khi user chọn. Fix: integration test verify mọi enum value có strategy.</li>
+    <li><strong>Strategy throws unexpected exception</strong>: client expect <code>UnsupportedShippingException</code>, strategy throw <code>NullPointerException</code>. Convention: define exception types in interface contract; wrap raw exceptions.</li>
+    <li><strong>Performance — Map lookup overhead</strong>: factory lookup O(1) but reflection-heavy nếu dùng @Qualifier dynamic. Cache <code>Map&lt;Type, Strategy&gt;</code> tại startup.</li>
+    <li><strong>Strategy phụ thuộc context không có sẵn</strong>: SameDay cần current time để check business hours. Inject <code>Clock</code> (testable), không dùng <code>System.currentTimeMillis()</code> trực tiếp.</li>
+    <li><strong>Strategy ordering matter</strong>: chain of strategies (try A, fallback B, fallback C). Use <code>List&lt;Strategy&gt;</code> ordered theo <code>@Order</code> annotation, không Set.</li>
+    <li><strong>Hot-swap strategy at runtime</strong>: feature flag enable new strategy without restart. Use Spring <code>@ConditionalOnProperty</code> hoặc dynamic registry với refresh.</li>
+  </ul>
+</div>
+</section>
+
+<section id="factory">
+<h2>3. Factory Pattern <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Centralize object creation</strong>. Foundation cho DI containers. Strategy + Factory phổ biến đi cùng.
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Factory Pattern — Original GoF + Java evolution</div>
+  <div class="hist-timeline">
+    <strong>GoF 1994</strong> — Factory Method và Abstract Factory là 2 patterns riêng. Factory Method: subclass quyết định concrete class. Abstract Factory: family of related products.<br><br>
+    <strong>Java idiom (Bloch 2001+)</strong>: "Static factory method" — <em>Effective Java</em> Item 1. <code>Integer.valueOf(int)</code>, <code>List.of(...)</code>, <code>Optional.of(...)</code>. Hơn constructor: tên có ý nghĩa, có thể cache instance, return subtype.<br><br>
+    <strong>Spring Framework</strong>: <code>BeanFactory</code> và <code>ApplicationContext</code> = Factory pattern at framework level. <code>@Component</code>, <code>@Bean</code> = declarative factory.<br><br>
+    <strong>Modern Java (16+)</strong>: <code>record</code>s với static factory methods phổ biến hơn constructor cho immutable types. Pattern matching giảm need cho some factory uses.<br><br>
+    <strong>Insight</strong>: Factory benefit lớn khi: (1) creation logic phức tạp, (2) cần cache/reuse instances, (3) return type là interface (caller không biết concrete class), (4) cần testability (mock factory).
+  </div>
+</div>
 
 <div class="compare">
 <div class="col bad">
-  <div class="col-head">❌ Caller tự chọn</div>
-<pre><code class="language-java">// Logic chọn rải rác khắp codebase
+  <div class="col-head">❌ Caller tự chọn — logic scatter</div>
+<pre><code class="language-java">// 10 nơi trong codebase
 String type = request.shippingType();
 ShippingFeeStrategy strategy;
 if (type.equals("STANDARD"))
-    strategy = new StandardShippingStrategy();
+    strategy = new StandardShippingStrategy(...);
 else if (type.equals("EXPRESS"))
-    strategy = new ExpressShippingStrategy(...);
-else if (type.equals("SAME_DAY"))
-    strategy = new SameDayShippingStrategy();
-// ... 5 lần, mỗi nơi caller chọn</code></pre>
+    strategy = new ExpressShippingStrategy(
+        new StandardShippingStrategy(...));
+else if (type.equals("INTERNATIONAL"))
+    strategy = new InternationalShippingStrategy(
+        dhlClient, fedexClient, circuitBreakerRegistry);
+// ... 5 nơi khác duplicate
+
+// Thêm method mới = update 10 nơi
+// Test phải mock 10 dependencies mỗi caller</code></pre>
 </div>
 <div class="col good">
   <div class="col-head">✅ Centralized factory</div>
 <pre><code class="language-java">@Component
-public class ShippingStrategyFactory {
-    private final Map&lt;ShippingType, ShippingFeeStrategy&gt;
-        strategies;
+public class ShippingStrategyRegistry {
+    private final Map&lt;ShippingType, ShippingFeeStrategy&gt; strategies;
 
-    public ShippingStrategyFactory(
+    // Spring auto-inject TẤT CẢ @Component
+    // implementing ShippingFeeStrategy
+    public ShippingStrategyRegistry(
             List&lt;ShippingFeeStrategy&gt; allStrategies) {
-        // Spring auto-inject TẤT CẢ implementations
         this.strategies = allStrategies.stream()
             .collect(toMap(
                 ShippingFeeStrategy::supportedType,
@@ -290,65 +520,137 @@ public class ShippingStrategyFactory {
 
     public ShippingFeeStrategy get(ShippingType type) {
         var strategy = strategies.get(type);
-        if (strategy == null) throw new UnsupportedShippingException(type);
+        if (strategy == null) {
+            throw new UnsupportedShippingException(type);
+        }
         return strategy;
     }
-}</code></pre>
+}
+
+// Caller — 1 line, testable
+ShippingFeeStrategy strategy = registry.get(type);
+Money fee = strategy.calculateFee(ctx);</code></pre>
 </div>
 </div>
 
 <div class="callout why">
   <div class="ctitle">🎯 Vì sao centralized factory?</div>
   <ul style="margin:8px 0 0 20px">
-  <li><strong>Single source of truth</strong>: thêm method mới = đăng ký 1 chỗ. Không cần update 10 callers.</li>
-  <li><strong>Dependency injection friendly</strong>: factory bean wire dependencies cho strategies 1 lần. Caller không cần biết DHL client tồn tại.</li>
-  <li><strong>Testability</strong>: trong test, inject <code>MockShippingStrategyFactory</code> trả về mock strategy. Caller code không đổi.</li>
+  <li><strong>Single source of truth</strong>: thêm method mới = đăng ký 1 chỗ (auto via Spring). Không cần update 10 callers.</li>
+  <li><strong>Dependency injection friendly</strong>: factory wire dependencies cho strategies 1 lần (constructor). Caller không cần biết DHL client tồn tại.</li>
+  <li><strong>Testability</strong>: trong test, inject <code>MockShippingStrategyRegistry</code> trả về mock strategy. Caller code không đổi, không cần mock cascade dependencies.</li>
   <li><strong>Spring magic</strong>: inject <code>List&lt;ShippingFeeStrategy&gt;</code> tự động lấy mọi @Component implementing interface — auto-discover, không hardcode.</li>
+  <li><strong>Error consistency</strong>: factory throw <code>UnsupportedException</code> với clear message. Mỗi caller không phải repeat error handling.</li>
   </ul>
 </div>
 
-<div class="callout warn">
-  <div class="ctitle">⚠️ Khi nào factory là overkill?</div>
-  <p>1 class duy nhất, constructor đơn giản → <code>new SomeClass()</code> trực tiếp. Factory chỉ có giá trị khi:</p>
-  <ul style="margin:8px 0 0 20px">
-  <li>Có nhiều implementations để select runtime</li>
-  <li>Object cần wire complex dependencies</li>
-  <li>Cần thay implementation để test (mock factory)</li>
-  </ul>
+<h3>Static Factory Method — Effective Java Item 1</h3>
+
+<pre><code class="language-java">// Alternative: static factory method on the class itself
+public final class Money {
+    private final BigDecimal amount;
+    private final Currency currency;
+
+    // Private constructor — force factory method
+    private Money(BigDecimal amount, Currency currency) {
+        this.amount = amount;
+        this.currency = currency;
+    }
+
+    // Static factory methods — named, no exception
+    public static Money of(BigDecimal amount, Currency currency) {
+        return new Money(amount, currency);
+    }
+
+    public static Money zero(Currency currency) {
+        // Có thể cache instance phổ biến
+        return CACHED_ZEROS.computeIfAbsent(currency, c -&gt; new Money(BigDecimal.ZERO, c));
+    }
+
+    public static Money vnd(long amount) {
+        return of(BigDecimal.valueOf(amount), VND);
+    }
+}
+
+// Usage
+Money fee = Money.vnd(50_000);
+Money zero = Money.zero(VND);  // Return cached instance
+// vs Money fee = new Money(BigDecimal.valueOf(50000), VND);  // Less expressive</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Static factory vs constructor — 5 lợi thế (Effective Java)</div>
+  <ol style="margin:8px 0 0 20px">
+  <li><strong>Có tên ý nghĩa</strong>: <code>Money.vnd(50_000)</code> rõ hơn <code>new Money(BigDecimal.valueOf(50000), Currency.getInstance("VND"))</code></li>
+  <li><strong>Không bắt buộc tạo new instance</strong>: cache (<code>Integer.valueOf</code>), singleton, immutable reuse</li>
+  <li><strong>Return subtype</strong>: <code>Collections.unmodifiableList</code> return private subclass</li>
+  <li><strong>Type inference cho generics</strong>: trước Java 7 — <code>Map.of()</code> vs <code>new HashMap&lt;String, List&lt;Integer&gt;&gt;()</code></li>
+  <li><strong>Class chưa load tại compile time</strong>: factory có thể load class dynamically</li>
+  </ol>
 </div>
 
-<h3 id="builder">Builder Pattern — "Construct complex objects readably"</h3>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Factory Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Factory return null</strong>: easy bug nếu factory tạo null cho unknown type. <em>Never return null</em>; throw exception hoặc return Optional.</li>
+    <li><strong>Factory tạo prototype thay singleton</strong>: <code>request.getStrategy(type)</code> create new instance mỗi call → GC pressure. Spring default singleton — verify scope.</li>
+    <li><strong>Circular dependency in factory</strong>: StrategyA depends on factory, factory depends on StrategyA → Spring fail at startup. Restructure hoặc <code>@Lazy</code>.</li>
+    <li><strong>Factory in static field</strong>: <code>private static final Factory FACTORY = new Factory();</code> — class load order issue, hard to test. Use Spring beans.</li>
+    <li><strong>Hot reload strategies</strong>: feature flag enable new strategy. Factory cache map at startup → restart required. Use refresh mechanism (Spring Cloud).</li>
+    <li><strong>Factory throws checked exception</strong>: <code>create() throws IOException</code> — caller forced try-catch. Wrap checked → runtime exception in factory.</li>
+    <li><strong>Generic factory với type erasure</strong>: <code>Factory&lt;T&gt;.create()</code> không know T at runtime. Pass <code>Class&lt;T&gt;</code> param hoặc TypeReference.</li>
+    <li><strong>Factory test với fake instances</strong>: production factory inject real beans. Tests cần <code>TestFactory</code> với fake strategies. Use <code>@TestConfiguration</code>.</li>
+  </ul>
+</div>
+</section>
+
+<section id="builder">
+<h2>4. Builder Pattern <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Clean object creation</strong>. Lombok <code>@Builder</code> auto-generate.
+</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Builder — From GoF to Effective Java Item 2</div>
+  <div class="hist-timeline">
+    <strong>GoF 1994</strong>: Builder for complex object construction with multiple steps. Director + Builder.<br><br>
+    <strong>Joshua Bloch — Effective Java 2001+</strong>: Item 2 — "Consider a builder when faced with many constructor parameters". Modify GoF builder thành fluent API style. Inspired Java Builder pattern dominant today.<br><br>
+    <strong>Lombok 2009</strong>: <code>@Builder</code> annotation auto-generate builder boilerplate. Reduce 50+ lines to 1 annotation.<br><br>
+    <strong>Java 14+ Records</strong>: cho simple immutable values, records replace Builder. Builder still needed cho complex objects với optional fields, validation, computed defaults.<br><br>
+    <strong>Insight</strong>: Builder shines khi: (1) constructor có 4+ parameters, đặc biệt khi nhiều same-type (dễ swap nhầm), (2) optional parameters, (3) cross-field validation, (4) immutable object cần fluent API.
+  </div>
+</div>
 
 <p>Tình huống: API search cho ride-sharing app (Grab, Uber). Search request có ~12 optional filters:</p>
 
 <div class="code-label">❌ Constructor 12 tham số — unreadable, dễ swap nhầm</div>
 <pre><code class="language-java">SearchRequest req = new SearchRequest(
-    "HCM",              // pickupCity
-    LocalDateTime.now(), // pickupTime
-    "Q1",                // pickupDistrict
-    "Q7",                // dropoffDistrict
-    VehicleType.CAR,     // vehicle
-    4,                   // maxPassengers
-    null,                // promoCode
-    true,                // allowSharedRide
+    "HCM",                // pickupCity
+    "Q1",                 // pickupDistrict
+    "HCM",                // dropoffCity
+    "Q7",                 // dropoffDistrict
+    LocalDateTime.now(),  // pickupTime
+    VehicleType.CAR,
+    4,                    // maxPassengers
+    null,                 // promoCode
+    true,                 // allowSharedRide
     BigDecimal.valueOf(100_000), // maxPrice
-    "VND",               // currency
-    PaymentMethod.WALLET, // payment
-    false                // hasPet
+    "VND",                // currency
+    false                 // hasPet
 );
-// Junior swap nhầm pickup vs dropoff district → bug khó tìm</code></pre>
+// Junior swap nhầm "Q1" và "Q7" → bug khó tìm
+// Compiler không help (cùng kiểu String)</code></pre>
 
 <div class="code-label">✅ Builder — fluent, self-documenting</div>
 <pre><code class="language-java">SearchRequest req = SearchRequest.builder()
-    .pickup("HCM", "Q1")
+    .pickup("HCM", "Q1")          // Named, không thể swap với dropoff
     .dropoff("HCM", "Q7")
     .pickupTime(LocalDateTime.now())
     .vehicle(VehicleType.CAR)
     .maxPassengers(4)
     .allowSharedRide(true)
     .maxPrice(Money.of(100_000, VND))
-    .payment(PaymentMethod.WALLET)
-    .build();  // Validate tại đây</code></pre>
+    .build();  // Validate tại đây — fail fast</code></pre>
 
 <pre><code class="language-java">public class SearchRequest {
     private final String pickupCity, pickupDistrict, dropoffCity, dropoffDistrict;
@@ -357,12 +659,17 @@ public class ShippingStrategyFactory {
     private final int maxPassengers;
     private final boolean allowSharedRide;
     private final Money maxPrice;
-    private final PaymentMethod payment;
 
     private SearchRequest(Builder b) {
         this.pickupCity = b.pickupCity;
         this.pickupDistrict = b.pickupDistrict;
-        // ... copy from builder
+        this.dropoffCity = b.dropoffCity;
+        this.dropoffDistrict = b.dropoffDistrict;
+        this.pickupTime = b.pickupTime;
+        this.vehicle = b.vehicle;
+        this.maxPassengers = b.maxPassengers;
+        this.allowSharedRide = b.allowSharedRide;
+        this.maxPrice = b.maxPrice;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -374,8 +681,8 @@ public class ShippingStrategyFactory {
         private int maxPassengers = 1;
         private boolean allowSharedRide = false;
         private Money maxPrice;
-        private PaymentMethod payment = PaymentMethod.WALLET;
 
+        // Fluent setters — combine related fields
         public Builder pickup(String city, String district) {
             this.pickupCity = city;
             this.pickupDistrict = district;
@@ -393,10 +700,9 @@ public class ShippingStrategyFactory {
         public Builder maxPassengers(int n) { this.maxPassengers = n; return this; }
         public Builder allowSharedRide(boolean b) { this.allowSharedRide = b; return this; }
         public Builder maxPrice(Money m) { this.maxPrice = m; return this; }
-        public Builder payment(PaymentMethod p) { this.payment = p; return this; }
 
         public SearchRequest build() {
-            // Validate khi build — fail fast
+            // Validate at boundary — fail fast
             validateRequired();
             validateBusinessRules();
             return new SearchRequest(this);
@@ -409,13 +715,16 @@ public class ShippingStrategyFactory {
         }
 
         private void validateBusinessRules() {
+            // Cross-field validation
             if (pickupTime.isBefore(LocalDateTime.now())) {
                 throw new IllegalArgumentException("Cannot book past time");
             }
             if (maxPassengers &lt; 1 || maxPassengers &gt; vehicle.maxCapacity()) {
-                throw new IllegalArgumentException("Invalid passenger count for " + vehicle);
+                throw new IllegalArgumentException(
+                    String.format("Invalid passenger count %d for %s (max %d)",
+                        maxPassengers, vehicle, vehicle.maxCapacity()));
             }
-            if (vehicle == VehicleType.MOTORBIKE && allowSharedRide) {
+            if (vehicle == VehicleType.MOTORBIKE &amp;&amp; allowSharedRide) {
                 throw new IllegalArgumentException("Motorbike cannot share ride");
             }
         }
@@ -430,15 +739,36 @@ public class ShippingStrategyFactory {
   <li><strong>Validation at boundary</strong>: <code>build()</code> validate trước khi tạo object → invalid object never exists. Setter pattern allow create rồi mutate thành invalid state.</li>
   <li><strong>Optional fields</strong>: builder có default, không cần truyền null. Caller chỉ set field cần thiết.</li>
   <li><strong>Composable validation</strong>: cross-field rule (motorbike + sharedRide) check ở build() — single place.</li>
+  <li><strong>Type safety on similar params</strong>: <code>pickup(city, district)</code> impossible to swap với <code>dropoff(city, district)</code> — different method names.</li>
   </ul>
 </div>
 
 <div class="callout tip">
   <div class="ctitle">💡 Lombok shortcut</div>
-  <p>Trong project thật, dùng <code>@Builder</code> của Lombok auto-generate code này. Nhưng vẫn nên hiểu cơ chế bên trong để debug khi cần.</p>
+  <p>Trong project thật, dùng <code>@Builder</code> của Lombok auto-generate code này (50 lines → 1 annotation). Nhưng vẫn nên hiểu cơ chế bên trong để debug + customize khi cần validation/computed defaults.</p>
+</div>
+</section>
+
+<section id="observer">
+<h2>5. Observer / Event Pattern <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core">
+  <strong>★ CORE — Foundation cho event-driven</strong>. Spring Events, Kafka pub/sub đều dùng pattern này.
 </div>
 
-<h3 id="observer">Observer / Event Pattern — "Decouple producer khỏi consumers"</h3>
+<div class="history-block">
+  <div class="hist-head">📜 Observer — From MVC to Reactive</div>
+  <div class="hist-timeline">
+    <strong>1979</strong> — <strong>Trygve Reenskaug</strong> tại Xerox PARC introduce MVC (Model-View-Controller) cho Smalltalk-80. View observe Model — first major use of Observer pattern.<br><br>
+    <strong>GoF 1994</strong>: Observer formalized. "Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified."<br><br>
+    <strong>Java 1.0 (1996)</strong>: <code>java.util.Observable</code> và <code>Observer</code> interface. <em>Deprecated trong Java 9</em> vì thread-safety issues, không serializable.<br><br>
+    <strong>2000s</strong>: Event-Driven Architecture grow. Java Swing, GUI frameworks heavily Observer.<br><br>
+    <strong>2009-2014</strong>: <strong>Reactive Streams</strong> spec — backpressure-aware Observer. Erik Meijer (Microsoft → Netflix Rx). RxJava popularize trong Java.<br><br>
+    <strong>Spring 3+</strong>: <code>ApplicationEventPublisher</code> + <code>@EventListener</code> = built-in Observer. Spring 4.2+ thêm <code>@TransactionalEventListener</code>.<br><br>
+    <strong>Modern</strong>: Distributed systems extend Observer to network — Kafka pub/sub, AWS SNS, EventBridge. Same pattern, network-scale.<br><br>
+    <strong>Insight</strong>: Observer evolution mirror sự phát triển của software architecture: in-process → GUI → web app → microservices → distributed. Pattern stable, scale change.
+  </div>
+</div>
 
 <p>Tình huống: Khi 1 order được đặt thành công, hệ thống cần làm <strong>5 việc</strong>:</p>
 <ol>
@@ -446,7 +776,7 @@ public class ShippingStrategyFactory {
 <li>Gửi email confirmation</li>
 <li>Push notification cho seller</li>
 <li>Update analytics dashboard (orders/min)</li>
-<li>Trigger fraud detection (review patterns)</li>
+<li>Trigger fraud detection</li>
 </ol>
 
 <div class="compare">
@@ -454,16 +784,29 @@ public class ShippingStrategyFactory {
   <div class="col-head">❌ Tightly-coupled orchestration</div>
 <pre><code class="language-java">@Service
 public class PlaceOrderService {
-  public void placeOrder(...) {
-    Order order = createOrder(...);
+  private final InventoryService inventory;
+  private final EmailService email;
+  private final PushService push;
+  private final AnalyticsService analytics;
+  private final FraudService fraud;
+
+  @Transactional
+  public Order placeOrder(Cart cart) {
+    Order order = createOrder(cart);
     orderRepo.save(order);
 
     // Coupling tight với 5 services
-    inventoryService.reduceStock(order);
-    emailService.sendConfirmation(order);
-    pushService.notifySeller(order);
-    analyticsService.recordOrder(order);
-    fraudService.review(order);
+    inventory.reduceStock(order);
+    email.sendConfirmation(order);
+    push.notifySeller(order);
+    analytics.recordOrder(order);
+    fraud.review(order);
+
+    // Add 6th concern (loyalty points)?
+    // Sửa class này, add 6th dependency
+    // Test phải mock 6 services
+
+    return order;
   }
 }</code></pre>
 </div>
@@ -473,25 +816,31 @@ public class PlaceOrderService {
 public class PlaceOrderService {
   private final ApplicationEventPublisher events;
 
-  public void placeOrder(...) {
-    Order order = createOrder(...);
+  @Transactional
+  public Order placeOrder(Cart cart) {
+    Order order = createOrder(cart);
     orderRepo.save(order);
 
     // Chỉ 1 event — không biết ai listen
-    events.publishEvent(new OrderPlacedEvent(order));
+    events.publishEvent(
+      new OrderPlacedEvent(order));
+
+    return order;
   }
 }
 
 // Mỗi listener là 1 class riêng
 @Component
-public class InventoryListener {
+public class InventoryEventListener {
   @EventListener
   @Async
   public void on(OrderPlacedEvent e) {
     inventoryService.reduceStock(e.order());
   }
 }
-// ... 4 listener khác tương tự</code></pre>
+// ... 4 listener khác tương tự
+// Add 6th = thêm 1 listener mới
+// Test PlaceOrderService chỉ mock events</code></pre>
 </div>
 </div>
 
@@ -502,24 +851,45 @@ public class InventoryListener {
   <li><strong>Independent failure</strong>: fraud service crash không làm fail order. Trong tightly-coupled version, exception ở fraud sẽ rollback order.</li>
   <li><strong>Independent scale</strong>: analytics chậm (DB heavy) không block inventory (fast). Mỗi listener có thread pool riêng nếu cần.</li>
   <li><strong>Testability</strong>: test <code>PlaceOrderService</code> chỉ cần verify event published (1 mock). Không cần mock 5 services.</li>
+  <li><strong>Cross-module decoupling</strong>: listeners có thể trong modules khác (loyalty, fraud, marketing) — không tạo cyclic dependencies.</li>
   </ul>
 </div>
 
-<div class="callout warn">
-  <div class="ctitle">⚠️ Trade-off — Sync vs Async</div>
-  <p>Spring <code>@EventListener</code> mặc định <strong>synchronous</strong> — chạy cùng thread publisher. Nếu listener chậm → block. Dùng <code>@Async</code> cho listeners không critical (notification, analytics). Critical listeners (inventory — phải atomic với order) giữ sync.</p>
-  <p>Với event cross-service (Kafka), pattern tương tự nhưng <strong>eventual consistency</strong> — listener có thể trễ vài ms đến giây. Cần idempotent consumer (xem #18).</p>
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception — "@EventListener sync = same transaction"</div>
+  <div class="mc-wrong">"Spring @EventListener chạy trong cùng @Transactional của publisher — nếu listener throw, publisher rollback."</div>
+  <div class="mc-right">Đúng <em>nhưng nguy hiểm</em>: nếu sync listener throw → toàn bộ transaction rollback. Inventory exception → order không saved. Email service down → order fail!<br><br>
+  Best practice:<br>
+  <strong>(1)</strong> Default <code>@EventListener</code> sync but listener should NOT throw — try-catch internally, log, send to DLQ.<br>
+  <strong>(2)</strong> Critical listeners (inventory deduction MUST happen with order) → keep sync, careful exception handling.<br>
+  <strong>(3)</strong> Non-critical (notifications, analytics) → <code>@Async</code> để không block + không break transaction.<br>
+  <strong>(4)</strong> Use <code>@TransactionalEventListener(phase = AFTER_COMMIT)</code> để chỉ fire sau khi transaction commit thành công — guarantee event reflects committed state.</div>
 </div>
 
-<h3 id="decorator">Decorator Pattern — "Add cross-cutting concerns mà không sửa class gốc"</h3>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — Observer/Event Production Reality</div>
+  <ul class="ec-list">
+    <li><strong>Sync listener slow → block publisher</strong>: SMS gateway 5s → order API 5s. Mark non-critical listeners <code>@Async</code>.</li>
+    <li><strong>Event before commit</strong>: <code>events.publishEvent(...)</code> trong middle of transaction. Listener read DB → not yet committed. Use <code>@TransactionalEventListener(AFTER_COMMIT)</code>.</li>
+    <li><strong>Event lost on app crash</strong>: in-memory events lost if app crash trước listener execute. Use Outbox pattern + persistent event store.</li>
+    <li><strong>Cycle: listener A trigger event → listener B trigger event → listener A again</strong>: infinite loop, stack overflow. Add cycle detection hoặc deduplication via event ID.</li>
+    <li><strong>Listener execution order matters</strong>: inventory must reduce before email confirms "shipping soon". Use <code>@Order</code> annotation hoặc orchestration.</li>
+    <li><strong>Schema evolution</strong>: event class add field → old listeners break if deserialize strict. Use backward-compatible serialization (optional fields).</li>
+    <li><strong>Distributed event = network failure</strong>: Kafka pub down → events accumulate. Local pub/sub OK. Hybrid: local for sync concerns, Kafka for cross-service.</li>
+    <li><strong>Listener idempotency</strong>: at-least-once delivery → listener may process duplicate. Track processed event IDs.</li>
+    <li><strong>Event explosion</strong>: 10 events fire per order → 50 listeners → 500 invocations/order. Audit listener count, batch hoặc consolidate events.</li>
+  </ul>
+</div>
+</section>
 
-<p>Tình huống: bạn có <code>HttpClient</code> gọi API của 3rd-party (DHL, Stripe, ...). Muốn thêm:</p>
-<ul>
-<li><strong>Logging</strong>: log request/response</li>
-<li><strong>Retry</strong>: retry 3 lần nếu 5xx</li>
-<li><strong>Caching</strong>: cache GET response 60s</li>
-<li><strong>Metrics</strong>: count requests, measure latency</li>
-</ul>
+<section id="decorator">
+<h2>6. Decorator Pattern <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supplementary">
+  <strong>SUPPLEMENTARY — Add cross-cutting concerns</strong>. Spring AOP = dynamic decorator.
+</div>
+
+<p>Tình huống: bạn có <code>HttpClient</code> gọi API của 3rd-party (DHL, Stripe, ...). Muốn thêm: Logging, Retry, Caching, Metrics.</p>
 
 <div class="compare">
 <div class="col bad">
@@ -542,8 +912,7 @@ client = new MetricsClient(client, registry);
 
 // Dùng như HttpClient bình thường
 client.get("/quote");
-// Order: Metrics → Caching → Retry → Logging → DHL
-//        (outer)                              (inner)</code></pre>
+// Order: Metrics → Caching → Retry → Logging → DHL</code></pre>
 </div>
 </div>
 
@@ -565,16 +934,17 @@ public class LoggingClient extends HttpClientDecorator {
     @Override
     public HttpResponse get(String url) {
         log.info("GET {}", url);
+        long start = System.nanoTime();
         try {
             HttpResponse resp = delegate.get(url);
-            log.info("GET {} → {}", url, resp.status());
+            log.info("GET {} → {} ({}ms)", url, resp.status(),
+                (System.nanoTime() - start) / 1_000_000);
             return resp;
         } catch (Exception e) {
             log.error("GET {} failed: {}", url, e.getMessage());
             throw e;
         }
     }
-    // ... post similar
 }
 
 public class RetryingClient extends HttpClientDecorator {
@@ -595,7 +965,12 @@ public class RetryingClient extends HttpClientDecorator {
             } catch (Exception e) {
                 lastError = e;
             }
-            sleep(100 * (1L &lt;&lt; i));  // Exponential backoff
+            try {
+                Thread.sleep(100 * (1L &lt;&lt; i));  // Exponential backoff
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
         }
         throw new RuntimeException("Failed after " + maxAttempts + " attempts", lastError);
     }
@@ -623,9 +998,9 @@ public class CachingClient extends HttpClientDecorator {
 <div class="callout why">
   <div class="ctitle">🎯 Vì sao Decorator &gt; Inheritance?</div>
   <ul style="margin:8px 0 0 20px">
-  <li><strong>Composability</strong>: bạn có thể stack <em>any combination</em> của decorators. Khách hàng A muốn Logging + Retry, khách hàng B muốn Metrics + Caching → cùng base class, khác stack.</li>
-  <li><strong>Reusable across types</strong>: <code>LoggingClient</code> dùng được với DHL, Stripe, FedEx — không cần class riêng <code>LoggingDhlClient</code>, <code>LoggingStripeClient</code>.</li>
-  <li><strong>Runtime composition</strong>: order có thể đổi runtime dựa trên config. Inheritance fix compile-time.</li>
+  <li><strong>Composability</strong>: stack <em>any combination</em> của decorators. Customer A muốn Logging+Retry, B muốn Metrics+Caching → cùng base, khác stack.</li>
+  <li><strong>Reusable across types</strong>: <code>LoggingClient</code> dùng được với DHL, Stripe, FedEx — không class riêng cho mỗi cái.</li>
+  <li><strong>Runtime composition</strong>: order có thể đổi runtime dựa config. Inheritance fix compile-time.</li>
   <li><strong>Single Responsibility</strong>: mỗi decorator chỉ 1 concern. Test riêng dễ.</li>
   </ul>
 </div>
@@ -634,50 +1009,23 @@ public class CachingClient extends HttpClientDecorator {
   <div class="ctitle">💡 Spring AOP = Decorator dynamic</div>
   <p>Spring <code>@Async</code>, <code>@Cacheable</code>, <code>@Retryable</code>, <code>@Transactional</code> đều là decorator dynamic (qua proxy). Bạn không viết decorator class, Spring tạo proxy decorator runtime. Cùng concept, ít boilerplate.</p>
 </div>
+</section>
 
-<h3 id="chain">Chain of Responsibility — "Pipeline xử lý"</h3>
+<section id="chain">
+<h2>7. Chain of Responsibility <span class="k-tag advanced">ADVANCED</span></h2>
 
-<p>Tình huống: trước khi 1 message được post lên 1 social platform (Facebook/Twitter clone), cần qua nhiều validation step:</p>
+<div class="k-banner advanced">
+  <strong>ADVANCED — Pipeline processing</strong>. Spring filter chain, HTTP middleware đều dùng pattern này.
+</div>
+
+<p>Tình huống: trước khi 1 message được post lên social platform, cần qua nhiều validation step:</p>
 <ol>
 <li><strong>Authentication</strong>: user logged in?</li>
 <li><strong>Rate limit</strong>: user post &gt; 100 messages/hour?</li>
 <li><strong>Content moderation</strong>: contain hate speech / NSFW?</li>
-<li><strong>Spam detection</strong>: là spam pattern không?</li>
+<li><strong>Spam detection</strong>: spam pattern không?</li>
 <li><strong>Mention validation</strong>: @mentions hợp lệ?</li>
 </ol>
-
-<div class="diagram">
-<svg viewBox="0 0 720 140" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="12">
-  <defs><style>
-    .h{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
-    .lbl{font-weight:600;fill:#0f172a}
-    .arr{stroke:#4f46e5;stroke-width:1.5;fill:none;marker-end:url(#ar2)}
-  </style>
-  <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/></marker></defs>
-
-  <rect x="10" y="50" width="100" height="40" rx="6" class="h"/>
-  <text x="60" y="74" text-anchor="middle" class="lbl">Auth</text>
-
-  <rect x="150" y="50" width="100" height="40" rx="6" class="h"/>
-  <text x="200" y="74" text-anchor="middle" class="lbl">RateLimit</text>
-
-  <rect x="290" y="50" width="120" height="40" rx="6" class="h"/>
-  <text x="350" y="74" text-anchor="middle" class="lbl">Moderation</text>
-
-  <rect x="450" y="50" width="100" height="40" rx="6" class="h"/>
-  <text x="500" y="74" text-anchor="middle" class="lbl">Spam</text>
-
-  <rect x="590" y="50" width="120" height="40" rx="6" class="h"/>
-  <text x="650" y="74" text-anchor="middle" class="lbl">PostMessage</text>
-
-  <line x1="110" y1="70" x2="150" y2="70" class="arr"/>
-  <line x1="250" y1="70" x2="290" y2="70" class="arr"/>
-  <line x1="410" y1="70" x2="450" y2="70" class="arr"/>
-  <line x1="550" y1="70" x2="590" y2="70" class="arr"/>
-
-  <text x="360" y="125" text-anchor="middle" fill="#475569" font-style="italic" font-size="11">Mỗi handler check 1 rule, fail thì throw, pass thì gọi handler tiếp theo</text>
-</svg>
-</div>
 
 <pre><code class="language-java">// Handler base
 public abstract class PostHandler {
@@ -696,6 +1044,7 @@ public abstract class PostHandler {
     protected abstract void process(PostRequest req);
 }
 
+@Component
 public class AuthHandler extends PostHandler {
     @Override
     protected void process(PostRequest req) {
@@ -703,6 +1052,7 @@ public class AuthHandler extends PostHandler {
     }
 }
 
+@Component
 public class RateLimitHandler extends PostHandler {
     private final RedisRateLimiter limiter;
 
@@ -716,6 +1066,7 @@ public class RateLimitHandler extends PostHandler {
     }
 }
 
+@Component
 public class ModerationHandler extends PostHandler {
     private final ContentModerationApi moderation;
 
@@ -725,13 +1076,6 @@ public class ModerationHandler extends PostHandler {
         if (result.containsHateSpeech() || result.containsNsfw()) {
             throw new ContentRejectedException(result.reason());
         }
-    }
-}
-
-public class SpamHandler extends PostHandler {
-    @Override
-    protected void process(PostRequest req) {
-        if (SpamDetector.isSpam(req.content())) throw new SpamDetectedException();
     }
 }
 
@@ -764,15 +1108,15 @@ public class PostService {
   <ul style="margin:8px 0 0 20px">
   <li><strong>Add/remove rules dễ</strong>: thêm "ProfanityFilter" = thêm 1 handler vào chain, không sửa code cũ.</li>
   <li><strong>Test riêng</strong>: <code>SpamHandler</code> test với spam input, không cần setup full chain.</li>
-  <li><strong>Configurable order</strong>: dev environment có thể skip ModerationHandler (slow API call). Production có full chain.</li>
-  <li><strong>Single Responsibility</strong>: mỗi handler 1 concern. Đổi rule spam không động đến code rate limit.</li>
+  <li><strong>Configurable order</strong>: dev environment skip ModerationHandler (slow API). Production full chain.</li>
+  <li><strong>Single Responsibility</strong>: mỗi handler 1 concern.</li>
   <li><strong>Reusable</strong>: <code>AuthHandler</code> dùng được cho post, comment, like — không duplicate.</li>
   </ul>
 </div>
 </section>
 
 <section id="when-to-use">
-<h2>3. Khi Nào Dùng Pattern Nào — Bảng Tổng Kết</h2>
+<h2>8. Khi Nào Dùng Pattern Nào — Bảng Tổng Kết</h2>
 
 <div class="table-wrap">
 <table>
@@ -790,10 +1134,9 @@ public class PostService {
 </section>
 
 <section id="antipatterns">
-<h2>4. Anti-Patterns Phổ Biến</h2>
+<h2>9. Anti-Patterns Phổ Biến</h2>
 
-<h3>#1 Pattern Fever — Áp dụng cho mọi vấn đề</h3>
-
+<h3>#1 Pattern Fever — áp dụng cho mọi vấn đề</h3>
 <div class="compare">
 <div class="col bad">
   <div class="col-head">❌ Factory cho 2-case logic</div>
@@ -814,152 +1157,161 @@ public class PostService {
 </div>
 </div>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao tránh?</div>
-  <p>Pattern thêm <strong>indirection</strong>. Indirection có cost (đọc code phải mở thêm file). Cost này chỉ đáng nếu có benefit (extensibility, testability, ...). Với 2-case stable logic → không có benefit → factory chỉ tạo noise.</p>
-</div>
-
 <h3>#2 Strategy với State — Recreate object liên tục</h3>
-
-<pre><code class="language-java">// ❌ New strategy mỗi request — waste object creation
-@Service
-public class PriceService {
-    public Money calculate(Order o, PromotionType type) {
-        PricingStrategy strategy = switch (type) {
-            case FLASH_SALE -&gt; new FlashSalePricingStrategy(promoRepo);  // NEW mỗi call
-            case LOYALTY -&gt; new LoyaltyPricingStrategy(loyaltyRepo);
-            default -&gt; new RegularPricingStrategy();
-        };
-        return strategy.apply(o);
-    }
-}
-
-// ✅ Inject strategies as beans, dùng factory để select
-@Service
-public class PriceService {
-    private final PricingStrategyFactory factory;
-    public Money calculate(Order o, PromotionType type) {
-        return factory.get(type).apply(o);
-    }
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <p>Strategies stateless → tạo 1 lần, reuse mãi. New instance mỗi request gây <strong>GC pressure</strong>, đặc biệt khi strategy có dependencies (phải re-locate). Dùng Spring beans = lifecycle managed, dependencies injected 1 lần.</p>
-</div>
+<p>Strategies stateless → tạo 1 lần, reuse mãi. New instance mỗi request gây GC pressure. Dùng Spring beans = lifecycle managed.</p>
 
 <h3>#3 Observer sync — Listener làm tắc nghẽn publisher</h3>
-
-<pre><code class="language-java">// ❌ Sync listener, SMS API chậm
-@EventListener(OrderPlacedEvent.class)
-public void on(OrderPlacedEvent e) {
-    smsGateway.send(e.customerPhone(), "Order confirmed");
-    // SMS gateway average 3s, sometimes 30s timeout
-    // → Order API trả về sau 30s → customer retry → duplicate order
-}
-
-// ✅ Async
-@EventListener(OrderPlacedEvent.class)
-@Async
-public void on(OrderPlacedEvent e) {
-    smsGateway.send(...);
-    // SMS chạy thread riêng, không block order flow
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao mặc định Spring sync?</div>
-  <p>Sync events có <strong>transactional guarantees</strong> — listener chạy trong cùng @Transactional với publisher. Khi listener throw → cả transaction rollback. Tốt cho listener critical (inventory phải atomic với order). <strong>BAD</strong> cho listener slow hoặc không critical → đánh dấu <code>@Async</code> + tách thread pool.</p>
-</div>
+<p>SMS API chậm 5s → sync listener block order flow. Mark <code>@Async</code> cho non-critical.</p>
 
 <h3>#4 Builder không validate — Tạo invalid object</h3>
-
-<pre><code class="language-java">// ❌ build() không check
-public SearchRequest build() {
-    return new SearchRequest(this);  // Không validate
-}
-
-// Caller tạo object invalid:
-SearchRequest req = SearchRequest.builder().build();
-// pickup=null, dropoff=null → bug ở step xử lý sau
-
-// ✅ Validate at build()
-public SearchRequest build() {
-    if (pickupCity == null) throw new IllegalArgumentException("pickup required");
-    if (dropoffCity == null) throw new IllegalArgumentException("dropoff required");
-    return new SearchRequest(this);
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao validate ở build()?</div>
-  <p>Principle <strong>"fail fast at boundary"</strong>. Object invalid <em>không bao giờ tồn tại</em> nếu validate ở build(). Nếu để invalid object sống và validate sau (ở use case, controller) → error message xa khỏi root cause → debug khó.</p>
-</div>
+<p><code>build()</code> phải validate. Principle "fail fast at boundary".</p>
 
 <h3>#5 Decorator + Inheritance lẫn lộn</h3>
+<p>Cross-cutting concerns orthogonal — composition cho phép mix-and-match runtime, inheritance fix compile-time.</p>
 
-<pre><code class="language-java">// ❌ Inheritance cho cross-cutting
-class LoggingDhlClient extends DhlClient { ... }
-class RetryingDhlClient extends LoggingDhlClient { ... }
-// Đổi thứ tự retry-logging hoặc thêm caching? Phải tạo class mới
+<h3>#6 Chain quá dài</h3>
+<p>20 handlers trong chain → mỗi request tốn 20 method calls. Performance critical paths cần consolidate.</p>
 
-// ✅ Composition
-HttpClient client = new DhlClient(config);
-client = new RetryingClient(client, 3);
-client = new LoggingClient(client);
-// Đổi thứ tự dễ, thêm decorator dễ</code></pre>
+<h3>#7 Pattern thay vì simple code</h3>
+<p>2-line method không cần pattern. Junior thấy senior dùng patterns → copy pattern vào mọi nơi → over-engineer.</p>
+</section>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Inheritance vs Composition cho cross-cutting</div>
-  <p>Inheritance fix relationship compile-time. Cross-cutting concerns (logging, retry, cache) là <strong>orthogonal</strong> — không tự nhiên thuộc về 1 class cụ thể. Composition + interface cho phép mix-and-match runtime.</p>
+<section id="build-projects">
+<h2>10. Build Projects</h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Refactor Shipping Service với Strategy + Factory (Beginner)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Refactor 800-line <code>OrderService.calculateShippingFee()</code> (file giả lập) thành Strategy + Factory pattern.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Spring Boot project với 5 shipping types (Standard, Express, SameDay, International, COD)</li>
+    <li>1 interface <code>ShippingFeeStrategy</code>, 5 implementations <code>@Component</code></li>
+    <li><code>ShippingStrategyRegistry</code> auto-discover via <code>List&lt;Strategy&gt;</code></li>
+    <li>Unit tests mỗi strategy riêng + integration test full flow</li>
+    <li>Add 6th type "PickupAtStore" — verify chỉ thêm 1 class, không sửa code cũ (git diff prove)</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: cyclomatic complexity của OrderService từ 50+ → &lt;10. Add new strategy zero impact on existing tests.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — HTTP Client Decorator Stack (Intermediate)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Build HTTP client với decorator chain: Logging → Retry → Caching → Metrics → Base.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Interface <code>HttpClient</code> + 4 decorators + 1 base impl (call real API hoặc mock)</li>
+    <li>Configuration builder: <code>HttpClientBuilder.base(...).withLogging().withRetry(3).withCaching(60s).build()</code></li>
+    <li>Order decorators matter — document tại sao Retry trước Caching (not opposite)</li>
+    <li>JMH benchmark: bare client vs full decorator stack — measure overhead</li>
+    <li>Integration test: simulate 500 errors → verify retry, simulate slow → verify cache hits</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: decorator overhead &lt; 1ms per call. Tests cover all decorator combinations.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Social Platform Post Pipeline (Advanced)</div>
+  <div class="be-deliverable">
+    <strong>Deliverable</strong>: Chain of Responsibility for post validation: Auth → RateLimit → Moderation → Spam → Mention → Save.
+  </div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>6 handlers, mỗi handler 1 class</li>
+    <li>Configurable chain via Spring config (skip ModerationHandler trong dev profile)</li>
+    <li>Each handler có metric (Prometheus counter): success/fail/skip</li>
+    <li>Async option: critical handlers sync, optional async</li>
+    <li>Test: bad post triggers each handler riêng, verify chain stops at first fail</li>
+    <li>Bonus: Observer pattern publish event after successful post</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: 95%+ test coverage. Add new handler = single file change, no other modifications.</div>
 </div>
 </section>
 
 <section id="interview">
-<h2>5. Interview Framework</h2>
+<h2>11. Interview Framework</h2>
 
 <div class="tier t1">
-  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
-  <div class="q">Q: Giải thích Strategy pattern. Khi nào dùng thay if-else?</div>
-  <div class="a">"Strategy đóng gói algorithm trong 1 class riêng implement interface chung. Context chỉ dùng interface, không biết implementation cụ thể. Dùng khi có 5+ variant hoặc algorithm hay thay đổi, vì thêm variant mới = thêm class, không sửa context (Open-Closed). Replace if-else bằng polymorphism. Trade-off: thêm classes → cost nhỏ. Benefit: testable riêng, isolated change. Với 2-3 case đơn giản → if-else vẫn tốt hơn."</div>
+<div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+<div class="q">Q: Giải thích Strategy pattern. Khi nào dùng thay if-else?</div>
+<div class="a">"Strategy đóng gói algorithm trong 1 class riêng implement interface chung. Context chỉ dùng interface, không biết implementation cụ thể.<br><br>
+Dùng khi có 5+ variant hoặc algorithm hay thay đổi, vì thêm variant mới = thêm class, không sửa context (Open-Closed). Replace if-else bằng polymorphism. Trade-off: thêm classes → cost nhỏ. Benefits: testable riêng, isolated change, auto-discover via DI.<br><br>
+Với 2-3 case đơn giản → if-else vẫn tốt hơn. Premature application của Strategy = over-engineering."</div>
 
-  <div class="q">Q: Builder pattern là gì, vì sao dùng thay vì constructor?</div>
-  <div class="a">"Builder cung cấp fluent API để tạo object phức tạp với nhiều optional parameters. Constructor 10 tham số là unreadable và dễ swap nhầm vị trí (cùng kiểu String). Builder làm optional fields explicit qua method name. Validation ở <code>build()</code> đảm bảo invalid object never exists. Dễ test (chỉ set fields cần cho test). Lombok <code>@Builder</code> auto-generate."</div>
+<div class="q">Q: Builder pattern là gì, vì sao dùng thay vì constructor?</div>
+<div class="a">"Builder cung cấp fluent API để tạo object phức tạp với nhiều optional parameters. Constructor 10 tham số là unreadable và dễ swap nhầm vị trí (cùng kiểu String).<br><br>
+Lợi ích: (1) Readability với named methods, (2) Immutability — object không setter, (3) Validation tại <code>build()</code> đảm bảo invalid object never exists, (4) Optional fields với defaults, (5) Cross-field validation single place.<br><br>
+Lombok <code>@Builder</code> auto-generate. Records (Java 16+) replace builder cho simple immutable; builder vẫn cần cho complex objects."</div>
 </div>
 
 <div class="tier t2">
-  <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
-  <div class="q">Q: Design payment processing system dùng Strategy + Factory + Decorator. Methods: Momo, VNPay. Add logging và retry.</div>
-  <div class="a">"<strong>Strategy</strong>: <code>PaymentGateway</code> interface với <code>MomoPaymentGateway</code>, <code>VNPayPaymentGateway</code> implementations.<br>
-  <strong>Factory</strong>: <code>PaymentGatewayFactory</code> map từ <code>PaymentMethod</code> enum → bean. Inject <code>List&lt;PaymentGateway&gt;</code> từ Spring, auto-discover.<br>
-  <strong>Decorator</strong>: <code>LoggingPaymentGateway</code> wrap gateway, log request/response. <code>RetryingPaymentGateway</code> wrap thêm để retry 3 lần với exponential backoff.<br>
-  <strong>Usage</strong>: <code>factory.get(MOMO)</code> trả gateway đã wrap decorators (config qua Spring AOP hoặc explicit wrap trong factory).<br>
-  <strong>Thêm method mới</strong>: tạo class implement <code>PaymentGateway</code>, Spring auto-pick up. Factory tự register. Decorators apply automatically. <strong>0 dòng sửa code cũ.</strong>"</div>
+<div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
+<div class="q">Q: Design payment processing dùng Strategy + Factory + Decorator. Methods: Momo, VNPay. Add logging + retry.</div>
+<div class="a">"<strong>Strategy</strong>: <code>PaymentGateway</code> interface với <code>MomoPaymentGateway</code>, <code>VNPayPaymentGateway</code> implementations.<br>
+<strong>Factory</strong>: <code>PaymentGatewayRegistry</code> map từ <code>PaymentMethod</code> enum → bean. Inject <code>List&lt;PaymentGateway&gt;</code> từ Spring, auto-discover.<br>
+<strong>Decorator</strong>: <code>LoggingPaymentGateway</code> wrap gateway, log request/response. <code>RetryingPaymentGateway</code> wrap thêm để retry 3 lần với exponential backoff.<br>
+<strong>Usage</strong>: <code>registry.get(MOMO)</code> trả gateway đã wrap decorators (config qua Spring AOP hoặc explicit wrap trong registry).<br><br>
+<strong>Thêm method mới</strong>: tạo class implement <code>PaymentGateway</code>, Spring auto-pick up. Registry tự register. Decorators apply automatically. <strong>0 dòng sửa code cũ.</strong><br><br>
+<strong>Production concerns</strong>: idempotency key, circuit breaker per gateway (DHL down không break VNPay), correlation ID trace cross gateway calls."</div>
 
-  <div class="q">Q: Có 4 sync event listeners khi payment completed. 1 listener (fraud detection) chậm 5s. Fix sao không break listeners khác?</div>
-  <div class="a">"<strong>Option 1</strong> — Async chỉ listener slow: đánh dấu fraud listener <code>@Async</code>. Payment trả về customer ngay, fraud detection chạy background. Nếu fraud detect anomaly, tạo separate alert (không revert payment đã confirmed).<br>
-  <strong>Option 2</strong> — All async: tất cả listeners <code>@Async</code>. Payment trả về customer ngay sau khi save. Trade-off: nếu inventory update fail (out of stock), order đã confirmed → cần compensation flow.<br>
-  <strong>Option 3</strong> — Move to message queue: publish event lên Kafka, mỗi listener là service riêng consume. Decouple hoàn toàn — fraud service deploy độc lập, scale độc lập.<br>
-  <strong>Recommendation</strong>: Option 1 cho near-realtime systems. Option 3 cho microservices architecture cần independent deployability."</div>
+<div class="q">Q: 4 sync event listeners khi payment completed. 1 listener (fraud) chậm 5s. Fix sao không break listeners khác?</div>
+<div class="a">"<strong>Option 1 — Async chỉ listener slow</strong>: đánh dấu fraud listener <code>@Async</code>. Payment trả về customer ngay, fraud detection chạy background. Nếu fraud detect anomaly → separate alert (không revert payment đã confirmed).<br><br>
+<strong>Option 2 — All async</strong>: tất cả listeners <code>@Async</code>. Payment trả về ngay sau save. Trade-off: nếu inventory update fail, order đã confirmed → cần compensation flow (SAGA).<br><br>
+<strong>Option 3 — Move to message queue</strong>: publish event lên Kafka, mỗi listener là service riêng consume. Decouple hoàn toàn — fraud service deploy độc lập, scale độc lập.<br><br>
+<strong>Recommendation</strong>: Option 1 cho near-realtime systems trong same JVM. Option 3 cho microservices architecture cần independent deployability. Plus: <code>@TransactionalEventListener(AFTER_COMMIT)</code> để listeners chỉ fire sau commit successful."</div>
 </div>
 
 <div class="tier t3">
-  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
-  <div class="q">Q: Design pipeline xử lý request lên platform Q&A (giống StackOverflow). Có 6 step: auth, rate-limit, spam check, content moderation, duplicate detection, tag validation. Mỗi step có thể async hoặc sync. Step nào fail thì abort.</div>
-  <div class="a">"<strong>Chain of Responsibility</strong> với extension:<br><br>
-  <strong>1. Handler abstraction</strong>: mỗi step implement <code>QuestionHandler</code> interface có method <code>handle(QuestionRequest req)</code> trả về <code>HandlerResult</code> (PASS/FAIL/SKIP).<br><br>
-  <strong>2. Configurable chain</strong>: chain order config qua Spring profile. Production: full 6 steps. Dev: skip moderation + duplicate detection (slow). Test: chỉ auth.<br><br>
-  <strong>3. Hybrid sync/async</strong>:<br>
-  • Sync (must pass before save): auth, rate-limit, spam check<br>
-  • Async (run after save, can flag/revert later): moderation, duplicate detection, tag validation<br>
-  Đặt 2 chain riêng: <code>preSaveChain</code> và <code>postSaveChain</code>.<br><br>
-  <strong>4. Result aggregation</strong>: nếu pre-save fail → throw exception → caller nhận error. Post-save fail → mark question là &quot;under review&quot; trong DB, gửi event <code>QuestionFlaggedEvent</code> → notification system báo moderator.<br><br>
-  <strong>5. Observability</strong>: mỗi handler emit metric (handler_name, duration, result). Grafana dashboard show bottleneck handler. Add new handler #7 = thêm 1 class + register vào chain config.<br><br>
-  <strong>6. Testability</strong>: handler test riêng với mock dependencies. Chain test với fake handlers verify order + abort behavior."</div>
+<div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior</span></div>
+<div class="q">Q: Design pipeline xử lý request lên platform Q&amp;A (StackOverflow-like). 6 steps: auth, rate-limit, spam check, content moderation, duplicate detection, tag validation. Mỗi step có thể async/sync. Step fail thì abort.</div>
+<div class="a">"<strong>Chain of Responsibility</strong> với extension:<br><br>
+<strong>1. Handler abstraction</strong>: mỗi step implement <code>QuestionHandler</code> interface có method <code>handle(QuestionRequest req)</code> trả về <code>HandlerResult</code> (PASS/FAIL/SKIP).<br><br>
+<strong>2. Configurable chain</strong>: chain order config qua Spring profile. Production: full 6 steps. Dev: skip moderation + duplicate detection (slow). Test: chỉ auth.<br><br>
+<strong>3. Hybrid sync/async</strong>:<br>
+• Sync (must pass before save): auth, rate-limit, spam check<br>
+• Async (run after save, can flag/revert later): moderation, duplicate detection, tag validation<br>
+Đặt 2 chain riêng: <code>preSaveChain</code> và <code>postSaveChain</code>.<br><br>
+<strong>4. Result aggregation</strong>: nếu pre-save fail → throw exception → caller nhận error. Post-save fail → mark question "under review" trong DB, gửi event <code>QuestionFlaggedEvent</code> → notification system báo moderator.<br><br>
+<strong>5. Observability</strong>: mỗi handler emit metric (handler_name, duration, result). Grafana dashboard show bottleneck handler. Add new handler #7 = thêm 1 class + register vào chain config.<br><br>
+<strong>6. Testability</strong>: handler test riêng với mock dependencies. Chain test với fake handlers verify order + abort behavior.<br><br>
+<strong>7. Combine patterns</strong>: Strategy cho handler implementations, Factory để build chain, Observer cho events sau success, Decorator cho cross-cutting (logging, metrics)."</div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>12. Closing — Feynman Check</h2>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Final Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior dev (mới biết Java) trong 5 phút:<br><br>
+  Vì sao Strategy pattern tốt hơn 5 if-else branches?<br><br>
+  Và vì sao Observer pattern cho phép add subscribers mà không sửa publisher?"</div>
+  <div class="fy-rule">Không xem file. Vẽ class diagram trên giấy. Lắp bắp → quay lại đọc.</div>
+</div>
+
+<div class="feynman" style="margin-top:20px">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">"Trước: ___/5 · Sau đọc: ___/5 · Sau Build #1 (Strategy refactor): ___/5"</div>
+  <div class="fy-rule">Patterns chỉ thực sự hiểu sau khi refactor 1 dự án thật. Reading không đủ.</div>
+</div>
+
+<div class="verify-source" style="margin-top:24px">
+  <div class="vs-head">📚 Verify Against Source</div>
+  <ul>
+    <li><a href="https://refactoring.guru/design-patterns" target="_blank">Refactoring.Guru — Design Patterns</a> — best free reference, có code examples nhiều ngôn ngữ</li>
+    <li><a href="https://github.com/iluwatar/java-design-patterns" target="_blank">java-design-patterns GitHub</a> — 100+ patterns implemented in Java, 80K stars</li>
+    <li><strong>Sách gốc</strong>: "Design Patterns: Elements of Reusable Object-Oriented Software" (Gamma, Helm, Johnson, Vlissides — 1994). Old but foundational.</li>
+    <li><strong>Sách hiện đại</strong>: "Head First Design Patterns" (2nd edition, 2020) — accessible, hands-on</li>
+    <li><strong>Java-specific</strong>: "Effective Java" (Joshua Bloch, 3rd ed.) — Items 1-9 cover Factory, Builder, Singleton modernized cho Java</li>
+    <li><strong>Source code real</strong>: Spring Framework <code>AbstractBeanFactory</code> (Factory), Spring <code>ApplicationEvent</code> hierarchy (Observer), Spring AOP <code>ProxyFactory</code> (Decorator dynamic)</li>
+  </ul>
 </div>
 </section>
 
 <footer>
 <div>📁 #16 Design Patterns · Phase 4 — Architecture</div>
-<div>Tiếp theo: #17 Microservices Patterns</div>
+<div>Tiếp theo: #17 Microservices Patterns · #18 Event-Driven</div>
 </footer>
 
 </div>

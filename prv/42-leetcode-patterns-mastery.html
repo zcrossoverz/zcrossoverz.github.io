@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#42 — LeetCode Patterns Mastery (20 Patterns FAANG) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm M · FAANG Track</span>
+    <span class="sep">›</span>
+    <span class="current">#42 LeetCode Patterns Mastery</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 20 patterns</a>
+      <a href="#intro">1. Vì sao 20 patterns?</a>
+      <a href="#real-problem">2. Vấn đề: 3000 bài → 20 mental models</a>
+      <a href="#umpire-recall">3. UMPIRE — recall nhanh</a>
+      <div class="toc-section">Array &amp; Hashing</div>
+      <a href="#p1-hashing">P1 · Hashing</a>
+      <a href="#p2-prefix">P2 · Prefix Sum</a>
+      <div class="toc-section">Pointer-based</div>
+      <a href="#p3-two-pointers">P3 · Two Pointers</a>
+      <a href="#p4-sliding-window">P4 · Sliding Window</a>
+      <div class="toc-section">Linear DS</div>
+      <a href="#p5-stack">P5 · Stack / Monotonic</a>
+      <a href="#p6-binary-search">P6 · Binary Search</a>
+      <a href="#p7-linked-list">P7 · Linked List</a>
+      <div class="toc-section">Tree / Trie</div>
+      <a href="#p8-tree-dfs">P8 · Tree DFS</a>
+      <a href="#p9-tree-bfs">P9 · Tree BFS</a>
+      <a href="#p10-trie">P10 · Trie</a>
+      <div class="toc-section">Heap / Backtrack</div>
+      <a href="#p11-heap">P11 · Heap (Top-K)</a>
+      <a href="#p12-backtracking">P12 · Backtracking</a>
+      <div class="toc-section">Graphs</div>
+      <a href="#p13-graph-bfs-dfs">P13 · Graph BFS/DFS</a>
+      <a href="#p14-graph-advanced">P14 · Dijkstra / Union-Find</a>
+      <div class="toc-section">DP &amp; Greedy</div>
+      <a href="#p15-dp-1d">P15 · 1D DP</a>
+      <a href="#p16-dp-2d">P16 · 2D DP</a>
+      <a href="#p17-greedy">P17 · Greedy</a>
+      <a href="#p18-intervals">P18 · Intervals</a>
+      <div class="toc-section">Math / Bit</div>
+      <a href="#p19-math">P19 · Math tricks</a>
+      <a href="#p20-bit">P20 · Bit Manipulation</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="meta-tag">Nhóm M · FAANG / LeetCode Track · File 1/5</div>
+  <h1>LeetCode Patterns Mastery — 20 Pattern Là Đủ Cho 80% FAANG</h1>
+  <p class="lead">
+    LeetCode có 3000+ problems. Nhưng <strong>80% bài rơi vào 20 patterns lặp lại</strong>. File này không dạy bạn 3000 bài — nó dạy bạn 20 mental model để khi gặp bài lạ, bộ não tự reach về 1 trong 20 template trong &lt; 60 giây.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Pattern recognition &lt; 60s + template reflex</div>
+    <div><strong>📅 Thời lượng</strong><br>8–12 tuần · ~130 problems · Tháng 2–3 của 6-month roadmap</div>
+    <div><strong>📚 Prereq</strong><br>#47 Junior Foundation + #43 Mental Model + 30 LC Easy đã solve</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>Critical — file trung tâm của FAANG prep</div>
+  </div>
+</section>
+
+<!-- ==================== HOW TO READ ==================== -->
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc file này — KHÔNG đọc một mạch</h3>
+  <ol>
+    <li><strong>1 pattern / 0.5–1 tuần.</strong> Đọc Mental Model + Template, sau đó solve 5–7 bài drill. KHÔNG đọc cả file trong 1 ngày — overload + illusion of competence.</li>
+    <li><strong>Tay code trước, mắt đọc sau.</strong> Mỗi template trong file, tự viết lại 1 lần KHÔNG nhìn. Nếu bí, đối chiếu rồi xoá và viết lại lần 2.</li>
+    <li><strong>Đo bằng pattern recognition test.</strong> Mỗi cuối tuần, lấy 10 bài Medium random từ LeetCode → đoán pattern trong 60s, không cần solve. ≥ 80% accuracy là đạt.</li>
+    <li><strong>Skip phần CORE/SUPP/ADV theo level hiện tại.</strong> Lần đầu chỉ làm CORE (12 patterns), vòng 2 thêm SUPP (4 patterns), vòng 3 thêm ADV (4 patterns).</li>
+    <li><strong>Mỗi pattern phải pass 5 tiêu chí hiểu sâu</strong> trước khi qua pattern tiếp theo: (1) vấn đề gốc, (2) tại sao pattern này ra đời, (3) không có pattern → bug gì, (4) ví dụ sai trông thế nào, (5) edge case nguy hiểm nhất.</li>
+  </ol>
+</div>
+
+<!-- ==================== ROADMAP ==================== -->
+<section id="roadmap">
+  <h2>🗺️ Roadmap 20 patterns — Học theo thứ tự này</h2>
+  <p>Sắp xếp từ <strong>nền tảng → nâng cao</strong>. Nếu bạn mới, hãy bám sát thứ tự — pattern sau sử dụng intuition từ pattern trước. Tag <code>CORE</code> = bắt buộc (xuất hiện trong 70%+ phỏng vấn), <code>SUPP</code> = nên biết, <code>ADV</code> = bonus.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">P1</span><div><strong>Hashing</strong> · CORE · Trade space for time — nền tảng của 30% bài LC</div></div>
+    <div class="roadmap-item core"><span class="num">P2</span><div><strong>Prefix Sum</strong> · CORE · Range query O(1), nền tảng subarray problems</div></div>
+    <div class="roadmap-item core"><span class="num">P3</span><div><strong>Two Pointers</strong> · CORE · O(n) thay O(n²) khi mảng sorted hoặc cần shrink</div></div>
+    <div class="roadmap-item core"><span class="num">P4</span><div><strong>Sliding Window</strong> · CORE · Variant nâng cao của Two Pointers — substring/subarray</div></div>
+    <div class="roadmap-item core"><span class="num">P5</span><div><strong>Stack / Monotonic Stack</strong> · CORE · Parens, next greater, histogram</div></div>
+    <div class="roadmap-item core"><span class="num">P6</span><div><strong>Binary Search</strong> · CORE · Cả search trên array lẫn search trên answer space</div></div>
+    <div class="roadmap-item core"><span class="num">P7</span><div><strong>Linked List (fast/slow)</strong> · CORE · Cycle, middle, reverse — phải reflex</div></div>
+    <div class="roadmap-item core"><span class="num">P8</span><div><strong>Tree DFS</strong> · CORE · Leap of faith — recursion trên subtree</div></div>
+    <div class="roadmap-item core"><span class="num">P9</span><div><strong>Tree BFS</strong> · CORE · Level order, right side, shortest depth</div></div>
+    <div class="roadmap-item supp"><span class="num">P10</span><div><strong>Trie</strong> · SUPP · Autocomplete, prefix search — ít gặp nhưng signal mạnh</div></div>
+    <div class="roadmap-item core"><span class="num">P11</span><div><strong>Heap / Top-K</strong> · CORE · K-largest, median stream, merge K</div></div>
+    <div class="roadmap-item core"><span class="num">P12</span><div><strong>Backtracking</strong> · CORE · Subsets, permutations, N-Queens — choose / unchoose</div></div>
+    <div class="roadmap-item core"><span class="num">P13</span><div><strong>Graph BFS/DFS</strong> · CORE · Islands, course schedule, word ladder</div></div>
+    <div class="roadmap-item supp"><span class="num">P14</span><div><strong>Dijkstra / Union-Find</strong> · SUPP · Weighted shortest path, components</div></div>
+    <div class="roadmap-item core"><span class="num">P15</span><div><strong>1D DP</strong> · CORE · Climb stairs, house robber, coin change</div></div>
+    <div class="roadmap-item core"><span class="num">P16</span><div><strong>2D DP</strong> · CORE · LCS, edit distance, knapsack</div></div>
+    <div class="roadmap-item supp"><span class="num">P17</span><div><strong>Greedy</strong> · SUPP · Jump game, gas station — cần proof tính đúng</div></div>
+    <div class="roadmap-item core"><span class="num">P18</span><div><strong>Intervals</strong> · CORE · Merge, insert, meeting rooms — sort + sweep</div></div>
+    <div class="roadmap-item adv"><span class="num">P19</span><div><strong>Math tricks</strong> · ADV · GCD, fast pow, modular arithmetic</div></div>
+    <div class="roadmap-item adv"><span class="num">P20</span><div><strong>Bit Manipulation</strong> · ADV · XOR, count bits, single number</div></div>
+  </div>
+</section>
+
+<!-- ==================== INTRO ==================== -->
+<section id="intro">
+  <h2>1. Vì sao đúng 20 patterns? <span class="k-tag core">CORE</span></h2>
+  <p>Khi bạn lần đầu mở LeetCode, 3000+ bài hiện ra như rừng rậm. Bạn nghĩ "phải solve tất cả à?". Câu trả lời là KHÔNG — và đây là lý do tại sao 20 patterns là đủ.</p>
+
+  <div class="history-block">
+    <h4>📜 Lịch sử của khái niệm "coding pattern"</h4>
+    <ul>
+      <li><strong>2009</strong> — Gayle Laakmann McDowell xuất bản <em>Cracking the Coding Interview</em> (Career Cup). Đây là cuốn sách đầu tiên hệ thống hoá phỏng vấn FAANG theo nhóm chủ đề: Arrays/Strings, Linked Lists, Stacks/Queues, Trees/Graphs, DP, Bit. Phiên bản 6th (2015) thêm Recursion + Sorting/Searching, tổng 14 chương — về cơ bản là nền móng "pattern thinking".</li>
+      <li><strong>2017</strong> — Design Gurus (Fahim ul Haq, ex-Microsoft/Facebook) phát hành khoá <em>Grokking the Coding Interview: Patterns for Coding Questions</em> trên Educative.io. Đây là tài liệu đầu tiên đặt tên "16 patterns" (Sliding Window, Two Pointers, Fast & Slow, Merge Intervals, Cyclic Sort, In-place Reversal, Tree BFS, Tree DFS, Two Heaps, Subsets, Modified Binary Search, Top K, K-way Merge, Topological Sort, 0/1 Knapsack, Bitwise XOR).</li>
+      <li><strong>2020</strong> — Yangshun Tay (ex-Facebook) public hoá <em>Tech Interview Handbook</em> (github.com/yangshun/tech-interview-handbook). Danh sách "Blind 75" được Yangshun chia sẻ trên Blind app trở thành reference set 75 bài Medium phủ đa số patterns.</li>
+      <li><strong>2021</strong> — Navi (ex-Google) launch NeetCode.io với "NeetCode 150" — superset của Blind 75, chia thành 17 chủ đề (Arrays & Hashing, Two Pointers, Sliding Window, Stack, Binary Search, Linked List, Trees, Tries, Heap/PQ, Backtracking, Graphs, Advanced Graphs, 1D DP, 2D DP, Greedy, Intervals, Math & Geometry, Bit Manipulation). Đây là danh sách phổ biến nhất hiện nay (2026).</li>
+      <li><strong>2024</strong> — LeetCode chính thức rollout tab "Study Plan" với 14 module pattern-based, xác nhận pattern thinking là cách chính thức để học.</li>
+    </ul>
+    <p><em>Verifiable: NeetCode 150 — neetcode.io/practice. Grokking — designgurus.org/course/grokking-the-coding-interview. Blind 75 — leetcode.com/discuss/general-discussion/460599. Cracking the Coding Interview — ISBN 978-0984782857.</em></p>
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước khi đọc tiếp: <strong>nếu chỉ học 1 trong 20 patterns, bạn nghĩ pattern nào "cover" nhiều bài nhất?</strong> Viết câu trả lời và ước lượng % bài LeetCode mà pattern đó áp dụng được. Đáp án ở cuối phần này.</p>
+  </div>
+
+  <h3>Tại sao "20 patterns" không phải con số tuỳ tiện?</h3>
+  <p>Mỗi bài LC = 1 <em>combination</em> của: cấu trúc dữ liệu + thao tác + ràng buộc time/space. Khi liệt kê đầy đủ, tổ hợp có thể có hàng triệu — nhưng <strong>không gian "câu hỏi hay" mà interviewer hỏi rất hẹp</strong>. Lý do:</p>
+  <ul>
+    <li>Interviewer chỉ có 45 phút → bài phải <em>codable trong 25–30 phút</em>. Loại bỏ các bài đòi hỏi thuật toán quá đặc thù (Suffix Tree, FFT, Network Flow).</li>
+    <li>Bài phải có <em>signal phân biệt được senior vs junior</em>. Bài quá dễ (1 vòng for) không signal được; bài quá khó (research-level) không fair. Sweet spot = các pattern có ít nhất 1 trick non-obvious.</li>
+    <li>Bài phải có <em>variants để hỏi follow-up</em>. Pattern "Sliding Window" có thể biến thành 50+ bài khác nhau bằng cách đổi constraint → interviewer thích vì có chiều sâu probe.</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Đáp án Pause &amp; Predict:</strong> Pattern phổ biến nhất là <strong>Hashing</strong> (~25–30% bài LC Easy/Medium dùng HashMap/HashSet ở dạng nào đó). Tuy nhiên, "cover" theo nghĩa <em>chỉ cần pattern này để solve</em> thì <strong>Two Pointers + Sliding Window</strong> mới là cặp đôi cover nhiều bài đơn lẻ nhất — vì chúng thay thế brute force O(n²) bằng O(n) cho rất nhiều bài array/string.
+  </div>
+</section>
+
+<!-- ==================== REAL PROBLEM ==================== -->
+<section id="real-problem">
+  <h2>2. Vấn đề thực: 3000 bài → 20 mental models <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ Hiểu lầm phổ biến của junior</h4>
+    <p><strong>"Tôi cần solve 500 bài LC để được FAANG."</strong> — Sai. Nhiều người solve 1000+ bài mà vẫn fail vì họ <em>nhớ solution thuộc lòng</em> chứ không <em>internalize pattern</em>. Ngược lại, có người chỉ solve 150 bài (NeetCode 150) nhưng pass Google L4 vì họ deeply hiểu 20 patterns và transfer được sang bài lạ.</p>
+    <p><strong>Số bài KHÔNG quan trọng bằng chất lượng pattern recognition.</strong></p>
+  </div>
+
+  <h3>Tại sao "pattern thinking" ra đời?</h3>
+  <p>Trước 2015, interview prep là "đọc CLRS + làm hết Algorithms (Sedgewick) + thuộc thuật toán". Cách này quá nặng — bạn học <em>algorithm</em> (Dijkstra, KMP, A*) nhưng không học <em>cách nhận diện khi nào dùng</em>. Pattern thinking lật ngược: dạy bạn <em>signal phrase trong đề bài</em> → trigger template phù hợp.</p>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Học theo "thuật toán"</h4>
+      <ul>
+        <li>Đọc Dijkstra trên Wikipedia, hiểu pseudocode</li>
+        <li>Implement Dijkstra trong môi trường vô trùng</li>
+        <li>Gặp bài LC 743 (Network Delay) → không nhận ra là Dijkstra</li>
+        <li>Bí 30 phút, đọc solution, "à thì ra"</li>
+        <li>2 tuần sau gặp bài variant → lại bí</li>
+      </ul>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Học theo "pattern"</h4>
+      <ul>
+        <li>Học signal: "đồ thị có trọng số + tìm đường ngắn nhất từ A đến tất cả" → Dijkstra</li>
+        <li>Học template: PriorityQueue&lt;int[]&gt;, dist[] array, while loop pop min</li>
+        <li>Solve 5 bài Dijkstra variants liên tiếp trong 1 tuần</li>
+        <li>Tháng sau gặp LC 787 (Cheapest Flights) → "có K stops constraint, đây là Dijkstra modified" — nhận ra trong 30 giây</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: "20 patterns" có lỗ hổng nào?</h4>
+    <ul>
+      <li><strong>Bài Hard ngoài 20 patterns:</strong> ~5–10% bài Hard yêu cầu kiến thức ngoài rổ này — Segment Tree, KMP, Manacher, Suffix Array, Maximum Flow, Bitmask DP. Nếu target Google L5+/Meta E5+, cần học thêm.</li>
+      <li><strong>Pattern overlap:</strong> Nhiều bài có thể giải bằng 2–3 patterns khác nhau. VD: LC 53 (Max Subarray) — Greedy/Kadane HOẶC DP 1D HOẶC Divide & Conquer. Pattern thinking ép bạn chọn 1 lens — đôi khi miss lens tối ưu hơn.</li>
+      <li><strong>Real coding ≠ LC:</strong> Code production cần readability, error handling, observability — LC chỉ test correctness. Pattern thinking giúp pass phỏng vấn nhưng KHÔNG đủ làm engineer giỏi.</li>
+      <li><strong>Pattern dạy "tay nghề chiến thuật" nhưng không dạy "tư duy hệ thống":</strong> Bài Hard thật sự (LC 4 Median of Two Sorted Arrays, LC 1until8 Trapping Rain Water II) đòi insight non-pattern. 20 patterns chỉ là sàn cơ bản.</li>
+    </ul>
+  </div>
+
+  <h3>Bằng chứng định lượng — đếm pattern trên NeetCode 150</h3>
+  <pre><code class="language-text">NeetCode 150 phân bố theo pattern (counted manually từ neetcode.io 2026):
+  Arrays &amp; Hashing  : 9 bài  (6%)
+  Two Pointers      : 5 bài  (3%)
+  Sliding Window    : 6 bài  (4%)
+  Stack             : 7 bài  (5%)
+  Binary Search     : 7 bài  (5%)
+  Linked List       : 11 bài (7%)
+  Trees             : 15 bài (10%)
+  Tries             : 3 bài  (2%)
+  Heap / PQ         : 7 bài  (5%)
+  Backtracking      : 9 bài  (6%)
+  Graphs            : 13 bài (9%)
+  Advanced Graphs   : 6 bài  (4%)
+  1D DP             : 12 bài (8%)
+  2D DP             : 11 bài (7%)
+  Greedy            : 8 bài  (5%)
+  Intervals         : 6 bài  (4%)
+  Math &amp; Geometry   : 8 bài  (5%)
+  Bit Manipulation  : 7 bài  (5%)
+                    ──────
+                      150 bài
+
+→ KHÔNG có pattern nào chiếm &gt; 10%. Distribution cân bằng cố ý.
+→ Top 6 patterns (Trees, Graphs, 1D DP, 2D DP, Linked List, Backtracking)
+  cover 67/150 = 45% — đây là priority học đầu tiên nếu thiếu thời gian.</code></pre>
+</section>
+
+<!-- ==================== UMPIRE RECALL ==================== -->
+<section id="umpire-recall">
+  <h2>3. UMPIRE — khung tư duy gọi pattern ra <span class="k-tag core">CORE</span></h2>
+  <p>UMPIRE là khung phỏng vấn 6 bước (đã chi tiết trong <a href="43-algorithm-mental-model.html">#43 Mental Model</a>). Ở đây tóm tắt để bạn quy chiếu mỗi pattern:</p>
+  <pre><code class="language-text">U — Understand   : Lặp lại đề, hỏi clarify (input range, edge case, output format)
+M — Match        : MAP đề về pattern (← đây là phần file này dạy)
+P — Plan         : Pseudocode, complexity dự kiến, sketch trên bảng
+I — Implement    : Code (theo template pattern đã match)
+R — Review       : Trace 1 example nhỏ + 1 edge case
+E — Evaluate     : Verify time/space, đề xuất optimization</code></pre>
+  <p>Mỗi pattern dưới đây có mục <strong>"Signal nhận pattern"</strong> — đây chính là bước M của UMPIRE.</p>
+</section>
+
+<!-- ==================== P1 HASHING ==================== -->
+<section id="p1-hashing">
+  <h2>Pattern 1 · Hash Map / Hash Set <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao đây là CORE:</strong> Hashing xuất hiện trong ~25–30% bài LC. Junior fail phỏng vấn không phải vì không biết HashMap — mà vì không reflex "thấy duplicate / lookup / count → HashMap" trong 10 giây đầu.
+  </div>
+
+  <h3>Signal nhận pattern (60s test)</h3>
+  <ul>
+    <li>"Find pair / triplet sum to X" → put complement vào map</li>
+    <li>"First non-repeating character" → count với map</li>
+    <li>"Group anagrams / by some key" → key → list</li>
+    <li>"Contains duplicate / distinct elements" → Set</li>
+    <li>"Top K frequent" → map count + heap</li>
+  </ul>
+
+  <h3>Mental Model — "Trade space for time"</h3>
+  <p>Brute force của tất cả các bài này là <strong>O(n²)</strong>: lặp 2 vòng, kiểm tra điều kiện. HashMap đổi <strong>O(n) space</strong> để giảm xuống <strong>O(n) time</strong> bằng cách <em>memoize</em> những element đã thấy.</p>
+  <pre><code class="language-text">Brute: for each i: for each j &gt; i: check pair(i, j)        → O(n²)
+Hash:  for each i: lookup complement in HashMap O(1)         → O(n)
+
+Key insight: thay vì search 2 lần tuyến tính, lưu lần 1 + lookup O(1) lần 2.</code></pre>
+
+  <h3>Template Java</h3>
+  <pre><code class="language-java">public int[] twoSum(int[] nums, int target) {
+    Map&lt;Integer, Integer&gt; seen = new HashMap&lt;&gt;();
+    for (int i = 0; i &lt; nums.length; i++) {
+        int complement = target - nums[i];
+        if (seen.containsKey(complement)) {
+            return new int[]{seen.get(complement), i};
+        }
+        seen.put(nums[i], i);
+    }
+    return new int[]{};
+}</code></pre>
+
+  <h3>Walkthrough — LC 1 Two Sum (UMPIRE đầy đủ)</h3>
+  <p><strong>U:</strong> Input <code>nums = [2,7,11,15]</code>, target = 9. Output indices. Có đúng 1 solution, không reuse cùng index 2 lần. Clarify: array có thể có duplicate? (Có) Negative? (Có) Sorted? (Không).</p>
+  <p><strong>M:</strong> "find pair sum to X" → reflex Hash Map. Brute O(n²) → memoize complement.</p>
+  <p><strong>P:</strong> Map&lt;value, index&gt;. Duyệt 1 lần. Mỗi element: hỏi map có <code>target - nums[i]</code> không, nếu có return; nếu không put vào map.</p>
+  <p><strong>I:</strong> Như template trên.</p>
+  <p><strong>R:</strong> Trace [2,7,11,15], target=9 → i=0 put(2,0); i=1 complement=9-7=2, map có → return [0,1]. ✓</p>
+  <p><strong>E:</strong> Time O(n), space O(n). Không thể better — vì chỉ đọc 1 lần qua array đã đủ.</p>
+
+  <h3>Variant — LC 49 Group Anagrams (Medium)</h3>
+  <pre><code class="language-java">public List&lt;List&lt;String&gt;&gt; groupAnagrams(String[] strs) {
+    Map&lt;String, List&lt;String&gt;&gt; groups = new HashMap&lt;&gt;();
+    for (String s : strs) {
+        char[] chars = s.toCharArray();
+        Arrays.sort(chars);
+        String key = new String(chars);              // sorted string = anagram fingerprint
+        groups.computeIfAbsent(key, k -&gt; new ArrayList&lt;&gt;()).add(s);
+    }
+    return new ArrayList&lt;&gt;(groups.values());
+}
+// O(n × k log k) where k = max string length
+// Variant tối ưu: dùng int[26] làm key → O(n × k)</code></pre>
+
+  <h3>Variant — LC 347 Top K Frequent (Medium)</h3>
+  <pre><code class="language-java">public int[] topKFrequent(int[] nums, int k) {
+    Map&lt;Integer, Integer&gt; freq = new HashMap&lt;&gt;();
+    for (int n : nums) freq.merge(n, 1, Integer::sum);
+
+    PriorityQueue&lt;int[]&gt; heap = new PriorityQueue&lt;&gt;((a, b) -&gt; a[1] - b[1]);  // min-heap
+    for (var entry : freq.entrySet()) {
+        heap.offer(new int[]{entry.getKey(), entry.getValue()});
+        if (heap.size() &gt; k) heap.poll();
+    }
+    int[] result = new int[k];
+    for (int i = k - 1; i &gt;= 0; i--) result[i] = heap.poll()[0];
+    return result;
+}
+// O(n log k) — kết hợp Hashing + Heap</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases phải tự nhớ (junior hay quên)</h4>
+    <ol>
+      <li><strong>Array rỗng / 1 phần tử:</strong> Two Sum với 1 phần tử → return [] (không có pair).</li>
+      <li><strong>Duplicate giá trị, không duplicate index:</strong> <code>[3,3]</code>, target=6 → return [0,1] (cùng giá trị, khác index — hợp lệ).</li>
+      <li><strong>Cùng phần tử dùng 2 lần:</strong> <code>[3,2,4]</code>, target=6 → KHÔNG được dùng [0,0] dù 3+3=6. Vì sao template không bug? Vì <code>put()</code> chạy SAU <code>containsKey()</code> → khi i=0 chưa có gì trong map.</li>
+      <li><strong>Negative numbers:</strong> <code>[-3,4,3,90]</code>, target=0 → [0,2]. HashMap handle negative tự nhiên — nhưng Bit operations thì không.</li>
+      <li><strong><code>Integer == Integer</code> vs <code>.equals()</code>:</strong> Java cache Integer từ -128 đến 127. <code>Integer a = 200; Integer b = 200; a == b</code> → false. Khi compare value từ HashMap, LUÔN dùng <code>.equals()</code> hoặc unbox về <code>int</code>.</li>
+      <li><strong>HashMap key là custom object:</strong> Phải override <code>equals()</code> và <code>hashCode()</code> theo contract. Quên = collision/lookup fail. Test bằng cách put 2 object "logically equal" → assertEquals size = 1.</li>
+      <li><strong>Hash collision attack (DoS):</strong> Production server nhận untrusted input → attacker craft input gây collision → O(n) lookup degrade về O(n) (chain dài). Java 8+ chuyển bucket thành tree khi chain &gt; 8 → giảm xuống O(log n). LC không test cái này nhưng phỏng vấn senior có hỏi.</li>
+      <li><strong>Concurrent modification:</strong> Duyệt HashMap đồng thời thêm/xoá → <code>ConcurrentModificationException</code>. Phỏng vấn: dùng <code>Iterator.remove()</code> hoặc collect vào list rồi xoá sau.</li>
+      <li><strong>HashMap chứa <code>null</code> key:</strong> Cho phép 1 null key (Hashtable thì không). Đề bài có giá trị null → cần handle riêng hoặc dùng sentinel.</li>
+      <li><strong>Memory blow-up khi key range lớn:</strong> Nếu n = 10⁹ → HashMap nuốt RAM. Khi đó cần switch sang Bloom filter / disk-based map.</li>
+    </ol>
+  </div>
+
+  <div class="callout warn">
+    <strong>Pitfall #1:</strong> Junior thường viết <code>map.get(key) == 1</code> với key trả về <code>Integer</code> → bug khi value &gt; 127. LUÔN dùng <code>.equals()</code> hoặc <code>int v = map.get(key);</code>.<br>
+    <strong>Pitfall #2:</strong> Quên check <code>containsKey</code> trước khi <code>get</code> → NullPointerException khi auto-unbox <code>Integer</code> null về <code>int</code>.<br>
+    <strong>Pitfall #3:</strong> Custom object làm key mà không override <code>hashCode</code> → mỗi instance hash khác nhau, lookup luôn fail.
+  </div>
+
+  <h3>Drill 7 bài (làm tuần 1)</h3>
+  <p>LC 1 (Two Sum) · LC 49 (Group Anagrams) · LC 217 (Contains Duplicate) · LC 242 (Valid Anagram) · LC 347 (Top K Frequent) · LC 128 (Longest Consecutive Sequence) · LC 36 (Valid Sudoku)</p>
+</section>
+
+<!-- ==================== P2 PREFIX SUM ==================== -->
+<section id="p2-prefix">
+  <h2>Pattern 2 · Prefix Sum <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Range query sum/count là 1 trong những thao tác phổ biến nhất (analytics, sliding-window-by-sum, subarray problems). Prefix sum chuyển query từ O(n) xuống O(1).
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Sum of subarray from i to j" — range sum query</li>
+    <li>"Subarray sum equals K" — đếm số subarray</li>
+    <li>"Number of subarrays with property X" — khi property = sum-based</li>
+    <li>"Equilibrium index" — chia mảng thành 2 nửa cùng sum</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">prefix[i] = sum of nums[0..i-1]
+sum(i..j) = prefix[j+1] - prefix[i]   ← O(1) range query
+
+Invariant quan trọng: prefix[0] = 0 (empty prefix — neutral element của phép cộng)</code></pre>
+
+  <h3>Template</h3>
+  <pre><code class="language-java">int[] prefix = new int[n + 1];
+for (int i = 0; i &lt; n; i++) prefix[i + 1] = prefix[i] + nums[i];
+
+// Range sum [l..r] (inclusive) = prefix[r+1] - prefix[l]</code></pre>
+
+  <h3>Walkthrough — LC 560 Subarray Sum Equals K (Medium)</h3>
+  <p><strong>Insight then-and-now:</strong> Brute O(n²): duyệt mọi (i, j), tính sum, check = k. Cải thiện: dùng prefix → vẫn O(n²). Insight thật: <strong>nếu prefix[j] - prefix[i] = k thì prefix[i] = prefix[j] - k</strong> → trong khi duyệt, hỏi HashMap đã thấy <code>prefix - k</code> bao nhiêu lần.</p>
+  <pre><code class="language-java">public int subarraySum(int[] nums, int k) {
+    Map&lt;Integer, Integer&gt; prefixCount = new HashMap&lt;&gt;();
+    prefixCount.put(0, 1);  // ⚠️ empty prefix — base case
+
+    int prefix = 0, count = 0;
+    for (int n : nums) {
+        prefix += n;
+        count += prefixCount.getOrDefault(prefix - k, 0);
+        prefixCount.merge(prefix, 1, Integer::sum);
+    }
+    return count;
+}
+// O(n) time, O(n) space — combo Prefix Sum + Hashing</code></pre>
+
+  <h3>Variant — LC 238 Product Except Self</h3>
+  <p>Prefix * Suffix pattern. Không được dùng phép chia.</p>
+  <pre><code class="language-java">public int[] productExceptSelf(int[] nums) {
+    int n = nums.length;
+    int[] result = new int[n];
+    result[0] = 1;
+    for (int i = 1; i &lt; n; i++) result[i] = result[i-1] * nums[i-1];  // left product
+
+    int right = 1;
+    for (int i = n - 1; i &gt;= 0; i--) {
+        result[i] *= right;
+        right *= nums[i];
+    }
+    return result;
+}
+// O(n), O(1) extra space (output array không tính)</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Prefix Sum</h4>
+    <ol>
+      <li><strong>Quên prefix[0] = 0:</strong> với LC 560, không put(0, 1) → subarray bắt đầu từ index 0 không được đếm. Bug silent.</li>
+      <li><strong>Integer overflow:</strong> n = 10⁵, mỗi nums[i] = 10⁹ → tổng vượt Integer.MAX_VALUE. Dùng <code>long</code>.</li>
+      <li><strong>Off-by-one trong index:</strong> Sum [l..r] inclusive = prefix[r+1] - prefix[l] (KHÔNG phải prefix[r] - prefix[l-1] khi l=0).</li>
+      <li><strong>2D prefix sum:</strong> sum(r1, c1, r2, c2) = ps[r2+1][c2+1] - ps[r1][c2+1] - ps[r2+1][c1] + ps[r1][c1]. Phải vẽ ra giấy 1 lần để nhớ inclusion-exclusion.</li>
+      <li><strong>Negative numbers + sum:</strong> Khi sum có thể giảm, không thể dùng two-pointer sliding window — phải dùng prefix + map.</li>
+      <li><strong>Modifiable array:</strong> Nếu array thay đổi liên tục, prefix sum O(n) update — chuyển sang Fenwick Tree (BIT) O(log n).</li>
+      <li><strong>Bài "count subarrays divisible by K":</strong> Variant prefix sum modulo K. Map count of <code>prefix % K</code>.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 5 bài</h3>
+  <p>LC 303 (Range Sum) · LC 304 (Range Sum 2D) · LC 560 (Subarray Sum K) · LC 238 (Product Except Self) · LC 525 (Contiguous Array)</p>
+</section>
+
+<!-- ==================== P3 TWO POINTERS ==================== -->
+<section id="p3-two-pointers">
+  <h2>Pattern 3 · Two Pointers <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Cùng với Hashing, Two Pointers là cặp đôi giảm O(n²) → O(n) phổ biến nhất. Mảng sorted + tìm pair/triplet → reflex 2-pointer.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Sorted array" + "find pair" hoặc "find triplet"</li>
+    <li>"Palindrome check"</li>
+    <li>"Remove duplicates in-place" (in O(1) extra space)</li>
+    <li>"Reverse string/array"</li>
+    <li>"Container with most water" / "trapping rain water"</li>
+  </ul>
+
+  <h3>Mental Model — 3 variants</h3>
+  <pre><code class="language-text">1. Opposite ends:  left=0, right=n-1, di chuyển vào giữa
+                    → Two Sum II, 3Sum, palindrome, container
+2. Fast &amp; slow:    cùng start, khác speed
+                    → LinkedList cycle, remove duplicates
+3. Same direction: 2 pointer maintain window/group
+                    → Sliding window (sẽ tách thành P4 riêng)</code></pre>
+
+  <h3>Template — Opposite Ends</h3>
+  <pre><code class="language-java">int left = 0, right = nums.length - 1;
+while (left &lt; right) {
+    if (condition_met) {
+        // record / return
+    }
+    if (need_smaller_sum) right--;
+    else left++;
+}</code></pre>
+
+  <h3>Walkthrough — LC 15 3Sum (Medium, classic FAANG)</h3>
+  <p><strong>Insight:</strong> Cho mảng <code>nums</code>, tìm tất cả triplet (a, b, c) sao cho a + b + c = 0, không trùng lặp. Brute O(n³). Cải thiện: <strong>sort + fix 1 + two-pointer cho 2 cái còn lại = O(n²)</strong>.</p>
+  <pre><code class="language-java">public List&lt;List&lt;Integer&gt;&gt; threeSum(int[] nums) {
+    Arrays.sort(nums);  // ⚠️ phải sort trước
+    List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+
+    for (int i = 0; i &lt; nums.length - 2; i++) {
+        if (i &gt; 0 &amp;&amp; nums[i] == nums[i - 1]) continue;  // skip duplicate
+        if (nums[i] &gt; 0) break;                          // optimization: positive → no sum 0
+
+        int left = i + 1, right = nums.length - 1;
+        while (left &lt; right) {
+            int sum = nums[i] + nums[left] + nums[right];
+            if (sum == 0) {
+                result.add(List.of(nums[i], nums[left], nums[right]));
+                // skip duplicates trong 2 vế còn lại
+                while (left &lt; right &amp;&amp; nums[left] == nums[left + 1]) left++;
+                while (left &lt; right &amp;&amp; nums[right] == nums[right - 1]) right--;
+                left++; right--;
+            } else if (sum &lt; 0) left++;
+            else right--;
+        }
+    }
+    return result;
+}
+// O(n²) time, O(1) extra space (output không tính, sort in-place)</code></pre>
+
+  <h3>Variant — LC 11 Container With Most Water</h3>
+  <pre><code class="language-java">public int maxArea(int[] height) {
+    int left = 0, right = height.length - 1, max = 0;
+    while (left &lt; right) {
+        int area = Math.min(height[left], height[right]) * (right - left);
+        max = Math.max(max, area);
+        if (height[left] &lt; height[right]) left++;   // move pointer của bên thấp hơn
+        else right--;
+    }
+    return max;
+}
+// Vì sao luôn move bên thấp? — Vì giữ bên thấp + thu hẹp width chỉ làm area giảm.
+// Bên thấp giới hạn area → chỉ có cơ hội tăng khi bỏ bên thấp đi.</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Two Pointers</h4>
+    <ol>
+      <li><strong>Quên skip duplicate trong 3Sum:</strong> Output sẽ có triplet trùng. Test với <code>[0,0,0,0]</code> → kỳ vọng 1 triplet [0,0,0], lỗi sẽ ra 4.</li>
+      <li><strong><code>left &lt; right</code> vs <code>left &lt;= right</code>:</strong> Phụ thuộc bài. Two Sum II dùng <code>&lt;</code> (vì cần 2 index khác nhau). Palindrome dùng <code>&lt;</code> (gặp giữa thì thôi).</li>
+      <li><strong>Mảng chưa sorted:</strong> 2-pointer kiểu opposite-ends chỉ work khi sorted. Nếu không, sort trước (O(n log n)) hoặc dùng HashMap.</li>
+      <li><strong>Move sai pointer:</strong> Cần sum nhỏ hơn → move <code>left</code> (tăng giá trị nhỏ). Junior hay nhầm move <code>right</code>.</li>
+      <li><strong>Triplet không trùng nhưng giá trị trùng:</strong> <code>[-2,0,1,1,2]</code> → [-2,0,2] và [-2,1,1] đều unique. Đừng over-skip.</li>
+      <li><strong>Integer overflow trong sum:</strong> <code>nums[i] + nums[left] + nums[right]</code> với giá trị gần Integer.MAX_VALUE → overflow. Dùng <code>long</code> nếu range cho phép.</li>
+      <li><strong>Fast/slow pointer null check:</strong> LinkedList cycle → <code>fast.next.next</code> mà <code>fast.next == null</code> → NullPointerException. Phải check <code>fast != null &amp;&amp; fast.next != null</code> trong while.</li>
+      <li><strong>"Remove duplicates in-place" trả về length:</strong> Output là k đầu tiên, phần còn lại tuỳ ý. Đề không test phần đuôi — đừng confuse.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 7 bài</h3>
+  <p>LC 125 (Valid Palindrome) · LC 167 (Two Sum II) · LC 15 (3Sum) · LC 11 (Container) · LC 42 (Trapping Rain Water — Hard) · LC 26 (Remove Duplicates) · LC 283 (Move Zeroes)</p>
+</section>
+
+<!-- ==================== P4 SLIDING WINDOW ==================== -->
+<section id="p4-sliding-window">
+  <h2>Pattern 4 · Sliding Window <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> "Longest/shortest substring/subarray với property X" là họ bài kinh điển của Meta/Google. Sliding window là biến thể nâng cao của Two Pointers — junior phải có template reflex.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Longest substring/subarray with property X"</li>
+    <li>"Maximum sum of subarray size k" (fixed window)</li>
+    <li>"Minimum window substring containing T" (variable window)</li>
+    <li>"Number of substrings with K distinct characters"</li>
+    <li>"Smallest subarray sum &gt;= target"</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Maintain window [left, right] thoả mãn constraint.
+- Loop: expand right
+- Khi vi phạm constraint: shrink left
+- Track best ở mỗi step (hoặc cuối)
+
+2 variants:
+- Fixed size: window luôn = k
+- Variable size: expand/shrink dynamic theo constraint</code></pre>
+
+  <h3>Template — Variable Window</h3>
+  <pre><code class="language-java">int left = 0, result = 0;
+WindowState state = ...;  // HashMap, count[], sum, ...
+
+for (int right = 0; right &lt; n; right++) {
+    state.add(arr[right]);                 // expand
+
+    while (state.violatesConstraint()) {
+        state.remove(arr[left]);           // shrink
+        left++;
+    }
+
+    result = Math.max(result, right - left + 1);  // record valid window
+}</code></pre>
+
+  <h3>Walkthrough — LC 3 Longest Substring Without Repeating</h3>
+  <pre><code class="language-java">public int lengthOfLongestSubstring(String s) {
+    Map&lt;Character, Integer&gt; lastIndex = new HashMap&lt;&gt;();
+    int left = 0, maxLen = 0;
+
+    for (int right = 0; right &lt; s.length(); right++) {
+        char c = s.charAt(right);
+        // Nếu ký tự đã xuất hiện trong window hiện tại → jump left
+        if (lastIndex.containsKey(c) &amp;&amp; lastIndex.get(c) &gt;= left) {
+            left = lastIndex.get(c) + 1;
+        }
+        lastIndex.put(c, right);
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}
+// O(n) — mỗi ký tự visit tối đa 2 lần (1 lần expand, 1 lần shrink)</code></pre>
+
+  <h3>Walkthrough — LC 76 Minimum Window Substring (Hard, FAANG favorite)</h3>
+  <pre><code class="language-java">public String minWindow(String s, String t) {
+    if (s.length() &lt; t.length()) return "";
+
+    int[] need = new int[128];                       // ASCII full range
+    for (char c : t.toCharArray()) need[c]++;
+    int required = t.length();                       // tổng số ký tự (kể cả duplicate) cần match
+
+    int left = 0, minLen = Integer.MAX_VALUE, minStart = 0;
+
+    for (int right = 0; right &lt; s.length(); right++) {
+        // Nếu ký tự này còn cần (need[c] &gt; 0) → giảm required
+        if (need[s.charAt(right)]-- &gt; 0) required--;
+
+        while (required == 0) {                      // window đủ
+            if (right - left + 1 &lt; minLen) {
+                minLen = right - left + 1;
+                minStart = left;
+            }
+            // Shrink: nếu ký tự bị bỏ ra là "cần" → required++
+            if (need[s.charAt(left)]++ == 0) required++;
+            left++;
+        }
+    }
+    return minLen == Integer.MAX_VALUE ? "" : s.substring(minStart, minStart + minLen);
+}
+// O(n + m), m = len(t)</code></pre>
+
+  <h3>Variant — LC 424 Longest Repeating Character Replacement</h3>
+  <pre><code class="language-java">public int characterReplacement(String s, int k) {
+    int[] count = new int[26];
+    int left = 0, maxCount = 0, maxLen = 0;
+    for (int right = 0; right &lt; s.length(); right++) {
+        maxCount = Math.max(maxCount, ++count[s.charAt(right) - 'A']);
+        // Window valid khi (windowSize - maxCount) &lt;= k
+        if (right - left + 1 - maxCount &gt; k) {
+            count[s.charAt(left) - 'A']--;
+            left++;
+        }
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Sliding Window</h4>
+    <ol>
+      <li><strong>Update result trong khi shrink:</strong> Sai vị trí thì result sai. Convention: record SAU khi shrink xong, hoặc trong while loop khi window đã valid (như LC 76).</li>
+      <li><strong>Quên cập nhật state khi shrink:</strong> Trong LC 76, quên <code>need[leftChar]++</code> → required đếm sai → infinite loop hoặc kết quả lệch.</li>
+      <li><strong>Char counter dùng <code>int[26]</code> vs <code>HashMap</code>:</strong> a-z chỉ → int[26] nhanh hơn nhiều (cache locality). Unicode → HashMap.</li>
+      <li><strong>Window có thể trống:</strong> "subarray sum &gt;= target" với target = 0 → trả về 1 hay 0? Đọc kỹ đề.</li>
+      <li><strong>Fixed window vs variable window:</strong> Fixed (size = k) thì shrink khi window &gt; k; variable thì shrink khi violate constraint. Đừng nhầm.</li>
+      <li><strong>Negative numbers + sum:</strong> Sliding window classic KHÔNG work khi có negative — vì shrink left không đảm bảo sum giảm. Phải chuyển sang prefix sum + map.</li>
+      <li><strong>Empty string / target dài hơn source:</strong> Return "" cho LC 76. Check early.</li>
+      <li><strong>String contains duplicate trong target:</strong> LC 76 với t = "aabc" cần đếm 2 'a'. <code>need[]</code> array tự handle, nhưng nếu dùng Set thì sai.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 7 bài</h3>
+  <p>LC 3 · LC 76 · LC 424 · LC 567 (Permutation in String) · LC 209 (Min Size Subarray Sum) · LC 239 (Sliding Window Max — Hard, dùng deque) · LC 1004 (Max Consecutive Ones III)</p>
+</section>
+
+<!-- ==================== P5 STACK ==================== -->
+<section id="p5-stack">
+  <h2>Pattern 5 · Stack (incl. Monotonic Stack) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Stack có 2 use case: (1) parens/expression — kinh điển, (2) monotonic stack — trick mạnh giảm O(n²) → O(n) cho bài "next greater/smaller". Senior interview rất hay test monotonic.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Valid parenthesis / matching brackets" → Stack</li>
+    <li>"Next greater/smaller element" → Monotonic Stack</li>
+    <li>"Daily temperatures" / "stock span" → Monotonic Stack</li>
+    <li>"Largest rectangle in histogram" → Monotonic Stack</li>
+    <li>"Evaluate RPN expression" → Stack</li>
+    <li>"Implement Min Stack / Max Stack" → Stack auxiliary</li>
+  </ul>
+
+  <h3>Mental Model — Monotonic Stack</h3>
+  <pre><code class="language-text">Stack giữ tính chất monotonic (increasing OR decreasing).
+Khi push element vi phạm → pop những phần tử ra, mỗi pop là cơ hội tính answer.
+Mỗi element được push/pop đúng 1 lần → tổng O(n).</code></pre>
+
+  <h3>Template — Next Greater Element</h3>
+  <pre><code class="language-java">int[] result = new int[n];
+Arrays.fill(result, -1);
+Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();  // ⚠️ ArrayDeque, KHÔNG dùng java.util.Stack
+
+for (int i = 0; i &lt; n; i++) {
+    while (!stack.isEmpty() &amp;&amp; nums[stack.peek()] &lt; nums[i]) {
+        result[stack.pop()] = nums[i];
+    }
+    stack.push(i);
+}
+// Phần tử còn trong stack: không có next greater → giữ -1</code></pre>
+
+  <h3>Walkthrough — LC 739 Daily Temperatures</h3>
+  <p>Cho mảng nhiệt độ <code>temps</code>, trả về <code>result[i]</code> = số ngày phải đợi để có nhiệt độ ấm hơn ngày i. Brute O(n²). Monotonic stack giảm về O(n).</p>
+  <pre><code class="language-java">public int[] dailyTemperatures(int[] temps) {
+    int n = temps.length;
+    int[] result = new int[n];
+    Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();  // lưu index
+
+    for (int i = 0; i &lt; n; i++) {
+        while (!stack.isEmpty() &amp;&amp; temps[stack.peek()] &lt; temps[i]) {
+            int prev = stack.pop();
+            result[prev] = i - prev;             // số ngày từ prev đến i
+        }
+        stack.push(i);
+    }
+    return result;
+}</code></pre>
+
+  <h3>Walkthrough — LC 84 Largest Rectangle in Histogram (Hard)</h3>
+  <p><strong>Insight:</strong> Với mỗi bar i, tìm leftmost và rightmost bar có chiều cao &gt;= height[i]. Width = right - left + 1. Brute O(n²). Monotonic increasing stack → O(n).</p>
+  <pre><code class="language-java">public int largestRectangleArea(int[] heights) {
+    Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+    int maxArea = 0;
+
+    for (int i = 0; i &lt;= heights.length; i++) {
+        int h = (i == heights.length) ? 0 : heights[i];  // sentinel: flush stack cuối
+        while (!stack.isEmpty() &amp;&amp; heights[stack.peek()] &gt; h) {
+            int height = heights[stack.pop()];
+            int width = stack.isEmpty() ? i : i - stack.peek() - 1;
+            maxArea = Math.max(maxArea, height * width);
+        }
+        stack.push(i);
+    }
+    return maxArea;
+}</code></pre>
+
+  <h3>Variant — LC 20 Valid Parentheses (Easy gate)</h3>
+  <pre><code class="language-java">public boolean isValid(String s) {
+    Deque&lt;Character&gt; stack = new ArrayDeque&lt;&gt;();
+    Map&lt;Character, Character&gt; pairs = Map.of(')', '(', ']', '[', '}', '{');
+    for (char c : s.toCharArray()) {
+        if (pairs.containsValue(c)) stack.push(c);
+        else if (stack.isEmpty() || stack.pop() != pairs.get(c)) return false;
+    }
+    return stack.isEmpty();
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Stack</h4>
+    <ol>
+      <li><strong>Dùng <code>java.util.Stack</code> (legacy synchronized):</strong> Chậm hơn ArrayDeque ~3x. Phỏng vấn dùng Stack → trừ điểm "Java knowledge".</li>
+      <li><strong>Push value thay vì index trong monotonic stack:</strong> Mất thông tin position → không tính được width/distance.</li>
+      <li><strong>Quên check empty trước peek/pop:</strong> NoSuchElementException. Luôn <code>while (!stack.isEmpty() &amp;&amp; ...)</code>.</li>
+      <li><strong>Quên sentinel cuối array trong LC 84:</strong> Bar cuối không được pop khỏi stack → miss kết quả. Trick: dùng <code>i &lt;= n</code> + giá trị 0.</li>
+      <li><strong>ArrayDeque không cho null element:</strong> Push null → NullPointerException. Hashtable cũ cũng vậy.</li>
+      <li><strong>Comparator equality trap:</strong> <code>stack.pop() != pairs.get(c)</code> với Character &gt; 127 → bug. Nhưng ASCII trong LC 20 an toàn vì &lt; 127.</li>
+      <li><strong>Monotonic increasing vs decreasing:</strong> Next greater → decreasing stack (pop khi gặp lớn hơn). Largest rectangle → increasing stack (pop khi gặp nhỏ hơn). Junior hay nhầm.</li>
+      <li><strong>Stack overflow với recursion sâu:</strong> Đôi khi đề tương đương dùng stack thủ công thay vì recursion (DFS tree với input 10^5 depth).</li>
+    </ol>
+  </div>
+
+  <h3>Drill 8 bài</h3>
+  <p>LC 20 · LC 155 (Min Stack) · LC 150 (Eval RPN) · LC 22 (Generate Parens) · LC 739 · LC 853 (Car Fleet) · LC 84 · LC 42 (Trap Rain Water)</p>
+</section>
+
+<!-- ==================== P6 BINARY SEARCH ==================== -->
+<section id="p6-binary-search">
+  <h2>Pattern 6 · Binary Search <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Không chỉ search sorted array — binary search trên <em>answer space</em> (BS on answer) là kỹ thuật ưa thích của Google/Meta cho bài optimization có monotonic property. Bạn phải viết được template KHÔNG bug.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Sorted array" + "find target" → BS cổ điển</li>
+    <li>"Rotated sorted array" → BS variant</li>
+    <li>"Find peak / valley" → BS trên slope</li>
+    <li>"Search 2D matrix" → BS với index flattening</li>
+    <li>"Min/max X to make Y feasible" → BS on answer (Koko bananas, ship packages)</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Invariant: target nằm trong [left, right]
+Mỗi iteration loại nửa space → O(log n)
+
+Template chuẩn (KHÔNG bug):
+  left = 0, right = n - 1
+  while (left &lt;= right):
+      mid = left + (right - left) / 2   ⚠️ tránh overflow
+      if found: return
+      elif need go right: left = mid + 1
+      else: right = mid - 1</code></pre>
+
+  <h3>Template — Find Exact Target</h3>
+  <pre><code class="language-java">public int binarySearch(int[] arr, int target) {
+    int left = 0, right = arr.length - 1;
+    while (left &lt;= right) {
+        int mid = left + (right - left) / 2;     // tránh (l+r) overflow
+        if (arr[mid] == target) return mid;
+        if (arr[mid] &lt; target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}</code></pre>
+
+  <h3>Template — Find Leftmost (lower_bound)</h3>
+  <pre><code class="language-java">// Trả về index nhỏ nhất sao cho arr[i] &gt;= target
+public int lowerBound(int[] arr, int target) {
+    int left = 0, right = arr.length;            // ⚠️ right = n (không phải n-1)
+    while (left &lt; right) {                       // ⚠️ &lt;, không phải &lt;=
+        int mid = left + (right - left) / 2;
+        if (arr[mid] &lt; target) left = mid + 1;
+        else right = mid;                        // ⚠️ mid, không phải mid-1
+    }
+    return left;
+}</code></pre>
+
+  <h3>Walkthrough — LC 33 Search in Rotated Sorted Array</h3>
+  <pre><code class="language-java">public int search(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    while (left &lt;= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) return mid;
+
+        if (nums[left] &lt;= nums[mid]) {           // left half sorted
+            if (target &gt;= nums[left] &amp;&amp; target &lt; nums[mid]) right = mid - 1;
+            else left = mid + 1;
+        } else {                                  // right half sorted
+            if (target &gt; nums[mid] &amp;&amp; target &lt;= nums[right]) left = mid + 1;
+            else right = mid - 1;
+        }
+    }
+    return -1;
+}</code></pre>
+
+  <h3>Walkthrough — LC 875 Koko Eating Bananas (BS on answer)</h3>
+  <p><strong>Insight:</strong> Tìm tốc độ ăn k nhỏ nhất để ăn xong piles trong h giờ. Answer space = [1, max(piles)]. Hàm <code>canFinish(k)</code> monotonic (k tăng → có thể finish) → BS trên k.</p>
+  <pre><code class="language-java">public int minEatingSpeed(int[] piles, int h) {
+    int left = 1, right = Arrays.stream(piles).max().getAsInt();
+    while (left &lt; right) {
+        int mid = left + (right - left) / 2;
+        long hours = 0;
+        for (int p : piles) hours += (p + mid - 1) / mid;  // ceil(p / mid)
+        if (hours &lt;= h) right = mid;             // có thể nhỏ hơn
+        else left = mid + 1;
+    }
+    return left;
+}
+// O(n log max(piles))</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Binary Search</h4>
+    <ol>
+      <li><strong>Overflow <code>(left + right) / 2</code>:</strong> n ~ 2×10⁹ → left+right tràn int. Dùng <code>left + (right - left) / 2</code>.</li>
+      <li><strong><code>&lt;</code> vs <code>&lt;=</code>:</strong> Exact target template dùng <code>&lt;=</code> + <code>right = mid - 1</code>. Lower bound dùng <code>&lt;</code> + <code>right = mid</code>. Nhầm = bug off-by-one hoặc infinite loop.</li>
+      <li><strong>Infinite loop khi <code>left = mid</code>:</strong> Nếu mid = left (khi right - left = 1), không tiến → loop vô tận. Fix: <code>mid = left + (right - left + 1) / 2</code> (round up) khi cần.</li>
+      <li><strong>Array có duplicate:</strong> LC 81 (Search Rotated II) — worst case O(n) vì không thể quyết định half nào sorted khi <code>nums[left] == nums[mid]</code>.</li>
+      <li><strong>BS on answer cần monotonic:</strong> Phải prove hàm feasibility(x) monotonic. Nếu không, BS sai.</li>
+      <li><strong>Long vs int trong sum:</strong> Koko bananas: <code>hours</code> phải là long vì tổng có thể vượt int (10⁹ * 10⁴ piles).</li>
+      <li><strong>Empty array:</strong> Return -1 / 0 / -1 — đọc đề. Check <code>arr.length == 0</code> trước khi vào loop.</li>
+      <li><strong>Search 2D matrix flat index:</strong> <code>mid_row = mid / cols; mid_col = mid % cols</code>. Junior hay nhầm <code>mid % rows</code>.</li>
+      <li><strong>Find peak (LC 162):</strong> Compare <code>arr[mid]</code> với <code>arr[mid+1]</code>, không phải neighbor cả 2 bên — vì invariant peak luôn tồn tại trong half cao hơn.</li>
+      <li><strong>Median of 2 sorted arrays (LC 4 Hard):</strong> BS trên partition index, không phải value. Edge case empty array / phân chia lệch.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 7 bài</h3>
+  <p>LC 704 · LC 33 · LC 153 · LC 4 (Hard) · LC 875 · LC 1011 (Capacity to Ship) · LC 74 (Search 2D Matrix) · LC 162 (Find Peak)</p>
+</section>
+
+<!-- ==================== P7 LINKED LIST ==================== -->
+<section id="p7-linked-list">
+  <h2>Pattern 7 · Linked List (Fast &amp; Slow Pointer) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Linked list là gateway để interviewer test pointer manipulation. Reverse, cycle, middle là 3 reflex bắt buộc — fail = signal "không hiểu pointer".
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Detect cycle in linked list" → Floyd's tortoise &amp; hare</li>
+    <li>"Find middle" → fast/slow</li>
+    <li>"Reverse linked list" → 3-pointer (prev, curr, next)</li>
+    <li>"Merge two sorted lists" → dummy + iteration</li>
+    <li>"Remove Nth from end" → fast pointer headstart n</li>
+    <li>"Palindrome linked list" → find middle + reverse half</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Fast &amp; slow (Floyd):
+- slow đi 1 step, fast đi 2 step
+- Cycle: fast bắt kịp slow trong vòng
+- Middle: fast đến cuối → slow ở middle
+
+Reverse: 3 pointer (prev, curr, next), invariant: prev = đã reverse phần đầu</code></pre>
+
+  <h3>Template — Reverse Linked List</h3>
+  <pre><code class="language-java">public ListNode reverse(ListNode head) {
+    ListNode prev = null, curr = head;
+    while (curr != null) {
+        ListNode next = curr.next;       // lưu next TRƯỚC khi đổi
+        curr.next = prev;                // đảo pointer
+        prev = curr;                     // dịch prev
+        curr = next;                     // dịch curr
+    }
+    return prev;
+}</code></pre>
+
+  <h3>Template — Detect Cycle (Floyd)</h3>
+  <pre><code class="language-java">public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null &amp;&amp; fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}
+// Vì sao work? Nếu có cycle, fast catch up slow với rate 1 step/iteration trong vòng.</code></pre>
+
+  <h3>Walkthrough — LC 19 Remove Nth From End</h3>
+  <p><strong>Trick:</strong> Dummy node + fast headstart n. Khi fast đến cuối, slow ở node TRƯỚC node cần xoá → <code>slow.next = slow.next.next</code>.</p>
+  <pre><code class="language-java">public ListNode removeNthFromEnd(ListNode head, int n) {
+    ListNode dummy = new ListNode(0, head);   // ⚠️ dummy để handle xoá head
+    ListNode fast = dummy, slow = dummy;
+    for (int i = 0; i &lt; n; i++) fast = fast.next;
+    while (fast.next != null) { fast = fast.next; slow = slow.next; }
+    slow.next = slow.next.next;
+    return dummy.next;
+}</code></pre>
+
+  <h3>Variant — LC 21 Merge Two Sorted Lists</h3>
+  <pre><code class="language-java">public ListNode mergeTwoLists(ListNode l1, ListNode l2) {
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (l1 != null &amp;&amp; l2 != null) {
+        if (l1.val &lt;= l2.val) { tail.next = l1; l1 = l1.next; }
+        else { tail.next = l2; l2 = l2.next; }
+        tail = tail.next;
+    }
+    tail.next = (l1 != null) ? l1 : l2;
+    return dummy.next;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Linked List</h4>
+    <ol>
+      <li><strong>Quên dummy node:</strong> Khi modify head (xoá, insert ở đầu), không dummy → phải code 2 branch (head/non-head). Dummy = bug-free.</li>
+      <li><strong>NullPointerException <code>fast.next.next</code>:</strong> Phải check <code>fast != null &amp;&amp; fast.next != null</code> trong while.</li>
+      <li><strong>Mất reference head:</strong> Modify head pointer trong loop → mất gốc. Luôn lưu <code>ListNode result = head</code> trước.</li>
+      <li><strong>Even vs odd length khi find middle:</strong> Fast/slow: even (2,4) → slow = node 3 (second middle); odd (1,3,5) → slow = node 3. Test cả 2.</li>
+      <li><strong>Cycle detect — find entry point (LC 142):</strong> Sau khi gặp, reset slow về head, cả 2 đi 1 step → gặp tại entry. Phải prove được (math: 2(a+b) = a+b+kc).</li>
+      <li><strong>Reverse k group (LC 25 Hard):</strong> Phải count đủ k trước khi reverse — nếu &lt; k thì giữ nguyên.</li>
+      <li><strong>Palindrome list (LC 234):</strong> Find middle → reverse nửa sau → compare. Lưu ý odd length: bỏ qua node giữa.</li>
+      <li><strong>Memory leak (production):</strong> Java GC handle được, nhưng C++ phải <code>delete</code> node thủ công sau khi unlink.</li>
+      <li><strong>Concurrent modification:</strong> Đề bài đơn luồng — đừng worry. Production phải lock hoặc dùng CAS.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 7 bài</h3>
+  <p>LC 206 · LC 21 · LC 141 · LC 142 (Cycle II — find entry) · LC 19 · LC 143 (Reorder) · LC 23 (Merge K — Hard)</p>
+</section>
+
+<!-- ==================== P8 TREE DFS ==================== -->
+<section id="p8-tree-dfs">
+  <h2>Pattern 8 · Tree DFS (Recursion) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Tree DFS xuất hiện trong 10% bài LC. Quan trọng hơn — đây là điểm vào của <em>tư duy đệ quy</em>. Không hiểu DFS = không hiểu được Backtracking, DP, Graph DFS.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Binary tree" + bất kỳ thứ gì (depth, sum, path)</li>
+    <li>"Maximum depth / minimum depth"</li>
+    <li>"Validate BST / symmetric tree"</li>
+    <li>"Lowest common ancestor"</li>
+    <li>"Path sum" / "all paths" / "max path sum"</li>
+    <li>"Serialize / deserialize tree"</li>
+  </ul>
+
+  <h3>Mental Model — Leap of Faith</h3>
+  <pre><code class="language-text">1. Define rõ recursive function trả về cái gì cho 1 node
+2. Base case (null): trả về identity value (0, true, null, MIN_VALUE, ...)
+3. Recursive: gọi cho left + right, combine với chính node
+
+⚡ Rule vàng: TIN recursive call đúng cho subtree.
+   Đừng cố mental-trace toàn bộ tree — focus 1 node + giả định 2 con đã đúng.</code></pre>
+
+  <h3>Template</h3>
+  <pre><code class="language-java">ReturnType dfs(TreeNode node) {
+    if (node == null) return baseValue;
+
+    ReturnType left = dfs(node.left);
+    ReturnType right = dfs(node.right);
+
+    return combine(node, left, right);
+}</code></pre>
+
+  <h3>Walkthrough — LC 124 Binary Tree Max Path Sum (Hard)</h3>
+  <p><strong>Mind-bender:</strong> Path có thể đi QUA node (left → node → right) HOẶC chỉ đi xuống 1 nhánh. Tách 2 khái niệm:</p>
+  <ul>
+    <li><strong>through</strong> = path đi qua node (có thể là answer)</li>
+    <li><strong>return value</strong> = path TỪ node ĐI XUỐNG 1 nhánh (để parent dùng)</li>
+  </ul>
+  <pre><code class="language-java">class Solution {
+    private int maxSum = Integer.MIN_VALUE;
+    public int maxPathSum(TreeNode root) { maxGain(root); return maxSum; }
+
+    private int maxGain(TreeNode node) {
+        if (node == null) return 0;
+
+        // Chỉ lấy gain dương (negative thì bỏ — không lấy)
+        int leftGain = Math.max(maxGain(node.left), 0);
+        int rightGain = Math.max(maxGain(node.right), 0);
+
+        // Path THROUGH node (candidate answer)
+        int through = node.val + leftGain + rightGain;
+        maxSum = Math.max(maxSum, through);
+
+        // Return: path FROM node đi xuống 1 nhánh
+        return node.val + Math.max(leftGain, rightGain);
+    }
+}</code></pre>
+
+  <h3>Walkthrough — LC 98 Validate BST</h3>
+  <p><strong>Trap:</strong> Junior chỉ check <code>left.val &lt; node.val &lt; right.val</code> — sai vì BST cần GLOBAL bound, không chỉ local. Pass min/max xuống.</p>
+  <pre><code class="language-java">public boolean isValidBST(TreeNode root) {
+    return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+private boolean validate(TreeNode node, long min, long max) {
+    if (node == null) return true;
+    if (node.val &lt;= min || node.val &gt;= max) return false;
+    return validate(node.left, min, node.val) &amp;&amp; validate(node.right, node.val, max);
+}
+// ⚠️ dùng long vì test case có Integer.MAX_VALUE / MIN_VALUE</code></pre>
+
+  <h3>Walkthrough — LC 236 Lowest Common Ancestor</h3>
+  <pre><code class="language-java">public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+    if (root == null || root == p || root == q) return root;
+    TreeNode left = lowestCommonAncestor(root.left, p, q);
+    TreeNode right = lowestCommonAncestor(root.right, p, q);
+    if (left != null &amp;&amp; right != null) return root;     // p, q ở 2 nhánh → root là LCA
+    return left != null ? left : right;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Tree DFS</h4>
+    <ol>
+      <li><strong>Root null:</strong> Hầu hết bài cần handle root null → return 0 / true / null.</li>
+      <li><strong>BST validate với Integer.MAX_VALUE/MIN_VALUE:</strong> Dùng Long để tránh overflow comparison.</li>
+      <li><strong>Single node:</strong> Max depth = 1, không phải 0. Đọc kỹ định nghĩa.</li>
+      <li><strong>Skewed tree (chỉ left hoặc right):</strong> Recursion depth = n. Java stack 256KB-1MB → ~10K depth. n = 10⁵ → StackOverflow. Convert sang iterative (explicit stack).</li>
+      <li><strong>Balanced tree check (LC 110):</strong> Top-down O(n²) — recompute height nhiều lần. Bottom-up O(n) — return -1 nếu unbalanced.</li>
+      <li><strong>Negative values trong path sum:</strong> LC 124 phải <code>Math.max(gain, 0)</code> — bỏ qua nhánh negative.</li>
+      <li><strong>LCA khi 1 node là ancestor của node kia:</strong> Algorithm vẫn work — return node ancestor.</li>
+      <li><strong>Serialize/deserialize (LC 297):</strong> Phải mark null bằng sentinel (e.g. "#") → distinguish missing children.</li>
+      <li><strong>Build tree từ preorder + inorder (LC 105):</strong> Inorder dùng để xác định split. HashMap value → index để lookup O(1) thay vì search linear.</li>
+      <li><strong>Tree traversal in-place (Morris):</strong> O(1) space dùng threading. Advanced — chỉ hỏi senior.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 8 bài</h3>
+  <p>LC 104, 226, 110, 100, 543 (warm-up) · LC 124, 98, 236, 297, 105 (core)</p>
+</section>
+
+<!-- ==================== P9 TREE BFS ==================== -->
+<section id="p9-tree-bfs">
+  <h2>Pattern 9 · Tree BFS (Level Order) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Khi đề hỏi "level by level", "right side view", "minimum depth", DFS thường thua BFS. Phải có template BFS reflex.
+  </div>
+
+  <h3>Signal nhận pattern</h3>
+  <ul>
+    <li>"Level by level traversal"</li>
+    <li>"Right / left side view"</li>
+    <li>"Zigzag traversal"</li>
+    <li>"Minimum depth" (BFS dừng sớm khi gặp lá đầu tiên)</li>
+    <li>"Connect next right pointers" (LC 116, 117)</li>
+  </ul>
+
+  <h3>Template</h3>
+  <pre><code class="language-java">Queue&lt;TreeNode&gt; queue = new ArrayDeque&lt;&gt;();
+queue.offer(root);
+while (!queue.isEmpty()) {
+    int levelSize = queue.size();             // ⚠️ snapshot — KHÔNG inline trong loop
+    List&lt;Integer&gt; level = new ArrayList&lt;&gt;();
+    for (int i = 0; i &lt; levelSize; i++) {
+        TreeNode node = queue.poll();
+        level.add(node.val);
+        if (node.left != null) queue.offer(node.left);
+        if (node.right != null) queue.offer(node.right);
+    }
+    result.add(level);
+}</code></pre>
+
+  <h3>Walkthrough — LC 199 Right Side View</h3>
+  <pre><code class="language-java">public List&lt;Integer&gt; rightSideView(TreeNode root) {
+    List&lt;Integer&gt; result = new ArrayList&lt;&gt;();
+    if (root == null) return result;
+    Queue&lt;TreeNode&gt; queue = new ArrayDeque&lt;&gt;();
+    queue.offer(root);
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        for (int i = 0; i &lt; size; i++) {
+            TreeNode n = queue.poll();
+            if (i == size - 1) result.add(n.val);   // last in level = rightmost
+            if (n.left != null) queue.offer(n.left);
+            if (n.right != null) queue.offer(n.right);
+        }
+    }
+    return result;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Tree BFS</h4>
+    <ol>
+      <li><strong>Quên snapshot levelSize:</strong> Nếu dùng <code>queue.size()</code> trực tiếp trong loop, queue thay đổi khi add children → level boundary sai.</li>
+      <li><strong>Min depth (LC 111):</strong> Phải kiểm tra lá (cả left và right null) trong BFS — không phải node đầu tiên gặp.</li>
+      <li><strong>Zigzag (LC 103):</strong> Alternate direction — dùng <code>Deque</code> hoặc reverse mỗi level chẵn.</li>
+      <li><strong>Null queue input:</strong> <code>queue.offer(null)</code> với ArrayDeque → NPE. Check root null trước.</li>
+      <li><strong>Memory: queue có thể chứa max width = n/2 nodes:</strong> Tree đầy → level cuối có n/2 nodes. BFS không tiết kiệm memory hơn DFS.</li>
+      <li><strong>Connect next pointers (LC 117 Hard):</strong> Yêu cầu O(1) space → dùng linked list ở mỗi level, KHÔNG queue.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 5 bài</h3>
+  <p>LC 102 · LC 107 (Bottom-up) · LC 199 · LC 103 (Zigzag) · LC 515 (Largest in row) · LC 111 (Min Depth)</p>
+</section>
+
+<!-- ==================== P10 TRIE ==================== -->
+<section id="p10-trie">
+  <h2>Pattern 10 · Trie (Prefix Tree) <span class="k-tag supp">SUPP</span></h2>
+
+  <div class="k-banner supp">
+    <strong>Vì sao SUPP:</strong> Trie ít gặp hơn (~2% bài), nhưng signal phỏng vấn rất rõ — "prefix", "autocomplete", "dictionary". Biết template = solve được; không biết = block hoàn toàn.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"Implement prefix tree / dictionary"</li>
+    <li>"Autocomplete / typeahead"</li>
+    <li>"Word search II" (Trie + DFS grid)</li>
+    <li>"Maximum XOR" (binary trie variant)</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Tree mà mỗi path = string.
+Node lưu: children (map char → node) + isEnd flag.
+Insert/search/startsWith đều O(L), L = độ dài string.</code></pre>
+
+  <h3>Template</h3>
+  <pre><code class="language-java">class Trie {
+    private Trie[] children = new Trie[26];
+    private boolean isEnd;
+
+    public void insert(String word) {
+        Trie node = this;
+        for (char c : word.toCharArray()) {
+            int i = c - 'a';
+            if (node.children[i] == null) node.children[i] = new Trie();
+            node = node.children[i];
+        }
+        node.isEnd = true;
+    }
+
+    public boolean search(String word) {
+        Trie node = find(word);
+        return node != null &amp;&amp; node.isEnd;
+    }
+
+    public boolean startsWith(String prefix) {
+        return find(prefix) != null;
+    }
+
+    private Trie find(String s) {
+        Trie node = this;
+        for (char c : s.toCharArray()) {
+            int i = c - 'a';
+            if (node.children[i] == null) return null;
+            node = node.children[i];
+        }
+        return node;
+    }
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Trie</h4>
+    <ol>
+      <li><strong><code>children</code> dùng array[26] vs HashMap:</strong> Array nhanh, ít memory với a-z. HashMap khi Unicode hoặc sparse.</li>
+      <li><strong>Quên flag <code>isEnd</code>:</strong> Sẽ confuse giữa "có prefix" và "có exact word". <code>search("app")</code> phải false nếu chỉ insert "apple".</li>
+      <li><strong>Word Search II (LC 212):</strong> Phải Trie + DFS grid + pruning (xoá node Trie sau khi match để dedup result).</li>
+      <li><strong>Memory blow-up:</strong> 10⁵ words length 10 → ~10⁶ nodes. Mỗi node 26 pointers → ~104MB. Sparse map giúp tiết kiệm.</li>
+      <li><strong>Wildcard search (LC 211):</strong> Gặp '.' → DFS tất cả children. O(26^L) worst case.</li>
+      <li><strong>Concurrent modification:</strong> Production cần ReadWriteLock — đọc nhiều, ghi ít.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 3 bài</h3>
+  <p>LC 208 · LC 211 (Add and Search Word) · LC 212 (Word Search II)</p>
+</section>
+
+<!-- ==================== P11 HEAP ==================== -->
+<section id="p11-heap">
+  <h2>Pattern 11 · Heap / Priority Queue <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> "Top K" và "merge K sorted" là 2 trong các bài top phỏng vấn FAANG. Reflex: top K largest → min-heap size K; median stream → 2 heaps.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"K largest / smallest / closest"</li>
+    <li>"Top K frequent"</li>
+    <li>"Median in stream" (2 heaps)</li>
+    <li>"Merge K sorted lists / streams"</li>
+    <li>"Schedule tasks" / "task scheduler"</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Min-heap: root = smallest. Java PriorityQueue default.
+Max-heap: new PriorityQueue&lt;&gt;(Collections.reverseOrder())
+
+Top K largest → MIN-heap size K (pop smallest, giữ K lớn nhất)
+Top K smallest → MAX-heap size K
+Median stream → max-heap (small half) + min-heap (big half)</code></pre>
+
+  <h3>Template — Top K</h3>
+  <pre><code class="language-java">PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+for (int n : nums) {
+    minHeap.offer(n);
+    if (minHeap.size() &gt; k) minHeap.poll();   // pop smallest → giữ K largest
+}
+// Heap chứa K largest (không sorted)</code></pre>
+
+  <h3>Walkthrough — LC 215 Kth Largest</h3>
+  <pre><code class="language-java">public int findKthLargest(int[] nums, int k) {
+    PriorityQueue&lt;Integer&gt; heap = new PriorityQueue&lt;&gt;();
+    for (int n : nums) {
+        heap.offer(n);
+        if (heap.size() &gt; k) heap.poll();
+    }
+    return heap.peek();   // smallest trong K largest = K-th largest
+}
+// O(n log k) — tốt hơn sort O(n log n) khi k &lt;&lt; n</code></pre>
+
+  <h3>Walkthrough — LC 295 Median Stream (Hard)</h3>
+  <p><strong>Insight 2 heaps:</strong> small half (max-heap) + big half (min-heap), kích thước chênh tối đa 1. Median = root của heap lớn hơn, hoặc trung bình 2 root nếu bằng nhau.</p>
+  <pre><code class="language-java">class MedianFinder {
+    PriorityQueue&lt;Integer&gt; small = new PriorityQueue&lt;&gt;(Collections.reverseOrder()); // max
+    PriorityQueue&lt;Integer&gt; large = new PriorityQueue&lt;&gt;();                              // min
+
+    public void addNum(int num) {
+        small.offer(num);
+        large.offer(small.poll());                       // balance: số lớn chuyển sang large
+        if (large.size() &gt; small.size()) small.offer(large.poll());
+    }
+
+    public double findMedian() {
+        return small.size() &gt; large.size() ? small.peek() : (small.peek() + large.peek()) / 2.0;
+    }
+}
+// addNum O(log n), findMedian O(1)</code></pre>
+
+  <h3>Walkthrough — LC 23 Merge K Sorted Lists (Hard)</h3>
+  <pre><code class="language-java">public ListNode mergeKLists(ListNode[] lists) {
+    PriorityQueue&lt;ListNode&gt; heap = new PriorityQueue&lt;&gt;((a, b) -&gt; a.val - b.val);
+    for (ListNode l : lists) if (l != null) heap.offer(l);
+
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (!heap.isEmpty()) {
+        ListNode min = heap.poll();
+        tail.next = min;
+        tail = tail.next;
+        if (min.next != null) heap.offer(min.next);
+    }
+    return dummy.next;
+}
+// O(N log k), N = total nodes, k = số list</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Heap</h4>
+    <ol>
+      <li><strong>PriorityQueue default min-heap:</strong> Junior hay nhầm là max. Cần max → <code>Collections.reverseOrder()</code> hoặc comparator <code>(a,b)-&gt;b-a</code>.</li>
+      <li><strong>Comparator overflow:</strong> <code>(a, b) -&gt; a - b</code> với <code>Integer.MAX_VALUE</code> → tràn → sort sai. Dùng <code>Integer.compare(a, b)</code>.</li>
+      <li><strong>Heap không sorted khi iterate:</strong> Chỉ root đảm bảo nhỏ nhất. <code>for (Integer n : heap)</code> trả về thứ tự internal — KHÔNG sorted.</li>
+      <li><strong>Mỗi op O(log n):</strong> Không phải O(1). Tổng n ops = O(n log n), không phải O(n).</li>
+      <li><strong>Remove arbitrary element:</strong> O(n) vì phải linear search. Cần update/delete by key → dùng TreeMap hoặc indexed heap.</li>
+      <li><strong>Stable vs unstable:</strong> PriorityQueue không stable (cùng priority không giữ insert order). Top K frequent words (LC 692) cần tie-break lexicographic.</li>
+      <li><strong>Heap of objects với mutable field:</strong> Modify field sau khi offer → heap invariant phá vỡ. Re-offer hoặc dùng immutable.</li>
+      <li><strong>"Lazy deletion" trong outdated entries:</strong> Dijkstra/LC 1834 — pop ra entry cũ thì skip thay vì update.</li>
+      <li><strong>Memory: heap size = n khi không bounded:</strong> Top-K phải bound size = k, không offer hết rồi pop k lần (O(n log n)).</li>
+    </ol>
+  </div>
+
+  <h3>Drill 6 bài</h3>
+  <p>LC 215 · LC 347 · LC 23 · LC 295 · LC 692 (Top K Words) · LC 1046 (Last Stone Weight)</p>
+</section>
+
+<!-- ==================== P12 BACKTRACKING ==================== -->
+<section id="p12-backtracking">
+  <h2>Pattern 12 · Backtracking <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> "All subsets / permutations / combinations / valid X" = backtracking. Bắt buộc reflex template choose / recurse / unchoose.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"All combinations / permutations / subsets"</li>
+    <li>"Generate all valid X" (parentheses, IP addresses)</li>
+    <li>"N-Queens", "Sudoku solver"</li>
+    <li>"Word break (all)" — không phải "exists" (đó là DP)</li>
+    <li>"Palindrome partitioning"</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Decision tree: mỗi step, choose option → recurse → unchoose (backtrack).
+
+Template:
+def backtrack(state):
+    if isComplete(state): record(state); return
+    for choice in possibleChoices(state):
+        state.choose(choice)
+        backtrack(state)
+        state.unchoose(choice)    ← QUAN TRỌNG</code></pre>
+
+  <h3>Template — Subsets</h3>
+  <pre><code class="language-java">public List&lt;List&lt;Integer&gt;&gt; subsets(int[] nums) {
+    List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+    backtrack(new ArrayList&lt;&gt;(), nums, 0, result);
+    return result;
+}
+private void backtrack(List&lt;Integer&gt; path, int[] nums, int start, List&lt;List&lt;Integer&gt;&gt; result) {
+    result.add(new ArrayList&lt;&gt;(path));     // ⚠️ COPY, không add path trực tiếp
+    for (int i = start; i &lt; nums.length; i++) {
+        path.add(nums[i]);                  // choose
+        backtrack(path, nums, i + 1, result);
+        path.remove(path.size() - 1);       // unchoose
+    }
+}</code></pre>
+
+  <h3>Walkthrough — LC 46 Permutations</h3>
+  <p>Khác Subsets: cần <code>used[]</code> array vì có thể chọn lại element ở vị trí khác trong sequence.</p>
+  <pre><code class="language-java">public List&lt;List&lt;Integer&gt;&gt; permute(int[] nums) {
+    List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+    backtrack(new ArrayList&lt;&gt;(), nums, new boolean[nums.length], result);
+    return result;
+}
+private void backtrack(List&lt;Integer&gt; path, int[] nums, boolean[] used, List&lt;List&lt;Integer&gt;&gt; result) {
+    if (path.size() == nums.length) { result.add(new ArrayList&lt;&gt;(path)); return; }
+    for (int i = 0; i &lt; nums.length; i++) {
+        if (used[i]) continue;
+        used[i] = true; path.add(nums[i]);
+        backtrack(path, nums, used, result);
+        path.remove(path.size() - 1); used[i] = false;
+    }
+}</code></pre>
+
+  <h3>Walkthrough — LC 79 Word Search (grid DFS + backtrack)</h3>
+  <pre><code class="language-java">public boolean exist(char[][] board, String word) {
+    for (int i = 0; i &lt; board.length; i++)
+        for (int j = 0; j &lt; board[0].length; j++)
+            if (dfs(board, word, i, j, 0)) return true;
+    return false;
+}
+private boolean dfs(char[][] board, String word, int i, int j, int idx) {
+    if (idx == word.length()) return true;
+    if (i &lt; 0 || i &gt;= board.length || j &lt; 0 || j &gt;= board[0].length
+        || board[i][j] != word.charAt(idx)) return false;
+
+    char tmp = board[i][j];
+    board[i][j] = '#';     // mark visited (in-place — tiết kiệm space)
+    boolean found = dfs(board, word, i+1, j, idx+1) || dfs(board, word, i-1, j, idx+1)
+                 || dfs(board, word, i, j+1, idx+1) || dfs(board, word, i, j-1, idx+1);
+    board[i][j] = tmp;     // backtrack
+    return found;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Backtracking</h4>
+    <ol>
+      <li><strong>Quên unchoose:</strong> State corrupt, kết quả sai hoặc duplicate.</li>
+      <li><strong>Add <code>path</code> thay vì <code>new ArrayList&lt;&gt;(path)</code>:</strong> Tất cả result point cùng list → cuối cùng empty hoặc giống nhau.</li>
+      <li><strong>Skip duplicates (LC 47, 90):</strong> Sort + <code>if (i &gt; start &amp;&amp; nums[i] == nums[i-1]) continue;</code>. Quên sort = bug.</li>
+      <li><strong>Pruning:</strong> N-Queens cần check diagonal sớm. Combination Sum cần break khi sum &gt; target. Pruning quyết định performance.</li>
+      <li><strong>Recursion depth:</strong> n=20 cho permutations → 20! ≈ 2.4×10¹⁸ — KHÔNG thể brute force. Đề chỉ test n ≤ 8.</li>
+      <li><strong>Word Search marking in-place vs visited set:</strong> In-place tiết kiệm space nhưng modify input — phải document.</li>
+      <li><strong>Combination Sum (LC 39) cho phép reuse:</strong> Truyền <code>i</code> thay vì <code>i+1</code> trong recursion → reuse element.</li>
+      <li><strong>Palindrome Partition (LC 131):</strong> Pre-compute palindrome[i][j] DP để tránh re-check.</li>
+      <li><strong>Iterative subsets bit manipulation:</strong> 2^n subsets, mỗi bit mask = 1 subset. O(n × 2^n) — nhanh hơn recursion overhead.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 9 bài</h3>
+  <p>LC 78, 90 · LC 46, 47 · LC 39, 40 · LC 79 · LC 51 (N-Queens Hard) · LC 131 (Palindrome Partition)</p>
+</section>
+
+<!-- ==================== P13 GRAPH BFS/DFS ==================== -->
+<section id="p13-graph-bfs-dfs">
+  <h2>Pattern 13 · Graph BFS / DFS <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Graph = 9% bài LC. "Islands", "course schedule", "word ladder" là 3 archetype phải reflex. Distinguish BFS (shortest unweighted) vs DFS (cycle, topo sort).
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"Number of islands / provinces / components"</li>
+    <li>"Clone graph"</li>
+    <li>"Word ladder" — BFS shortest path unweighted</li>
+    <li>"Course schedule" — cycle detect / topo sort</li>
+    <li>"Pacific Atlantic water flow", "rotting oranges" — multi-source BFS</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Graph = nodes + edges
+- Adjacency list: Map&lt;Node, List&lt;Node&gt;&gt;  (sparse)
+- Adjacency matrix: int[][]                  (dense)
+- Grid: implicit graph với 4 directions
+
+BFS: shortest path UNWEIGHTED, level-by-level
+DFS: explore sâu, detect cycle, topological sort
+Cả 2 cần: visited set (tránh infinite loop khi có cycle)</code></pre>
+
+  <h3>Template — DFS on Grid (Islands)</h3>
+  <pre><code class="language-java">int[][] DIRS = {{0,1},{0,-1},{1,0},{-1,0}};
+void dfs(char[][] grid, int r, int c) {
+    if (r &lt; 0 || r &gt;= grid.length || c &lt; 0 || c &gt;= grid[0].length || grid[r][c] != '1') return;
+    grid[r][c] = '#';   // mark visited (in-place)
+    for (int[] d : DIRS) dfs(grid, r + d[0], c + d[1]);
+}</code></pre>
+
+  <h3>Walkthrough — LC 200 Number of Islands</h3>
+  <pre><code class="language-java">public int numIslands(char[][] grid) {
+    int count = 0;
+    for (int r = 0; r &lt; grid.length; r++)
+        for (int c = 0; c &lt; grid[0].length; c++)
+            if (grid[r][c] == '1') { dfs(grid, r, c); count++; }
+    return count;
+}</code></pre>
+
+  <h3>Walkthrough — LC 207 Course Schedule (Topo Sort BFS / Kahn's)</h3>
+  <pre><code class="language-java">public boolean canFinish(int numCourses, int[][] prerequisites) {
+    List&lt;List&lt;Integer&gt;&gt; graph = new ArrayList&lt;&gt;();
+    int[] indegree = new int[numCourses];
+    for (int i = 0; i &lt; numCourses; i++) graph.add(new ArrayList&lt;&gt;());
+    for (int[] p : prerequisites) { graph.get(p[1]).add(p[0]); indegree[p[0]]++; }
+
+    Queue&lt;Integer&gt; queue = new ArrayDeque&lt;&gt;();
+    for (int i = 0; i &lt; numCourses; i++) if (indegree[i] == 0) queue.offer(i);
+
+    int taken = 0;
+    while (!queue.isEmpty()) {
+        int course = queue.poll();
+        taken++;
+        for (int next : graph.get(course)) if (--indegree[next] == 0) queue.offer(next);
+    }
+    return taken == numCourses;   // nếu không = numCourses → có cycle
+}
+// Kahn's algorithm — BFS-based topological sort</code></pre>
+
+  <h3>Walkthrough — LC 127 Word Ladder (BFS shortest path)</h3>
+  <pre><code class="language-java">public int ladderLength(String beginWord, String endWord, List&lt;String&gt; wordList) {
+    Set&lt;String&gt; dict = new HashSet&lt;&gt;(wordList);
+    if (!dict.contains(endWord)) return 0;
+
+    Queue&lt;String&gt; queue = new ArrayDeque&lt;&gt;();
+    queue.offer(beginWord);
+    int level = 1;
+
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        for (int i = 0; i &lt; size; i++) {
+            String word = queue.poll();
+            if (word.equals(endWord)) return level;
+
+            char[] chars = word.toCharArray();
+            for (int j = 0; j &lt; chars.length; j++) {
+                char orig = chars[j];
+                for (char c = 'a'; c &lt;= 'z'; c++) {
+                    chars[j] = c;
+                    String next = new String(chars);
+                    if (dict.remove(next)) queue.offer(next);   // remove = mark visited
+                }
+                chars[j] = orig;
+            }
+        }
+        level++;
+    }
+    return 0;
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Graph</h4>
+    <ol>
+      <li><strong>Quên visited:</strong> Cycle → infinite loop. Grid trong-place mark; explicit graph dùng Set.</li>
+      <li><strong>Connected components vs island:</strong> Island = connected (4-direction). 8-direction (diagonal) → khác bài.</li>
+      <li><strong>Disconnected graph:</strong> Phải lặp ngoài để start từ mỗi unvisited node.</li>
+      <li><strong>BFS dùng <code>ArrayDeque</code>, KHÔNG <code>LinkedList</code>:</strong> ArrayDeque nhanh hơn 2-3x.</li>
+      <li><strong>Cycle detect DFS có 3 màu:</strong> White (chưa thăm), Gray (đang DFS), Black (xong). Gặp Gray = cycle.</li>
+      <li><strong>Topo sort 2 cách:</strong> BFS Kahn's (indegree) HOẶC DFS post-order reverse. Cả 2 đều O(V+E).</li>
+      <li><strong>Bipartite check (LC 785):</strong> BFS với 2-color. Conflict = không bipartite.</li>
+      <li><strong>Multi-source BFS (LC 994 Rotting Oranges):</strong> Push tất cả nguồn vào queue ban đầu → BFS bình thường.</li>
+      <li><strong>Word Ladder optimization:</strong> Bidirectional BFS (từ cả begin và end) giảm complexity √n lần.</li>
+      <li><strong>Number of distinct islands (LC 694):</strong> Encode shape (DFS trace) → Set của canonical forms.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 8 bài</h3>
+  <p>LC 200, 133 (Clone Graph), 207, 210 (Course Schedule II) · LC 127, 695 (Max Area Island), 417 (Pacific Atlantic), 994 (Rotting Oranges)</p>
+</section>
+
+<!-- ==================== P14 ADVANCED GRAPH ==================== -->
+<section id="p14-graph-advanced">
+  <h2>Pattern 14 · Advanced Graph — Dijkstra &amp; Union-Find <span class="k-tag supp">SUPP</span></h2>
+
+  <div class="k-banner supp">
+    <strong>Vì sao SUPP:</strong> Ít gặp hơn nhưng nếu hỏi mà không biết = không pass. Senior FAANG (L5+) hay test "weighted shortest path" (Dijkstra) hoặc "redundant connection" (Union-Find).
+  </div>
+
+  <h3>Signal Dijkstra</h3>
+  <ul>
+    <li>"Shortest path" + "weighted" + "non-negative weights"</li>
+    <li>"Cheapest flight" / "minimum cost path"</li>
+    <li>"Network delay time"</li>
+  </ul>
+
+  <h3>Template Dijkstra</h3>
+  <pre><code class="language-java">public int dijkstra(int n, int[][] edges, int start, int end) {
+    Map&lt;Integer, List&lt;int[]&gt;&gt; graph = new HashMap&lt;&gt;();
+    for (int[] e : edges)
+        graph.computeIfAbsent(e[0], k -&gt; new ArrayList&lt;&gt;()).add(new int[]{e[1], e[2]});
+
+    PriorityQueue&lt;int[]&gt; heap = new PriorityQueue&lt;&gt;((a, b) -&gt; a[1] - b[1]);
+    int[] dist = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[start] = 0;
+    heap.offer(new int[]{start, 0});
+
+    while (!heap.isEmpty()) {
+        int[] curr = heap.poll();
+        int node = curr[0], d = curr[1];
+        if (d &gt; dist[node]) continue;   // lazy skip outdated entry
+        for (int[] next : graph.getOrDefault(node, List.of())) {
+            int nd = d + next[1];
+            if (nd &lt; dist[next[0]]) {
+                dist[next[0]] = nd;
+                heap.offer(new int[]{next[0], nd});
+            }
+        }
+    }
+    return dist[end] == Integer.MAX_VALUE ? -1 : dist[end];
+}
+// O((V + E) log V)</code></pre>
+
+  <h3>Signal Union-Find</h3>
+  <ul>
+    <li>"Number of connected components"</li>
+    <li>"Redundant connection / valid tree"</li>
+    <li>"Accounts merge"</li>
+    <li>"Friend circles" / "groups"</li>
+  </ul>
+
+  <h3>Template Union-Find (với path compression + union by rank)</h3>
+  <pre><code class="language-java">class UnionFind {
+    int[] parent, rank;
+    int components;
+
+    UnionFind(int n) {
+        parent = new int[n]; rank = new int[n]; components = n;
+        for (int i = 0; i &lt; n; i++) parent[i] = i;
+    }
+
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);   // path compression
+        return parent[x];
+    }
+
+    boolean union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return false;                         // đã chung component
+        if (rank[px] &lt; rank[py]) parent[px] = py;           // union by rank
+        else if (rank[px] &gt; rank[py]) parent[py] = px;
+        else { parent[py] = px; rank[px]++; }
+        components--;
+        return true;
+    }
+}
+// Mỗi op gần O(1) — α(n) inverse Ackermann</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Advanced Graph</h4>
+    <ol>
+      <li><strong>Dijkstra fail với negative weights:</strong> Dùng Bellman-Ford O(VE) hoặc SPFA.</li>
+      <li><strong>Dijkstra cần lazy skip:</strong> Heap có thể chứa entry cũ (đã updated). Skip nếu <code>d &gt; dist[node]</code>.</li>
+      <li><strong>Cheapest Flight với K stops (LC 787):</strong> Dijkstra modify hoặc Bellman-Ford bounded — careful với pruning logic.</li>
+      <li><strong>Union-Find phải path compression + union by rank:</strong> Thiếu = degrade về O(n) per op.</li>
+      <li><strong>Find recursive overflow:</strong> n=10⁵ skewed → stack overflow. Iterative find với 2 pass.</li>
+      <li><strong>Bellman-Ford detect negative cycle:</strong> Sau n-1 relaxations, nếu vẫn relax được → có negative cycle.</li>
+      <li><strong>Floyd-Warshall all-pairs shortest path:</strong> O(V³). LC 1334 — không phổ biến nhưng nên biết.</li>
+      <li><strong>MST (Minimum Spanning Tree):</strong> Kruskal (sort edges + Union-Find) hoặc Prim (Dijkstra-like). LC 1135.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 4 bài</h3>
+  <p>LC 743 (Network Delay) · LC 787 (Cheapest Flights) · LC 547 (Friend Circles) · LC 684 (Redundant Connection)</p>
+</section>
+
+<!-- ==================== P15 1D DP ==================== -->
+<section id="p15-dp-1d">
+  <h2>Pattern 15 · 1D Dynamic Programming <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> DP là chủ đề khó nhất với junior. 1D DP là entry point — Climbing Stairs / House Robber là phỏng vấn 101. Không pass = không qua được vòng phone screen.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"Number of ways to..."</li>
+    <li>"Min / max cost to..."</li>
+    <li>"Longest / shortest..."</li>
+    <li>"Can you reach..." (boolean DP)</li>
+    <li>Có optimal substructure + overlapping subproblems</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">dp[i] = answer cho first i elements (hoặc ending at i)
+Recurrence: dp[i] dùng dp[i-1], dp[i-2], ...
+
+Top-down (memoization): recursion + cache
+Bottom-up (tabulation): iterative fill array → thường hiệu quả hơn
+
+Space optimization: nếu dp[i] chỉ dùng O(1) phần tử trước → dùng biến scalar</code></pre>
+
+  <h3>Walkthrough — LC 70 Climbing Stairs (gateway)</h3>
+  <p><strong>Insight:</strong> dp[n] = số cách lên n bậc. Bậc cuối từ bậc n-1 (bước 1) hoặc bậc n-2 (bước 2) → dp[n] = dp[n-1] + dp[n-2] (Fibonacci!).</p>
+  <pre><code class="language-java">public int climbStairs(int n) {
+    if (n &lt;= 2) return n;
+    int prev2 = 1, prev1 = 2;
+    for (int i = 3; i &lt;= n; i++) {
+        int curr = prev1 + prev2;
+        prev2 = prev1; prev1 = curr;
+    }
+    return prev1;
+}
+// O(n) time, O(1) space</code></pre>
+
+  <h3>Walkthrough — LC 198 House Robber</h3>
+  <pre><code class="language-java">public int rob(int[] nums) {
+    int prev2 = 0, prev1 = 0;
+    for (int n : nums) {
+        int curr = Math.max(prev1, prev2 + n);   // rob hoặc skip
+        prev2 = prev1; prev1 = curr;
+    }
+    return prev1;
+}</code></pre>
+
+  <h3>Walkthrough — LC 300 Longest Increasing Subsequence</h3>
+  <pre><code class="language-java">// O(n²) DP straightforward
+public int lengthOfLIS(int[] nums) {
+    int n = nums.length;
+    int[] dp = new int[n];
+    Arrays.fill(dp, 1);
+    int max = 1;
+    for (int i = 1; i &lt; n; i++) {
+        for (int j = 0; j &lt; i; j++)
+            if (nums[j] &lt; nums[i]) dp[i] = Math.max(dp[i], dp[j] + 1);
+        max = Math.max(max, dp[i]);
+    }
+    return max;
+}
+
+// O(n log n) — patience sort trick
+public int lengthOfLISOptimal(int[] nums) {
+    List&lt;Integer&gt; tails = new ArrayList&lt;&gt;();
+    for (int n : nums) {
+        int idx = Collections.binarySearch(tails, n);
+        if (idx &lt; 0) idx = -(idx + 1);
+        if (idx == tails.size()) tails.add(n);
+        else tails.set(idx, n);
+    }
+    return tails.size();
+}</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases 1D DP</h4>
+    <ol>
+      <li><strong>Quên base case:</strong> dp[0] = ? dp[1] = ? Sai = toàn bộ recurrence sai.</li>
+      <li><strong>Off-by-one giữa array index và DP index:</strong> dp[0] có thể mean "0 phần tử" hoặc "phần tử thứ 0". Phải định nghĩa rõ.</li>
+      <li><strong>Subsequence vs substring:</strong> Subsequence không cần liền kề (LC 300). Substring liền kề (LC 5 longest palindromic substring).</li>
+      <li><strong>Memoize sai key:</strong> Object key không override equals/hashCode → cache miss.</li>
+      <li><strong>Coin Change unbounded:</strong> Outer loop coin, inner loop amount → mỗi coin dùng nhiều lần. Đảo lại → 0/1 knapsack (mỗi coin 1 lần).</li>
+      <li><strong>Word Break false positive:</strong> Boolean DP dp[i] = true nếu s[0..i] break được. Phải check tất cả dp[j] (j&lt;i) + s[j..i] in dict.</li>
+      <li><strong>House Robber II (LC 213 — circular):</strong> Split thành 2 cases — rob first / rob last. Max của 2.</li>
+      <li><strong>Decode Ways (LC 91):</strong> "06" không decode được — phải check 2-digit leading 0.</li>
+      <li><strong>Negative numbers trong Max Product (LC 152):</strong> Phải track cả min và max — vì negative × negative = positive lớn.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 8 bài</h3>
+  <p>LC 70, 198, 213 · LC 300, 322 (Coin Change), 139 (Word Break) · LC 152, 91</p>
+</section>
+
+<!-- ==================== P16 2D DP ==================== -->
+<section id="p16-dp-2d">
+  <h2>Pattern 16 · 2D Dynamic Programming <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> LCS, Edit Distance, Knapsack là 3 archetype Hard nhất nhưng được hỏi vô số lần. Pass = signal mạnh "biết DP". Senior phải biết space optimize O(mn) → O(min(m,n)).
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"2 strings / 2 arrays" + similarity</li>
+    <li>"Grid path" / "unique paths"</li>
+    <li>"Subsequence problem với 2 inputs"</li>
+    <li>"Min operations to transform A → B" (edit distance)</li>
+    <li>"Knapsack" — chọn item với capacity constraint</li>
+  </ul>
+
+  <h3>Walkthrough — LC 1143 Longest Common Subsequence</h3>
+  <p><strong>Recurrence:</strong> dp[i][j] = LCS của text1[0..i-1] và text2[0..j-1]. Nếu char giống → dp[i-1][j-1]+1. Nếu khác → max(dp[i-1][j], dp[i][j-1]).</p>
+  <pre><code class="language-java">public int longestCommonSubsequence(String text1, String text2) {
+    int m = text1.length(), n = text2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 1; i &lt;= m; i++) {
+        for (int j = 1; j &lt;= n; j++) {
+            if (text1.charAt(i-1) == text2.charAt(j-1)) dp[i][j] = dp[i-1][j-1] + 1;
+            else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+        }
+    }
+    return dp[m][n];
+}
+// O(mn) time, O(mn) space — có thể optimize về O(n) bằng 2 hàng</code></pre>
+
+  <h3>Walkthrough — LC 72 Edit Distance (Hard)</h3>
+  <pre><code class="language-java">public int minDistance(String w1, String w2) {
+    int m = w1.length(), n = w2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 0; i &lt;= m; i++) dp[i][0] = i;     // delete i chars
+    for (int j = 0; j &lt;= n; j++) dp[0][j] = j;     // insert j chars
+
+    for (int i = 1; i &lt;= m; i++) {
+        for (int j = 1; j &lt;= n; j++) {
+            if (w1.charAt(i-1) == w2.charAt(j-1)) dp[i][j] = dp[i-1][j-1];
+            else dp[i][j] = 1 + Math.min(dp[i-1][j-1],          // replace
+                              Math.min(dp[i-1][j],              // delete
+                                       dp[i][j-1]));            // insert
+        }
+    }
+    return dp[m][n];
+}</code></pre>
+
+  <h3>Walkthrough — LC 416 Partition Equal Subset Sum (0/1 knapsack)</h3>
+  <pre><code class="language-java">public boolean canPartition(int[] nums) {
+    int sum = Arrays.stream(nums).sum();
+    if (sum % 2 != 0) return false;
+    int target = sum / 2;
+
+    boolean[] dp = new boolean[target + 1];
+    dp[0] = true;
+    for (int n : nums) {
+        for (int j = target; j &gt;= n; j--) {        // ⚠️ duyệt từ phải qua trái
+            dp[j] |= dp[j - n];
+        }
+    }
+    return dp[target];
+}
+// Optimized 1D từ 2D O(n × target) — chỉ giữ 1 hàng</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases 2D DP</h4>
+    <ol>
+      <li><strong>Quên base case dp[0][*] và dp[*][0]:</strong> Edit Distance phải initialize i và j base.</li>
+      <li><strong>Off-by-one giữa string index và DP index:</strong> dp[i][j] dùng <code>text.charAt(i-1)</code> — vì dp 1-based, char 0-based.</li>
+      <li><strong>Space optimization wrong direction:</strong> Knapsack 0/1 phải duyệt j từ phải qua trái → tránh dùng item 2 lần.</li>
+      <li><strong>LCS với reconstruction (output substring):</strong> Phải backtrack từ dp[m][n] về dp[0][0].</li>
+      <li><strong>Edit Distance 3 ops:</strong> Replace, delete, insert — đừng quên op nào.</li>
+      <li><strong>Knapsack unbounded:</strong> Cho phép dùng item nhiều lần → duyệt j từ TRÁI sang PHẢI.</li>
+      <li><strong>Min Path Sum (LC 64):</strong> dp[0][0] = grid[0][0], không phải 0.</li>
+      <li><strong>Dungeon Game (LC 174):</strong> DP từ ĐÍCH về BẮT ĐẦU vì health ràng buộc forward không tính được.</li>
+      <li><strong>Memoize với 2D key:</strong> Map&lt;Pair, Integer&gt; — Pair phải có hashCode/equals đúng.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 8 bài</h3>
+  <p>LC 1143, 72, 583, 416, 494 (Target Sum) · LC 62, 64, 174 (Hard)</p>
+</section>
+
+<!-- ==================== P17 GREEDY ==================== -->
+<section id="p17-greedy">
+  <h2>Pattern 17 · Greedy <span class="k-tag supp">SUPP</span></h2>
+
+  <div class="k-banner supp">
+    <strong>Vì sao SUPP:</strong> Greedy đòi PROOF — sai = silent bug. Junior thường brute Greedy mà không chứng minh, fail edge case. Khó nhận diện hơn DP.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"Minimum X to do Y"</li>
+    <li>"Maximum X you can..."</li>
+    <li>"Job scheduling"</li>
+    <li>"Interval problems"</li>
+    <li>"Gas station" / "candy distribution"</li>
+  </ul>
+
+  <h3>Mental Model</h3>
+  <pre><code class="language-text">Mỗi step chọn local optimal → global optimal (NẾU đúng greedy choice property).
+
+⚠️ KHÔNG phải bài nào cũng greedy được. Phải:
+1. Identify greedy choice candidate
+2. Prove choice luôn dẫn đến optimal (exchange argument hoặc induction)
+3. Nếu không prove được → switch sang DP</code></pre>
+
+  <h3>Walkthrough — LC 55 Jump Game</h3>
+  <p><strong>Greedy:</strong> Track xa nhất có thể với tới. Nếu i &gt; maxReach → kẹt.</p>
+  <pre><code class="language-java">public boolean canJump(int[] nums) {
+    int maxReach = 0;
+    for (int i = 0; i &lt; nums.length; i++) {
+        if (i &gt; maxReach) return false;
+        maxReach = Math.max(maxReach, i + nums[i]);
+    }
+    return true;
+}</code></pre>
+
+  <h3>Walkthrough — LC 134 Gas Station</h3>
+  <pre><code class="language-java">public int canCompleteCircuit(int[] gas, int[] cost) {
+    int total = 0, tank = 0, start = 0;
+    for (int i = 0; i &lt; gas.length; i++) {
+        int diff = gas[i] - cost[i];
+        total += diff; tank += diff;
+        if (tank &lt; 0) { start = i + 1; tank = 0; }   // restart từ i+1
+    }
+    return total &lt; 0 ? -1 : start;
+}
+// Proof: nếu total &gt;= 0, luôn có solution. Nếu fail tại i, restart từ i+1.</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Greedy</h4>
+    <ol>
+      <li><strong>Coin Change KHÔNG greedy:</strong> Coins [1,3,4], amount=6 → greedy chọn 4+1+1=3 coins. Optimal: 3+3=2 coins. Phải DP.</li>
+      <li><strong>Knapsack 0/1 KHÔNG greedy:</strong> Fractional knapsack mới greedy (Huffman, Kruskal). 0/1 phải DP.</li>
+      <li><strong>Interval scheduling — chọn END sớm nhất:</strong> KHÔNG phải start sớm hoặc duration ngắn. Prove bằng exchange argument.</li>
+      <li><strong>Jump Game II (LC 45 — số jump min):</strong> Greedy BFS-like, mỗi range là 1 level.</li>
+      <li><strong>Candy (LC 135):</strong> 2 pass — left-to-right + right-to-left.</li>
+      <li><strong>Reorganize String (LC 767):</strong> Greedy + heap — chọn char tần suất cao nhất nhưng tránh duplicate liền kề.</li>
+      <li><strong>Task Scheduler (LC 621):</strong> Formula <code>(maxFreq - 1) * (n + 1) + numMaxFreq</code> hoặc heap.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 4 bài</h3>
+  <p>LC 55 · LC 45 (Jump Game II) · LC 134 · LC 763 (Partition Labels) · LC 621 (Task Scheduler)</p>
+</section>
+
+<!-- ==================== P18 INTERVALS ==================== -->
+<section id="p18-intervals">
+  <h2>Pattern 18 · Intervals <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Meeting rooms, merge intervals là 2 phép phỏng vấn cực kỳ phổ biến (booking system, calendar, scheduler). Reflex: sort theo start (hoặc end) + sweep.
+  </div>
+
+  <h3>Signal</h3>
+  <ul>
+    <li>"Merge intervals"</li>
+    <li>"Insert interval"</li>
+    <li>"Meeting rooms" / "minimum conference rooms"</li>
+    <li>"Non-overlapping intervals"</li>
+    <li>"Employee free time"</li>
+  </ul>
+
+  <h3>Walkthrough — LC 56 Merge Intervals</h3>
+  <pre><code class="language-java">public int[][] merge(int[][] intervals) {
+    Arrays.sort(intervals, (a, b) -&gt; a[0] - b[0]);   // sort by start
+    List&lt;int[]&gt; result = new ArrayList&lt;&gt;();
+    int[] curr = intervals[0];
+    result.add(curr);
+    for (int i = 1; i &lt; intervals.length; i++) {
+        if (intervals[i][0] &lt;= curr[1]) {            // overlap
+            curr[1] = Math.max(curr[1], intervals[i][1]);
+        } else {
+            curr = intervals[i];
+            result.add(curr);
+        }
+    }
+    return result.toArray(new int[result.size()][]);
+}</code></pre>
+
+  <h3>Walkthrough — LC 253 Meeting Rooms II (FAANG classic)</h3>
+  <p><strong>Insight:</strong> Sort theo start. Dùng min-heap lưu end times. Nếu meeting tiếp theo start &gt;= earliest end → reuse room (pop). Else thêm room mới.</p>
+  <pre><code class="language-java">public int minMeetingRooms(int[][] intervals) {
+    Arrays.sort(intervals, (a, b) -&gt; a[0] - b[0]);
+    PriorityQueue&lt;Integer&gt; heap = new PriorityQueue&lt;&gt;();
+    for (int[] meet : intervals) {
+        if (!heap.isEmpty() &amp;&amp; heap.peek() &lt;= meet[0]) heap.poll();   // room rảnh
+        heap.offer(meet[1]);
+    }
+    return heap.size();
+}
+// O(n log n)</code></pre>
+
+  <h3>Walkthrough — LC 435 Non-overlapping Intervals (Greedy)</h3>
+  <pre><code class="language-java">public int eraseOverlapIntervals(int[][] intervals) {
+    Arrays.sort(intervals, (a, b) -&gt; a[1] - b[1]);   // sort by END (greedy choice)
+    int end = Integer.MIN_VALUE, count = 0;
+    for (int[] i : intervals) {
+        if (i[0] &gt;= end) end = i[1];
+        else count++;
+    }
+    return count;
+}
+// Sort by end → greedy luôn chọn end sớm nhất → cho phép nhiều interval sau hơn</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Intervals</h4>
+    <ol>
+      <li><strong>Sort by start vs sort by end:</strong> Merge → start. Non-overlap → end. Junior hay nhầm.</li>
+      <li><strong>Overlap definition: <code>&lt;</code> hay <code>&lt;=</code>:</strong> [1,2] và [2,3] có overlap? Đọc đề. Meeting rooms thường KHÔNG count touching = overlap.</li>
+      <li><strong>Insert interval (LC 57):</strong> 3 phase — before, overlap merge, after.</li>
+      <li><strong>Sweep line technique:</strong> Convert intervals thành events (start +1, end -1). Sort events. Track active count. LC 218 Skyline.</li>
+      <li><strong>Integer overflow trong sort comparator:</strong> <code>a[1] - b[1]</code> với MAX_VALUE → tràn. Dùng <code>Integer.compare</code>.</li>
+      <li><strong>Empty list of intervals:</strong> Return [] / 0. Check trước.</li>
+      <li><strong>Employee free time (LC 759):</strong> Flatten + merge tất cả interval rồi tìm gap.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 6 bài</h3>
+  <p>LC 56, 57, 252, 253, 435, 1851</p>
+</section>
+
+<!-- ==================== P19 MATH ==================== -->
+<section id="p19-math">
+  <h2>Pattern 19 · Math Tricks <span class="k-tag adv">ADV</span></h2>
+
+  <div class="k-banner adv">
+    <strong>Vì sao ADV:</strong> Hiếm gặp, nhưng khi có thì block hoàn toàn nếu không biết. GCD, modular pow, prime sieve là 3 must-know.
+  </div>
+
+  <h3>Useful tricks</h3>
+  <pre><code class="language-java">// GCD (Euclidean)
+int gcd(int a, int b) { return b == 0 ? a : gcd(b, a % b); }
+
+// LCM
+int lcm(int a, int b) { return a / gcd(a, b) * b; }   // a/gcd TRƯỚC để tránh overflow
+
+// Fast exponentiation với modulo
+long pow(long base, long exp, long mod) {
+    long result = 1;
+    base %= mod;
+    while (exp &gt; 0) {
+        if ((exp &amp; 1) == 1) result = result * base % mod;
+        base = base * base % mod;
+        exp &gt;&gt;= 1;
+    }
+    return result;
+}
+
+// Prime sieve (Eratosthenes)
+boolean[] sieve(int n) {
+    boolean[] composite = new boolean[n + 1];
+    for (int i = 2; i * i &lt;= n; i++)
+        if (!composite[i])
+            for (int j = i * i; j &lt;= n; j += i) composite[j] = true;
+    return composite;
+}</code></pre>
+
+  <h3>Walkthrough — LC 50 Pow(x, n)</h3>
+  <pre><code class="language-java">public double myPow(double x, int n) {
+    long N = n;                                     // ⚠️ long vì -Integer.MIN_VALUE overflow
+    if (N &lt; 0) { x = 1 / x; N = -N; }
+    double result = 1;
+    while (N &gt; 0) {
+        if ((N &amp; 1) == 1) result *= x;
+        x *= x;
+        N &gt;&gt;= 1;
+    }
+    return result;
+}
+// O(log n)</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Math</h4>
+    <ol>
+      <li><strong>Integer.MIN_VALUE negate overflow:</strong> <code>-Integer.MIN_VALUE</code> = vẫn MIN. Phải cast long.</li>
+      <li><strong>Modulo distribution:</strong> <code>(a * b) % m = ((a % m) * (b % m)) % m</code>. Áp dụng khi tính large numbers.</li>
+      <li><strong>Negative modulo trong Java:</strong> <code>-7 % 3 = -1</code> (không phải 2). Cần <code>((a % m) + m) % m</code> để dương.</li>
+      <li><strong>Sqrt int overflow:</strong> <code>i * i</code> với i lớn → overflow. Dùng <code>i &lt;= n / i</code>.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 3 bài</h3>
+  <p>LC 50 · LC 204 (Count Primes) · LC 70 (related to Fibonacci)</p>
+</section>
+
+<!-- ==================== P20 BIT ==================== -->
+<section id="p20-bit">
+  <h2>Pattern 20 · Bit Manipulation <span class="k-tag adv">ADV</span></h2>
+
+  <div class="k-banner adv">
+    <strong>Vì sao ADV:</strong> Bit tricks hiếm nhưng đẹp — XOR cancel duplicates, hamming weight. Senior interview có 5% xác suất hỏi.
+  </div>
+
+  <h3>Useful operations</h3>
+  <pre><code class="language-text">x &amp; 1          → check odd/even
+x &gt;&gt; 1         → divide by 2
+x &lt;&lt; 1         → multiply by 2
+x &amp; (x - 1)    → unset lowest 1 bit (count bits trick)
+x ^ x          → 0
+x ^ 0          → x
+x ^ y ^ y      → x   (XOR self-cancel — Single Number)
+~x             → bitwise NOT
+x | (1 &lt;&lt; i)   → set bit i
+x &amp; ~(1 &lt;&lt; i)  → clear bit i
+(x &gt;&gt; i) &amp; 1   → get bit i</code></pre>
+
+  <h3>Walkthrough — LC 136 Single Number</h3>
+  <pre><code class="language-java">public int singleNumber(int[] nums) {
+    int result = 0;
+    for (int n : nums) result ^= n;   // XOR all → duplicates cancel
+    return result;
+}
+// O(n) time, O(1) space — elegant!</code></pre>
+
+  <h3>Walkthrough — LC 191 Number of 1 Bits</h3>
+  <pre><code class="language-java">public int hammingWeight(int n) {
+    int count = 0;
+    while (n != 0) {
+        n &amp;= (n - 1);   // unset lowest 1 bit → mỗi iter giảm đúng 1 bit
+        count++;
+    }
+    return count;
+}</code></pre>
+
+  <h3>Walkthrough — LC 338 Counting Bits (DP + bit)</h3>
+  <pre><code class="language-java">public int[] countBits(int n) {
+    int[] dp = new int[n + 1];
+    for (int i = 1; i &lt;= n; i++) dp[i] = dp[i &gt;&gt; 1] + (i &amp; 1);
+    return dp;
+}
+// dp[i] = dp[i/2] + (i mod 2)
+// Vì i/2 chỉ khác i ở bit cuối → count bit = count(i/2) + last bit</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases Bit</h4>
+    <ol>
+      <li><strong>Java <code>int</code> 32-bit signed:</strong> Right shift của số âm dùng <code>&gt;&gt;</code> (arithmetic, giữ sign) vs <code>&gt;&gt;&gt;</code> (logical, fill 0). Hamming weight số âm phải dùng <code>&gt;&gt;&gt;</code>.</li>
+      <li><strong>Long thay int khi cần 64-bit:</strong> Bit mask vượt 32 → dùng long với <code>1L &lt;&lt; i</code>.</li>
+      <li><strong>XOR commutative + associative:</strong> Order không quan trọng. Useful cho "Find missing number" (XOR 0..n với array).</li>
+      <li><strong>Sum of Two Integers without + (LC 371):</strong> XOR cho sum no-carry, AND&lt;&lt;1 cho carry. Loop tới khi carry = 0.</li>
+      <li><strong>Single Number II (LC 137):</strong> Đếm bit modulo 3 — phức tạp hơn XOR.</li>
+      <li><strong>Reverse Bits (LC 190):</strong> Loop 32 iter, mỗi iter shift result + lấy bit cuối input.</li>
+    </ol>
+  </div>
+
+  <h3>Drill 5 bài</h3>
+  <p>LC 136 · LC 191 · LC 338 · LC 268 (Missing Number) · LC 371 (Sum of Two Integers)</p>
+</section>
+
+<!-- ==================== ANTI-PATTERNS ==================== -->
+<section id="antipatterns">
+  <h2>⚠️ Anti-patterns junior hay rơi vào</h2>
+  <p>Đây là 10 lỗi <em>tư duy</em> (không phải lỗi cú pháp) mà junior lặp lại khi học pattern. Đọc và self-check.</p>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 1: "Solve càng nhiều bài càng tốt"</h4>
+    <p>Người học solve 500 bài/tháng nhưng pattern recognition không tăng. Lý do: solve nhanh → không có thời gian internalize → nhớ solution thuộc lòng. Đến bài variant lại bí.</p>
+    <p><strong>Fix:</strong> Sau mỗi bài, viết 3 dòng note "pattern + signal + key insight". Nếu bí 2 tuần sau làm lại bài đó → bạn CHƯA internalize.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 2: "Đọc solution trước khi try"</h4>
+    <p>Đọc solution → não nhận diện "tôi hiểu" (illusion of competence) → không tự generate được. Phải bí ít nhất 30 phút trước khi đọc.</p>
+    <p><strong>Fix:</strong> Timer 30 phút. Hết giờ, đọc hint TRƯỚC (không full solution). Hint giúp unblock 1 phần → tự complete phần còn lại.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 3: "Optimize trước khi correct"</h4>
+    <p>Cố viết solution O(n) ngay từ đầu → bí, miss edge case, miss complexity. Phỏng vấn 45 phút → fail.</p>
+    <p><strong>Fix:</strong> Viết brute force CHẠY ĐÚNG trước, communicate "đây là brute O(n²), tôi sẽ optimize". Interviewer nhiều khi chấp nhận brute nếu bạn analyse được bottleneck.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 4: "Bỏ qua edge case vì 'phỏng vấn không test'"</h4>
+    <p>Empty, single element, all duplicates — đây là 3 case interviewer check signal "engineering rigor". Bỏ qua = signal junior.</p>
+    <p><strong>Fix:</strong> Mỗi bài, BẮT BUỘC nói ra mental list edge cases trước khi code. Section "Edge cases" mỗi pattern trên là material.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 5: "Im lặng khi code"</h4>
+    <p>Interviewer mất sight tư duy → đánh giá "không biết". Khi bí cũng im → interviewer không cứu được.</p>
+    <p><strong>Fix:</strong> Verbalize liên tục: "Tôi nghĩ approach này..." "Tôi đang băn khoăn liệu có thể..." "Nếu input là X thì Y có hold không?". Im &lt; 30s.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 6: "Memorize template mà không hiểu invariant"</h4>
+    <p>Học thuộc binary search template nhưng không hiểu vì sao <code>left + (right - left) / 2</code>, vì sao <code>&lt;=</code> vs <code>&lt;</code>. Đến variant lệch nhẹ → fail.</p>
+    <p><strong>Fix:</strong> Mỗi template, viết invariant ra giấy. VD: "Target nằm trong [left, right] inclusive" — invariant này dictate <code>&lt;=</code> và <code>right = mid - 1</code>.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 7: "Skip complexity analysis"</h4>
+    <p>Code chạy ra answer → submit → AC → next bài. Nhưng phỏng vấn LUÔN hỏi "what's time complexity?". Không nói được = -1 round.</p>
+    <p><strong>Fix:</strong> Sau mỗi bài, ép mình viết Big-O time + space. So sánh với optimal. Hiểu tại sao có thể (hoặc không thể) better.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 8: "Không revise pattern cũ"</h4>
+    <p>Tuần 1 học Hashing, tuần 5 vô Tree DFS — quên hết Hashing. Đến phỏng vấn random bài Hashing → bí.</p>
+    <p><strong>Fix:</strong> Spaced repetition. Mỗi pattern, 2-3 bài review sau 1 tuần, 1 bài sau 1 tháng. Dùng Anki hoặc spreadsheet track.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 9: "Solve mà không trace example"</h4>
+    <p>Viết code xong submit luôn. AC thì OK, WA thì panic. Phỏng vấn — interviewer hỏi "trace với input [2,7,11,15]" → bí.</p>
+    <p><strong>Fix:</strong> Bước R trong UMPIRE — trace 1 example nhỏ + 1 edge case. Viết state ra bảng. Vẽ trace giúp catch off-by-one trước khi submit.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern 10: "Phỏng vấn = recall = pattern matching"</h4>
+    <p>Suy nghĩ "tôi chỉ cần match đề về pattern" → khi gặp bài <em>novel</em> (kết hợp 2 pattern, hoặc twist) → block.</p>
+    <p><strong>Fix:</strong> Pattern là <em>scaffold</em>, không phải <em>solution</em>. Sau khi match pattern, vẫn cần adapt. Bài hay là bài kết hợp 2-3 pattern (VD: Trie + DFS, Heap + Sliding Window). Practice loại bài này.</p>
+  </div>
+</section>
+
+<!-- ==================== BUILD PROJECTS ==================== -->
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 3 exercises để biến hiểu thành phản xạ</h2>
+  <p>Đọc 20 patterns không đủ — phải <em>practice with deliberate friction</em>. 3 exercise dưới đây là chìa khoá biến "hiểu" thành "reflex".</p>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 1 — Pattern Recognition Drill (1 giờ/tuần)</h3>
+    <p><strong>Mục tiêu:</strong> Đoán đúng pattern trong &lt; 60s cho ít nhất 80% bài random.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Vào leetcode.com/problemset/, filter Medium + Frequency High.</li>
+      <li>Mỗi ngày random 5 bài. KHÔNG đọc constraints / examples kỹ.</li>
+      <li>Đọc đề trong 60s → guess pattern + viết key insight (1-2 dòng).</li>
+      <li>Sau đó đọc solution để verify. Đúng thì ✓, sai thì note xuống vì sao miss.</li>
+      <li>Track tỉ lệ: 10/15/20 bài. Goal: ≥ 80% sau 4 tuần.</li>
+    </ol>
+    <p><strong>Acceptance criteria:</strong></p>
+    <ul>
+      <li>≥ 80% accuracy với 20 bài random ở tuần 4.</li>
+      <li>Recognize được multi-pattern bài (VD: "đây là Trie + DFS" thay vì chỉ "Trie").</li>
+      <li>Note miss patterns ≤ 5 dòng — tự rút insight, không copy solution.</li>
+    </ul>
+    <p><strong>Time:</strong> 15-20 phút/ngày × 4 tuần = 7-10 giờ.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 2 — Template Reflex (2 tuần)</h3>
+    <p><strong>Mục tiêu:</strong> Viết được template từng pattern KHÔNG nhìn cheatsheet, ≤ 5 phút.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Lập spreadsheet 20 patterns × 3 cột: Template, Time-to-write (s), Bugs Count.</li>
+      <li>Mỗi sáng, chọn 3 patterns random. Mở editor trống, viết template từ đầu.</li>
+      <li>Time bản thân. Sau đó compile + chạy với test case nhỏ. Đếm bug.</li>
+      <li>Goal: tất cả 20 patterns viết được trong ≤ 5 phút, 0 bug.</li>
+      <li>Pattern nào &gt; 5 phút hoặc &gt; 1 bug → revise tuần kế.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> 18/20 patterns đạt ≤ 5 phút + 0 bug. 2 patterns khó (Dijkstra, Edit Distance) có thể ≤ 10 phút.</p>
+    <p><strong>Why it works:</strong> Phỏng vấn không cho thời gian "hồi tưởng template". Reflex giải phóng 80% bandwidth cho phần insight + edge cases.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 3 — End-to-end Mock (4 tuần cuối prep)</h3>
+    <p><strong>Mục tiêu:</strong> Solve 1 random Medium trong 25 phút end-to-end với UMPIRE, narrate liên tục.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Chuẩn bị: bảng trắng / blank doc, timer, camera ghi hình bản thân.</li>
+      <li>Mỗi 2 ngày, chọn 1 random Medium chưa solve. Set timer 35 phút.</li>
+      <li>Narrate ra MIỆNG (không phải gõ comment): U → M → P → I → R → E.</li>
+      <li>Sau khi xong (hoặc hết giờ), xem lại video. Đếm: im &gt; 30s, edge case miss, complexity không nói.</li>
+      <li>Tuần 1: 8/10 bài hoàn thành trong 35 phút. Tuần 4: 9/10 bài hoàn thành trong 25 phút + 5 phút buffer.</li>
+    </ol>
+    <p><strong>Acceptance:</strong></p>
+    <ul>
+      <li>9/10 mock đạt: code đúng + edge case nhận ra + complexity nói đúng.</li>
+      <li>Tổng im lặng &lt; 10% thời gian.</li>
+      <li>Pattern recognition trong 60s đầu (verbalize "Tôi nghĩ đây là...").</li>
+    </ul>
+    <p><strong>Bonus:</strong> Mock với người thật trên Pramp.com (free) hoặc Interviewing.io (paid). Real human pressure khác camera 1 mình.</p>
+  </div>
+</section>
+
+<!-- ==================== 3-TIER INTERVIEW ==================== -->
+<section id="interview">
+  <h2>🎯 3-tier interview framework — pattern mastery rubric</h2>
+  <p>Khi sẵn sàng phỏng vấn FAANG, bạn cần đạt cả 3 tier. Tier 1 là sàn, Tier 3 là signal cho L5+/E5+.</p>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Pattern Recognition (Junior signal)</h3>
+    <p><strong>Mục tiêu:</strong> Cho 20 problem random, đoán đúng pattern ≥ 16/20.</p>
+    <p><strong>Cách test:</strong> Mỗi đề đọc trong 60s → trả lời "đây là pattern nào". Bonus: nêu 1-2 invariant chính.</p>
+    <p><strong>Checklist:</strong> Cover toàn bộ 20 patterns với accuracy ≥ 80%.</p>
+    <p><strong>Khi đạt:</strong> Pass được phone screen Easy/Medium. L3/L4 Google, E3 Meta.</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Template Reflex (Mid-level signal)</h3>
+    <p><strong>Mục tiêu:</strong> Viết được template từng pattern KHÔNG cheatsheet, modify cho variant trong 5 phút.</p>
+    <p><strong>Cách test:</strong></p>
+    <ul>
+      <li>Cho random pattern → viết template, time-to-write ≤ 5 phút, 0 bug.</li>
+      <li>Cho variant (VD: "Two Sum nhưng allow trùng index") → adapt template trong 5 phút.</li>
+      <li>Recognize pattern trong 60s, plan trong 5 phút, code trong 15 phút.</li>
+    </ul>
+    <p><strong>Khi đạt:</strong> Pass được onsite Medium consistently. L4/L5 Google, E4 Meta, mid Amazon.</p>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — End-to-End Solve (Senior signal)</h3>
+    <p><strong>Mục tiêu:</strong> Solve 1 random Medium trong 25 phút end-to-end với UMPIRE, narrate liên tục.</p>
+    <p><strong>Cách test:</strong></p>
+    <ul>
+      <li>Random Medium chưa từng thấy → 25 phút end-to-end.</li>
+      <li>Narrate liên tục, im &lt; 30 giây (mỗi lúc).</li>
+      <li>Edge cases tự nhớ ra ≥ 5 cases không cần interviewer prompt.</li>
+      <li>Complexity tự verify đúng + đề xuất optimization (nếu có).</li>
+      <li>Handle 1 follow-up (VD: "nếu input thay đổi thành streaming?").</li>
+    </ul>
+    <p><strong>Khi đạt:</strong> Pass được Hard variant + system design hỏi follow-up. L5+ Google, E5+ Meta, Senior Amazon.</p>
+  </div>
+</section>
+
+<!-- ==================== EDGE-CASE LAB BANK ==================== -->
+<section id="edge-case-lab">
+<h2>Edge-Case Lab Bank — 5 lab buộc gặp bug typical <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">3 exercise trên là build kỹ năng. 5 lab dưới là "trap" — bug bạn SẼ gặp lần đầu, đến lần thứ 5 sẽ thành phản xạ. Code trên IDE/LeetCode, KHÔNG nhìn solution trước.</p>
+
+<div class="callout danger">
+<div class="ctitle">🧪 Lab #1 — Two Sum với duplicate values (Hash Map trap)</div>
+<p><strong>Problem:</strong> Two Sum nhưng input có duplicate: <code>nums = [3, 3], target = 6</code>. Trả index của 2 element. Edge case: chỉ có 1 cặp, không có nhiều cặp.</p>
+<p><strong>Trap:</strong> Nếu put cả 2 vào map trước, key=3 sẽ bị overwrite, index thứ nhất mất. Phải check map trong cùng loop (one-pass), không phải two-pass.</p>
+<p><strong>Symptom của bug:</strong> Output là <code>[1, 1]</code> thay vì <code>[0, 1]</code>. Khi reproduce với <code>[3, 2, 4], target=6</code> thì pass nhưng <code>[3, 3]</code> fail.</p>
+<p><strong>Bonus:</strong> Sau khi pass, modify để trả tất cả pair (Two Sum II), so sánh complexity.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🧪 Lab #2 — Sliding Window với "longest substring" có Unicode/emoji</div>
+<p><strong>Problem:</strong> Longest substring without repeating chars. Input là "abcabcbb" → 3. Edge: input "🙂🙂a" hoặc "café".</p>
+<p><strong>Trap:</strong> Java <code>String.length()</code> tính theo char (UTF-16 code unit), không phải code point. Emoji là surrogate pair (2 chars). Window slide bằng index sẽ tách emoji ra.</p>
+<p><strong>Symptom:</strong> Trả về kết quả sai cho input có emoji. Hoặc <code>ArrayIndexOutOfBoundsException</code> khi access char giữa surrogate pair.</p>
+<p><strong>Fix:</strong> Dùng <code>codePointAt</code> + iterate by code point, hoặc convert thành <code>int[]</code> code points trước.</p>
+<p><strong>Bài học:</strong> Real interview tại Apple/Meta có hỏi follow-up "what if input is Unicode?" — interviewer test edge case thinking.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🧪 Lab #3 — Binary Search với integer overflow</div>
+<p><strong>Problem:</strong> Search trong sorted array size 1.5 tỷ. <code>nums.length = 1_500_000_000</code>. Tìm target.</p>
+<p><strong>Trap:</strong> <code>int mid = (left + right) / 2</code> overflow khi left + right &gt; <code>Integer.MAX_VALUE</code> (~2.1 tỷ). Mid trở thành số âm, <code>nums[mid]</code> throw exception.</p>
+<p><strong>Symptom:</strong> <code>ArrayIndexOutOfBoundsException: -123456</code> sau vài iteration. Không reproduce với small array.</p>
+<p><strong>Fix:</strong> <code>int mid = left + (right - left) / 2</code>. Luôn safe.</p>
+<p><strong>Bonus:</strong> Cùng bug xuất hiện trong merge sort, quick sort partition. Verify cả 3 cùng pattern.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🧪 Lab #4 — Tree DFS với recursion stack overflow</div>
+<p><strong>Problem:</strong> Validate BST cho tree skewed (mỗi node chỉ có left child). Height = N = 100_000.</p>
+<p><strong>Trap:</strong> Recursive DFS depth = N. Java default stack ~512KB → ~50K frames trước StackOverflowError. Test case lớn sẽ crash.</p>
+<p><strong>Symptom:</strong> <code>StackOverflowError</code> khi N &gt; 50_000. Reproduce: build skewed tree bằng <code>for(i=0;i&lt;100000;i++) node = new TreeNode(i, node, null);</code></p>
+<p><strong>Fix:</strong> Convert sang iterative DFS dùng explicit Stack. Hoặc tăng stack <code>-Xss4m</code> nhưng đây là band-aid, không phải fix proper.</p>
+<p><strong>Bài học:</strong> Interview hỏi follow-up "what if tree depth 1M?" — test understanding của recursion limit.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🧪 Lab #5 — Dynamic Programming với negative/zero edge</div>
+<p><strong>Problem:</strong> Maximum subarray sum. Input có thể all negative <code>[-3, -1, -2]</code> → expect -1 (subarray phải có ≥1 element).</p>
+<p><strong>Trap:</strong> Init <code>maxSum = 0</code> rồi <code>maxSum = max(maxSum, currentSum)</code> → trả về 0 cho all-negative input, sai. Phải init <code>maxSum = Integer.MIN_VALUE</code> hoặc <code>nums[0]</code>.</p>
+<p><strong>Symptom:</strong> Test case <code>[-1]</code> trả 0 thay vì -1. <code>[5, 4, -1, 7, 8]</code> pass nhưng <code>[-3, -1, -2]</code> fail.</p>
+<p><strong>Fix:</strong> <code>maxSum = nums[0]; currentSum = nums[0];</code> start từ index 1.</p>
+<p><strong>Pattern chung:</strong> DP base case sai là bug #1 trong DP problems. Always check edge: empty, single element, all negative, all same.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">📋 Symptom → Pattern recipe — Nghe đề là biết pattern</div>
+<p>Tập map keyword trong đề bài → pattern cần dùng. Sau 50 problem, đây là phản xạ.</p>
+<table>
+<thead><tr><th>Keyword trong đề</th><th>Pattern likely</th><th>Confirm bằng</th></tr></thead>
+<tbody>
+<tr><td>"contiguous subarray/substring"</td><td>Sliding window / Prefix sum</td><td>Cần window size cố định → fixed window. Cần điều kiện → variable</td></tr>
+<tr><td>"sorted array" + "pair/triplet"</td><td>Two pointers</td><td>Sum/diff target</td></tr>
+<tr><td>"find first/last position"</td><td>Binary search</td><td>Sorted + monotonic</td></tr>
+<tr><td>"top K elements"</td><td>Heap (PriorityQueue)</td><td>K nhỏ, N lớn</td></tr>
+<tr><td>"shortest path / minimum steps"</td><td>BFS</td><td>Unweighted graph</td></tr>
+<tr><td>"all possible combinations"</td><td>Backtracking</td><td>Tree of decisions</td></tr>
+<tr><td>"matrix" + "reach destination"</td><td>BFS/DFS on grid</td><td>Có obstacle</td></tr>
+<tr><td>"min/max cost to reach"</td><td>DP / Dijkstra</td><td>Weighted</td></tr>
+<tr><td>"overlapping intervals"</td><td>Intervals sort + sweep</td><td>Sort by start</td></tr>
+<tr><td>"in-place rearrange"</td><td>Two pointers / Cyclic sort</td><td>O(1) space</td></tr>
+</tbody>
+</table>
+<p><em>Cách dùng:</em> Đọc đề 30s đầu, đoán pattern, viết ra giấy. Sau khi giải, check lại đoán có đúng không. Sai → ghi vào notebook để pattern recognition tốt hơn.</p>
+</div>
+
+</section>
+
+<!-- ==================== FEYNMAN END ==================== -->
+<section id="feynman-end">
+  <h2>🧠 Feynman test — kết thúc file này</h2>
+
+  <div class="feynman">
+    <h3>🎓 Tự test Feynman — giải thích cho người không biết code</h3>
+    <p>Đóng file này và thử giải thích các câu sau cho 1 sinh viên năm 1 KHÔNG biết LeetCode:</p>
+    <ol>
+      <li><strong>"Tại sao 20 patterns đủ cho 80% bài?"</strong> — Bạn phải giải được mà không nói "vì NeetCode bảo thế". Insight: interviewer chỉ có 45 phút + cần signal phân biệt junior/senior → bài rơi vào sweet spot ~ 20 archetype.</li>
+      <li><strong>"Khi nào HashMap thay được Two Pointers?"</strong> — Khi mảng KHÔNG sorted. Two Pointers cần invariant ordering. HashMap trade space cho time, không cần sorted.</li>
+      <li><strong>"Vì sao Greedy không phải bài nào cũng work?"</strong> — Greedy cần exchange argument / proof. Coin Change [1,3,4] amount 6 → greedy chọn 4+1+1=3, optimal 3+3=2. Greedy fail vì local choice không lead global.</li>
+      <li><strong>"DP top-down vs bottom-up khác gì?"</strong> — Top-down = recursion + cache, lazy (chỉ compute state cần). Bottom-up = iterative fill, eager (compute hết). Bottom-up nhanh hơn (no recursion overhead) nhưng cần biết order.</li>
+      <li><strong>"Vì sao BFS dùng được cho shortest path unweighted nhưng KHÔNG cho weighted?"</strong> — BFS giả định mỗi edge = 1 step. Khi weighted, "level" không monotonic theo distance → cần Dijkstra với priority queue.</li>
+    </ol>
+    <p>Nếu bí 1 câu → quay lại pattern tương ứng. Câu nào trả lời được mượt = đã internalize.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — KHÔNG tin file này 100%</h3>
+    <p>File này tổng hợp từ kinh nghiệm + tài liệu phổ biến, nhưng có thể có sai sót. Verify bằng các nguồn primary:</p>
+    <ul>
+      <li><strong>NeetCode 150</strong> — neetcode.io/practice (free) — danh sách bài chuẩn, video walkthrough chi tiết.</li>
+      <li><strong>LeetCode Editorial</strong> — mỗi bài có editorial chính thức từ LC team, là nguồn primary đáng tin nhất.</li>
+      <li><strong>Cracking the Coding Interview 6e</strong> (Gayle McDowell, 2015) — Chapter 5-13 là nền tảng pattern thinking.</li>
+      <li><strong>Elements of Programming Interviews in Java</strong> (Aziz, Lee, Prakash, 2016) — harder Google-tier prep, có chapter mỗi pattern.</li>
+      <li><strong>Grokking the Coding Interview</strong> (designgurus.org) — pattern catalog gốc, 16 patterns.</li>
+      <li><strong>CLRS</strong> (Introduction to Algorithms, Cormen et al, 2009) — bible cho algorithms, dùng để verify pseudocode / proof.</li>
+      <li><strong>Java JDK docs</strong> — verify behavior <code>PriorityQueue</code>, <code>ArrayDeque</code>, <code>HashMap</code>, <code>Arrays.sort</code>: docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html</li>
+    </ul>
+    <p><strong>Khi nào trust file này, khi nào verify primary:</strong></p>
+    <ul>
+      <li>Pattern names, signal phrases, mental model — file này OK (đã chuẩn hoá theo NeetCode).</li>
+      <li>Code template — TRUST nhưng test trên LeetCode trước khi memorize.</li>
+      <li>Complexity numbers — verify với LC editorial.</li>
+      <li>Historical facts (NeetCode 150 phân bố, năm xuất bản sách) — verify trên website chính thức / Amazon ISBN.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 8-12 tuần — đặt vào lịch ngay</h3>
+    <pre><code class="language-text">Tuần 1-2:   P1-P3 (Hashing, Prefix Sum, Two Pointers)        → 20 problems
+Tuần 3-4:   P4-P6 (Sliding Window, Stack, Binary Search)      → 20 problems
+Tuần 5-6:   P7-P9 (Linked List, Tree DFS, Tree BFS)           → 20 problems
+Tuần 7-8:   P10-P12 (Trie, Heap, Backtracking)                → 25 problems
+Tuần 9-10:  P13-P16 (Graph BFS/DFS, Advanced Graph, 1D DP, 2D DP) → 30 problems
+Tuần 11-12: P17-P20 (Greedy, Intervals, Math, Bit) + Mock     → 15 + 6 mocks
+
+Tổng: ~130 problems = đủ cover NeetCode 150.
+
+Track:
+| Date | Problem | Pattern    | Difficulty | Time | Solved | Notes        |
+|------|---------|------------|------------|------|--------|--------------|
+| 5/1  | LC 1    | Hashing    | Easy       | 18m  | ✅      |              |
+| 5/2  | LC 49   | Hashing    | Medium     | 35m  | ⚠️     | Forgot sort  |</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps sau khi master file này (~12 tuần):</strong>
+    <ol>
+      <li><a href="43-algorithm-mental-model.html">#43 Algorithm Mental Model</a> — UMPIRE deep-dive, BUD technique</li>
+      <li><a href="44-faang-coding-playbook.html">#44 FAANG Coding Playbook</a> — mock structure, interviewer signals, 5-trục rubric</li>
+      <li><a href="45-faang-system-design.html">#45 FAANG System Design HLD</a> — 4S framework</li>
+      <li><a href="46-faang-behavioral.html">#46 FAANG Behavioral</a> — STAR + 16 Amazon LPs</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng phỏng vấn:</strong> 100+ Medium solved · Pattern recognition 60s ≥ 80% · Mock 9/10 consistent.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

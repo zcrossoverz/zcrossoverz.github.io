@@ -1133,6 +1133,94 @@ public class PostService {
 </div>
 </section>
 
+<section id="counter-examples">
+<h2>8b. When NOT to Use — Counter-examples cho từng pattern <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Pattern dùng sai chỗ tệ hơn không dùng — code phình to, abstraction rỗng, người maintain ghét. Đây là cảnh báo cụ thể: <strong>khi nào SKIP pattern và viết straight code</strong>.</p>
+
+<div class="callout warn">
+<div class="ctitle">❌ Strategy Pattern — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Chỉ có 2 case và không bao giờ thêm</strong> — <code>if (type == "PREMIUM") discount = 0.2 else discount = 0.1</code> đơn giản và rõ. Strategy = 3 file (interface + 2 impl + factory) cho 1 dòng if</li>
+<li><strong>Logic không có behavior, chỉ là data lookup</strong> — nếu strategy chỉ trả về 1 giá trị từ config, dùng <code>Map&lt;String, Config&gt;</code>. Strategy thêm overhead mà không có polymorphic behavior</li>
+<li><strong>Strategies share quá nhiều state</strong> — nếu 5 strategy đều dùng cùng 8 helper method, abstraction sai — chia theo behavior chứ không phải theo data variant</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> StrategyFactory dài 200 dòng, mỗi strategy implement 1 method trả 1 dòng kết quả, mọi PR add feature đều tạo 1 strategy mới.</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ Factory Pattern — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Constructor đã đủ rõ ràng</strong> — <code>new User(email, name)</code> dễ đọc hơn <code>UserFactory.create(email, name)</code>. Factory chỉ thêm value khi có logic chọn implementation hoặc validation phức tạp</li>
+<li><strong>Chỉ 1 implementation</strong> — Factory cho interface có 1 impl = abstraction giả. Spring DI tự inject được, không cần factory wrapper</li>
+<li><strong>Pure data object (DTO, value object)</strong> — Builder hợp lý hơn nếu nhiều field; constructor đủ nếu &lt; 4 field. Factory không thêm gì</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> <code>OrderFactory.createOrder(...)</code> bên trong chỉ có <code>return new Order(...)</code>. Mọi class đều có FactoryXxx tương ứng.</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ Builder Pattern — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Class có ≤ 3 field bắt buộc, không có optional</strong> — constructor tốt hơn. Builder là overkill</li>
+<li><strong>Immutable record với tất cả field bắt buộc</strong> — Java record syntax đã rõ. Builder thêm boilerplate không có lợi</li>
+<li><strong>Validation phức tạp giữa các field</strong> — Builder không enforce được "phải set A trước B". Step builder hoặc factory với validated input tốt hơn</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> Builder cho class 2 field. Builder không có validate trong <code>build()</code> → tạo object invalid silently.</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ Observer / Event Pattern — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Cần biết kết quả xử lý của subscriber</strong> — event là fire-and-forget, không trả response. Nếu cần "gọi service B và nhận kết quả", dùng direct call hoặc reactive Mono</li>
+<li><strong>Strict ordering matter</strong> — observer thường async, không guarantee thứ tự. Nếu cần "A xong rồi mới B", dùng explicit workflow/saga</li>
+<li><strong>Trong cùng transaction boundary</strong> — Spring <code>ApplicationEventPublisher</code> default sync, listener chạy trong cùng TX → exception rollback. Dùng <code>@TransactionalEventListener(phase=AFTER_COMMIT)</code> nếu muốn async, nhưng phải biết</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> Mọi state change publish event. Codebase có 50 event class, debug flow cần đọc 8 listener.</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ Decorator Pattern — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Chỉ 1-2 hành vi cần wrap</strong> — Java AOP (<code>@Around</code>) hoặc functional composition đơn giản hơn. Decorator hierarchy 5 lớp khó trace</li>
+<li><strong>Decorator chain order quan trọng và không rõ</strong> — <code>new Logging(new Caching(new RateLimit(api)))</code> vs ngược lại có behavior khác. Nếu team không hiểu order, dùng pipeline framework hoặc reactive stream</li>
+<li><strong>Cần state chia sẻ giữa decorator</strong> — decorator nên stateless. Nếu phải chia sẻ state, sai pattern</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> Stack trace có 8 lớp decorator, mỗi lớp wrap chỉ để log "method called".</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ Chain of Responsibility — KHÔNG dùng khi…</div>
+<ul>
+<li><strong>Mỗi handler luôn được chạy</strong> — không phải chain, đây là pipeline. Dùng <code>Stream.reduce</code> hoặc functional composition</li>
+<li><strong>Decision tại 1 điểm rõ ràng</strong> — strategy pattern hoặc switch expression đơn giản và rõ hơn</li>
+<li><strong>Order handler thay đổi theo runtime</strong> — chain hard-coded order không phù hợp. Cần rule engine (Drools) hoặc DSL</li>
+</ul>
+<p><strong>Symptom của over-use:</strong> Chain dài 12 handler, debug phải set breakpoint từng handler để xem ai handle. Không log handler nào skip vs accept.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho Design Patterns</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Biết tên các pattern, đọc code nhận ra "đây là Strategy". Có xu hướng "học pattern xong áp dụng mọi nơi" — pattern fever.</p>
+    <p><em>Symptom của L1: code review comment "nên dùng Factory cho cái này" mà không nói tại sao.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Hiểu vấn đề mà pattern giải quyết (open-closed, varying algorithm). Biết phân biệt pattern nào cho tình huống nào theo bảng so sánh.</p>
+    <p><em>Symptom của L2: dùng pattern khi đã thấy "nếu thêm 1 case nữa thì if/else trở thành mớ bòng bong".</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Biết khi nào KHÔNG dùng pattern (6 counter-example ở trên là phản xạ). Khi review code, từ chối abstraction sai (Strategy cho 2 case, Factory wrap 1 dòng new). Refactor pattern lỗi thời về straight code.</p>
+    <p><em>Symptom của L3: pull request xoá pattern thừa thay vì thêm pattern mới.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="antipatterns">
 <h2>9. Anti-Patterns Phổ Biến</h2>
 

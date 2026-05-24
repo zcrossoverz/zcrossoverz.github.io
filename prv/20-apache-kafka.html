@@ -607,6 +607,73 @@ handler.addNotRetryableExceptions(InvalidEventSchemaException.class);
   </div>
 </section>
 
+<section id="three-level-kafka">
+<h2>8b. 3 Cấp Độ Mastery Cho Kafka <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Kafka có quá nhiều concept và knob — dễ "biết tên" mà không "explain được". 3 trục dưới đây phân biệt rõ junior/mid/senior khi review design hoặc debug.</p>
+
+<div class="callout why">
+<div class="ctitle">🎯 L1 / L2 / L3 cho 3 chủ đề CORE</div>
+</div>
+
+<h3>Partition Key & Ordering</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "partition là gì", biết "key quyết định partition". Khi thiết kế topic, chọn partition key kiểu random hoặc dùng default null key.</p>
+    <p><em>Symptom:</em> design có "order_id làm key" nhưng không giải thích được tại sao.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Hiểu "same key → same partition → order preserved". Phân biệt entity-id key (giữ order per entity) vs timestamp key (hot partition). Biết partition count đặt số cố định, tăng dễ, giảm khó.</p>
+    <p><em>Symptom:</em> khi review topic design, hỏi "key thế nào? Hot partition khả năng?".</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Chọn partition key dựa trên access pattern: order lifecycle dùng order_id, user activity dùng user_id, IoT data dùng device_id + time bucket. Plan capacity: partition count = peak throughput / per-partition throughput, ×2 cho headroom. Biết khi nào dùng composite key.</p>
+    <p><em>Symptom:</em> capacity plan có "partition count rationale" + "hot key analysis" trước go-live.</p>
+  </div>
+</div>
+
+<h3>Offset, Commit & Delivery Semantics</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "consumer commit offset". Dùng <code>enable.auto.commit=true</code> default. Khi gặp duplicate, suggest "thêm idempotency" mà không biết cụ thể.</p>
+    <p><em>Symptom:</em> code consume xong process, không biết offset commit lúc nào.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Phân biệt at-most-once (commit trước process), at-least-once (commit sau process), exactly-once (transactional). Hiểu auto-commit có 5s window → duplicate khi crash. Biết <code>enable.auto.commit=false</code> + manual commit là default cho production.</p>
+    <p><em>Symptom:</em> code review: từ chối auto-commit cho consumer xử lý DB write.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Build idempotent consumer dùng natural key + dedup store (Redis/DB). Hiểu Kafka exactly-once = end-to-end-trong-Kafka, không cover DB write. Thiết kế consumer có DLQ + replay procedure. Recipe debug "duplicate sau deploy" là phản xạ.</p>
+    <p><em>Symptom:</em> design doc có "delivery semantics: at-least-once, idempotency via order_id+version, dedup TTL 24h".</p>
+  </div>
+</div>
+
+<h3>Lag, Rebalance & Backpressure</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "lag = số message chưa consume". Khi lag cao, suggest "thêm consumer instance".</p>
+    <p><em>Symptom:</em> scale consumer từ 4 lên 16 instance, lag không giảm — không hiểu vì partition chỉ có 8.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Hiểu rebalance pause toàn consumer group, max-poll-interval phải &gt; max-processing-time, lag tính = log_end_offset − committed_offset. Phân biệt skew lag (1 partition lag) vs uniform lag (cả group lag).</p>
+    <p><em>Symptom:</em> khi lag tăng, kiểm partition skew trước, downstream latency trước khi tăng consumer.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Alert lag dựa trên rate of change, không absolute value. Static membership cho consumer giữ partition qua restart. Build runbook: "lag tăng → check downstream → check skew → check poison message → scale consumer". Capacity: consumer count = partition count để parallel max.</p>
+    <p><em>Symptom:</em> incident runbook có 4 nhánh decision tree cho "consumer lag rising".</p>
+  </div>
+</div>
+
+</section>
+
 <section id="antipatterns">
   <h2>Anti-Patterns — Lỗi hay gặp khi dùng Kafka <span class="k-tag core">CORE</span></h2>
   <div class="table-wrap">

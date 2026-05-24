@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#33 — Idempotency (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm J · Fintech/Reliability Patterns</span>
+    <span class="sep">›</span>
+    <span class="current">#33 Idempotency</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 6 modules</a>
+      <a href="#real-problem">1. Bài toán: double charge</a>
+      <a href="#definition">2. Định nghĩa chính xác</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#http-methods">3. HTTP method semantics</a>
+      <a href="#state-machine">4. State machine</a>
+      <a href="#delivery-guarantees">5. At-least-once vs Exactly-once</a>
+      <div class="toc-section">Production</div>
+      <a href="#rest-impl">6. REST API implementation</a>
+      <a href="#core-service">7. Idempotency Service core</a>
+      <a href="#db-schema">8. DB schema + cleanup</a>
+      <a href="#kafka-consumer">9. Idempotent Kafka Consumer</a>
+      <a href="#client-side">10. Client-side responsibility</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ 5 anti-patterns</a>
+      <a href="#when-not">❌ Khi nào KHÔNG cần</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm J · Reliability · File chống hiểu giả</div>
+  <h1>Idempotency — Khi retry mà KHÔNG biến double-charge thành thảm hoạ</h1>
+  <p class="lead">
+    Idempotency là pattern <em>quan trọng nhất</em> trong backend xử lý tiền/order/booking. Hỏng = mất tiền khách hàng thật. Nhưng nó cũng là chủ đề <strong>dễ hiểu giả nhất</strong>: ai cũng "biết" UUID + DB check, nhưng khi probe sâu (race condition? TTL? retryable vs non-retryable failure? client-side responsibility?) thì lộ ngay. File này ép bạn dừng lại, tự reproduce race condition, và thấy được khi nào pattern bị implement sai mà code vẫn chạy.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Implement đúng + reproduce TOCTOU bug + phân biệt retryable/non-retryable</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần đọc + 2 labs · Sau #13 Distributed Tx, #19 API Design</div>
+    <div><strong>📚 Prereq</strong><br>DB transaction + unique constraint · HTTP basics · Kafka consumer basic</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔴 Critical — sai pattern này = production incident</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — đặc trưng của file này</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao Idempotency dễ tạo hiểu giả:</strong>
+    <ul>
+      <li>Vocabulary nghe đơn giản ("idempotent = gọi nhiều lần OK") → não thưởng cho cảm giác "đã hiểu" mà chưa thấy edge case.</li>
+      <li>Pseudocode chuẩn nhìn rất "hợp lý" — nhưng implementation thật sai vì race condition không hiện ngay.</li>
+      <li>Bug chỉ xuất hiện dưới concurrent load — dev test 1 request thấy OK, deploy production thấy double-charge.</li>
+      <li>"Retryable vs non-retryable" là khái niệm subtle. Đa số dev miss → retry "insufficient funds" infinitely.</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ hiểu — bạn đang ở đâu?</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td><strong>L1 — Biết tên</strong></td><td>Đọc qua. Biết "có idempotency key" và "dùng UUID".</td><td>Vẽ được state machine NEW → PROCESSING → COMPLETED?</td></tr>
+      <tr><td><strong>L2 — Explain cơ chế</strong></td><td>Giải thích được vì sao check-then-insert sai, vì sao TTL cần.</td><td>Trả lời "vì sao Insufficient Funds KHÔNG được retry" trong 30 giây.</td></tr>
+      <tr><td><strong>L3 — Apply</strong></td><td>Đã implement + đã debug ít nhất 1 race condition thật.</td><td>Show code production có Idempotency-Key header + DB unique constraint + retryable flag.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li><strong>Mọi Pause &amp; Predict phải viết câu trả lời trước.</strong> Không đọc đáp án trước khi viết.</li>
+    <li><strong>Section 7 (Core Service) phải gõ tay code, không copy-paste.</strong> Não nhớ khác khi tay gõ — đặc biệt với race condition logic.</li>
+    <li><strong>Lab 1 (reproduce race condition) bắt buộc.</strong> Đọc lý thuyết "TOCTOU race" mà không thấy bug = vẫn L1.</li>
+    <li><strong>Sau mỗi anti-pattern, tự hỏi: "Code production của tôi có dính cái này không?"</strong> Mở project hiện tại check.</li>
+    <li><strong>Feynman test cuối file: kể lại 5 câu cho dev chưa biết.</strong> Câu nào bí = đoạn hiểu giả.</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap 6 modules</h2>
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>Định nghĩa &amp; HTTP semantics</strong> · CORE · f(f(x))=f(x) + GET/PUT/DELETE/POST nào idempotent</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>State machine</strong> · CORE · NEW/PROCESSING/COMPLETED/FAILED/EXPIRED — không skip state nào</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>Delivery guarantees</strong> · CORE · at-most-once / at-least-once / exactly-once + khi nào cần</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>REST implementation</strong> · CORE · Idempotency-Key header + DB unique constraint atomic</div></div>
+    <div class="roadmap-item core"><span class="num">M5</span><div><strong>Kafka consumer</strong> · HIGH-SIGNAL · event_id + processed_events table cùng transaction</div></div>
+    <div class="roadmap-item supp"><span class="num">M6</span><div><strong>Retryable vs non-retryable</strong> · HIGH-SIGNAL · Insufficient Funds ≠ Network Timeout</div></div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán: Double-charge từ network retry <span class="k-tag core">CORE</span></h2>
+
+  <p>Một e-commerce platform xử lý 10K đơn/giờ. Customer ấn "Pay $99" cho 1 order:</p>
+
+  <pre><code class="language-text">[T+0.0s] Mobile app gửi POST /payments {amount:99, orderId:'ord_abc'}
+[T+0.5s] Server nhận, charge card → thành công, balance trừ $99
+[T+1.0s] Server bắt đầu gửi response
+[T+2.0s] ❌ Network timeout — app không nhận được response
+[T+2.0s] App logic: "Timeout → retry"
+[T+2.1s] App gửi LẠI POST /payments {amount:99, orderId:'ord_abc'}
+[T+2.6s] Server nhận, charge card LẦN 2 → thành công, balance trừ THÊM $99
+[T+3.0s] App nhận response 200 OK của lần 2
+[T+3.5s] Customer thấy "Payment success" → mở app sau, thấy bị charge $198
+
+❌ Customer mất 99 dollar không lý do. Refund process tốn 3-5 ngày.</code></pre>
+
+  <h3>4 câu hỏi buộc tư duy</h3>
+  <ol>
+    <li>Server đã charge xong, response bị lost. Khi client retry, server phải làm gì để KHÔNG charge lại?</li>
+    <li>Làm sao server biết request lần 2 là "retry của lần 1" — không phải "payment mới cho cùng order"?</li>
+    <li>Nếu user thực sự muốn pay 2 lần (lần 2 cho order khác), làm sao phân biệt với retry?</li>
+    <li>Service A gọi service B qua message queue. B process xong nhưng ACK bị drop. A retry → B nhận lần 2. B phải handle thế nào?</li>
+  </ol>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước khi đọc Section 2, viết ra giấy:</p>
+    <ol>
+      <li>Bạn nghĩ giải pháp đơn giản nhất là gì? Viết pseudocode 3-5 dòng.</li>
+      <li>Pseudocode đó có race condition nào không? Nếu 2 request retry đến server cùng lúc (cách nhau 1 mili-giây)?</li>
+    </ol>
+    <p><em>90% dev viết pseudocode "check DB, nếu chưa có thì insert + process". Đó CHÍNH LÀ bug. Sẽ thấy ở Section 7.</em></p>
+  </div>
+</section>
+
+<section id="definition">
+  <h2>2. Định nghĩa chính xác — không phải "gọi nhiều lần OK" <span class="k-tag core">CORE</span></h2>
+
+  <p>Đa số tài liệu định nghĩa idempotency mơ hồ. Để hiểu đúng, dùng definition toán học:</p>
+
+  <pre><code class="language-text">f(f(x)) = f(x)
+
+Một operation f là idempotent nếu: áp dụng f LẦN 2 lên kết quả của f
+cho ra cùng kết quả. Equivalently: gọi f với cùng input N lần
+cho ra cùng final state như gọi 1 lần.</code></pre>
+
+  <h3>3 trường hợp dễ confuse</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ KHÔNG phải idempotent</h4>
+      <pre><code class="language-java">// Tăng counter
+void increment(Counter c) {
+    c.value++;
+}
+// Gọi 1 lần: value = 1
+// Gọi 2 lần: value = 2
+// 2 lần ≠ 1 lần → KHÔNG idempotent
+
+// Append log
+void log(String msg) {
+    file.appendLine(msg);
+}
+// 2 dòng log ≠ 1 dòng log → KHÔNG idempotent</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ LÀ idempotent</h4>
+      <pre><code class="language-java">// Set absolute value
+void setBalance(Account a, int newBalance) {
+    a.balance = newBalance;
+}
+// Gọi 1 lần với 100: balance = 100
+// Gọi 2 lần với 100: balance = 100
+// Cùng final state → idempotent
+
+// Delete by ID
+void delete(String id) {
+    repo.deleteById(id); // 404 nếu không tồn tại
+}
+// Gọi 1 lần: xoá
+// Gọi 2 lần: vẫn không tồn tại → cùng state</code></pre>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Lưu ý chính xác:</strong> Idempotent KHÔNG có nghĩa là "không có side effect". <code>delete</code> có side effect (xoá data lần đầu), nhưng <em>cùng final state</em> dù gọi N lần → idempotent. Vấn đề là <em>final state</em>, không phải <em>không thay đổi gì</em>.
+  </div>
+
+  <h3>Idempotent vs Safe — phân biệt</h3>
+  <table>
+    <thead><tr><th>Property</th><th>Định nghĩa</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Safe</strong></td><td>Không thay đổi server state</td><td>GET (chỉ đọc)</td></tr>
+      <tr><td><strong>Idempotent</strong></td><td>Gọi N lần = gọi 1 lần (về final state)</td><td>GET, PUT, DELETE</td></tr>
+      <tr><td><strong>Both</strong></td><td>Vừa safe vừa idempotent</td><td>GET</td></tr>
+      <tr><td><strong>Idempotent nhưng không safe</strong></td><td>Có thay đổi state nhưng cùng state sau N lần</td><td>DELETE, PUT</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="http-methods">
+  <h2>3. HTTP method semantics — POST KHÔNG idempotent mặc định <span class="k-tag core">CORE</span></h2>
+
+  <table>
+    <thead><tr><th>Method</th><th>Idempotent theo spec?</th><th>Cơ chế</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET</code></td><td>✅ Có</td><td>Chỉ đọc, không thay đổi state</td><td><code>GET /orders/123</code></td></tr>
+      <tr><td><code>PUT</code></td><td>✅ Có</td><td>Replace toàn bộ resource với payload</td><td><code>PUT /users/42 {name:"Alice"}</code> → state cuối luôn là name="Alice"</td></tr>
+      <tr><td><code>DELETE</code></td><td>✅ Có</td><td>Xoá rồi, xoá lại = 404 hoặc no-op</td><td><code>DELETE /orders/123</code></td></tr>
+      <tr><td><code>POST</code></td><td>❌ KHÔNG</td><td>Mỗi lần gọi có thể tạo resource mới</td><td><code>POST /payments</code> → có thể charge 2 lần</td></tr>
+      <tr><td><code>PATCH</code></td><td>⚠️ Tuỳ</td><td>Tuỳ payload — increment KHÔNG idempotent, set KHÔNG idempotent</td><td><code>PATCH /counter {op:"increment"}</code> ≠ idempotent</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Insight quan trọng:</strong> HTTP spec định nghĩa idempotency cho method, nhưng implementation thực tế tuỳ developer. Bạn có thể viết <code>GET /charge?amount=99</code> mà trừ tiền (sai spec, nhưng vẫn chạy). Spec chỉ là contract — server phải tự đảm bảo.
+  </div>
+
+  <h3>Vì sao POST cần idempotency key</h3>
+  <p>POST tạo resource mới mỗi lần → tự nó không idempotent. Để biến POST thành idempotent, dùng <strong>Idempotency-Key</strong> header (chuẩn Stripe, được nhiều fintech áp dụng):</p>
+
+  <pre><code class="language-text">POST /payments HTTP/1.1
+Idempotency-Key: 8e2c4a9f-3b1d-4f2e-9c1a-5d8f7e6b3a2c
+Content-Type: application/json
+
+{"amount": 99, "orderId": "ord_abc"}
+
+# Server đảm bảo: cùng Idempotency-Key → cùng response, không xử lý lại</code></pre>
+
+  <p>Idempotency-Key thực ra biến POST thành <em>conditional create</em>: "tạo payment NẾU key này chưa từng được dùng, ngược lại return result cũ".</p>
+</section>
+
+<section id="state-machine">
+  <h2>4. State machine — 4 trạng thái phải nhớ <span class="k-tag core">CORE</span></h2>
+
+  <pre><code class="language-text">Request đến với idempotency key K:
+
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  Key K chưa tồn tại                                      │
+│       │                                                  │
+│       ▼                                                  │
+│  ┌──────────────┐                                        │
+│  │ PROCESSING   │ ◄──── insert atomic với unique         │
+│  └──────┬───────┘       constraint (không TOCTOU)        │
+│         │                                                │
+│         │ execute operation                              │
+│         │                                                │
+│    ┌────┴────────────┐                                   │
+│    │                 │                                   │
+│    ▼                 ▼                                   │
+│  ┌─────────┐    ┌────────┐                               │
+│  │COMPLETED│    │ FAILED │                               │
+│  └─────────┘    └────┬───┘                               │
+│      │              │                                    │
+│      │              ├─ retryable? → re-process khi retry │
+│      │              └─ non-retryable? → cache error      │
+│      │                                                   │
+│      ▼ TTL expire                                        │
+│  ┌─────────┐                                             │
+│  │ DELETED │ (cleanup job)                               │
+│  └─────────┘                                             │
+└──────────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>Behavior theo từng state</h3>
+  <table>
+    <thead><tr><th>Khi request đến và state của key K là</th><th>Server làm gì</th></tr></thead>
+    <tbody>
+      <tr><td>Key chưa tồn tại</td><td>Insert record (state=PROCESSING) atomic, execute operation, update state khi xong</td></tr>
+      <tr><td>PROCESSING (concurrent retry)</td><td>Return 409 Conflict — request trước đang chạy</td></tr>
+      <tr><td>COMPLETED</td><td>Return cached response (KHÔNG execute lại) + header <code>Idempotency-Replayed: true</code></td></tr>
+      <tr><td>FAILED + retryable</td><td>Re-execute (set state về PROCESSING trước)</td></tr>
+      <tr><td>FAILED + non-retryable</td><td>Return cached error response (như COMPLETED)</td></tr>
+      <tr><td>Expired (sau TTL)</td><td>Treat as new — insert mới</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Tại sao bước "insert record state=PROCESSING <em>trước</em> khi execute" lại quan trọng? Viết 2-3 dòng giải thích.</p>
+  </div>
+
+  <div class="callout info">
+    <strong>Đáp án:</strong> Nếu insert SAU khi execute, có khoảng trống giữa "execute xong" và "insert key". Service crash trong khoảng đó → operation đã thực hiện nhưng key chưa lưu → client retry → thực hiện lại → duplicate. Insert TRƯỚC với state=PROCESSING đảm bảo: dù service crash giữa chừng, retry sẽ thấy state PROCESSING/COMPLETED và xử lý đúng (không re-execute).
+  </div>
+</section>
+
+<section id="delivery-guarantees">
+  <h2>5. At-most-once / At-least-once / Exactly-once <span class="k-tag core">CORE</span></h2>
+
+  <table>
+    <thead><tr><th>Guarantee</th><th>Behavior</th><th>Cost</th><th>Use case</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>At-most-once</strong> (fire &amp; forget)</td>
+        <td>Gửi 1 lần, không retry. Có thể bị mất.</td>
+        <td>Rẻ nhất, nhanh nhất</td>
+        <td>Metrics, analytics, telemetry — mất 1 data point không sao</td>
+      </tr>
+      <tr>
+        <td><strong>At-least-once</strong></td>
+        <td>Retry đến khi ACK. Có thể process N lần.</td>
+        <td>Trung bình. CẦN idempotent consumer.</td>
+        <td>Hầu hết messaging (Kafka default), payment retry</td>
+      </tr>
+      <tr>
+        <td><strong>Exactly-once</strong></td>
+        <td>Process đúng 1 lần, guaranteed</td>
+        <td>Đắt — distributed coordination (2PC, Kafka Transactions)</td>
+        <td>Critical financial settlement, ledger entries</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout success">
+    <strong>Pattern thực tế:</strong> "At-least-once + Idempotent consumer = effectively exactly-once" — đây là pattern phổ biến nhất production. Đơn giản, throughput cao, đúng đắn. Tránh Kafka Transactions / 2PC trừ khi thực sự cần atomic cross-partition writes.
+  </div>
+
+  <h3>Vì sao Exactly-once "thật" khó</h3>
+  <p>Distributed systems theorem (Two Generals Problem, FLP impossibility): trong môi trường network có thể fail, KHÔNG thể đảm bảo cả 2 bên đồng ý "đã xử lý đúng 1 lần" mà không có infinite messages. Mọi "exactly-once" trong thực tế đều là kết hợp:</p>
+  <ul>
+    <li>At-least-once delivery (retry)</li>
+    <li>+ Idempotent processing (dedup)</li>
+    <li>= Effectively exactly-once từ góc nhìn consumer</li>
+  </ul>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: Kafka Transactions có thật sự exactly-once không?</h4>
+    <p>Kafka Transactions đảm bảo atomic producer write + consumer read offset. Nhưng <em>consumer-side processing</em> (call DB, gọi API ngoài) KHÔNG nằm trong Kafka transaction → vẫn cần idempotency layer. "Exactly-once" của Kafka thực ra là "atomic producer + read isolation" — không cover toàn bộ processing chain.</p>
+  </div>
+</section>
+
+<section id="rest-impl">
+  <h2>6. REST API implementation — Idempotency-Key header <span class="k-tag core">CORE</span></h2>
+
+  <h3>Controller — entry point</h3>
+  <pre><code class="language-java">@RestController
+@RequestMapping("/api/payments")
+public class PaymentController {
+
+    private final IdempotencyService idempotencyService;
+    private final PaymentService paymentService;
+
+    @PostMapping
+    public ResponseEntity&lt;PaymentResponse&gt; createPayment(
+            // Client TỰ tạo key, gửi lên. Server KHÔNG generate hộ.
+            // Lý do: nếu server generate, retry sẽ gửi key khác → không dedup được.
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody @Valid PaymentRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+
+        // Validate format — phòng key tuỳ tiện (vd dùng số tăng dần)
+        if (!isValidUuid(idempotencyKey)) {
+            throw new BadRequestException("Idempotency-Key must be valid UUID v4");
+        }
+
+        // Scope per-user: cùng key từ user khác KHÔNG conflict
+        String scopedKey = user.getId() + ":" + idempotencyKey;
+
+        return idempotencyService.executeIdempotent(
+            scopedKey,
+            () -&gt; paymentService.processPayment(request),
+            PaymentResponse.class
+        );
+    }
+
+    private boolean isValidUuid(String s) {
+        try { UUID.fromString(s); return true; }
+        catch (IllegalArgumentException e) { return false; }
+    }
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>Pitfall #1 thường gặp:</strong> Lấy idempotency key từ body request, KHÔNG phải header. Sai vì: nếu body lớn, key bị bury. Logging tự động (access log) capture được header nhưng không body. Thuê 3rd-party (Stripe, Paddle) đều dùng header.<br>
+    <strong>Pitfall #2:</strong> Không scope key per-user. User A và User B vô tình dùng cùng UUID (xác suất thấp nhưng có) → user B bị block. Fix: prefix key với userId.
+  </div>
+</section>
+
+<section id="core-service">
+  <h2>7. Idempotency Service — Core logic (chứa bug TOCTOU dễ mắc) <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <h3>❌ Version 1 — Bug TOCTOU race condition</h3>
+  <p>Đây là code đa số dev viết lần đầu. Nó <em>nhìn đúng</em> nhưng có race condition fatal:</p>
+
+  <pre><code class="language-java">// ❌ SAI — chứa Time-Of-Check / Time-Of-Use race
+@Transactional
+public &lt;T&gt; ResponseEntity&lt;T&gt; executeIdempotent(String key, Supplier&lt;T&gt; op, Class&lt;T&gt; type) {
+    // Step 1: CHECK
+    if (repo.existsByKey(key)) {
+        IdempotencyRecord record = repo.findByKey(key).get();
+        return ResponseEntity.status(record.getHttpStatus()).body(deserialize(record));
+    }
+
+    // ⚠️ KHOẢNG TRỐNG GIỮA CHECK VÀ INSERT — race condition
+
+    // Step 2: USE (insert)
+    repo.insert(IdempotencyRecord.builder().key(key).status(PROCESSING).build());
+
+    // Step 3: execute
+    T result = op.get();
+    repo.updateCompleted(key, result);
+    return ResponseEntity.ok(result);
+}
+
+// Concurrent scenario:
+// Thread A: existsByKey(K) → false
+// Thread B: existsByKey(K) → false (vì A chưa insert)
+// Thread A: insert(K) → OK
+// Thread B: insert(K) → OK??? hoặc duplicate key error
+// Cả 2 thread execute → DOUBLE CHARGE</code></pre>
+
+  <h3>✅ Version 2 — Insert-first với unique constraint</h3>
+  <pre><code class="language-java">@Service
+@Slf4j
+public class IdempotencyService {
+
+    private final IdempotencyKeyRepository repo;
+    private final ObjectMapper objectMapper;
+
+    @Value("${idempotency.ttl-hours:24}")
+    private int ttlHours;
+
+    @Transactional
+    public &lt;T&gt; ResponseEntity&lt;T&gt; executeIdempotent(
+            String key, Supplier&lt;T&gt; operation, Class&lt;T&gt; responseType) {
+
+        // Insert TRƯỚC với state=PROCESSING.
+        // DB unique constraint là atomic gate — chỉ 1 thread thắng.
+        // Race winner → tiếp tục execute.
+        // Race loser → DuplicateKeyException → đọc record của winner.
+        try {
+            repo.insert(IdempotencyRecord.builder()
+                .key(key)
+                .status(IdempotencyStatus.PROCESSING)
+                .createdAt(Instant.now())
+                .expiresAt(Instant.now().plus(ttlHours, ChronoUnit.HOURS))
+                .build());
+
+            // Thread thắng race → execute
+            return executeAndSave(key, operation, responseType);
+
+        } catch (DataIntegrityViolationException e) {
+            // Thread thua race (hoặc retry) — đọc record của winner
+            IdempotencyRecord record = repo.findByKey(key)
+                .orElseThrow(() -&gt; new IllegalStateException("Key vanished after constraint hit"));
+
+            return handleExistingRecord(record, operation, responseType, key);
+        }
+    }
+
+    private &lt;T&gt; ResponseEntity&lt;T&gt; handleExistingRecord(
+            IdempotencyRecord record, Supplier&lt;T&gt; operation,
+            Class&lt;T&gt; responseType, String key) {
+
+        switch (record.getStatus()) {
+            case COMPLETED:
+                // Return cached — KHÔNG re-execute
+                T cached = deserialize(record.getResponseBody(), responseType);
+                return ResponseEntity.status(record.getHttpStatus())
+                    .header("Idempotency-Replayed", "true")
+                    .body(cached);
+
+            case PROCESSING:
+                // Concurrent retry — chưa biết kết quả
+                throw new ConflictException(
+                    "Request with this key is being processed. Retry in a few seconds.");
+
+            case FAILED:
+                if (record.isRetryable()) {
+                    // Transient failure — cho phép retry
+                    repo.updateStatus(key, IdempotencyStatus.PROCESSING);
+                    return executeAndSave(key, operation, responseType);
+                } else {
+                    // Permanent failure (Insufficient Funds, Card Declined)
+                    // → return error cũ, KHÔNG retry
+                    T error = deserialize(record.getResponseBody(), responseType);
+                    return ResponseEntity.status(record.getHttpStatus()).body(error);
+                }
+            default:
+                throw new IllegalStateException("Unknown status: " + record.getStatus());
+        }
+    }
+
+    private &lt;T&gt; ResponseEntity&lt;T&gt; executeAndSave(
+            String key, Supplier&lt;T&gt; operation, Class&lt;T&gt; responseType) {
+        try {
+            T result = operation.get();
+            repo.updateCompleted(key, 200, serialize(result), false);
+            return ResponseEntity.ok(result);
+
+        } catch (InsufficientFundsException | CardDeclinedException e) {
+            // Business error — non-retryable
+            repo.updateFailed(key, 422, serialize(ErrorResponse.of(e)), false);
+            throw e;
+
+        } catch (Exception e) {
+            // Technical error (network, timeout) — retryable
+            repo.updateFailed(key, 500, serialize(ErrorResponse.of(e)), true);
+            throw e;
+        }
+    }
+}</code></pre>
+
+  <h3>Vì sao Insert-first thắng Check-then-Insert</h3>
+  <table>
+    <thead><tr><th>Approach</th><th>Atomicity</th><th>Race-safe?</th></tr></thead>
+    <tbody>
+      <tr><td>Check exists → Insert if not</td><td>2 step, có khoảng trống</td><td>❌ KHÔNG — TOCTOU</td></tr>
+      <tr><td>Insert with unique constraint → catch exception</td><td>1 atomic DB operation</td><td>✅ CÓ — DB lock đảm bảo</td></tr>
+      <tr><td>SELECT FOR UPDATE → Insert</td><td>Row lock</td><td>✅ CÓ — nhưng dài hơn, performance kém</td></tr>
+      <tr><td>Application-level lock (synchronized)</td><td>JVM-only</td><td>❌ KHÔNG cho multi-instance</td></tr>
+      <tr><td>Redis SETNX</td><td>Atomic</td><td>✅ CÓ — nhưng cần backup DB</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Quy tắc cứng:</strong> Mọi pattern "check rồi act" trên shared state đều có TOCTOU race. Phải dùng atomic primitive: DB unique constraint, Compare-And-Set (CAS), DB row lock, distributed lock. Idempotency tự nó là pattern chống race — implementation cũng không được có race.
+  </div>
+</section>
+
+<section id="db-schema">
+  <h2>8. DB schema + TTL cleanup <span class="k-tag core">CORE</span></h2>
+
+  <pre><code class="language-sql">CREATE TABLE idempotency_keys (
+    id              BIGSERIAL PRIMARY KEY,
+    key             VARCHAR(255) NOT NULL,
+    status          VARCHAR(20)  NOT NULL,          -- PROCESSING / COMPLETED / FAILED
+    http_status     INT,
+    response_body   TEXT,                            -- JSON serialized response
+    is_retryable    BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    expires_at      TIMESTAMPTZ  NOT NULL,
+
+    -- ★ Heart of idempotency — unique constraint atomic
+    CONSTRAINT uq_idempotency_key UNIQUE (key)
+);
+
+-- Index cho cleanup job (partial index — chỉ rows cần xoá)
+CREATE INDEX idx_idempotency_expires
+    ON idempotency_keys (expires_at)
+    WHERE status IN ('COMPLETED', 'FAILED');
+
+-- Cleanup job (run every hour hoặc daily)
+DELETE FROM idempotency_keys
+WHERE expires_at &lt; NOW()
+  AND status IN ('COMPLETED', 'FAILED');
+-- KHÔNG xoá PROCESSING — có thể service đang chạy, sẽ chuyển state sớm</code></pre>
+
+  <h3>TTL — bao lâu là hợp lý?</h3>
+  <table>
+    <thead><tr><th>Use case</th><th>TTL khuyến nghị</th><th>Lý do</th></tr></thead>
+    <tbody>
+      <tr><td>Payment / Order create</td><td>24-72 giờ</td><td>Stripe dùng 24h. Đủ cho retry + manual investigation.</td></tr>
+      <tr><td>Critical settlement / Refund</td><td>7-30 ngày</td><td>Reconciliation cross-day, audit lookback.</td></tr>
+      <tr><td>Event consumer (Kafka)</td><td>3-7 ngày</td><td>Đủ cho consumer lag spike + replay.</td></tr>
+      <tr><td>Real-time notification</td><td>1-6 giờ</td><td>Network retry thường &lt; 5 phút.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="break-it">
+    <h4>🔨 Bẫy TTL — viết ra giấy trước khi đọc</h4>
+    <p>TTL quá ngắn (1 phút): user retry sau 2 phút → key expired → treat as new request → DUPLICATE payment.<br>
+    TTL quá dài (1 năm): table phình to + user thật sự muốn pay lại sau 1 tuần thì bị block.<br>
+    Sweet spot: 24-72h cho POST. Tail end longer cho settlement/audit.</p>
+  </div>
+
+  <h3>Partition table — khi data lớn</h3>
+  <p>10K TPS × 24h × 86400s/h ≈ 8.6 triệu record/ngày. Dùng PostgreSQL partition by <code>created_at</code> daily, drop partition cũ thay vì DELETE:</p>
+  <pre><code class="language-sql">-- Daily partition — drop O(1), delete O(n)
+CREATE TABLE idempotency_keys (
+    id              BIGSERIAL,
+    key             VARCHAR(255) NOT NULL,
+    -- ... cùng schema
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+) PARTITION BY RANGE (created_at);
+
+-- Partition cho hôm nay
+CREATE TABLE idempotency_keys_2026_05_23
+    PARTITION OF idempotency_keys
+    FOR VALUES FROM ('2026-05-23') TO ('2026-05-24');
+
+-- Cleanup: DROP partition cũ — instant
+DROP TABLE idempotency_keys_2026_05_20;</code></pre>
+</section>
+
+<section id="kafka-consumer">
+  <h2>9. Idempotent Kafka Consumer <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Kafka mặc định <em>at-least-once delivery</em>. Consumer có thể nhận duplicate khi: rebalance, network blip, consumer crash giữa process và commit offset. Phải idempotent ở consumer side.</p>
+
+  <pre><code class="language-java">@Component
+@Slf4j
+public class OrderEventConsumer {
+
+    private final OrderProcessingService processingService;
+    private final ProcessedEventRepository processedRepo;
+
+    @KafkaListener(topics = "order-events", groupId = "order-processor")
+    @Transactional
+    public void handle(OrderEvent event) {
+        // event.eventId là UUID do producer tạo TẠI BUSINESS EVENT TIME,
+        // KHÔNG phải Kafka offset (offset có thể reset hoặc duplicate ở producer side).
+        String eventId = event.getEventId();
+
+        // Check dedup
+        if (processedRepo.existsById(eventId)) {
+            log.info("Duplicate event {} skipped", eventId);
+            return; // Idempotent: ignore
+        }
+
+        // Process business logic
+        processingService.handle(event);
+
+        // Mark processed — TRONG CÙNG TRANSACTION với business logic
+        // Lý do: nếu save processed_event fail, business cũng rollback
+        //        → retry sẽ re-process đúng (chưa có bản ghi processed)
+        processedRepo.save(ProcessedEvent.builder()
+            .eventId(eventId)
+            .processedAt(Instant.now())
+            .topic("order-events")
+            .build());
+    }
+}</code></pre>
+
+  <h3>3 quy tắc cứng cho Kafka idempotency</h3>
+  <ol>
+    <li><strong>Event ID là business-level identifier</strong> — UUID do producer gán ở thời điểm tạo event, KHÔNG phải Kafka offset. Offset reset / rebalance làm offset không reliable.</li>
+    <li><strong>processed_events save cùng transaction với business logic.</strong> Save riêng → có thể save xong business nhưng save dedup fail → retry process lại.</li>
+    <li><strong>processed_events có TTL.</strong> Không lưu mãi mãi (table sẽ vô hạn). TTL 3-7 ngày + cleanup job. Producer phải đảm bảo retry trong window TTL.</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Edge case nguy hiểm:</strong> Nếu business logic gọi external API (vd charge card qua Stripe), API call KHÔNG nằm trong DB transaction. Crash sau khi charge nhưng trước khi save dedup → retry charge lại. Fix: dùng Idempotency-Key của Stripe (Stripe có sẵn pattern này) + save Stripe response trong DB transaction.
+  </div>
+</section>
+
+<section id="client-side">
+  <h2>10. Client-side responsibility — phần dev backend hay quên <span class="k-tag core">CORE</span></h2>
+
+  <p>Idempotency chỉ work nếu client làm đúng phần của mình. Backend dev thường viết server đúng nhưng client sai → server vô dụng.</p>
+
+  <h3>Quy tắc client</h3>
+  <ol>
+    <li><strong>Generate key MỘT LẦN khi user initiate action.</strong> Ví dụ: user mở checkout page → generate UUID, lưu localStorage / SecureStorage.</li>
+    <li><strong>Reuse cùng key cho mọi retry của cùng action.</strong> Network timeout → retry với CÙNG key. KHÔNG generate key mới.</li>
+    <li><strong>Generate key MỚI khi user thực sự muốn làm lại action.</strong> User pay xong, mở app sau, click pay lần nữa cho order khác → key mới.</li>
+    <li><strong>Clear key sau khi nhận được terminal response.</strong> 200 OK, 422 validation error, 403 forbidden — đều terminal, clear key. Chỉ retry với cùng key khi nhận timeout / 5xx.</li>
+  </ol>
+
+  <pre><code class="language-java">// Mobile/Web client pseudocode
+class PaymentClient {
+
+    String generateKeyOnce(String userId, String orderId) {
+        String stored = secureStorage.get("payment_key:" + orderId);
+        if (stored != null) return stored;
+
+        String newKey = UUID.randomUUID().toString();
+        secureStorage.put("payment_key:" + orderId, newKey);
+        return newKey;
+    }
+
+    Future&lt;PaymentResponse&gt; payWithRetry(PaymentRequest req) {
+        String key = generateKeyOnce(currentUserId, req.orderId);
+
+        for (int attempt = 0; attempt &lt; 3; attempt++) {
+            try {
+                Response resp = http.post("/api/payments")
+                    .header("Idempotency-Key", key)
+                    .body(req)
+                    .timeout(5000)
+                    .execute();
+
+                // Terminal response — không retry nữa
+                if (resp.status() &gt;= 200 &amp;&amp; resp.status() &lt; 500) {
+                    secureStorage.remove("payment_key:" + req.orderId);
+                    return resp.body();
+                }
+                // 5xx → retry với CÙNG key
+            } catch (TimeoutException e) {
+                // Retry với CÙNG key — server sẽ dedup
+                continue;
+            }
+        }
+        throw new MaxRetryException();
+    }
+}</code></pre>
+
+  <div class="misconception">
+    <h4>❌ Client anti-pattern thường gặp</h4>
+    <ul>
+      <li><strong>Generate UUID mỗi lần gửi:</strong> retry sinh ra request "mới", server không dedup được. Đây là lỗi phổ biến nhất — dev backend làm xong server, không hướng dẫn client.</li>
+      <li><strong>Không persist key:</strong> app crash giữa retry → mất key → retry sinh key mới → duplicate.</li>
+      <li><strong>Reuse key sau khi nhận 200:</strong> user click pay 2 lần thật sự (cho 2 order khác nhau) nhưng client gửi cùng key → lần 2 trả về response của lần 1 → user nghĩ pay được order mới, thực ra không.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ 5 anti-patterns kinh điển <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ #1: Check-then-Insert (TOCTOU)</h4>
+    <p><strong>Symptom:</strong> Dưới concurrent load (2 retry gần nhau), double-charge. Test 1 request OK, deploy production thấy lỗi.</p>
+    <p><strong>Fix:</strong> Insert-first với DB unique constraint. Xem Section 7.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #2: Key scoped globally thay vì per-user</h4>
+    <p><strong>Symptom:</strong> User A và User B cùng tạo UUID v4 (xác suất 1 trên 2^122 nhưng vẫn có) → user B request bị block bằng response của user A → leak data + UX broken.</p>
+    <p><strong>Fix:</strong> Scope key per-user: <code>scopedKey = userId + ":" + idempotencyKey</code>.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #3: Chỉ lưu "đã xử lý" KHÔNG lưu response body</h4>
+    <pre><code class="language-java">// ❌ SAI
+if (alreadyProcessed(key)) return ResponseEntity.ok().build(); // Empty body!
+
+// Retry nhận 200 nhưng không có data → client crash hoặc UX broken</code></pre>
+    <p><strong>Fix:</strong> Lưu toàn bộ response (status + body + headers nếu cần). Return chính xác response của lần đầu.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #4: TTL sai (quá ngắn hoặc quá dài)</h4>
+    <p><strong>Symptom (TTL quá ngắn, 1 phút):</strong> Network timeout 30s + user delay tap retry 90s sau → key expired → retry treated as new request → DUPLICATE.</p>
+    <p><strong>Symptom (TTL quá dài, 1 năm):</strong> Table phình to. User legitimately pay cùng amount sau 6 tháng → bị block.</p>
+    <p><strong>Fix:</strong> 24-72h cho payment. 3-7 ngày cho Kafka consumer.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #5: Lưu record SAU khi process</h4>
+    <pre><code class="language-java">// ❌ SAI
+T result = operation.get(); // Process — đã charge!
+                            // ← SERVICE CRASH HERE
+repo.insert(key, result);   // Không kịp lưu
+
+// Retry → process lại → DUPLICATE CHARGE</code></pre>
+    <p><strong>Fix:</strong> Insert state=PROCESSING TRƯỚC khi process. Update COMPLETED sau khi process xong. Crash giữa chừng → record vẫn còn → retry không re-process.</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Anti-pattern nguy hiểm nhất?</h4>
+    <p><strong>#1 (TOCTOU)</strong>. Lý do:</p>
+    <ul>
+      <li>Bug chỉ hiện dưới concurrent load — dev test 1 request thấy OK.</li>
+      <li>Code "có vẻ đúng" theo logic con người — không có lỗi compile, không có lỗi test đơn lẻ.</li>
+      <li>Hậu quả: mất tiền khách hàng thật, refund process dài, đền bù tốn kém.</li>
+      <li>Bị repeat — junior tiếp theo viết code mới cũng dễ mắc lại.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="when-not">
+  <h2>❌ Khi nào KHÔNG cần Idempotency Key <span class="k-tag core">CORE</span></h2>
+
+  <p>Idempotency-Key có cost: DB write extra mỗi request, cleanup job, complexity ở client. Không phải request nào cũng cần:</p>
+
+  <table>
+    <thead><tr><th>Tình huống</th><th>Cần key?</th><th>Lý do</th></tr></thead>
+    <tbody>
+      <tr><td>GET /orders/123</td><td>❌</td><td>Read-only, đã idempotent native</td></tr>
+      <tr><td>PUT /users/42 {full payload}</td><td>❌</td><td>PUT đã idempotent theo spec — replace toàn bộ</td></tr>
+      <tr><td>DELETE /sessions/abc</td><td>❌</td><td>DELETE idempotent — xoá rồi không sao</td></tr>
+      <tr><td>POST /payments</td><td>✅</td><td>Tạo tài chính, side effect, cần dedup</td></tr>
+      <tr><td>POST /orders</td><td>✅</td><td>Tạo order — duplicate = order ma</td></tr>
+      <tr><td>POST /search-queries (log analytics)</td><td>❌</td><td>Mất 1 record analytic không sao — fire&amp;forget OK</td></tr>
+      <tr><td>POST /signup (tạo user)</td><td>⚠️</td><td>Username unique constraint đã đủ — duplicate sẽ fail tự nhiên</td></tr>
+      <tr><td>PATCH /counter {op:increment}</td><td>✅</td><td>Increment KHÔNG idempotent — cần key</td></tr>
+    </tbody>
+  </table>
+
+  <p>Quy tắc: <em>Nếu request có side effect tạo resource quan trọng + client có thể retry → cần Idempotency-Key.</em> Còn lại không cần.</p>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior)</h3>
+    <p><strong>Q1: Idempotency là gì? Cho ví dụ HTTP method nào idempotent.</strong></p>
+    <p><em>Trả lời:</em> "Idempotency = gọi N lần cùng input cho cùng final state như gọi 1 lần. Theo HTTP spec: GET, PUT, DELETE idempotent. POST không idempotent — mỗi lần có thể tạo resource mới. Đó là lý do POST cần Idempotency-Key header để dedup ở server."</p>
+
+    <p><strong>Q2: Vì sao retry POST có thể double-charge?</strong></p>
+    <p><em>Trả lời:</em> "Khi server process xong nhưng response bị lost (network timeout), client retry. Server không biết request lần 2 là retry hay payment mới → process lại → trừ tiền 2 lần. Solution: client gửi Idempotency-Key, server check key → return cached response nếu đã process."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (Mid vs Senior)</h3>
+    <p><strong>Q3: Implement idempotency key pattern. Vì sao "check then insert" sai?</strong></p>
+    <blockquote>
+      "Implement bằng cách client tạo UUID v4 gửi qua header <code>Idempotency-Key</code>. Server scope key per-user, insert vào DB với state=PROCESSING — dùng <strong>DB unique constraint</strong>, KHÔNG check-then-insert.<br><br>
+      <strong>Vì sao check-then-insert sai:</strong> Đây là TOCTOU race condition. Thread A check exists → false. Thread B check exists → cũng false (A chưa insert). Cả 2 cùng insert → cùng execute → double-charge. DB unique constraint là atomic gate — chỉ 1 thread thắng race, thread thua nhận DuplicateKeyException → đọc response của winner.<br><br>
+      Trade-off: thêm 1 DB write/request, cần cleanup job cho expired keys, client phải biết generate &amp; reuse key."
+    </blockquote>
+
+    <p><strong>Q4: At-least-once vs Exactly-once. Implement exactly-once trong Kafka thế nào?</strong></p>
+    <blockquote>
+      "Kafka mặc định at-least-once — consumer có thể nhận duplicate khi rebalance / commit offset fail. Để đạt 'effectively exactly-once' (không phải 'true exactly-once'):<br><br>
+      ① Producer gán <code>event_id</code> (UUID) cho mỗi message — business-level ID, KHÔNG dùng Kafka offset.<br>
+      ② Consumer maintain <code>processed_events</code> table. Process logic: check exists → skip nếu đã có; ngược lại process + insert processed_event TRONG CÙNG TRANSACTION với business logic.<br>
+      ③ TTL 3-7 ngày cho processed_events, partition by date để cleanup nhanh.<br><br>
+      Cùng transaction rất quan trọng: nếu save business OK nhưng save dedup fail → retry process lại = duplicate. Cùng transaction đảm bảo atomic.<br><br>
+      Kafka Transactions cho 'true exactly-once' nhưng throughput giảm 20-30%, chỉ dùng khi thực sự cần atomic cross-partition write."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior)</h3>
+
+    <p><strong>Q5: Design idempotency cho 10,000 TPS payment gateway, multi-region active-active.</strong></p>
+    <pre><code class="language-text">Phút 1 — Clarify:
+  - 10K TPS sustained hay peak? Single region hay multi?
+  - Consistency requirement: strong cross-region hay eventual OK?
+  - Idempotency window — bao lâu? (Stripe = 24h)
+  - Có dùng nhà cung cấp ngoài (Stripe, Adyen) hay tự build?
+
+Phút 2 — Bottleneck identify:
+  10K TPS = 10K DB writes/sec cho idempotency record + N writes cho business.
+  Single PG primary có thể nghẽn. Cần:
+  - Read replica cho cached response lookup (eventual OK)
+  - Hoặc Redis cache trước DB
+
+Phút 3 — Architecture proposed:
+  ┌────────┐   ┌─────────────┐   ┌──────────┐
+  │ Client │──►│ API Gateway │──►│ Service  │
+  └────────┘   └─────────────┘   └────┬─────┘
+                                       │
+              ┌────────────────────────┤
+              ▼                        ▼
+       ┌─────────────┐          ┌──────────────┐
+       │ Redis cache │          │ Postgres     │
+       │ (1-2 hours) │          │ (24h retain) │
+       └─────────────┘          └──────────────┘
+
+  Flow:
+  1. Service check Redis: HIT → return cached, DONE
+  2. MISS → INSERT vào PG với unique constraint
+  3. INSERT thành công → execute business → update Redis + PG
+  4. INSERT fail (duplicate) → đọc PG record → cache vào Redis
+
+Phút 4 — Multi-region challenge:
+  Idempotency key phải globally unique. Options:
+  A) Global DB (CockroachDB, Spanner) — strong consistency, latency cao
+  B) Region-affinity routing — hash(userId) → fixed region. Same key
+     luôn đến cùng region → local DB đủ. Risk: region down = không
+     pay được. Fix: failover + replication async.
+  C) Accept ngắn hạn double-charge cross-region nếu network split.
+     Phát hiện qua reconciliation, refund proactive.
+
+Phút 5 — Trade-offs:
+  + Redis fast nhưng volatile — phải có PG fallback
+  + Multi-region active-active phức tạp; nếu volume cho phép,
+    active-passive đủ
+  + Idempotency window 24h là sweet spot; longer = table phình to
+  + Monitor: false-negative (dedup miss → duplicate charge — alarm CRITICAL)
+            false-positive (dedup nhầm → client retry bị block — alarm WARN)</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 2 labs BẮT BUỘC</h2>
+
+  <div class="callout warn">
+    <strong>Quan trọng:</strong> Lab 1 (reproduce TOCTOU) là kinh nghiệm <em>không thể có từ đọc</em>. Phải tự thấy race condition. Đây là gate L2 → L3.
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Reproduce TOCTOU race condition (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự mắt thấy double-charge dưới concurrent load.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo Spring Boot project. <code>POST /api/payments</code> với Idempotency-Key header.</li>
+      <li>Implement Version 1 (Check-then-Insert) — code có sẵn ở Section 7.</li>
+      <li>Tạo bảng <code>payments</code> để track số lần charge (mỗi charge = 1 row).</li>
+      <li>Viết script bằng <code>curl</code> / k6 / JMeter: gửi 100 request với <em>cùng Idempotency-Key</em>, parallel 50 concurrent.</li>
+      <li>Đếm rows trong <code>payments</code> sau test: phải &gt; 1 (race condition đã trigger).</li>
+      <li>Implement Version 2 (Insert-first with unique constraint). Re-run test. Confirm chỉ có đúng 1 row.</li>
+      <li>So sánh log: Version 1 thấy multiple "Processing payment", Version 2 thấy 1 process + N "Idempotency-Replayed: true".</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Reproduce bug Version 1 thành công + fix với Version 2 + log evidence. Push commit lên GitHub.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — Idempotent Kafka consumer with crash simulation (4 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Build at-least-once + idempotent consumer, test resilience.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Setup Kafka local (docker-compose). Topic <code>order-events</code>.</li>
+      <li>Producer gán <code>event_id</code> = UUID cho mỗi event.</li>
+      <li>Consumer với <code>processed_events</code> table + transactional handler (code Section 9).</li>
+      <li>Send 1000 events. Confirm consumer process đúng 1000.</li>
+      <li>Test duplicate: producer gửi cùng event_id 5 lần → consumer chỉ process 1 lần.</li>
+      <li>Test crash: kill consumer process sau khi process business nhưng trước commit offset (dùng <code>Thread.sleep + kill -9</code> trong handler). Restart consumer → kiểm tra không re-process (đã có row trong processed_events).</li>
+      <li>Test crash trước save dedup: ngược lại — kill trước khi save processed_event. Restart → consumer re-process. Confirm business logic re-execute correctly (vì cùng transaction nên đã rollback).</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Cả 3 scenario (normal, duplicate, crash mid-handler) đều đúng. Document trong README.</p>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test — Verify hiểu thật</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho dev chưa biết — không nhìn file</h3>
+    <p>Đóng tab. Tự trả lời 5 câu, &lt; 30 giây mỗi câu:</p>
+    <ol>
+      <li><strong>"Vì sao check-then-insert sai?"</strong> — TOCTOU race. 2 thread cùng check thấy not exists, cùng insert, cùng execute → duplicate. DB unique constraint là atomic primitive cần thiết.</li>
+      <li><strong>"Vì sao insert state PROCESSING trước khi execute, không phải sau?"</strong> — Crash giữa execute và insert sẽ làm record không lưu → retry process lại → duplicate. Insert trước với PROCESSING đảm bảo có record dù crash giữa chừng.</li>
+      <li><strong>"Insufficient Funds có nên retry không? Network Timeout có nên retry không?"</strong> — Insufficient Funds = business error, KHÔNG retry (cache error, return same response). Network Timeout = technical error, retry OK (reset state về PROCESSING). Phân biệt qua <code>is_retryable</code> flag.</li>
+      <li><strong>"At-least-once + idempotent = exactly-once?"</strong> — Effectively yes, từ góc consumer. Producer retry (at-least-once delivery), consumer dedup bằng event_id. Cùng transaction với business logic. Đây là pattern phổ biến nhất, đơn giản hơn Kafka Transactions.</li>
+      <li><strong>"Client phải làm gì để idempotency work?"</strong> — Generate UUID 1 lần khi initiate action, persist locally. Reuse cùng key cho mọi retry. Generate key MỚI khi user thực sự muốn action mới. Clear key sau terminal response.</li>
+    </ol>
+    <p>Bí 1 câu → đó là chỗ hiểu giả. Quay lại section tương ứng.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources</h3>
+    <ul>
+      <li><strong>Stripe API docs — Idempotent Requests</strong>: <a href="https://stripe.com/docs/api/idempotent_requests">stripe.com/docs/api/idempotent_requests</a>. Industry standard implementation, đọc kỹ section "How idempotency works".</li>
+      <li><strong>IETF RFC 7231 — HTTP/1.1 Semantics</strong>: <a href="https://www.rfc-editor.org/rfc/rfc7231#section-4.2.2">Section 4.2.2 Idempotent Methods</a>. Spec gốc.</li>
+      <li><strong>IETF Draft — The Idempotency-Key HTTP Header Field</strong>: <a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/">datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header</a>. Draft spec đang work, dùng làm reference.</li>
+      <li><strong>Pat Helland — Idempotence Is Not a Medical Condition</strong>: <a href="https://queue.acm.org/detail.cfm?id=2187821">ACM Queue 2012</a>. Bài essay kinh điển về idempotency trong distributed systems.</li>
+      <li><strong>Designing Data-Intensive Applications</strong> (Martin Kleppmann, 2017), ISBN 978-1449373320. Chapter 8 "Trouble with Distributed Systems" + Chapter 11 "Stream Processing" cover at-least-once / exactly-once.</li>
+      <li><strong>Confluent — Kafka Exactly Once Semantics</strong>: <a href="https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/">Blog post của Jay Kreps</a>. Hiểu Kafka transactions để biết khi nào KHÔNG cần.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 1 tuần master Idempotency</h3>
+    <pre><code class="language-text">Ngày 1: Section 1-2 (Bài toán + Định nghĩa). Pause &amp; Predict viết tay.
+Ngày 2: Section 3-5 (HTTP semantics + State machine + Delivery guarantees).
+Ngày 3: Section 6-7 (REST + Core service). Gõ tay code, không copy.
+Ngày 4-5: Lab 1 (Reproduce TOCTOU race). Push commit.
+Ngày 6: Section 8-10 (DB + Kafka + Client). Đọc Stripe docs song song.
+Ngày 7: Lab 2 (Kafka consumer crash test). Feynman test cuối ngày.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="13-distributed-transaction.html">#13 Distributed Transaction</a> — Outbox pattern dùng idempotency.</li>
+      <li><a href="34-audit-logging.html">#34 Audit Logging</a> — pair với idempotency cho compliance.</li>
+      <li><a href="18-event-driven-architecture.html">#18 Event-Driven Architecture</a> — Domain events + idempotent consumer scale.</li>
+      <li><a href="19-api-design.html">#19 API Design</a> — Idempotency-Key là phần của API contract.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng chuyển #34:</strong> 2 labs xong + Feynman 5/5 + Đã implement Idempotency-Key trong project thật (work hoặc side).</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#43 — Algorithm Mental Model &amp; UMPIRE Framework | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm M · FAANG Track</span>
+    <span class="sep">›</span>
+    <span class="current">#43 Algorithm Mental Model</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap UMPIRE</a>
+      <a href="#intro">1. Vì sao file này tồn tại</a>
+      <a href="#real-problem">2. 2 câu chuyện điển hình</a>
+      <div class="toc-section">UMPIRE — 6 bước</div>
+      <a href="#umpire-overview">3. UMPIRE overview</a>
+      <a href="#step-u">U · Understand</a>
+      <a href="#step-m">M · Match</a>
+      <a href="#step-p">P · Plan + BUD</a>
+      <a href="#step-i">I · Implement + Narrate</a>
+      <a href="#step-r">R · Review + Trace</a>
+      <a href="#step-e">E · Evaluate + Follow-up</a>
+      <div class="toc-section">Production walkthrough</div>
+      <a href="#walkthrough">4. LC 3 end-to-end</a>
+      <div class="toc-section">Trade-offs &amp; Pitfalls</div>
+      <a href="#antipatterns">5. 7 anti-patterns</a>
+      <a href="#tradeoffs">6. Iter vs Rec trade-off</a>
+      <a href="#leap-of-faith">7. Recursion leap-of-faith</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#bonus">💡 3 tình huống khó</a>
+      <a href="#measure">📊 Đo tiến bộ</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="meta-tag">Nhóm M · FAANG / LeetCode Track · File 2/5 (Foundation)</div>
+  <h1>Algorithm Mental Model — Cách Nghĩ Trước Khi Code (UMPIRE Framework)</h1>
+  <p class="lead">
+    File này <strong>không dạy giải thuật</strong> — đó là việc của <a href="42-leetcode-patterns-mastery.html">#42</a>. File này dạy <strong>khung tư duy 6 bước (UMPIRE)</strong> mà mọi candidate pass FAANG đều dùng dù họ có gọi tên hay không. Sau khi internalize, bạn sẽ approach <em>mọi bài LC lạ</em> theo cùng 1 quy trình — không panic, không silent, không miss edge case.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>UMPIRE reflex + BUD analysis + narration fluency</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần đọc + 2 tuần drill · Tháng 1 của 6-month roadmap</div>
+    <div><strong>📚 Prereq</strong><br>#47 Junior Foundation + #38 Algorithm DS basics + 10–15 LC Easy đã solve</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>Critical — file gốc, phải đọc TRƯỚC #42</div>
+  </div>
+</section>
+
+<!-- ==================== HOW TO READ ==================== -->
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc file này — KHÔNG đọc một mạch</h3>
+  <ol>
+    <li><strong>Đọc 1 bước UMPIRE / 1 ngày.</strong> Mỗi bước (U, M, P, I, R, E) cần ngấm. Đọc hết Section 3 trong 1 ngày = illusion of competence. Tốt nhất: 1 bước/ngày × 6 ngày + 1 ngày tổng kết.</li>
+    <li><strong>Áp dụng ngay vào 1 bài Easy.</strong> Đọc xong bước U → mở LC random Easy → tự đi qua bước U (clarify + vẽ example) → ghi note. Đừng đọc lý thuyết suông.</li>
+    <li><strong>Record voice khi solve.</strong> Voice memo điện thoại lúc bạn solve. Nghe lại → đếm số lần im &gt; 30 giây. Đây là metric narration fluency duy nhất đáng tin.</li>
+    <li><strong>Phần "Anti-pattern" đọc kỹ.</strong> 90% candidate VN fail vì mắc 1–2 anti-pattern (silent, optimal-first, memory dump). Phải tự check mỗi mock interview.</li>
+    <li><strong>Đo trước–sau.</strong> Tuần 0: solve 1 Medium random, đếm thời gian, đếm số lần silent &gt; 30s. Tuần 3 (sau khi drill): làm lại bài đó. Time giảm 30% + silent count giảm 50% = framework đã ngấm.</li>
+  </ol>
+</div>
+
+<!-- ==================== ROADMAP ==================== -->
+<section id="roadmap">
+  <h2>🗺️ Roadmap UMPIRE — 6 bước · ~35 phút end-to-end</h2>
+  <p>UMPIRE chia 35 phút phỏng vấn FAANG thành 6 khung thời gian rõ ràng. Tag <code>CORE</code> = không thể skip, <code>HIGH-SIGNAL</code> = bước phân biệt junior vs senior.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">U</span><div><strong>Understand</strong> · 3 min · CORE · Paraphrase đề, hỏi clarify, vẽ example + edge case</div></div>
+    <div class="roadmap-item core"><span class="num">M</span><div><strong>Match</strong> · 1 min · CORE · Map đề về pattern đã biết (link với #42)</div></div>
+    <div class="roadmap-item core"><span class="num">P</span><div><strong>Plan</strong> · 5 min · HIGH-SIGNAL · Brute force → BUD analysis → optimal — derive thay vì memorize</div></div>
+    <div class="roadmap-item core"><span class="num">I</span><div><strong>Implement</strong> · 20 min · CORE · Code clean + narrate liên tục — im &gt; 30s là red flag</div></div>
+    <div class="roadmap-item core"><span class="num">R</span><div><strong>Review</strong> · 5 min · CORE · Trace dry-run với example + tự nghĩ ra ≥ 5 edge cases</div></div>
+    <div class="roadmap-item core"><span class="num">E</span><div><strong>Evaluate</strong> · 1 min · HIGH-SIGNAL · Verify time/space + đề xuất optimization / handle follow-up</div></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Vì sao 35 phút?</strong> Phỏng vấn FAANG chuẩn 45 phút: 5 phút intro/chitchat, 35 phút coding, 5 phút Q&amp;A cuối. Buffer 10 phút là realistic cho lúc bí. Nếu bạn solve trong 25 phút → spend 10 phút thêm cho follow-up — đây là "senior signal".
+  </div>
+</section>
+
+<!-- ==================== INTRO ==================== -->
+<section id="intro">
+  <h2>1. Vì sao file này tồn tại? <span class="k-tag core">CORE</span></h2>
+
+  <p>Sau 7+ năm quan sát interview FAANG, có 1 hiện tượng nghịch lý:</p>
+
+  <div class="callout warn">
+    <strong>Candidate solve được 500 LeetCode mà vẫn fail Google onsite. Candidate solve 150 bài lại pass.</strong><br>
+    Khác biệt không nằm ở số bài. Nằm ở <em>mental model khi gặp bài lạ</em>.
+  </div>
+
+  <div class="history-block">
+    <h4>📜 Lịch sử của framework "structured problem-solving"</h4>
+    <ul>
+      <li><strong>1945</strong> — George Pólya xuất bản <em>How to Solve It</em> (Princeton University Press). Đây là cuốn sách gốc về heuristics. Pólya đề ra 4 bước: <em>Understand the problem → Devise a plan → Carry out the plan → Look back</em>. Toàn bộ frameworks sau này (UMPIRE, CIRCLES, IDEAL) đều là biến thể.</li>
+      <li><strong>1984</strong> — Bransford &amp; Stein xuất bản <em>The IDEAL Problem Solver</em>: Identify, Define, Explore, Act, Look back. Áp dụng cho cả non-coding problem solving.</li>
+      <li><strong>2009</strong> — Gayle Laakmann McDowell xuất bản <em>Cracking the Coding Interview</em>. Chapter "Approach to Problem-Solving" đề ra workflow: listen → example → brute force → optimize → walk-through → implement → test. Phổ biến hoá cho coding interview.</li>
+      <li><strong>2017</strong> — Bradfield CS / Outco / Triplebyte training đặt tên <strong>UMPIRE</strong>: <em>Understand, Match, Plan, Implement, Review, Evaluate</em>. Đây là framework mainstream nhất hiện nay cho LC prep.</li>
+      <li><strong>2019</strong> — Gayle McDowell (CtCI 6e tái bản) thêm khái niệm <strong>BUD</strong>: <em>Bottlenecks, Unnecessary work, Duplicated work</em> — heuristic optimize từ brute force. Trở thành kỹ năng phỏng vấn senior bắt buộc.</li>
+      <li><strong>2022–2026</strong> — NeetCode, Design Gurus đều tham chiếu UMPIRE + BUD trong tài liệu chính thức. Framework đã ổn định ~5 năm và không có alternative thay thế.</li>
+    </ul>
+    <p><em>Verifiable: Pólya — <code>How to Solve It</code>, ISBN 978-0691164076. CtCI 6e — ISBN 978-0984782857. Bradfield CS — bradfieldcs.com/learning/about. NeetCode framework — neetcode.io/courses.</em></p>
+  </div>
+
+  <h3>Triệu chứng "500-bài-fail" vs "150-bài-pass"</h3>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ 500-bài-fail (vô framework)</h4>
+      <ul>
+        <li>Thấy bài → cố nhớ "đã giải bài này chưa?" → nếu chưa, panic</li>
+        <li>Code ngay khi vừa đọc đề, skip clarify</li>
+        <li>Brute force xong KHÔNG tự optimize, đợi interviewer hint</li>
+        <li>Im lặng khi code → interviewer "no signal"</li>
+        <li>Xong rồi không trace, không test → bug → sửa lung tung</li>
+        <li>Khi hỏi complexity → "O(n)?... O(n log n)?" guesswork</li>
+        <li>Edge case bị bull-prompt từng cái → không tự nghĩ ra</li>
+      </ul>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ 150-bài-pass (UMPIRE)</h4>
+      <ul>
+        <li>Thấy bài → nhận pattern trong 60s → biết family bài</li>
+        <li>Clarify + vẽ example + edge case trước khi code (3 phút)</li>
+        <li>Brute force → BUD analysis → optimal — derive aloud</li>
+        <li>Code clean, biến đặt rõ, narrate liên tục</li>
+        <li>Tự test với example + edge cases → bug tìm trước interviewer</li>
+        <li>Complexity tự verify đúng + đề xuất optimization tiếp</li>
+        <li>Handle follow-up tự tin → "strong hire" signal</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước khi đọc tiếp: <strong>nếu cho bạn 35 phút phỏng vấn, bạn nghĩ bước nào trong UMPIRE nên dành nhiều thời gian nhất?</strong> Viết câu trả lời + lý do. Đáp án ở cuối Section 3.</p>
+  </div>
+
+  <h3>Framework KHÔNG phải template thuộc lòng</h3>
+  <p>Đọc đến đây nhiều bạn sẽ nghĩ "vậy mình memorize 6 bước UMPIRE là xong". <strong>Sai lầm chí mạng.</strong> Framework là <em>scaffold tư duy</em>, không phải checklist phát biểu. Interviewer giỏi nhìn ra ngay candidate đang đọc thuộc UMPIRE vs candidate thực sự đang nghĩ. Cách họ phân biệt:</p>
+  <ul>
+    <li><strong>Candidate giả vờ:</strong> Đọc đúng thứ tự U → M → P → I → R → E nhưng mỗi bước chỉ skim. Khi interviewer hỏi sâu (VD: "tại sao bạn match pattern này thay vì pattern kia?") → bí.</li>
+    <li><strong>Candidate thực:</strong> Có thể loop lại U khi nhận ra hiểu sai đề ở phút 10. Có thể quay lại P khi optimal đầu sai. Framework là tham chiếu, không phải đường ray.</li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Mindset chuẩn:</strong> UMPIRE giống GPS — nó cho bạn biết bạn đang ở đoạn nào của hành trình. Khi đường tắc (bí 1 bước), bạn re-route. Khi rẽ sai (hiểu nhầm đề), bạn quay lại. Đừng làm GPS chạy 1 chiều.
+  </div>
+</section>
+
+<!-- ==================== REAL PROBLEM ==================== -->
+<section id="real-problem">
+  <h2>2. 2 câu chuyện điển hình — Cùng kết quả, khác signal <span class="k-tag core">CORE</span></h2>
+
+  <p>Hai câu chuyện dưới đây dựng lại từ feedback thật của interviewer FAANG (đã anonymize). Đọc kỹ — chúng minh hoạ <em>cùng 1 bài có thể được "Hire" hoặc "No-Hire" tuỳ cách tư duy hiển hiện</em>.</p>
+
+  <h3>📖 Câu chuyện A — "Code đúng nhưng bị fail"</h3>
+  <p><strong>Bối cảnh:</strong> Candidate VN, 4 năm Java backend, đã solve 350 LeetCode. Phỏng vấn Google L4.</p>
+  <p><strong>Đề:</strong> "Cho tree, return tất cả root-to-leaf paths." (LC 257)</p>
+
+  <pre><code class="language-text">Phút 0:00 — Interviewer đọc đề
+Phút 0:30 — Candidate: "OK, tôi giải nhé." → bắt đầu code ngay
+Phút 0:30 – 25:00 — Candidate code, im lặng. Interviewer hỏi: "Bạn đang nghĩ gì?"
+              Candidate: "À đang viết hàm DFS."
+Phút 25:00 — Code xong, chạy đúng test 1.
+              Interviewer: "Edge case nào?"
+              Candidate: "Ờ... null root."
+              Interviewer: "Còn nữa?"
+              Candidate: [im 30 giây] "Single node?"
+              Interviewer: "Complexity?"
+              Candidate: "O(n)."
+              Interviewer: "Space?"
+              Candidate: "O(n) cho output."
+              Interviewer: "Còn gì nữa?"
+              Candidate: "... O(h) cho stack?"</code></pre>
+
+  <div class="misconception">
+    <h4>❌ Kết quả: No-Hire</h4>
+    <p><strong>Feedback nguyên văn:</strong> <em>"Solve được. Nhưng 0 communication signal, không tự dẫn dắt thinking, edge cases bị bull-prompt từng cái một, complexity analysis thiếu — không thấy depth."</em></p>
+    <p><strong>Bài học:</strong> FAANG đánh giá <strong>tư duy hiển hiện</strong>, không chỉ kết quả. Im lặng = no signal = no hire. Code đúng nhưng silent = vẫn fail.</p>
+  </div>
+
+  <h3>📖 Câu chuyện B — "Code chưa xong nhưng được Hire"</h3>
+  <p><strong>Bối cảnh:</strong> Candidate VN, 3 năm Java backend, ~150 LeetCode. Phỏng vấn Meta E4.</p>
+  <p><strong>Đề:</strong> "Given an array of meeting intervals, find min number of rooms required." (LC 253)</p>
+
+  <pre><code class="language-text">Phút 0:00-1:30 — Đọc đề, hỏi clarifying:
+   "Intervals là [start, end] inclusive cả 2 hay end-exclusive?"
+   "Có thể có 2 meetings cùng start không?"
+   "Input có sorted không?"
+
+Phút 1:30-3:00 — Vẽ ví dụ:
+   meetings = [[0,30], [5,10], [15,20]]
+   → vẽ timeline trên giấy → 2 rooms
+   → vẽ thêm edge case: [[0,5],[5,10]] → 1 room (end-exclusive)
+
+Phút 3:00-5:00 — Brainstorm approach:
+   "Brute force: với mỗi cặp (i,j) check overlap. O(n²)."
+   "BUD: Duplicated work — tôi check overlap nhiều lần.
+    Có thể sort theo start, dùng heap để track end times đang active?"
+
+Phút 5:00-7:00 — Ghi pseudocode lên bảng, narrate:
+   "Sort by start. Min-heap của end times. Với mỗi meeting:
+    - Pop hết end times <= current.start (room đã free)
+    - Push current.end vào heap
+    - heap.size() là số rooms đang dùng đồng thời
+    - Track max size."
+
+Phút 7:00-25:00 — Code, narrate liên tục.
+   "Đặt biến `rooms` heap...; xử lý null check input;
+    duyệt từng meeting; nếu heap.peek() <= start, poll;
+    push end; update max..."
+
+Phút 25:00-32:00 — Test với 3 ví dụ đã vẽ + edge cases:
+   empty array → 0; single → 1; all same start → n; nested intervals.
+
+Phút 32:00-35:00 — Complexity:
+   "Sort O(n log n). Loop n × heap ops O(log n) → O(n log n) total.
+    Space O(n) for heap."
+
+Phút 35:00-40:00 — Interviewer hỏi follow-up:
+   "Nếu intervals stream tới real-time?"
+   Candidate: "Không sort được nữa.
+    Cần segment tree hoặc tách thành events (+1 ở start, -1 ở end)
+    rồi sort events. Có thời gian tôi pseudo code thử?"</code></pre>
+
+  <div class="callout success">
+    <h4>✅ Kết quả: Hire (E4)</h4>
+    <p><strong>Feedback nguyên văn:</strong> <em>"Strong signal across the board: clarifying chuẩn, vẽ example đầy đủ, brute force trước rồi BUD, narrate liên tục, code clean, edge cases tự nghĩ ra, complexity tự verify, follow-up handle tốt. Đây là Meta engineer trông như thế nào."</em></p>
+    <p><strong>Bài học:</strong> 35 phút phỏng vấn không phải "thi giải nhanh", mà là "demo cách tôi nghĩ".</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: framework UMPIRE có lỗ hổng nào?</h4>
+    <ul>
+      <li><strong>Không cover bài research-level.</strong> Bài Hard thật (LC 4 Median Two Sorted, LC 1until8 Trapping Rain Water II) đòi insight non-pattern. UMPIRE giúp structure nhưng không sinh ra insight.</li>
+      <li><strong>Tốn thời gian "demo thinking" có thể tệ với interviewer thiếu kiên nhẫn.</strong> Một số interviewer (đặc biệt Amazon bar raiser) chỉ care kết quả. Khi đó, narrate quá nhiều có thể bị đánh "too slow". Phải đọc audience.</li>
+      <li><strong>BUD không phải lúc nào cũng dẫn đến optimal.</strong> Có bài optimal đòi insight đặc thù (VD: LC 41 First Missing Positive — cyclic sort) — BUD chỉ giúp tới O(n log n), không thấy được O(n)/O(1).</li>
+      <li><strong>Risk over-clarifying.</strong> Nếu hỏi 10 clarifying questions trong 5 phút → interviewer ngán, ghi "không tự assume được edge case". Quy tắc: 3 clarify là vừa.</li>
+      <li><strong>Pattern-matching mù.</strong> Match nhầm pattern → đi sai 20 phút → fail. Cần kỹ năng "validate pattern" trước khi committed.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== UMPIRE OVERVIEW ==================== -->
+<section id="umpire-overview">
+  <h2>3. UMPIRE — Khung tư duy 6 bước <span class="k-tag core">CORE</span></h2>
+
+  <p>Khung này được dạy junior 7+ năm, ổn định trên mọi level (L3 → L5 Google, E3 → E5 Meta, Junior → Senior Amazon). Tên: <strong>UMPIRE</strong>.</p>
+
+  <pre><code class="language-text">┌─────────────────────────────────────────────────────────┐
+│  U — UNDERSTAND     (3 min)  Clarify đề, không assume   │
+│  M — MATCH          (1 min)  Pattern recognition        │
+│  P — PLAN           (5 min)  Brute force → BUD → optimal│
+│  I — IMPLEMENT      (20 min) Code clean, narrate liên tục│
+│  R — REVIEW         (5 min)  Trace với example + edge   │
+│  E — EVALUATE       (1 min)  Time/space, follow-ups     │
+└─────────────────────────────────────────────────────────┘
+                Tổng: ~35 phút (10 phút buffer)</code></pre>
+
+  <p>Các phần tiếp theo deep-dive từng bước. Đọc 1 bước/ngày, áp dụng vào 1 bài Easy/Medium ngay sau khi đọc.</p>
+</section>
+
+<!-- ==================== STEP U ==================== -->
+<section id="step-u">
+  <h2>U · Understand — 3 phút <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao đây là CORE:</strong> 30% candidate fail vì hiểu sai đề. Code đúng thuật toán nhưng giải bài khác → fail. Bước U không tốn thời gian — nó <em>tiết kiệm</em> 15–20 phút sửa code khi mới phát hiện hiểu sai ở phút 25.
+  </div>
+
+  <h3>3 việc bắt buộc làm trong 3 phút</h3>
+
+  <h4>① Paraphrase đề — ép não decode lại</h4>
+  <p>Đọc xong đề, KHÔNG vào code. Nói lớn lại đề bằng từ của mình:</p>
+  <pre><code class="language-text">"Just to confirm — bài này cho 1 array of integers, tôi cần return
+ indices của 2 elements sum to target. Có thể assume luôn có exactly
+ 1 solution? Indices return theo thứ tự nào — nhỏ trước hay không quan trọng?"</code></pre>
+
+  <p>Mục đích kép:</p>
+  <ul>
+    <li><strong>Cho bản thân:</strong> Khi nói lại bằng từ của mình, bạn ép não decode đề một lần nữa → bắt được mơ hồ.</li>
+    <li><strong>Cho interviewer:</strong> Chứng tỏ đã đọc kỹ. Nếu paraphrase sai → interviewer correct ngay, tránh đi 20 phút đường lạc.</li>
+  </ul>
+
+  <h4>② Ask 3 clarifying questions — luôn có 3 trục</h4>
+  <pre><code class="language-text">1. Input range/constraints?  (length 1..10^5? values -10^9..10^9?)
+2. Edge cases allowed?       (empty? null? duplicates? negative?)
+3. Output format?            (return value? modify in-place? print?)</code></pre>
+
+  <div class="callout info">
+    <strong>Vì sao đúng 3 câu, không hơn không kém?</strong>
+    <ul>
+      <li>Ít hơn (0-1 câu) → interviewer ghi "không clarify, jump-to-code mentality".</li>
+      <li>Nhiều hơn (5-10 câu) → interviewer ghi "không assume được edge case thông thường, mất thời gian".</li>
+      <li>3 câu cover 90% mơ hồ. Quy tắc: chọn 3 câu MÀ <em>nếu interviewer trả lời khác giả định ban đầu, code sẽ phải đổi</em>.</li>
+    </ul>
+  </div>
+
+  <h4>③ Vẽ 1 example đầy đủ + 1 edge case</h4>
+  <p>Cầm marker (whiteboard) hoặc gõ vào IDE (online interview). Đừng vẽ trong đầu — vẽ ra giấy/màn hình:</p>
+  <pre><code class="language-text">Example đầy đủ:  nums = [2, 7, 11, 15], target = 9 → [0, 1]
+Edge case:        nums = [3, 3], target = 6 → [0, 1] (duplicates!)</code></pre>
+
+  <p>Vẽ example giúp:</p>
+  <ul>
+    <li>Phát hiện edge case mà đề không nói (duplicates? negative?).</li>
+    <li>Dùng làm <em>dry-run target</em> ở bước R (Review).</li>
+    <li>Cho interviewer thấy bạn nghĩ về cases, không chỉ happy path.</li>
+  </ul>
+
+  <h3>Anti-pattern — Skip bước U</h3>
+  <div class="misconception">
+    <h4>❌ Hiểu lầm phổ biến: "Đề rõ rồi, vào code luôn"</h4>
+    <p>90% candidate VN bỏ qua bước U vì sợ "mất thời gian" → 30% bài hiểu sai → fail dù code chạy. Đây là sai lầm <em>tốn thời gian nhất</em> trong phỏng vấn: 3 phút clarify ban đầu vs 20 phút sửa code khi nhận ra hiểu sai.</p>
+  </div>
+
+  <h3>Cheatsheet — 12 clarifying questions theo loại input</h3>
+  <pre><code class="language-text">Array:
+  • Length range? (1..10^4, 1..10^6?)
+  • Values range? (negative? overflow Int.MAX?)
+  • Sorted? Unique? Duplicates allowed?
+
+String:
+  • ASCII / Unicode / lowercase only?
+  • Empty allowed? Length max?
+  • Case-sensitive comparison?
+
+Tree / Graph:
+  • Null root? Single node?
+  • Cycle possible (cho graph)? Self-loop?
+  • Directed / undirected? Weighted / unweighted?
+  • Node count max? Depth max?
+
+Output:
+  • Return value vs modify in-place?
+  • Order matters (cho list output)?
+  • Multiple valid answers? Return any?</code></pre>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases checklist (memorize)</h4>
+    <ol>
+      <li><strong>Empty input</strong> — array <code>[]</code>, string <code>""</code>, tree <code>null</code>.</li>
+      <li><strong>Single element</strong> — <code>[5]</code>, <code>"a"</code>, tree với 1 node.</li>
+      <li><strong>All duplicates</strong> — <code>[3,3,3,3]</code>.</li>
+      <li><strong>All same value</strong> — distinguishable từ duplicates (VD: <code>[0,0,0]</code> với sum problems).</li>
+      <li><strong>Negative numbers</strong> — đặc biệt với prefix sum, sliding window.</li>
+      <li><strong>Overflow</strong> — <code>Integer.MIN_VALUE</code>, <code>Integer.MAX_VALUE</code>. Phép cộng/nhân có thể tràn.</li>
+      <li><strong>Already sorted / reverse sorted</strong> — corner cases cho quicksort, binary search.</li>
+      <li><strong>Target không tồn tại</strong> — không có pair sum to target, không có path.</li>
+      <li><strong>Self-reference</strong> — element compare với chính nó (Two Sum không reuse index).</li>
+      <li><strong>Boundary value</strong> — target = 0, target = max, target = min.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== STEP M ==================== -->
+<section id="step-m">
+  <h2>M · Match — 1 phút <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Match đúng pattern trong 60s = bạn biết template sẽ dùng → 80% công việc đã định hình. Match sai = lạc 20 phút. Đây là bước "tri thức ràng vào hiện thực" — nó chứng minh bạn đã học 20 patterns ở <a href="42-leetcode-patterns-mastery.html">#42</a>.
+  </div>
+
+  <h3>Quy trình Match trong 60 giây</h3>
+  <ol>
+    <li><strong>Identify keyword trong đề.</strong> "sorted" → Binary Search. "longest substring" → Sliding Window. "K largest" → Heap. "all combinations" → Backtracking.</li>
+    <li><strong>Identify cấu trúc output.</strong> Return count → DP / counting. Return path → DFS / backtrack. Return min/max → DP / Greedy / Heap.</li>
+    <li><strong>Identify constraint signal.</strong> n ≤ 20 → exponential OK (backtrack 2^n). n ≤ 10^3 → O(n²) OK (DP 2D). n ≤ 10^5 → O(n log n) max. n ≤ 10^7 → O(n) only.</li>
+  </ol>
+
+  <h3>Cheatsheet pattern recognition — MEMORIZE</h3>
+
+  <table>
+    <thead>
+      <tr><th>Tín hiệu trong đề</th><th>Pattern nghi ngờ</th><th>Constraint hint</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>"sorted array" + "find"</td><td>Binary Search / Two Pointers</td><td>n ≤ 10^7 OK</td></tr>
+      <tr><td>"pair/triplet sum to X"</td><td>Two Pointers (sorted) / HashMap</td><td>n ≤ 10^5</td></tr>
+      <tr><td>"longest/shortest substring/subarray với property"</td><td>Sliding Window</td><td>n ≤ 10^6</td></tr>
+      <tr><td>"K largest/smallest", "Top K"</td><td>Heap (PriorityQueue)</td><td>O(n log k)</td></tr>
+      <tr><td>"shortest path / min steps" (unweighted)</td><td>BFS</td><td>V + E nodes</td></tr>
+      <tr><td>"weighted shortest path"</td><td>Dijkstra</td><td>O((V+E) log V)</td></tr>
+      <tr><td>"all combinations / permutations / subsets"</td><td>Backtracking</td><td>n ≤ 15-20</td></tr>
+      <tr><td>"number of ways" / "min cost" / "fewest"</td><td>DP</td><td>n ≤ 10^3 cho 2D</td></tr>
+      <tr><td>"schedule với dependencies" / "order"</td><td>Topological Sort</td><td>DAG</td></tr>
+      <tr><td>"groups / connected components"</td><td>Union-Find / DFS flood fill</td><td>α(n) gần const</td></tr>
+      <tr><td>"valid parenthesis / matching"</td><td>Stack</td><td>O(n)</td></tr>
+      <tr><td>"next greater/smaller element"</td><td>Monotonic Stack</td><td>O(n)</td></tr>
+      <tr><td>"linked list cycle / middle"</td><td>Fast &amp; Slow Pointer</td><td>O(n), O(1)</td></tr>
+      <tr><td>"merge K sorted ___"</td><td>Min-Heap of pointers</td><td>O(n log k)</td></tr>
+      <tr><td>"range sum / range query"</td><td>Prefix Sum / Segment Tree</td><td>O(n) precompute</td></tr>
+      <tr><td>"string anagram / character frequency"</td><td>HashMap counter / int[26]</td><td>O(n)</td></tr>
+      <tr><td>"interval overlap / merge"</td><td>Sort by start + sweep</td><td>O(n log n)</td></tr>
+      <tr><td>"word search in grid"</td><td>DFS + backtrack</td><td>O(m·n·4^L)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Khi Match: nói lớn quá trình</h3>
+  <pre><code class="language-text">"Bài này có vibe của sliding window vì nó tìm longest subarray với property.
+ Để tôi check lại — property là 'sum ≤ K', constraint là consecutive elements.
+ Confirmed sliding window.
+
+ Nếu sliding window không work, fallback là prefix sum + binary search."</code></pre>
+
+  <p>→ Interviewer thấy: (a) bạn biết pattern, (b) bạn có fallback, (c) bạn confident nhưng không cứng nhắc. <strong>Triple signal.</strong></p>
+
+  <h3>Multi-pattern bài — pattern combination</h3>
+  <p>Nhiều bài Medium-Hard kết hợp 2-3 patterns. Phải nhận diện được:</p>
+  <ul>
+    <li><strong>LC 347 Top K Frequent</strong> = HashMap (count) + Heap (top K).</li>
+    <li><strong>LC 295 Find Median from Stream</strong> = 2 Heaps (max-heap + min-heap).</li>
+    <li><strong>LC 212 Word Search II</strong> = Trie + DFS Backtrack.</li>
+    <li><strong>LC 218 Skyline</strong> = Sweep Line + Heap.</li>
+    <li><strong>LC 460 LFU Cache</strong> = HashMap + Doubly Linked List + Counter.</li>
+  </ul>
+
+  <div class="callout warn">
+    <strong>Pitfall:</strong> Match xong COMMIT luôn → đi sai 20 phút. <em>Validate pattern</em> bằng cách: vẽ ví dụ qua template → nếu output đúng, commit. Nếu output sai, rethink.
+  </div>
+</section>
+
+<!-- ==================== STEP P ==================== -->
+<section id="step-p">
+  <h2>P · Plan + BUD — 5 phút <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> Đây là bước phân biệt junior vs senior. Junior code thẳng vào optimal (hoặc bí). Senior <em>derive</em> optimal từ brute force qua BUD — interviewer thấy "thinking process visible". Bước này quyết định L4 vs L5.
+  </div>
+
+  <h3>Quy trình bắt buộc — 4 sub-steps</h3>
+
+  <h4>① Brute force trước — nói RÕ approach + complexity</h4>
+  <pre><code class="language-text">"Brute force: với mỗi i từ 0 đến n-1, mỗi j từ i+1 đến n-1,
+ check nums[i] + nums[j] == target. O(n²) time, O(1) space.
+ Hoạt động được nhưng không scale với n=10^5."</code></pre>
+
+  <p><strong>Vì sao phải brute force trước:</strong></p>
+  <ul>
+    <li>Tạo baseline để optimize tiếp.</li>
+    <li>Chứng minh bạn hiểu đề ở mức cơ bản nhất.</li>
+    <li>Nếu hết giờ → ít nhất có brute force chạy đúng (partial credit).</li>
+    <li>Interviewer thấy thinking process — derive thay vì memorize.</li>
+  </ul>
+
+  <h4>② Áp dụng BUD analysis — heuristic optimize</h4>
+
+  <pre><code class="language-text">BUD = Bottlenecks + Unnecessary work + Duplicated work
+                                          (Gayle McDowell, CtCI 6e, 2015)</code></pre>
+
+  <p>Đây là <strong>heuristic 3 lăng kính</strong> để chuyển brute force → optimal:</p>
+
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(56,189,248,0.08)">
+      <h4>B — Bottlenecks</h4>
+      <p>Phần code/algorithm chậm nhất. Tổng complexity bị giới hạn bởi đây.</p>
+      <p><em>Ví dụ:</em> Two Sum brute force — nested loop O(n²) là bottleneck. Loại 1 vòng → O(n).</p>
+      <p><em>Ví dụ:</em> Merge intervals — sort O(n log n) là bottleneck. Đã optimal cho sort-based, không thể giảm nữa.</p>
+    </div>
+    <div class="compare-col" style="background:rgba(168,85,247,0.08)">
+      <h4>U — Unnecessary work</h4>
+      <p>Việc làm mà output không đổi nếu bỏ.</p>
+      <p><em>Ví dụ:</em> Check pair (j, i) sau khi đã check (i, j) — symmetric, bỏ → giảm constant 2×.</p>
+      <p><em>Ví dụ:</em> Trong search, sau khi tìm thấy result, không return early → tiếp tục check uselessly.</p>
+    </div>
+    <div class="compare-col" style="background:rgba(34,197,94,0.08)">
+      <h4>D — Duplicated work</h4>
+      <p>Cùng phép tính lặp lại nhiều lần.</p>
+      <p><em>Ví dụ:</em> Two Sum — search <code>target - nums[i]</code> linearly mỗi i → O(n) mỗi lần. Memoize bằng HashMap → O(1).</p>
+      <p><em>Ví dụ:</em> Fibonacci naïve recursion — fib(n-2) tính nhiều lần. Memo → O(n) thay O(2^n).</p>
+    </div>
+  </div>
+
+  <h4>③ Đề xuất optimal — derive từ BUD</h4>
+  <pre><code class="language-text">"Optimal: dùng HashMap để remember (value → index) đã thấy.
+ Với mỗi nums[i]:
+   complement = target - nums[i]
+   if complement in map: return [map[complement], i]
+   else map[nums[i]] = i
+
+ O(n) time, O(n) space.
+ Trade-off: thêm O(n) space để giảm time từ O(n²) xuống O(n) — đáng."</code></pre>
+
+  <h4>④ Confirm với interviewer trước khi code</h4>
+  <pre><code class="language-text">"Approach này OK chứ? Hay bạn muốn tôi explore thêm trước khi code?"</code></pre>
+
+  <p>Đây là bước <strong>"checkpoint"</strong> — nếu interviewer thấy approach sai/sub-optimal, họ sẽ hint ngay → tránh code 20 phút sai hướng.</p>
+
+  <h3>BUD walk-through — LC 53 Max Subarray</h3>
+
+  <pre><code class="language-text">Đề: Cho array nums, tìm subarray (contiguous) có sum lớn nhất.
+
+Brute force:
+  for i in [0..n):
+    for j in [i..n):
+      compute sum nums[i..j]
+      maxSum = max(maxSum, sum)
+  O(n³) (3 vòng), O(1) space.
+
+BUD pass 1:
+  B (bottleneck): 3 vòng. Compute sum mỗi cặp (i,j) là O(n).
+  U: không có rõ unnecessary.
+  D: compute sum [i..j] từ đầu mỗi lần. Có thể incremental:
+     sum[i..j+1] = sum[i..j] + nums[j+1]. Đã tính trước.
+  → Cải thiện: O(n²) (tracking sum incremental).
+
+BUD pass 2:
+  B (bottleneck): nested loop n×n. Cần loại 1 vòng.
+  D: Có cần track mọi (i, j)? Quan sát: nếu currentSum < 0,
+     bỏ subarray đến đây — bắt đầu mới sẽ tốt hơn.
+  → Insight Kadane: chỉ track currentSum, reset khi âm.
+  → O(n) time, O(1) space.
+
+Kadane code:
+  int maxSum = nums[0], currentSum = nums[0];
+  for (int i = 1; i < n; i++) {
+      currentSum = Math.max(nums[i], currentSum + nums[i]);
+      maxSum = Math.max(maxSum, currentSum);
+  }</code></pre>
+
+  <div class="callout info">
+    <strong>Insight quan trọng:</strong> BUD không phải lúc nào cũng dẫn đến optimal sau 1 pass. Có thể cần 2-3 pass (như Max Subarray: O(n³) → O(n²) → O(n)). Đây là <em>iterative refinement</em>, không phải 1 bước nhảy magic.
+  </div>
+
+  <h3>4 lăng kính bổ sung khi BUD không đủ</h3>
+  <ul>
+    <li><strong>Pre-process input.</strong> Sort trước có giúp? Build index trước có giúp? Prefix sum trước có giúp?</li>
+    <li><strong>Đổi data structure.</strong> Array → HashMap (O(1) lookup). Array → Heap (O(log n) min/max). Array → Tree (sorted ops).</li>
+    <li><strong>Space-time trade-off.</strong> Thêm O(n) space để giảm time. Hoặc compress space khi DP 2D nhưng chỉ cần row trước.</li>
+    <li><strong>Đảo bài.</strong> "Find min" → đôi khi dễ hơn nếu đảo thành "max nghịch đảo". "Find missing" → đôi khi dễ hơn nếu compute "total expected − total actual".</li>
+  </ul>
+</section>
+
+<!-- ==================== STEP I ==================== -->
+<section id="step-i">
+  <h2>I · Implement + Narrate — 20 phút <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Đây là 60% thời lượng phỏng vấn. Code đẹp + narrate liên tục = "easy hire". Code đúng nhưng silent = "no signal" = no hire (xem Câu chuyện A).
+  </div>
+
+  <h3>Quy tắc khi code</h3>
+
+  <h4>① Đặt biến rõ ràng</h4>
+  <pre><code class="language-java">❌ for (int i = 0; i < n; i++) {
+       int t = arr[i];
+       Map<Integer, Integer> m = ...;
+   }
+
+✅ for (int right = 0; right < nums.length; right++) {
+       int complement = target - nums[right];
+       Map<Integer, Integer> seenIndices = ...;
+   }</code></pre>
+
+  <p>Đặt tên biến phải <em>tự document intent</em>. <code>seenIndices</code> > <code>m</code>. <code>windowSum</code> > <code>s</code>. <code>left, right</code> > <code>i, j</code> (cho two-pointer).</p>
+
+  <h4>② Code ngắn, modular — viết helper khi phức tạp</h4>
+  <pre><code class="language-java">public int[] twoSum(int[] nums, int target) {
+    Map&lt;Integer, Integer&gt; seenIndices = new HashMap&lt;&gt;();
+    for (int i = 0; i &lt; nums.length; i++) {
+        int complement = target - nums[i];
+        if (seenIndices.containsKey(complement)) {
+            return new int[] { seenIndices.get(complement), i };
+        }
+        seenIndices.put(nums[i], i);
+    }
+    return new int[0]; // không tìm thấy
+}</code></pre>
+
+  <p>Khi function dài &gt; 20 dòng → tách helper. <strong>Tách helper là senior signal</strong>, không phải junior over-engineering.</p>
+
+  <h4>③ NARRATE liên tục — kỹ năng quan trọng nhất</h4>
+
+  <p>Khi code, nói RA MIỆNG mỗi dòng đang viết và <em>vì sao</em>:</p>
+  <pre><code class="language-text">"Tôi tạo HashMap để map value tới index của nó."
+"Loop qua từng element. Tính complement = target - current value."
+"Nếu complement đã thấy, return [index của complement, current index]."
+"Nếu không, lưu (current value, current index) vào map cho future."
+"Nếu loop xong không match, return empty array."</code></pre>
+
+  <p><strong>Mục tiêu narrate:</strong> Interviewer KHÔNG cần đọc code để hiểu logic. Nghe bạn nói là đủ.</p>
+
+  <h4>④ KHÔNG retype đoạn cũ khi sửa</h4>
+  <p>Bug → sửa in-place. Không xoá hết viết lại — mất thời gian, signal "không sure".</p>
+
+  <h4>⑤ Type-check khi code</h4>
+  <ul>
+    <li><strong>Overflow:</strong> <code>int + int</code> có thể tràn. Dùng <code>long</code> khi range lớn. <code>(int)((long)a * b)</code> để cast an toàn.</li>
+    <li><strong>Off-by-one:</strong> <code>&lt; n</code> vs <code>&lt;= n</code>. Index từ 0 vs 1.</li>
+    <li><strong>Null check:</strong> Auto-unboxing Integer null → NullPointerException.</li>
+  </ul>
+
+  <h3>Narration cheatsheet — 7 cụm từ phải có</h3>
+  <pre><code class="language-text">1. "Let me start by..."           — báo entry point
+2. "The reason I'm doing X is..."  — explain why, không chỉ what
+3. "I'm going to handle X case..." — báo edge case đang xử lý
+4. "Let me trace this with..."     — báo sắp dry-run
+5. "I notice that..."              — báo insight mới
+6. "Actually, wait — ..."          — báo phát hiện bug, sửa
+7. "I think this is O(...) because..." — báo complexity</code></pre>
+
+  <h3>Khi bí giữa chừng — phải nói gì</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Im lặng 60 giây</h4>
+      <ul>
+        <li>Interviewer: "Bạn đang nghĩ gì?"</li>
+        <li>Candidate: [bí] "À..."</li>
+        <li>Interviewer ghi: "candidate freezes under pressure"</li>
+      </ul>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Narrate quá trình tìm fix</h4>
+      <ul>
+        <li>"Tôi đang nghĩ cách handle case empty. Có 2 lựa chọn..."</li>
+        <li>"Để tôi trace lại với example để locate bug..."</li>
+        <li>"Hmm, biến X đang null ở step Y. Có lẽ tôi quên init..."</li>
+        <li>Interviewer ghi: "candidate debugs systematically, narrates reasoning"</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Rule of thumb:</strong> Im lặng &gt; 30 giây = red flag. Im lặng &gt; 60 giây = interviewer phải prompt. Nếu thấy bí, nói: <em>"Để tôi nghĩ về case này — tôi sẽ ra giải pháp trong 30 giây."</em> Đặt timer thật trong đầu.
+  </div>
+</section>
+
+<!-- ==================== STEP R ==================== -->
+<section id="step-r">
+  <h2>R · Review + Trace — 5 phút <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Code xong KHÔNG có nghĩa là done. 70% candidate tự tin "Done!" → interviewer hỏi edge case → bug. Bước R giúp bạn tự bắt bug TRƯỚC interviewer.
+  </div>
+
+  <h3>Quy trình 3 sub-steps</h3>
+
+  <h4>① Trace code với example đã vẽ ở bước U</h4>
+  <pre><code class="language-text">"nums = [2,7,11,15], target = 9
+ i=0: complement = 9-2 = 7. Map empty. Put (2,0).
+ i=1: complement = 9-7 = 2. Map has 2! Return [map.get(2), 1] = [0, 1]. ✓"</code></pre>
+
+  <p><strong>Phải đi từng dòng,</strong> nói biến nào đổi giá trị gì. Đừng "trace trong đầu" — nói ra miệng.</p>
+
+  <h4>② Edge case mental list — auto-recall ≥ 5 cases</h4>
+  <pre><code class="language-text">Empty input        → return ngay? Hay loop 0 lần OK?
+Single element     → Two Sum [5] target=10 → return []? Confirm.
+All duplicates     → [3,3] target=6 → [0,1] (cùng giá trị, khác index).
+Negative numbers   → [-3,4,3,90] target=0 → [0,2]. HashMap handle OK?
+Overflow           → Integer.MIN_VALUE + Integer.MAX_VALUE? Cast long?</code></pre>
+
+  <h4>③ Tự tìm bug — không đợi interviewer</h4>
+  <pre><code class="language-text">"Hmm, tôi return [0,1] cho [3,3], target=6 — nhưng dòng put(nums[i], i)
+ sẽ overwrite key 3. Nhưng vì check trước khi put, lần i=1 sẽ thấy key 3 đã có,
+ return luôn. OK, đúng."
+
+(Nói lớn cả quá trình debug — interviewer thấy "candidate self-validates")</code></pre>
+
+  <h3>Dry-run rubric — checklist khi trace</h3>
+  <ul>
+    <li>☐ Pick example đã vẽ ở U, hoặc 1 example nhỏ (3-5 elements).</li>
+    <li>☐ Đi từng iteration. Track giá trị của biến quan trọng (window pointer, hashmap state, current sum).</li>
+    <li>☐ Verify output trùng với expected của example.</li>
+    <li>☐ Pick 1 edge case (empty/single). Trace.</li>
+    <li>☐ Pick 1 tricky case (all dup / negative). Trace.</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Pro tip:</strong> Khi trace, viết state vào comment hoặc bảng nhỏ ở góc:<br>
+    <code>i=0  | complement=7  | map={}        | seen=false | put(2,0)</code><br>
+    <code>i=1  | complement=2  | map={2:0}     | seen=true  | return [0,1]</code><br>
+    Interviewer thấy bạn organize trace = senior signal.
+  </div>
+</section>
+
+<!-- ==================== STEP E ==================== -->
+<section id="step-e">
+  <h2>E · Evaluate + Follow-up — 1 phút <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> 1 phút cuối nhưng quyết định "Hire" vs "Strong Hire". Verify complexity đúng + đề xuất optimization tiếp = senior signal. Đây là điểm "strong" mà interviewer ghi vào feedback.
+  </div>
+
+  <h3>Format trả lời time/space</h3>
+  <pre><code class="language-text">"Time complexity: O(n) vì chỉ loop 1 lần qua array, mỗi iteration HashMap O(1).
+ Space complexity: O(n) worst case khi không có pair match — map có thể chứa n entries.
+ Trade-off: dùng O(n) space để giảm time từ O(n²) xuống O(n). Đáng cho large input."</code></pre>
+
+  <p><strong>3 phần phải nói:</strong> Time + Space + Trade-off. Không nói trade-off = lost signal.</p>
+
+  <h3>Follow-up — sẵn sàng anticipate</h3>
+
+  <p>Khi đề bài "đơn giản" → interviewer chắc chắn sẽ hỏi follow-up. Pre-anticipate:</p>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up category</th><th>Câu hỏi điển hình</th><th>Hướng trả lời</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Input thay đổi</td>
+        <td>"Nếu input sorted?"</td>
+        <td>Two Pointers, O(n)/O(1) — bỏ HashMap.</td>
+      </tr>
+      <tr>
+        <td>Constraint mở rộng</td>
+        <td>"Nếu cần ALL pairs sum to target?"</td>
+        <td>Vẫn HashMap nhưng track multi-value list, dedupe.</td>
+      </tr>
+      <tr>
+        <td>Streaming / online</td>
+        <td>"Nếu input stream tới real-time?"</td>
+        <td>Không sort được. Dùng running data structure (heap, BST, segment tree).</td>
+      </tr>
+      <tr>
+        <td>Out-of-memory</td>
+        <td>"Nếu input quá lớn không fit RAM?"</td>
+        <td>External sort + 2-pass disk-based. Hoặc Bloom filter.</td>
+      </tr>
+      <tr>
+        <td>Distributed</td>
+        <td>"Nếu phải distribute across N machines?"</td>
+        <td>Partition + map-reduce. Hash range cho consistent hashing.</td>
+      </tr>
+      <tr>
+        <td>Concurrent</td>
+        <td>"Nếu nhiều thread read/write?"</td>
+        <td>ConcurrentHashMap / ReadWriteLock. Discuss race conditions.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Phrase mẫu cho follow-up</h3>
+  <pre><code class="language-text">"Một follow-up tự nhiên là [paraphrase]. Trong case đó, tôi sẽ
+ [explain new approach]. Complexity sẽ thành O(...). Trade-off chính là [...].
+
+ Một follow-up khác là [paraphrase]. Tôi sẽ [...]"</code></pre>
+
+  <div class="callout success">
+    <strong>Strong signal phrase:</strong> "Trong production, tôi sẽ thêm [validation / observability / error handling]. Ở phỏng vấn này tôi focus algorithm. Bạn muốn tôi expand phần production-grade không?"<br>
+    Đây là câu nói khẳng định bạn hiểu khác biệt LC vs production — interviewer rất thích.
+  </div>
+
+  <h3>📌 Đáp án Pause &amp; Predict từ Section 1</h3>
+  <div class="callout info">
+    <strong>Câu hỏi:</strong> Bước nào nên dành nhiều thời gian nhất?<br>
+    <strong>Câu trả lời:</strong> <code>I — Implement (20 phút)</code> tuyệt đối là dài nhất. Nhưng <em>quan trọng nhất</em> là <code>U — Understand (3 phút)</code>. Quy tắc: 3 phút clarify tiết kiệm 15 phút sửa code. Nhiều junior nghĩ "code nhiều = nhiều signal" — sai. Quality of thinking ở U &amp; P quyết định outcome, không phải tốc độ code ở I.
+  </div>
+</section>
+
+<!-- ==================== PRODUCTION WALKTHROUGH ==================== -->
+<section id="walkthrough">
+  <h2>4. Production walk-through — LC 3 đầy đủ UMPIRE <span class="k-tag core">CORE</span></h2>
+
+  <p>Bài: <strong>LeetCode 3 — Longest Substring Without Repeating Characters</strong> (Medium).</p>
+  <blockquote>Given a string <code>s</code>, find the length of the longest substring without repeating characters.</blockquote>
+
+  <h3>Bước U (Understand) — 3 phút</h3>
+  <pre><code class="language-text">Tôi (vừa đọc đề vừa nói):
+"OK, đề cho 1 string s. Cần tìm substring (consecutive characters)
+ không có character lặp, return length của substring dài nhất.
+
+ Clarify:
+ 1. String có thể empty không? — assume yes
+ 2. Characters là ASCII hay Unicode? — ASCII (a-z, A-Z, digits, symbols)
+ 3. Substring khác subsequence đúng không? — substring = consecutive
+ 4. Length tối đa input? — assume 10^4–10^5
+
+ Examples:
+   s = 'abcabcbb' → 3 ('abc')
+   s = 'bbbbb'    → 1 ('b')
+   s = 'pwwkew'   → 3 ('wke', không phải 'pwke' vì có 'w' trùng)
+ Edge cases:
+   s = ''         → 0
+   s = 'a'        → 1
+   s = 'aab'      → 2 ('ab')
+   s = 'abba'     → 2 (tricky! 'ab' và 'ba')"</code></pre>
+
+  <h3>Bước M (Match) — 1 phút</h3>
+  <pre><code class="language-text">"'longest substring with property' → vibe của sliding window rất rõ.
+ Property ở đây là 'no repeating characters'.
+ Sliding window template: expand right, contract left khi violate.
+
+ Fallback nếu sliding window fail: prefix tracking + HashMap đầy đủ."</code></pre>
+
+  <h3>Bước P (Plan) — 5 phút</h3>
+  <pre><code class="language-text">Brute force:
+"Với mọi pair (i,j) với i<=j, check substring s[i..j] có duplicate không.
+ Check duplicate dùng HashSet. O(n²) pairs × O(n) check = O(n³).
+ Hoặc dùng HashSet smart hơn: O(n²)."
+
+BUD:
+- Bottleneck: nested loop
+- Unnecessary work: khi tôi mở rộng substring và thấy duplicate ở vị trí k,
+   tôi không cần restart từ i+1 — có thể nhảy thẳng đến k+1!
+- Duplicated work: re-scan substring từ đầu mỗi lần.
+
+Optimal — Sliding Window:
+"Maintain window [left, right]. Dùng HashMap (char → last index).
+ Expand right từng bước. Khi gặp char đã trong window:
+   left = max(left, lastIndex[char] + 1)  ← nhảy thẳng, không tăng từng bước
+ Update maxLen.
+
+ O(n) time vì right và left mỗi cái chỉ tăng → tổng 2n iterations.
+ O(min(n, charset)) space cho HashMap."
+
+Confirm interviewer: "Approach OK chứ?"</code></pre>
+
+  <h3>Bước I (Implement) — 15 phút (đầy narration)</h3>
+  <pre><code class="language-java">public int lengthOfLongestSubstring(String s) {
+    if (s == null || s.isEmpty()) return 0;
+
+    // Map: character → last index ta gặp nó
+    Map&lt;Character, Integer&gt; lastIndex = new HashMap&lt;&gt;();
+
+    int maxLen = 0;
+    int left = 0;
+
+    for (int right = 0; right &lt; s.length(); right++) {
+        char c = s.charAt(right);
+
+        // Nếu c đã trong window hiện tại, nhảy left tới sau lần xuất hiện cuối của c
+        if (lastIndex.containsKey(c) &amp;&amp; lastIndex.get(c) &gt;= left) {
+            left = lastIndex.get(c) + 1;
+        }
+
+        // Update last index của c
+        lastIndex.put(c, right);
+
+        // Window hiện tại là [left..right], length = right - left + 1
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+
+    return maxLen;
+}</code></pre>
+
+  <p><strong>Narration trong khi code (nói thật to với interviewer):</strong></p>
+  <pre><code class="language-text">"Tôi guard null/empty trước, return 0.
+ HashMap `lastIndex`: key là char, value là index gần nhất.
+ `left` là window start, `maxLen` track kết quả.
+ Loop right từ 0 đến cuối...
+ Lấy char tại right.
+ Nếu char đã trong map VÀ index của nó >= left (tức là đang TRONG window) —
+   nhảy left tới `lastIndex.get(c) + 1`.
+ Quan trọng: `>= left` là điều kiện 'trong window'.
+   Nếu char xuất hiện trước window thì kệ.
+ Update lastIndex của c thành right.
+ Update maxLen."</code></pre>
+
+  <h3>Bước R (Review) — 5 phút</h3>
+  <pre><code class="language-text">Trace với 'pwwkew':
+  right=0, c='p': map empty. Put p→0. window [0,0], len=1, max=1
+  right=1, c='w': map no w. Put w→1. window [0,1], len=2, max=2
+  right=2, c='w': map has w=1, 1>=0. left=2. Put w→2. window [2,2], len=1, max=2
+  right=3, c='k': map has k? No. Put k→3. window [2,3], len=2, max=2
+  right=4, c='e': map no e. Put e→4. window [2,4], len=3, max=3
+  right=5, c='w': map has w=2, 2>=2. left=3. Put w→5. window [3,5], len=3, max=3
+  → Return 3 ✓
+
+Edge cases:
+- '' → return 0 ngay đầu ✓
+- 'a' → loop 1 lần, max=1 ✓
+- 'aab' → right=0 'a' max=1; right=1 'a' left=1 max=1; right=2 'b' max=2 ✓
+- 'abba' → right=0 a; right=1 b max=2; right=2 b left=2 max=1;
+            right=3 a, lastIndex[a]=0, 0>=2? NO → KHÔNG jump left! max=2 ✓
+            ← KEY: điều kiện ">=left" rất quan trọng, nếu không sẽ sai bài này</code></pre>
+
+  <div class="callout warn">
+    <strong>Pitfall điển hình:</strong> Nhiều candidate viết <code>if (lastIndex.containsKey(c))</code> mà không check <code>&gt;= left</code> → trace 'abba' sẽ sai. Đây là lý do TRACE EDGE CASE quan trọng — bug chỉ xuất hiện khi char xuất hiện ngoài window.
+  </div>
+
+  <h3>Bước E (Evaluate) — 1 phút</h3>
+  <pre><code class="language-text">"Time: O(n). Right loop n lần, mỗi lần HashMap O(1) average.
+ Space: O(min(n, k)) với k = charset size. ASCII printable = 128, nên thực tế O(1) const.
+ Trade-off: ít space để có O(n) time. Optimal cho bài này.
+
+ Follow-up tôi anticipate:
+ - Nếu charset nhỏ (a-z) → có thể dùng int[26] thay HashMap, faster constant
+ - Nếu cần TRẢ substring (không chỉ length) → track cả startIndex
+ - Nếu allow up to k duplicates → variant 'longest substring with at most k duplicates'
+   cũng dùng sliding window, count map.
+ - Nếu Unicode? → switch Character thay vì char (handle surrogate pairs)."</code></pre>
+</section>
+
+<!-- ==================== ANTI-PATTERNS ==================== -->
+<section id="antipatterns">
+  <h2>5. 7 anti-patterns phải tự bắt <span class="k-tag core">CORE</span></h2>
+
+  <p>Anti-pattern = thói quen làm fail phỏng vấn dù bạn có thể solve được. 7 thói quen dưới đây là <em>top 7 lý do candidate VN fail Google L4 / Meta E4</em> theo thống kê feedback ẩn danh.</p>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #1: "Memory dump"</h4>
+    <p>Candidate: "Bài này tôi giải bằng dynamic programming, O(n²) space, ..." <em>[chưa đọc kỹ đề, chưa clarify, đoán bài tương tự đã làm]</em></p>
+    <p><strong>Vì sao tệ:</strong> Interviewer ghét candidate "memorize solution dump". Họ cần thấy thinking, không cần thấy memory bank.</p>
+    <p><strong>Fix:</strong> "Để tôi clarify đề và vẽ example trước. Sau đó match pattern." Bắt buộc qua bước U trước khi suggest solution.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #2: "Optimal-first syndrome"</h4>
+    <p>Candidate code thẳng optimal solution mà chưa nói brute force. Khi interviewer hỏi "tại sao chọn O(n)?" → lúng túng vì chưa derive từ brute force.</p>
+    <p><strong>Vì sao tệ:</strong> Skip BUD analysis = lost senior signal. Interviewer không biết bạn <em>thực sự hiểu</em> hay chỉ memorize.</p>
+    <p><strong>Fix:</strong> Brute force trước → BUD → optimal. Quá trình derive là phần được đánh giá, không phải kết quả.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #3: "Silent mode"</h4>
+    <p>20 phút code im, mặt cau có. Interviewer chỉ thấy code, không thấy thinking.</p>
+    <p><strong>Vì sao tệ:</strong> "No signal" = no hire. Câu chuyện A ở Section 2 là ví dụ điển hình.</p>
+    <p><strong>Fix:</strong> Narrate liên tục. Im 30 giây là quá lâu — nói <em>"Để tôi nghĩ về case này"</em> rồi tiếp tục narrate quá trình suy nghĩ.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #4: "False optimism"</h4>
+    <p>"Code chạy đúng test 1, done!" → Interviewer hỏi edge case → bug.</p>
+    <p><strong>Vì sao tệ:</strong> Tự tin sai chỗ → interviewer phải vạch bug → red flag "doesn't self-validate".</p>
+    <p><strong>Fix:</strong> "Code chạy đúng test 1. Để tôi check edge cases trước khi tự tin tuyên bố done." Tự tìm bug TRƯỚC interviewer.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #5: "Big-O guesswork"</h4>
+    <p>Interviewer: "Complexity?" Candidate: "O(n)?... O(n log n)? Tôi không chắc."</p>
+    <p><strong>Vì sao tệ:</strong> Phỏng vấn FAANG đòi reflex Big-O. Guess = no math foundation.</p>
+    <p><strong>Fix:</strong> Tự verify: <em>"Loop ngoài n. Trong loop, HashMap O(1). Tổng O(n). Heap thì mỗi op O(log n) nên toàn bộ O(n log n)."</em> Tính nhẩm phải thành reflex — đây là Lớp 4 trong <a href="47-junior-foundation-pack.html">#47</a>.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #6: "Thiếu test"</h4>
+    <p>Code xong → "Done." → đợi interviewer chạy test.</p>
+    <p><strong>Vì sao tệ:</strong> Senior engineers tự test. Junior đợi QA test.</p>
+    <p><strong>Fix:</strong> Tự trace với example. Tự thử edge case. Bước R bắt buộc, không skip.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #7: "Defensive over-engineering"</h4>
+    <p>Bài LeetCode mà code production-style: validation 20 dòng, logger, custom exception... Mất 15 phút chỉ cho boilerplate.</p>
+    <p><strong>Vì sao tệ:</strong> Phỏng vấn 35 phút không đủ cho cả algorithm + production polish. Confuse hai bối cảnh = signal "doesn't read context".</p>
+    <p><strong>Fix:</strong> Algorithm trước, robustness sau. Null check 1 dòng đầu hàm là đủ. Nói: <em>"Trong production tôi sẽ thêm validation, đây tôi focus algorithm."</em></p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: anti-pattern nào nguy hiểm nhất?</h4>
+    <p><strong>Câu trả lời:</strong> #3 (Silent mode). Vì:</p>
+    <ul>
+      <li>Mất signal toàn diện — interviewer không có data để đánh giá thinking.</li>
+      <li>Khó self-detect — bạn không biết mình silent (tâm trí đang chạy).</li>
+      <li>Cure khó nhất — đòi practice voice recording + self-review weekly.</li>
+    </ul>
+    <p>Trong khi #1, #2, #4-#7 có thể fix bằng checklist UMPIRE, #3 cần <strong>habit reformation</strong>. Đây là lý do file này nhấn mạnh "record voice khi solve".</p>
+  </div>
+</section>
+
+<!-- ==================== TRADE-OFFS ==================== -->
+<section id="tradeoffs">
+  <h2>6. Trade-off: Iterative vs Recursive <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Quyết định iterative hay recursive là trade-off senior phải reflex. Hiểu sai = signal "doesn't think about constraints".</p>
+
+  <table>
+    <thead>
+      <tr><th>Khía cạnh</th><th>Recursive</th><th>Iterative</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Code length</td><td>Ngắn, sạch</td><td>Dài hơn, explicit stack</td></tr>
+      <tr><td>Stack depth</td><td>Risk overflow nếu deep (Java ~10K frames)</td><td>Không (heap allocation)</td></tr>
+      <tr><td>Performance</td><td>Function call overhead (~5-10ns/call)</td><td>Nhanh hơn ~10–20%</td></tr>
+      <tr><td>Debugging</td><td>Khó trace stack frames</td><td>Dễ trace với explicit state</td></tr>
+      <tr><td>Memory profile</td><td>Stack memory (linear depth)</td><td>Heap memory (linear data)</td></tr>
+      <tr><td>Interview signal</td><td>Tự nhiên cho tree/DP top-down</td><td>Tốt cho graph BFS/array linear</td></tr>
+      <tr><td>Concurrency</td><td>Khó pause/resume</td><td>Dễ — state explicit</td></tr>
+      <tr><td>Tail call optimization</td><td>Java KHÔNG có TCO</td><td>N/A</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quy tắc chọn</h3>
+  <ul>
+    <li><strong>Tree / Backtrack / DP top-down</strong> → recursive (idiomatic, dễ đọc).</li>
+    <li><strong>Linear scan / 2-pointer / sliding window</strong> → iterative (natural).</li>
+    <li><strong>Graph BFS</strong> → iterative + queue (recursive sẽ vô lý).</li>
+    <li><strong>Graph DFS</strong> → recursive OK với V ≤ 10^4, iterative + stack với V lớn.</li>
+    <li><strong>DP</strong> → bottom-up iterative thường nhanh hơn top-down 10-20% (no recursion overhead). Top-down dễ viết hơn khi state transition phức tạp.</li>
+  </ul>
+
+  <h3>Production rule</h3>
+  <pre><code class="language-text">1. Depth có thể > 10K? → IẾRATIVE bắt buộc (Java stack overflow).
+2. Hot path cần performance? → ITERATIVE (no function call overhead).
+3. Cần pause/resume? → ITERATIVE (explicit stack).
+4. Code clarity > performance? → RECURSIVE (nếu structure tự nhiên đệ quy).
+5. DP có chiều state ≤ 3? → BOTTOM-UP ITERATIVE thường tốt nhất.
+6. DP state phức tạp / sparse? → TOP-DOWN RECURSIVE + memo (lazy compute).</code></pre>
+</section>
+
+<!-- ==================== LEAP OF FAITH ==================== -->
+<section id="leap-of-faith">
+  <h2>7. Recursion mental model — "Leap of faith" <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> Recursion là kỹ năng "phân loại" — candidate giỏi recursion chắc chắn solve được tree/graph/DP. Mental model đúng = solve mượt mọi recursion bài.
+  </div>
+
+  <h3>"Leap of faith" — không trace stack</h3>
+  <p>Khi viết recursion, KHÔNG cố trace từng frame trong đầu. Tin vào 2 điều:</p>
+
+  <ol>
+    <li><strong>Base case correct.</strong> Khi input nhỏ nhất (null, empty, leaf), function trả đúng.</li>
+    <li><strong>Recursive step correct.</strong> Giả sử function đã đúng cho input nhỏ hơn — bạn chỉ cần combine kết quả nhỏ thành kết quả lớn.</li>
+  </ol>
+
+  <p>Nếu cả 2 đúng → mặc nhiên function đúng cho mọi input. Đây là <em>induction</em> trong programming.</p>
+
+  <h3>Ví dụ — Tree Height</h3>
+  <pre><code class="language-java">public int height(TreeNode node) {
+    if (node == null) return 0;                             // ① base case
+    return 1 + Math.max(height(node.left),                  // ② recursive step
+                        height(node.right));
+}</code></pre>
+
+  <p><strong>Leap of faith:</strong></p>
+  <ul>
+    <li>Giả sử <code>height(node.left)</code> trả đúng height của left subtree.</li>
+    <li>Giả sử <code>height(node.right)</code> trả đúng height của right subtree.</li>
+    <li>Height của current tree = 1 (root) + max(left height, right height). ✓</li>
+  </ul>
+
+  <p><strong>KHÔNG được:</strong> Trace stack frame mỗi node. Bạn sẽ rối ngay với tree 10 nodes.</p>
+
+  <h3>Ví dụ phức tạp — LC 124 Maximum Path Sum (Hard)</h3>
+  <pre><code class="language-java">private int maxSum = Integer.MIN_VALUE;
+
+public int maxPathSum(TreeNode root) {
+    pathSumFromNode(root);
+    return maxSum;
+}
+
+// Returns max path sum that STARTS at node and goes DOWN (used by parent)
+private int pathSumFromNode(TreeNode node) {
+    if (node == null) return 0;
+
+    // Leap of faith: 2 calls dưới trả đúng max path từ left/right xuống
+    int leftGain = Math.max(0, pathSumFromNode(node.left));   // negative → bỏ
+    int rightGain = Math.max(0, pathSumFromNode(node.right));
+
+    // Path qua current node (có thể là path tốt nhất toàn cây)
+    int throughNode = node.val + leftGain + rightGain;
+    maxSum = Math.max(maxSum, throughNode);
+
+    // Return path từ current đi xuống (chỉ 1 nhánh, vì parent sẽ extend)
+    return node.val + Math.max(leftGain, rightGain);
+}</code></pre>
+
+  <p><strong>Bài này khó vì 2 loại path:</strong> path qua node (cho global max) vs path từ node xuống (cho parent). Leap of faith: tin function trả đúng path-từ-node-xuống cho sub-trees → combine.</p>
+
+  <h3>Khi recursion không hiệu quả</h3>
+  <p>3 dấu hiệu phải chuyển sang iterative:</p>
+  <ul>
+    <li><strong>Depth lớn:</strong> Tree skewed có depth n. Java stack ~10K frames → overflow với n &gt; 10K.</li>
+    <li><strong>Overlapping subproblems:</strong> Fibonacci naïve recursion O(2^n). Phải memoize hoặc bottom-up.</li>
+    <li><strong>Hot path:</strong> Function call overhead trong tight loop. Iterative tăng 10-20% throughput.</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Test "leap of faith":</strong> Đóng IDE. Mở Notepad. Viết recursive solution cho LC 110 (Balanced Tree) trong 5 phút mà KHÔNG trace bất kỳ frame nào. Nếu làm được → bạn đã internalize leap of faith.
+  </div>
+</section>
+
+<!-- ==================== INTERVIEW FRAMEWORK ==================== -->
+<section id="interview">
+  <h2>🎯 3-tier interview rubric — Khi nào bạn ready FAANG</h2>
+
+  <p>Self-assess theo 3 tier dưới đây. Tier 1 là sàn (phone screen), Tier 3 là signal cho L5+ / E5+.</p>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — UMPIRE Discipline (Junior signal)</h3>
+    <p><strong>Mục tiêu:</strong> Cho 1 bài LeetCode Easy random, đi qua đúng 6 bước UMPIRE không nhảy bước.</p>
+    <p><strong>Cách test:</strong></p>
+    <ul>
+      <li>Record voice khi solve. Nghe lại, đánh dấu thời điểm chuyển bước.</li>
+      <li>Time 35 phút end-to-end. Easy nên xong trong 20-25 phút.</li>
+      <li>Mỗi bước phải có "voice marker" rõ: <em>"Để tôi clarify đề..."</em> (U), <em>"Brute force trước..."</em> (P), v.v.</li>
+    </ul>
+    <p><strong>Checklist:</strong> 6/6 bước đầy đủ. Im &lt; 30 giây / lần. Edge case tự nghĩ ra ≥ 3.</p>
+    <p><strong>Khi đạt:</strong> Pass được phone screen Easy. L3 Google, E3 Meta.</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — BUD Analysis (Mid-level signal)</h3>
+    <p><strong>Mục tiêu:</strong> Cho 1 bài Medium random, derive optimal từ brute force qua BUD trong 5 phút.</p>
+    <p><strong>Cách test:</strong></p>
+    <ul>
+      <li>Random Medium chưa từng thấy → 35 phút end-to-end.</li>
+      <li>Bước P phải nói rõ B / U / D — không skip lăng kính nào.</li>
+      <li>Optimal phải derived (không phải "tôi nhớ bài này dùng DP").</li>
+      <li>Complexity tự verify đúng + nói trade-off.</li>
+    </ul>
+    <p><strong>Checklist:</strong> 8/10 bài Medium random pass UMPIRE + BUD. Pattern recognition ≤ 60s.</p>
+    <p><strong>Khi đạt:</strong> Pass được onsite Medium. L4 Google, E4 Meta, Mid Amazon.</p>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Multi-pattern + Follow-up (Senior signal)</h3>
+    <p><strong>Mục tiêu:</strong> Cho 1 bài Medium-Hard random, solve end-to-end + handle 2 follow-up khác hướng.</p>
+    <p><strong>Cách test:</strong></p>
+    <ul>
+      <li>Random Medium-Hard → 25 phút solve + 10 phút follow-up.</li>
+      <li>Nhận diện được multi-pattern (HashMap + Heap, Trie + DFS, ...).</li>
+      <li>Handle follow-up: streaming, distributed, concurrent, OOM, edge constraint.</li>
+      <li>Tự đề xuất 2-3 optimization khác sau khi đã optimal.</li>
+      <li>Narrate fluent — im &lt; 10% tổng thời gian.</li>
+    </ul>
+    <p><strong>Checklist:</strong> 9/10 bài Medium-Hard pass + 2 follow-up.</p>
+    <p><strong>Khi đạt:</strong> Pass L5+ Google, E5+ Meta, Senior Amazon. "Strong Hire" signal.</p>
+  </div>
+</section>
+
+<!-- ==================== BUILD PROJECTS ==================== -->
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 3 exercises biến framework thành reflex</h2>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 1 — UMPIRE Walk-through (Tuần 1)</h3>
+    <p><strong>Mục tiêu:</strong> 6 bước UMPIRE thành habit, không phải checklist phát biểu.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Pick 7 bài LC Easy đã solve trước đây (đỡ áp lực mới).</li>
+      <li>Mỗi ngày 1 bài. Tạo file <code>umpire-day-N.md</code> với 6 heading (U/M/P/I/R/E).</li>
+      <li>Solve lại bài đó, ghi mỗi bước thực sự làm gì. Time 35 phút.</li>
+      <li>Cuối tuần đọc lại 7 file — đánh giá: bước nào hay skip? Bước nào dễ?</li>
+    </ol>
+    <p><strong>Acceptance criteria:</strong></p>
+    <ul>
+      <li>7/7 bài có đủ 6 bước, không skip nào.</li>
+      <li>Time trung bình ≤ 30 phút (Easy nên nhanh).</li>
+      <li>Identify được 2-3 bước hay skip → focus drill ở Exercise 2.</li>
+    </ul>
+    <p><strong>Time:</strong> 35 phút × 7 ngày = 4 giờ.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 2 — Voice Recording + Self-Review (Tuần 2)</h3>
+    <p><strong>Mục tiêu:</strong> Narration fluency. Im &lt; 30 giây mỗi lần.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Voice Memo app trên phone. Record khi solve.</li>
+      <li>Mỗi ngày 1 bài Medium. Record full 35 phút.</li>
+      <li>Tối đó nghe lại. Đếm: số lần im &gt; 30s, số lần im &gt; 60s.</li>
+      <li>Note bug-thinking: bạn diễn đạt mạch lạc không? Câu nào lặp?</li>
+      <li>Goal: tuần 1 = baseline; tuần 2 = im &gt; 30s giảm 50%.</li>
+    </ol>
+    <p><strong>Acceptance:</strong></p>
+    <ul>
+      <li>Sau 14 ngày: im &gt; 30s &lt; 3 lần / bài (Medium 35 phút).</li>
+      <li>Im &gt; 60s = 0 lần. Nếu cần &gt; 60s suy nghĩ, phải narrate quá trình suy nghĩ.</li>
+      <li>Narration cover được U/M/P/R/E (I tự cover khi code).</li>
+    </ul>
+    <p><strong>Why it works:</strong> Phỏng vấn không phải bài thi viết — interviewer nghe bạn nghĩ. Reflex narration giải phóng 80% bandwidth não cho problem solving.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Exercise 3 — Pattern Recognition + BUD Drill (Tuần 3-4)</h3>
+    <p><strong>Mục tiêu:</strong> Match pattern &lt; 60s + derive optimal qua BUD trong 5 phút.</p>
+    <p><strong>Cách làm:</strong></p>
+    <ol>
+      <li>Mỗi ngày: 3 bài Medium random từ LeetCode (filter Frequency High).</li>
+      <li>Phase 1 (60s): Đọc đề, đoán pattern, ghi 1 dòng.</li>
+      <li>Phase 2 (5 phút): Viết brute force + áp dụng B/U/D + optimal approach.</li>
+      <li>KHÔNG code. Chỉ approach + complexity.</li>
+      <li>Verify với LC editorial. Đúng ✓, sai ✗ + note vì sao miss.</li>
+    </ol>
+    <p><strong>Acceptance:</strong></p>
+    <ul>
+      <li>Pattern accuracy ≥ 80% sau 4 tuần (16/20 bài random).</li>
+      <li>BUD analysis dẫn đến optimal cho ≥ 80% bài.</li>
+      <li>Note miss patterns ≤ 5 dòng — tự rút insight, không copy editorial.</li>
+    </ul>
+    <p><strong>Bonus:</strong> Mock với người thật trên Pramp.com (free) hoặc Interviewing.io (paid). Real human pressure khác camera 1 mình.</p>
+  </div>
+</section>
+
+<!-- ==================== BONUS — 3 TÌNH HUỐNG KHÓ ==================== -->
+<section id="bonus">
+  <h2>💡 Bonus — 3 tình huống khó &amp; câu trả lời mẫu</h2>
+
+  <p>Phỏng vấn không phải lúc nào cũng smooth. 3 tình huống dưới đây là <em>moment-of-truth</em> phân biệt junior panic vs senior compose.</p>
+
+  <div class="break-it">
+    <h4>🔥 Tình huống 1 — "Tôi thực sự không biết hướng giải"</h4>
+    <p><strong>❌ Phản ứng sai:</strong></p>
+    <ul>
+      <li>Im lặng → interviewer impatience tăng.</li>
+      <li>Nói "Tôi không biết" → giving up signal.</li>
+      <li>Code random → blow up trong 5 phút.</li>
+    </ul>
+    <p><strong>✅ Phản ứng đúng:</strong></p>
+    <pre><code class="language-text">"Tôi chưa thấy pattern rõ. Hãy thử brute force trước để có baseline,
+ rồi tôi sẽ apply BUD xem có optimize được không.
+
+ Brute force: [explain]. O(...). Code được nhưng không scale.
+
+ Bottleneck là [...]. Có thể avoid bằng cách [...]?
+
+ Hmm, nếu tôi sort trước thì... [explore aloud]
+
+ Hoặc nếu tôi memoize [...]"</code></pre>
+    <p><strong>Vì sao work:</strong> Interviewer thấy thinking process. Họ sẵn sàng hint nếu thấy bạn đi gần đúng — silence không bao giờ trigger hint.</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔥 Tình huống 2 — "Code có bug, không tìm ra"</h4>
+    <p><strong>❌ Phản ứng sai:</strong></p>
+    <ul>
+      <li>Sửa lung tung mỗi line, không biết đâu là gốc.</li>
+      <li>Re-write từ đầu (mất 10 phút).</li>
+      <li>Comment out đoạn nghi ngờ, không hiểu vì sao.</li>
+    </ul>
+    <p><strong>✅ Phản ứng đúng:</strong></p>
+    <pre><code class="language-text">"Để tôi trace lại từ đầu với example đã vẽ. Có thể bug ở [...]
+ [trace từng bước aloud, viết state ở góc]
+
+ Step 1: i=0, x=2, map={}
+ Step 2: i=1, x=7, complement=2, map.get(2)=0 → return [0,1] ✓
+ ...
+ Step 5: i=4 → expect X, actual Y.
+
+ Ah, ở step k tôi thấy biến A = B nhưng expect C.
+ Vấn đề ở dòng N — tôi quên check condition Z."</code></pre>
+    <p><strong>Vì sao work:</strong> Systematic debug = senior signal. Tracking state ra giấy/màn hình thay vì "trace trong đầu" → bug locate được trong 2 phút thay vì 10.</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔥 Tình huống 3 — "Interviewer hint mà không hiểu"</h4>
+    <p><strong>❌ Phản ứng sai:</strong></p>
+    <ul>
+      <li>"Sorry tôi không hiểu" → ngừng tương tác.</li>
+      <li>Cười gượng, mặt bối rối → low confidence signal.</li>
+      <li>Ignored hint, tiếp tục hướng cũ → "doesn't take feedback".</li>
+    </ul>
+    <p><strong>✅ Phản ứng đúng:</strong></p>
+    <pre><code class="language-text">"Bạn đang gợi ý tôi nghĩ về [paraphrase hint]?
+ Để tôi try direction này.
+
+ [explore aloud — even if uncertain]
+
+ OK tôi hiểu rồi — ý là [restate hint with confidence].
+ Tôi sẽ adjust như sau: [new approach]."</code></pre>
+    <p><strong>Vì sao work:</strong> Show that you can take feedback and integrate. Đây là <em>collaboration signal</em> — interviewer muốn làm việc với bạn, không phải coding robot.</p>
+  </div>
+</section>
+
+<!-- ==================== MEASURE PROGRESS ==================== -->
+<section id="measure">
+  <h2>📊 Đo lường sự tiến bộ — Data-driven prep</h2>
+
+  <p>Cảm tính "tôi đang tiến bộ" không đủ. Phải có data. Tạo file Notion / Google Sheet / spreadsheet với schema:</p>
+
+  <pre><code class="language-text">| Date | Problem | Difficulty | Pattern    | Time | Solved? | Silent>30s | Edge cases hit | Notes              |
+|------|---------|------------|------------|------|---------|------------|----------------|--------------------|
+| 5/1  | LC 1    | Easy       | HashMap    | 18m  | ✅       | 2          | 4/5            | Forgot edge dup    |
+| 5/2  | LC 121  | Easy       | DP         | 22m  | ✅       | 4          | 3/5            | Brute first slow   |
+| 5/3  | LC 3    | Medium     | Sliding W. | 35m  | ✅       | 6          | 5/7            | Bug ">=left" cond  |
+| 5/4  | LC 49   | Medium     | HashMap    | 28m  | ✅       | 3          | 5/5            | Clean run          |
+| 5/5  | LC 200  | Medium     | DFS        | 40m  | ⚠️       | 8          | 3/6            | Edge case sea miss |</code></pre>
+
+  <h3>Sau 30 bài, plot 4 charts:</h3>
+  <ol>
+    <li><strong>Time trend (line chart):</strong> Time vs date. Should trend down. Stagnant = drill chưa hiệu quả.</li>
+    <li><strong>Pattern weakness (bar chart):</strong> Pattern nào "Time &gt; expected" nhiều nhất → focus drill pattern đó.</li>
+    <li><strong>Silent count trend (line chart):</strong> Should drop từ ~10 xuống &lt; 3 sau 30 bài.</li>
+    <li><strong>Edge case hit rate (% bar):</strong> % edge cases tự nhớ ra / total expected. Goal: ≥ 80%.</li>
+  </ol>
+
+  <div class="callout success">
+    <strong>Data-driven prep:</strong> Đây là cách candidate ex-FAANG khuyến nghị để prep cho L5 Google interview. Không có data = không biết weakness = drill mù. <br><br>
+    <strong>Spreadsheet template:</strong> Tạo Google Sheet với 9 cột trên, conditional formatting cho "Solved?" (✅ xanh, ⚠️ vàng, ❌ đỏ), pivot table theo Pattern để thấy weakness.
+  </div>
+</section>
+
+<!-- ==================== RUNNABLE CODE LAB ==================== -->
+<section id="umpire-runnable-lab">
+<h2>🧪 UMPIRE Runnable Lab — Áp dụng từng bước với code thật <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Đọc UMPIRE 6 bước là 1 chuyện, làm được trên problem mới là chuyện khác. Lab dưới đây là Maximum Subarray (LC 53) — anh đi qua từng bước, code chạy được, biết khi nào sai.</p>
+
+<div class="callout tip">
+<div class="ctitle">📝 Cách dùng</div>
+<p>Mở IDE / LeetCode tab, copy code mỗi bước, chạy thử. KHÔNG đọc bước tiếp trước khi tự làm bước trước.</p>
+</div>
+
+<h3>U · Understand — viết ra giấy trước</h3>
+<div class="pause-block">
+<div class="pause-head">⏸ Pause &amp; Predict</div>
+<div class="pause-q">Trước khi đọc code, viết câu trả lời cho:</div>
+<ol>
+<li>Subarray là gì? <em>(contiguous? có thể empty?)</em></li>
+<li>Input <code>[-2, 1, -3, 4, -1, 2, 1, -5, 4]</code> expected output là gì?</li>
+<li>Input all-negative <code>[-3, -1, -2]</code> expected output?</li>
+<li>Input single element <code>[5]</code>? Empty array?</li>
+</ol>
+<div class="pause-hint">Nếu không trả lời được 4 câu này, bạn chưa hiểu đề. Implement sẽ sai edge case.</div>
+</div>
+
+<h3>M · Match — gọi pattern</h3>
+<div class="callout info">
+<div class="ctitle">🎯 Pattern matching</div>
+<p>Keyword "contiguous subarray" + "maximum sum" → 2 pattern khả dĩ: <strong>Sliding window</strong> (cần size cố định, sai) hoặc <strong>1D DP — Kadane's algorithm</strong> (tích lũy state). Chọn DP vì có optimal substructure: <code>maxEndingHere(i) = max(nums[i], nums[i] + maxEndingHere(i-1))</code>.</p>
+</div>
+
+<h3>P · Plan — viết pseudo trước khi code</h3>
+<pre><code class="language-text">1. Init: maxSoFar = nums[0], maxEndingHere = nums[0]
+2. Loop i từ 1 đến n-1:
+   a. maxEndingHere = max(nums[i], maxEndingHere + nums[i])
+   b. maxSoFar = max(maxSoFar, maxEndingHere)
+3. Return maxSoFar
+
+Complexity: O(n) time, O(1) space
+Edge cases: single element, all negative, all positive</code></pre>
+
+<h3>I · Implement — runnable Java</h3>
+<pre><code class="language-java">public class MaximumSubarray {
+    public static int maxSubArray(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            throw new IllegalArgumentException("Input cannot be empty");
+        }
+        int maxSoFar = nums[0];
+        int maxEndingHere = nums[0];
+        for (int i = 1; i &lt; nums.length; i++) {
+            // Quyết định: tiếp tục subarray cũ hay bắt đầu mới?
+            maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);
+            maxSoFar = Math.max(maxSoFar, maxEndingHere);
+        }
+        return maxSoFar;
+    }
+
+    public static void main(String[] args) {
+        // Test 1: typical case
+        assert maxSubArray(new int[]{-2,1,-3,4,-1,2,1,-5,4}) == 6
+            : "Expected 6 for [-2,1,-3,4,-1,2,1,-5,4]";
+
+        // Test 2: all negative — bug typical
+        assert maxSubArray(new int[]{-3,-1,-2}) == -1
+            : "Expected -1 for all negative (not 0!)";
+
+        // Test 3: single element
+        assert maxSubArray(new int[]{5}) == 5 : "Expected 5";
+        assert maxSubArray(new int[]{-7}) == -7 : "Expected -7";
+
+        // Test 4: all positive
+        assert maxSubArray(new int[]{1,2,3,4,5}) == 15 : "Expected 15";
+
+        System.out.println("✅ All tests passed");
+    }
+}</code></pre>
+<p><strong>Lưu ý:</strong> Chạy với <code>java -ea MaximumSubarray</code> để enable assertion. Nếu không có <code>-ea</code>, assert bị skip silently.</p>
+
+<h3>R · Review — trace từng bước</h3>
+<div class="callout warn">
+<div class="ctitle">🔍 Trace input <code>[-2, 1, -3, 4, -1, 2, 1, -5, 4]</code></div>
+<pre><code class="language-text">i=0: maxEndingHere=-2, maxSoFar=-2
+i=1: max(1, -2+1=-1)=1   → maxEndingHere=1,  maxSoFar=1
+i=2: max(-3, 1-3=-2)=-2  → maxEndingHere=-2, maxSoFar=1
+i=3: max(4, -2+4=2)=4    → maxEndingHere=4,  maxSoFar=4
+i=4: max(-1, 4-1=3)=3    → maxEndingHere=3,  maxSoFar=4
+i=5: max(2, 3+2=5)=5     → maxEndingHere=5,  maxSoFar=5
+i=6: max(1, 5+1=6)=6     → maxEndingHere=6,  maxSoFar=6  ← peak
+i=7: max(-5, 6-5=1)=1    → maxEndingHere=1,  maxSoFar=6
+i=8: max(4, 1+4=5)=5     → maxEndingHere=5,  maxSoFar=6
+Result: 6 ✅</code></pre>
+<p><strong>Insight quan trọng:</strong> Tại i=2, maxEndingHere=-2 (negative), nhưng maxSoFar vẫn giữ 1. Đây là lý do tách 2 biến — nếu chỉ có 1 biến, kết quả sẽ sai.</p>
+</div>
+
+<h3>E · Evaluate — follow-up</h3>
+<div class="callout success">
+<div class="ctitle">🎤 Interviewer follow-up — sẵn sàng câu trả lời</div>
+<ol>
+<li><strong>"What if I want the actual subarray, not just sum?"</strong> — track startIdx, endIdx khi update maxSoFar. Khi maxEndingHere reset = nums[i], cập nhật startCandidate = i.</li>
+<li><strong>"Can you do it without DP, divide and conquer?"</strong> — Yes, O(n log n) với recursion: max là max(leftHalf, rightHalf, crossingMiddle). Hỏi interviewer có muốn implement không.</li>
+<li><strong>"What if array doesn't fit in memory?"</strong> — Streaming Kadane: chỉ giữ 2 biến, đọc từng element. O(1) space, single pass.</li>
+<li><strong>"What if circular array?"</strong> — LC 918 Maximum Sum Circular Subarray. Trick: max(kadane, totalSum - minKadane). Cần consider all-negative case riêng.</li>
+</ol>
+</div>
+
+<h3>Lab tự làm — Apply UMPIRE cho 3 problem khác</h3>
+<div class="callout danger">
+<div class="ctitle">🧪 Apply UMPIRE end-to-end</div>
+<p>Làm 3 problem dưới đây, mỗi problem 35 phút, áp dụng full 6 bước. Record màn hình (Loom) hoặc viết ra Notion → review sau:</p>
+<ol>
+<li><strong>LC 121 — Best Time to Buy and Sell Stock</strong> (Easy, ~25min) — Tương tự Kadane về mental model</li>
+<li><strong>LC 198 — House Robber</strong> (Easy, ~30min) — DP với state transition khác</li>
+<li><strong>LC 322 — Coin Change</strong> (Medium, ~40min) — DP bottom-up, có edge case không-solution</li>
+</ol>
+<p><strong>Self-check sau mỗi problem:</strong></p>
+<ul>
+<li>U: có viết edge case ra giấy trước không?</li>
+<li>M: có nói pattern + lý do trong 1 phút không?</li>
+<li>P: pseudo có chứa edge case không?</li>
+<li>I: có narrate khi code không?</li>
+<li>R: có trace bằng concrete input không?</li>
+<li>E: trả lời được 2 follow-up không?</li>
+</ul>
+<p>Nếu thiếu bước nào → đây là weakness. Repeat lần sau.</p>
+</div>
+
+</section>
+
+<!-- ==================== FEYNMAN END ==================== -->
+<section id="feynman-end">
+  <h2>🧠 Feynman test — kết thúc file này</h2>
+
+  <div class="feynman">
+    <h3>🎓 Tự test Feynman — giải thích cho người không biết phỏng vấn FAANG</h3>
+    <p>Đóng file này và thử giải thích các câu sau cho 1 người chưa từng phỏng vấn FAANG (sinh viên, junior chưa apply):</p>
+    <ol>
+      <li><strong>"Vì sao 'code đúng' lại bị fail FAANG?"</strong> — Bạn phải giải được mà không nói "vì interviewer khó tính". Insight: FAANG đánh giá <em>tư duy hiển hiện</em> qua narration, không chỉ kết quả. Silent code = "no signal" = no hire dù output đúng. Phỏng vấn 35 phút là <em>demo cách tôi nghĩ</em>, không phải <em>thi giải nhanh</em>.</li>
+      <li><strong>"BUD analysis là gì? Cho 1 ví dụ derive từ brute force."</strong> — BUD = Bottlenecks (chỗ chậm nhất, cần loại), Unnecessary work (việc không cần làm — bỏ), Duplicated work (việc lặp — memoize). Ví dụ Two Sum: brute O(n²), bottleneck là nested loop, duplicated là search complement lặp → HashMap O(n).</li>
+      <li><strong>"Tại sao 'leap of faith' trong recursion?"</strong> — Vì cố trace stack frame = rối não với tree &gt; 5 node. Leap of faith: tin recursive call đã đúng cho input nhỏ → chỉ cần đảm bảo base case + recursive step combine đúng. Induction trong programming.</li>
+      <li><strong>"Khi nào iterative thắng recursive trong production?"</strong> — Khi depth có thể &gt; 10K (stack overflow), khi hot path (function call overhead), khi cần pause/resume (explicit state). Tree/DP top-down vẫn recursive vì idiomatic + clarity quan trọng hơn ~10% performance.</li>
+      <li><strong>"Vì sao 3 clarifying questions, không hơn không kém?"</strong> — Ít hơn = "jump-to-code mentality". Nhiều hơn = "không assume được edge case thông thường". 3 câu cover 90% mơ hồ — chọn 3 câu mà nếu interviewer trả lời khác, code phải đổi.</li>
+    </ol>
+    <p>Nếu bí 1 câu → quay lại section tương ứng. Câu nào trả lời được mượt = đã internalize.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — KHÔNG tin file này 100%</h3>
+    <p>File này tổng hợp từ kinh nghiệm + tài liệu phổ biến, nhưng có thể có sai sót. Verify bằng các nguồn primary:</p>
+    <ul>
+      <li><strong>How to Solve It</strong> (George Pólya, 1945) — ISBN 978-0691164076. Gốc của mọi framework problem-solving. Đọc Part I (12 trang) là đủ ngấm tư duy.</li>
+      <li><strong>Cracking the Coding Interview 6e</strong> (Gayle McDowell, 2015) — ISBN 978-0984782857. Chapter "Approach to Problem-Solving" + "Big O" là bible cho UMPIRE + BUD.</li>
+      <li><strong>Elements of Programming Interviews in Java</strong> (Aziz, Lee, Prakash, 2016) — ISBN 978-1517435806. Harder tier prep, framework formal hơn.</li>
+      <li><strong>NeetCode 150 + courses</strong> — neetcode.io/courses (free + paid). Practical UMPIRE applied to real problems.</li>
+      <li><strong>Tech Interview Handbook</strong> — github.com/yangshun/tech-interview-handbook. Open-source compilation.</li>
+      <li><strong>Pramp / Interviewing.io</strong> — free / paid mock interviews. Real human pressure không thay được.</li>
+      <li><strong>Java JDK docs</strong> — verify behavior <code>HashMap</code>, <code>PriorityQueue</code>, <code>ArrayDeque</code>: docs.oracle.com/en/java/javase/21/docs/api/</li>
+    </ul>
+    <p><strong>Khi nào trust file này, khi nào verify primary:</strong></p>
+    <ul>
+      <li>UMPIRE 6 bước, BUD analysis — file này OK (đã chuẩn hoá theo McDowell + NeetCode).</li>
+      <li>Code templates — TRUST nhưng test trên LeetCode trước khi memorize.</li>
+      <li>Complexity numbers — verify với LC editorial.</li>
+      <li>Historical facts (ngày publish sách, framework gốc) — verify trên Amazon ISBN / Google Books.</li>
+      <li>Câu chuyện A &amp; B — composite từ feedback ẩn danh, không phải 1 candidate cụ thể. Pattern thì chuẩn.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Drill 2 tuần để internalize framework — đặt vào lịch ngay</h3>
+    <pre><code class="language-text">Tuần 1 — Walk-through có guide
+  Ngày 1:   Đọc lại Section 3 (UMPIRE), nắm 6 bước
+  Ngày 2-7: 1 bài Easy/ngày × 7 bài
+            Mỗi bài viết note 6 bước UMPIRE vào file riêng
+            Time: 35 phút mỗi bài
+
+Tuần 2 — Solo + recording
+  Ngày 8-14: 1 bài Medium/ngày
+             Record voice khi solve
+             Sau khi xong, nghe lại — self-eval rubric
+
+Rubric self-eval (0-2 mỗi mục, max 12):
+  □ Clarify đầy đủ trong 3 phút?           [0/1/2]
+  □ Pattern match rõ ràng?                  [0/1/2]
+  □ Brute force trước optimal?              [0/1/2]
+  □ Narrate liên tục, im < 30s?             [0/1/2]
+  □ Test với example + edge cases?          [0/1/2]
+  □ Complexity tự verify đúng?              [0/1/2]
+
+Score 9-12: ready cho phase pattern (vào #42)
+Score 6-8:  cần thêm 1 tuần drill
+Score 0-5:  đọc lại file, slow down
+
+14 bài Curated cho drill (mix dễ → vừa):
+  Easy (tuần 1):   1 (Two Sum), 121 (Best Time Stock), 217 (Contains Dup),
+                   242 (Anagram), 125 (Valid Palindrome), 20 (Valid Parens),
+                   104 (Max Depth Tree)
+  Medium (tuần 2): 3 (Longest Substring), 15 (3Sum), 49 (Group Anagrams),
+                   53 (Max Subarray), 102 (Level Order Tree), 200 (Number of Islands),
+                   238 (Product Except Self)</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps sau khi master file này (~3 tuần):</strong>
+    <ol>
+      <li><a href="42-leetcode-patterns-mastery.html">#42 LeetCode Patterns Mastery</a> — 20 patterns × template × drill (8-12 tuần).</li>
+      <li><a href="44-faang-coding-playbook.html">#44 FAANG Coding Playbook</a> — Mock structure, interviewer signals, 5-trục rubric.</li>
+      <li><a href="45-faang-system-design.html">#45 FAANG System Design HLD</a> — 4S framework cho HLD round.</li>
+      <li><a href="46-faang-behavioral-deep-dive.html">#46 FAANG Behavioral</a> — STAR + Amazon LPs + Googleyness.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng vào #42:</strong> 14 bài drill xong · Voice recording 0 lần im &gt; 60s · BUD analysis reflex &lt; 5 phút · Edge case ≥ 5 cases tự nghĩ.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

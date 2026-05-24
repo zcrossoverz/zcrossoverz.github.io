@@ -143,6 +143,51 @@
     font-size: 12px;
     font-weight: 600;
   }
+  .depth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .depth-ok       { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+  .depth-good     { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .depth-enrich   { background: #fef3c7; color: #92400e; border-color: #fbbf24; }
+  .depth-rewrite  { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  [data-theme="dark"] .depth-ok      { background: rgba(16,185,129,.15); color: #6ee7b7; border-color: rgba(16,185,129,.4); }
+  [data-theme="dark"] .depth-good    { background: rgba(59,130,246,.15); color: #93c5fd; border-color: rgba(59,130,246,.4); }
+  [data-theme="dark"] .depth-enrich  { background: rgba(245,158,11,.15); color: #fbbf24; border-color: rgba(245,158,11,.4); }
+  [data-theme="dark"] .depth-rewrite { background: rgba(239,68,68,.15); color: #fca5a5; border-color: rgba(239,68,68,.4); }
+  .depth-legend {
+    margin: 18px 0 0;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+  }
+  .depth-legend .legend-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-right: 6px;
+  }
+  .depth-legend .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .module-foot .depth-badge { margin-right: auto; }
   .empty-state {
     display: none;
     margin-top: 20px;
@@ -179,6 +224,8 @@
     <a href="#database">Database</a>
     <a href="#architecture">Architecture Core</a>
     <a href="#messaging-resilience">Messaging & Resilience</a>
+    <a href="#reliability-compliance">Reliability & Compliance</a>
+    <a href="#interview-tracks">Interview Tracks</a>
     <a href="#junior-foundation">Junior Foundation</a>
   </nav>
 </aside>
@@ -193,16 +240,24 @@
     <p class="lead">Trang chủ gom các file HTML hiện có trong thư mục này để mở nhanh từng bài học.</p>
   </div>
   <div class="home-actions">
-    <span class="phase-tag">29 bài</span>
+    <span class="phase-tag">37 bài</span>
     <span class="phase-tag">HTML offline</span>
   </div>
 </section>
 
 <div class="search-wrap">
   <input class="search-input" id="moduleSearch" type="search" placeholder="Tìm theo số bài, tên chủ đề hoặc nhóm..." autocomplete="off">
-  <div class="count-pill" id="resultCount">29 bài</div>
+  <div class="count-pill" id="resultCount">37 bài</div>
 </div>
 <div class="empty-state" id="emptyState">Không có bài nào khớp với từ khóa hiện tại.</div>
+
+<div class="depth-legend" aria-label="Trạng thái depth chuẩn">
+  <span class="legend-title">Trạng thái depth chuẩn:</span>
+  <span class="legend-item"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span> 8 quy tắc + coverage đủ + CORE marking</span>
+  <span class="legend-item"><span class="depth-badge depth-good">🟢 Khá</span> đa số marker tốt, touch-up nhỏ</span>
+  <span class="legend-item"><span class="depth-badge depth-enrich">🟡 Cần enrich</span> thiếu 2-3 marker (3-level, Symptom, Lab)</span>
+  <span class="legend-item"><span class="depth-badge depth-rewrite">🔴 Cần rewrite</span> Pause/Predict generic, banking, hoặc thiếu nặng</span>
+</div>
 
 <section id="core-java" class="module-section">
   <h2 class="no-border">Core Java Mastery</h2>
@@ -216,7 +271,7 @@
         <h3>Java Concurrency</h3>
         <p>Thread, executor, CompletableFuture, race condition, deadlock và cách debug thread issue trong production.</p>
       </div>
-      <div class="module-foot"><span>01-java-concurrency.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>01-java-concurrency.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="02-jvm-internals.html" data-search="02 jvm internals gc tuning memory leak heap dump classloader jit metaspace">
@@ -228,7 +283,7 @@
         <h3>JVM Internals</h3>
         <p>Memory layout, GC tuning, memory leak, heap dump, classloader, JIT và JVM flags cho production.</p>
       </div>
-      <div class="module-foot"><span>02-jvm-internals.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>02-jvm-internals.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="03-java-8-17-features.html" data-search="03 java 8 17 features stream lambda optional record sealed pattern matching">
@@ -240,7 +295,7 @@
         <h3>Java 8-17 Features</h3>
         <p>Stream, lambda, Optional, record, sealed class, pattern matching và trade-off khi review code.</p>
       </div>
-      <div class="module-foot"><span>03-java-8-17-features.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>03-java-8-17-features.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="04-java-memory-model.html" data-search="04 java memory model jmm happens-before volatile synchronized atomic safe publication">
@@ -252,7 +307,7 @@
         <h3>Java Memory Model</h3>
         <p>Happens-before, volatile, synchronized, AtomicXxx, safe publication và các bug multi-core khó reproduce.</p>
       </div>
-      <div class="module-foot"><span>04-java-memory-model.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>04-java-memory-model.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -269,7 +324,7 @@
         <h3>Spring Core</h3>
         <p>IoC container, dependency injection, bean lifecycle, scope và AOP proxy qua các bug thường gặp.</p>
       </div>
-      <div class="module-foot"><span>05-spring-core.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>05-spring-core.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="06-spring-boot.html" data-search="06 spring boot auto configuration actuator custom starter configuration properties">
@@ -281,7 +336,7 @@
         <h3>Spring Boot</h3>
         <p>Auto-configuration, property binding, actuator, custom starter và cách debug bean missing.</p>
       </div>
-      <div class="module-foot"><span>06-spring-boot.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>06-spring-boot.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="07-spring-transaction.html" data-search="07 spring transaction isolation propagation rollback rules transactional">
@@ -293,7 +348,7 @@
         <h3>Spring Transaction</h3>
         <p>Isolation, propagation, rollback rules, event sau commit và boundary đúng cho checkout flow.</p>
       </div>
-      <div class="module-foot"><span>07-spring-transaction.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>07-spring-transaction.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="08-spring-security.html" data-search="08 spring security jwt oauth2 filter chain method security cors">
@@ -305,7 +360,7 @@
         <h3>Spring Security</h3>
         <p>JWT, filter chain, SecurityContext, method security, CORS và authorization theo ownership.</p>
       </div>
-      <div class="module-foot"><span>08-spring-security.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>08-spring-security.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="09-spring-data-jpa.html" data-search="09 spring data jpa hibernate n+1 lazy eager cache optimistic pessimistic lock">
@@ -317,7 +372,7 @@
         <h3>Spring Data JPA & Hibernate</h3>
         <p>N+1, Lazy/Eager, L1/L2 cache, dirty checking, projections và locking cho daily backend work.</p>
       </div>
-      <div class="module-foot"><span>09-spring-data-jpa.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>09-spring-data-jpa.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="10-spring-webflux.html" data-search="10 spring webflux reactive project reactor mono flux backpressure webclient">
@@ -329,7 +384,7 @@
         <h3>Spring WebFlux</h3>
         <p>Reactive programming, Mono/Flux, WebClient, backpressure, schedulers và khi nào không nên dùng.</p>
       </div>
-      <div class="module-foot"><span>10-spring-webflux.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>10-spring-webflux.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -346,7 +401,7 @@
         <h3>SQL Nâng Cao</h3>
         <p>Index strategy, execution plan, query optimization, covering index và cách đọc bottleneck query trong production.</p>
       </div>
-      <div class="module-foot"><span>11-sql-advanced.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>11-sql-advanced.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="12-database-design.html" data-search="12 database design normalization partitioning sharding read replica schema data modeling">
@@ -358,7 +413,7 @@
         <h3>Database Design</h3>
         <p>Normalization, data modeling, partitioning, sharding, read replica và cách thiết kế database chịu scale.</p>
       </div>
-      <div class="module-foot"><span>12-database-design.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>12-database-design.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="13-distributed-transaction.html" data-search="13 distributed transaction 2pc saga outbox eventual consistency transaction distributed systems">
@@ -370,7 +425,7 @@
         <h3>Distributed Transaction</h3>
         <p>2PC, Saga, Outbox pattern, eventual consistency và cách giữ dữ liệu đúng khi nhiều service cùng tham gia workflow.</p>
       </div>
-      <div class="module-foot"><span>13-distributed-transaction.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>13-distributed-transaction.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="14-redis.html" data-search="14 redis cache caching distributed lock pub sub data structures expiry strategy database">
@@ -382,7 +437,7 @@
         <h3>Redis</h3>
         <p>Caching patterns, distributed lock, Pub/Sub, data structures, expiry strategy và các lỗi cache production hay gặp.</p>
       </div>
-      <div class="module-foot"><span>14-redis.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>14-redis.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -399,7 +454,7 @@
         <h3>Clean Architecture & DDD</h3>
         <p>Boundary, domain model, use case, repository và cách giữ codebase dễ maintain khi nghiệp vụ lớn dần.</p>
       </div>
-      <div class="module-foot"><span>15-clean-architecture-ddd.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>15-clean-architecture-ddd.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="16-design-patterns.html" data-search="16 design patterns factory strategy observer builder adapter backend">
@@ -411,7 +466,7 @@
         <h3>Design Patterns</h3>
         <p>Các pattern thường gặp trong backend Java, khi nào dùng, trade-off và lỗi áp dụng quá tay.</p>
       </div>
-      <div class="module-foot"><span>16-design-patterns.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>16-design-patterns.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="17-microservices-patterns.html" data-search="17 microservices patterns saga api gateway service discovery cqrs">
@@ -423,7 +478,7 @@
         <h3>Microservices Patterns</h3>
         <p>Service boundary, data ownership, saga, gateway, observability và các quyết định hay bị hỏi trong interview.</p>
       </div>
-      <div class="module-foot"><span>17-microservices-patterns.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>17-microservices-patterns.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="18-event-driven-architecture.html" data-search="18 event driven architecture kafka messaging outbox idempotency async">
@@ -435,7 +490,7 @@
         <h3>Event-Driven Architecture</h3>
         <p>Event, command, async flow, outbox, idempotency và cách thiết kế hệ thống ít coupling hơn.</p>
       </div>
-      <div class="module-foot"><span>18-event-driven-architecture.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>18-event-driven-architecture.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="19-api-design.html" data-search="19 api design rest versioning idempotency key rate limiting pagination api contract">
@@ -447,7 +502,7 @@
         <h3>API Design</h3>
         <p>REST best practices, versioning, idempotency key, rate limiting, pagination và API contract dễ vận hành.</p>
       </div>
-      <div class="module-foot"><span>19-api-design.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>19-api-design.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -464,7 +519,7 @@
         <h3>Apache Kafka</h3>
         <p>Producer/consumer, partition, offset, ordering, idempotency, rebalancing, lag, DLQ và exactly-once semantics đúng biên.</p>
       </div>
-      <div class="module-foot"><span>20-apache-kafka.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>20-apache-kafka.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="21-async-patterns.html" data-search="21 async patterns message queue job queue outbox scheduler batch durable work">
@@ -476,7 +531,7 @@
         <h3>Async Patterns</h3>
         <p>Message queue, job queue, durable background work, outbox pattern, scheduler, batch và idempotent retry trong production.</p>
       </div>
-      <div class="module-foot"><span>21-async-patterns.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>21-async-patterns.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="22-resilience-patterns.html" data-search="22 resilience patterns circuit breaker retry backoff jitter bulkhead timeout fallback resilience4j">
@@ -488,7 +543,7 @@
         <h3>Resilience Patterns</h3>
         <p>Timeout, retry with backoff/jitter, circuit breaker, bulkhead, fallback và cách tránh cascading failure.</p>
       </div>
-      <div class="module-foot"><span>22-resilience-patterns.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>22-resilience-patterns.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="23-performance-tuning.html" data-search="23 performance tuning profiling bottleneck connection pool hikari jfr async profiler query tuning">
@@ -500,7 +555,113 @@
         <h3>Performance Tuning</h3>
         <p>Method đo trước khi tối ưu, profiling Java, bottleneck taxonomy, query tuning, cache và connection pool tuning.</p>
       </div>
-      <div class="module-foot"><span>23-performance-tuning.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>23-performance-tuning.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="reliability-compliance" class="module-section">
+  <h2>Reliability &amp; Compliance</h2>
+  <div class="module-grid">
+    <a class="module-card" href="33-idempotency.html" data-search="33 idempotency idempotency key retry duplicate request payment exactly once reliability">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#33</span>
+          <span class="module-status">Reliability</span>
+        </div>
+        <h3>Idempotency</h3>
+        <p>Idempotency key, retry safety, duplicate request handling, payment double-charge và state machine production.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>33-idempotency.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="34-audit-logging.html" data-search="34 audit logging compliance append only hash chain worm retention integrity evidence">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#34</span>
+          <span class="module-status">Compliance</span>
+        </div>
+        <h3>Audit Logging &amp; Compliance</h3>
+        <p>Audit trail, append-only log, hash chain, WORM retention, evidence capture và integrity verification.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>34-audit-logging.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="interview-tracks" class="module-section">
+  <h2>Interview Tracks</h2>
+  <div class="module-grid">
+    <a class="module-card" href="37-system-design-interview.html" data-search="37 system design interview framework capacity estimation api data model architecture tradeoff">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#37</span>
+          <span class="module-status">System Design</span>
+        </div>
+        <h3>System Design Interview Framework</h3>
+        <p>Framework trả lời system design: scope, requirements, capacity, API, data model, architecture và trade-off.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>37-system-design-interview.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="38-algorithm-data-structure.html" data-search="38 algorithm data structure array string hashmap stack queue tree graph dynamic programming complexity">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#38</span>
+          <span class="module-status">Algorithms</span>
+        </div>
+        <h3>Algorithm &amp; Data Structure Essentials</h3>
+        <p>Data structures, complexity, array/string, hashmap, stack, queue, tree, graph và DP essentials.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>38-algorithm-data-structure.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="42-leetcode-patterns-mastery.html" data-search="42 leetcode patterns mastery hashing prefix sum two pointers sliding window stack binary search tree graph dp greedy">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#42</span>
+          <span class="module-status">LeetCode</span>
+        </div>
+        <h3>LeetCode Patterns Mastery</h3>
+        <p>20 pattern LeetCode quan trọng: hashing, prefix sum, two pointers, sliding window, stack, tree, graph, DP.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>42-leetcode-patterns-mastery.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="43-algorithm-mental-model.html" data-search="43 algorithm mental model umpire interview thinking brute force optimal trace edge case communication">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#43</span>
+          <span class="module-status">Mental Model</span>
+        </div>
+        <h3>Algorithm Mental Model &amp; UMPIRE</h3>
+        <p>UMPIRE framework, clarify, brute force, optimize, trace, edge cases và communication trong coding interview.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>43-algorithm-mental-model.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="44-faang-coding-playbook.html" data-search="44 faang coding playbook coding interview strategy practice loop mock interview leetcode communication">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#44</span>
+          <span class="module-status">FAANG Coding</span>
+        </div>
+        <h3>FAANG Coding Playbook</h3>
+        <p>Playbook luyện coding interview: practice loop, pattern recall, mock interview, communication và debrief.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>44-faang-coding-playbook.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="45-faang-system-design.html" data-search="45 faang system design hld high level design scalability capacity api database cache queue tradeoff">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#45</span>
+          <span class="module-status">FAANG HLD</span>
+        </div>
+        <h3>FAANG System Design HLD</h3>
+        <p>High-level design cho FAANG: scalability, capacity, API, storage, cache, queue, consistency và trade-off.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>45-faang-system-design.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -517,7 +678,7 @@
         <h3>Junior Foundation Pack</h3>
         <p>Nền tảng cần chắc cho junior backend: Java, web, database, Git và cách trả lời phỏng vấn căn bản.</p>
       </div>
-      <div class="module-foot"><span>47-junior-foundation-pack.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>47-junior-foundation-pack.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="48-java-oop-foundation.html" data-search="48 java oop foundation class object inheritance polymorphism encapsulation abstraction">
@@ -529,7 +690,7 @@
         <h3>Java OOP Foundation</h3>
         <p>Class, object, abstraction, encapsulation, inheritance, polymorphism và cách dùng OOP đúng ngữ cảnh.</p>
       </div>
-      <div class="module-foot"><span>48-java-oop-foundation.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>48-java-oop-foundation.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="49-exception-logging.html" data-search="49 exception logging error handling observability log tracing java backend">
@@ -541,7 +702,7 @@
         <h3>Exception & Logging</h3>
         <p>Error handling, exception boundary, structured logging và tư duy debug production cho backend service.</p>
       </div>
-      <div class="module-foot"><span>49-exception-logging.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>49-exception-logging.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="50-git-daily-workflow.html" data-search="50 git daily workflow branch commit rebase conflict stash reflog junior">
@@ -553,7 +714,7 @@
         <h3>Git Daily Workflow</h3>
         <p>Mental model DAG, working tree/index/commit, branch, rebase, conflict resolution, stash và reflog recovery.</p>
       </div>
-      <div class="module-foot"><span>50-git-daily-workflow.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>50-git-daily-workflow.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="51-linux-backend-essentials.html" data-search="51 linux backend essentials process log grep tail ps top lsof ss curl journalctl">
@@ -565,7 +726,7 @@
         <h3>Linux for Backend Dev</h3>
         <p>Process, port, log, disk, file handle, network debug và các command cần reflex khi xử lý production.</p>
       </div>
-      <div class="module-foot"><span>51-linux-backend-essentials.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>51-linux-backend-essentials.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="52-collections-deep-dive.html" data-search="52 collections deep dive arraylist linkedlist hashmap treemap concurrenthashmap jmh benchmark">
@@ -577,7 +738,7 @@
         <h3>Collections Deep Dive</h3>
         <p>ArrayList internals, HashMap collision, TreeMap ordering, ConcurrentHashMap và cách benchmark bằng evidence.</p>
       </div>
-      <div class="module-foot"><span>52-collections-deep-dive.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>52-collections-deep-dive.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -626,7 +787,7 @@
     const empty = document.getElementById('emptyState');
 
     function normalize(value) {
-      return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     }
 
     function updateFilter() {

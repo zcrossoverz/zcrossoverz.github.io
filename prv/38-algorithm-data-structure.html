@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#38 — Algorithm &amp; Data Structure Essentials (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm K · Interview Skills</span>
+    <span class="sep">›</span>
+    <span class="current">#38 Algorithm &amp; Data Structure</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 6 modules</a>
+      <a href="#real-problem">1. Bài toán: bottleneck production</a>
+      <a href="#why">2. Vì sao học DS &amp; Algo cho backend</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#hashmap">3. HashMap internals</a>
+      <a href="#tree">4. Tree traversal &amp; recursion</a>
+      <a href="#sliding-window">5. Sliding Window</a>
+      <a href="#complexity">6. Complexity analysis framework</a>
+      <div class="toc-section">Production</div>
+      <a href="#hashmap-patterns">7. HashMap production patterns</a>
+      <a href="#tree-problems">8. Tree problems</a>
+      <a href="#rate-limiter">9. Sliding window rate limiter</a>
+      <a href="#two-pointer">10. Two pointer + Binary Search</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ 5 anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm K · Interview Skills · File chống hiểu giả</div>
+  <h1>Algorithm &amp; Data Structure — Cho backend engineer, không phải competitive programmer</h1>
+  <p class="lead">
+    File này KHÔNG dạy LeetCode grind. Nó dạy <strong>khi nào cần data structure nào</strong> + <strong>cơ chế bên trong</strong> mà senior interviewer thường probe: HashMap worst case là gì? Vì sao DB index dùng B-tree thay HashMap? Sliding window khác gì 2 pointer? Đa số dev <em>biết tên</em> HashMap nhưng khi hỏi "tree conversion ở bucket dài > 8 là gì" thì lộ ngay. Đọc xong file phải explain được cơ chế + apply được trong production code.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Hiểu internals + chọn đúng DS cho từng problem + complexity reflex</div>
+    <div><strong>📅 Thời lượng</strong><br>1.5 tuần · Pair với #42 LeetCode Patterns</div>
+    <div><strong>📚 Prereq</strong><br>Java basics · Recursion concept · Đã viết &gt; 1 algorithm tự</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟡 Medium-High · Senior backend luôn hỏi 1-2 coding bài</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — Algorithm dễ hiểu nhầm vì code "ngắn"</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao DS &amp; Algorithm tạo hiểu giả mạnh:</strong>
+    <ul>
+      <li><strong>Code 5 dòng nhìn dễ.</strong> Binary search 10 dòng — đọc xong nghĩ hiểu. Implement không nhìn template thì sai off-by-one ngay.</li>
+      <li><strong>Vocabulary che giấu mechanism.</strong> Biết "HashMap O(1)" nhưng không biết hash collision, không biết Java 8 chuyển sang tree khi nào, không biết khi nào worst-case xảy ra.</li>
+      <li><strong>LeetCode "easy" lừa.</strong> Two Sum looks trivial — implement xong thấy work, không biết edge case nào sót.</li>
+      <li><strong>Senior interview ≠ LeetCode grind.</strong> Hỏi "implement sliding window rate limiter" — code production-ready, không phải submit pass test case.</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ — bạn đang ở đâu?</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td>L1 — Biết tên</td><td>Biết "HashMap O(1)", "TreeMap O(log n)", "BFS dùng Queue".</td><td>Implement HashMap từ đầu (không Java API) trong 30 phút?</td></tr>
+      <tr><td>L2 — Explain mechanism</td><td>Giải thích hash collision, tree conversion, vì sao DB dùng B-tree.</td><td>Trả lời "HashMap worst case khi nào?" + "Java fix thế nào?" trong 30s.</td></tr>
+      <tr><td>L3 — Apply</td><td>Đã implement rate limiter / LRU cache production. Đã debug bug từ wrong DS choice.</td><td>Show code production dùng đúng DS + complexity argued.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li><strong>Mọi code phải gõ tay lại.</strong> Không copy-paste. Off-by-one bug chỉ xuất hiện khi tay gõ.</li>
+    <li><strong>Sau mỗi code template, tự viết 1 variant.</strong> Vd: đọc binary search xong, viết "find first occurrence" version.</li>
+    <li><strong>Section 3 (HashMap) đọc kèm OpenJDK source.</strong> Mở file <code>HashMap.java</code> trong JDK, xem method <code>put()</code> thật sự. Tin code, không tin blog.</li>
+    <li><strong>Complexity phải nói ra miệng.</strong> Mỗi solution viết xong, nói thành tiếng: "Time O(n), space O(n) vì..."</li>
+    <li><strong>2 labs cuối file bắt buộc.</strong> Lab 1 (implement LRU Cache không nhìn) + Lab 2 (rate limiter production). Không làm = vẫn L1.</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap 6 modules</h2>
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>HashMap internals</strong> · CORE · Hash collision, chaining, Java 8 tree conversion</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>Tree traversal</strong> · CORE · DFS (Preorder/Inorder/Postorder), BFS, recursive mental model</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>Sliding Window</strong> · CORE · Fixed vs variable size, template, rate limiter use case</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>Two Pointer + Binary Search</strong> · CORE · Template không sai off-by-one</div></div>
+    <div class="roadmap-item supp"><span class="num">M5</span><div><strong>Complexity analysis</strong> · HIGH-SIGNAL · Big-O reflex + space-time trade-off</div></div>
+    <div class="roadmap-item supp"><span class="num">M6</span><div><strong>Production patterns</strong> · HIGH-SIGNAL · LRU cache, dedup, frequency count, grouping</div></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Phạm vi:</strong> File này focus vào <em>backend engineer interview</em>, không phải competitive programming. Không cover: DP nâng cao, segment tree, suffix array, FFT. Cho FAANG/global tech, xem <a href="42-leetcode-patterns-mastery.html">#42</a> + <a href="43-algorithm-mental-model.html">#43</a>.
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực: Bottleneck production <span class="k-tag core">CORE</span></h2>
+
+  <p>Một e-commerce platform xử lý 10K order/giây giờ cao điểm. Tính năng notification: mỗi order successful gửi push notification. Team phát hiện 3 bottleneck — mỗi cái là 1 wrong-DS choice:</p>
+
+  <pre><code class="language-text">Bottleneck 1: SELECT user_id FROM orders WHERE amount &gt; 1000000
+              → Full table scan, 5 giây cho 50M rows
+              → Thiếu B-tree index trên cột amount
+
+Bottleneck 2: Duplicate notification check
+              "User X đã nhận notification về order Y trong 5 phút qua chưa?"
+              → Đang scan ArrayList of all recent notifications → O(n)
+              → Cần HashSet → O(1), hoặc Bloom Filter cho large scale
+
+Bottleneck 3: Sliding window expiry cho dedup
+              "Lưu notification_ids của 5 phút gần nhất"
+              → Đang lưu HashSet nhưng KHÔNG có cleanup → memory leak
+              → Cần sliding window structure (Deque + timestamp)</code></pre>
+
+  <p>Senior phân biệt mid ở chỗ: <em>biết khi nào cần DS/algo nào</em>, không phải thuộc lòng implementation. File này dạy quyết định đó.</p>
+
+  <h3>4 câu hỏi buộc tư duy</h3>
+  <ol>
+    <li>HashMap put/get là O(1) — nhưng worst case là bao nhiêu? Khi nào xảy ra?</li>
+    <li>Tại sao DB index dùng B-tree thay vì HashMap?</li>
+    <li>Sliding window dùng cho bài nào? Implement thế nào hiệu quả?</li>
+    <li>"Design rate limiter cho API 100 req/phút" — algorithm nào? Trade-off?</li>
+  </ol>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict — trước đọc Section 2</h4>
+    <p>Viết câu trả lời cho 4 câu trên. Đặc biệt câu 2 (B-tree vs HashMap) — đa số junior trả lời "B-tree để sorted" — đúng nhưng <em>chưa đủ</em>. Có 2 lý do nữa. Viết ra giấy đầy đủ trước khi đọc Section 3.</p>
+  </div>
+</section>
+
+<section id="why">
+  <h2>2. Vì sao backend dev cần DS &amp; Algo (KHÔNG phải LeetCode grind) <span class="k-tag core">CORE</span></h2>
+
+  <p>Có 2 lý do thực, không phải "để pass interview":</p>
+
+  <h3>Lý do 1: Bottleneck root cause là wrong-DS choice</h3>
+  <p>90% performance bug trong backend production là <em>chọn sai DS</em>:</p>
+  <ul>
+    <li>Scan O(n) thay vì HashMap O(1)</li>
+    <li>Sort lại mỗi request thay vì cache sorted result</li>
+    <li>ArrayList <code>contains()</code> O(n) trong loop → O(n²)</li>
+    <li>Forget index trên DB column → full scan</li>
+  </ul>
+  <p>Không hiểu Big-O = không profile được. Profile thấy slow → không biết fix.</p>
+
+  <h3>Lý do 2: Senior interview probe mechanism, không chỉ result</h3>
+  <p>Junior interview hỏi "implement Two Sum". Senior interview hỏi:</p>
+  <ul>
+    <li>"Worst case của HashMap là gì? Java 8 cải thiện thế nào?"</li>
+    <li>"Khi nào dùng TreeMap thay HashMap?"</li>
+    <li>"Implement rate limiter, discuss trade-off của 3 approach (fixed window, sliding window, token bucket)."</li>
+    <li>"LRU cache thread-safe — design ConcurrentHashMap-based hay LinkedHashMap với synchronized?"</li>
+  </ul>
+
+  <h3>Phân biệt với LeetCode grind</h3>
+  <table>
+    <thead><tr><th>LeetCode grind (FAANG track)</th><th>Backend interview (file này)</th></tr></thead>
+    <tbody>
+      <tr><td>500+ problems</td><td>~50 patterns đủ dùng</td></tr>
+      <tr><td>Optimal solution dưới 30 phút</td><td>Production-ready code: edge cases, logging, thread-safety</td></tr>
+      <tr><td>Algorithm complexity sâu (DP, graph)</td><td>Common DS internals (HashMap, Tree, Heap, Stack/Queue)</td></tr>
+      <tr><td>Pattern matching tốc độ</td><td>Trade-off discussion sâu</td></tr>
+      <tr><td>Anonymous problem</td><td>Problem trong context production system</td></tr>
+    </tbody>
+  </table>
+
+  <p>Nếu target FAANG → cần cả 2. Nếu target VN backend senior → file này + <a href="#real-problem">production patterns</a> đủ.</p>
+</section>
+
+<section id="hashmap">
+  <h2>3. HashMap internals — Câu hỏi #1 phỏng vấn Java <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>L2 check sau section:</strong> Explain được "Worst case HashMap khi nào? Java 8 fix thế nào?" trong &lt; 30 giây không vướng.
+  </div>
+
+  <h3>Cấu trúc bên trong</h3>
+  <pre><code class="language-text">HashMap&lt;K,V&gt; trong Java 8+:
+
+internal: Node&lt;K,V&gt;[] table        ← array of buckets
+default capacity: 16
+load factor: 0.75 (resize khi size &gt; capacity × 0.75)
+
+Mỗi bucket có thể là:
+- null (empty)
+- single Node (no collision)
+- LinkedList of Nodes (collision, chain length ≤ 8)
+- Red-Black TreeNode (chain length &gt; 8 và capacity ≥ 64)</code></pre>
+
+  <h3>Put operation — step by step</h3>
+  <pre><code class="language-java">// Pseudo code (gần với JDK HashMap.put):
+V put(K key, V value) {
+    // Step 1: Compute hash
+    int hash = key.hashCode();
+    hash = hash ^ (hash >>> 16);  // Spreading high bits to low
+
+    // Step 2: Find bucket index
+    int index = hash &amp; (table.length - 1);  // Bitwise AND, faster than %
+
+    // Step 3: Check bucket
+    Node node = table[index];
+    if (node == null) {
+        table[index] = new Node(hash, key, value);
+        return null;
+    }
+
+    // Step 4: Walk chain hoặc tree, check key.equals()
+    while (node != null) {
+        if (node.hash == hash &amp;&amp; node.key.equals(key)) {
+            V old = node.value;
+            node.value = value;  // Update existing
+            return old;
+        }
+        node = node.next;
+    }
+
+    // Step 5: Append new node
+    addToBucket(table, index, new Node(hash, key, value));
+
+    // Step 6: Resize if needed
+    if (++size &gt; threshold) resize();
+}</code></pre>
+
+  <h3>Collision &amp; Worst case</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>Java 7 và trước (worst case O(n))</h4>
+      <pre><code class="language-text">Khi nhiều key hash về cùng bucket:
+- Chain LinkedList dài
+- get(key) phải traverse chain: O(n)
+
+Hash collision attack:
+- Attacker craft keys cùng hash
+- Server lookup → O(n) → DoS
+- 2011: Java/Tomcat dính lỗi này → CVE-2011-4858</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>Java 8+ (fix với tree)</h4>
+      <pre><code class="language-text">Khi chain &gt; 8 nodes &amp;&amp; capacity ≥ 64:
+- Convert LinkedList → Red-Black Tree
+- get(key) trên tree: O(log n)
+
+Worst case O(n) → O(log n)
+Plus: randomized hash seed (Java 7+)
+→ Attacker không predict được collision</code></pre>
+    </div>
+  </div>
+
+  <h3>📌 Đáp án Pause &amp; Predict — Vì sao DB index dùng B-tree?</h3>
+  <div class="callout info">
+    <strong>3 lý do (không phải 1):</strong>
+    <ol>
+      <li><strong>Sorted order.</strong> B-tree iterate sorted → range query <code>WHERE date &gt; '2026-01-01'</code> hiệu quả. HashMap không sorted.</li>
+      <li><strong>Disk-friendly layout.</strong> B-tree fan-out cao (mỗi node có 100-500 children) → cây "lùn", ít disk I/O. HashMap random distribution → mỗi lookup 1 disk seek không predictable.</li>
+      <li><strong>Persistence stability.</strong> B-tree on-disk format stable, không cần rehash khi resize. HashMap resize = move toàn bộ entries → expensive cho disk-based.</li>
+    </ol>
+    Nếu bạn chỉ viết được 1-2 lý do (chỉ "sorted") → vẫn L1. 3 lý do = L2.
+  </div>
+
+  <h3>Quy tắc thiết kế key cho HashMap</h3>
+  <ol>
+    <li><strong>Override <code>equals</code> + <code>hashCode</code> theo contract.</strong> Object.equals() compare reference — không đủ cho custom key.</li>
+    <li><strong>Key phải immutable</strong> (hoặc không modify sau put). Mutate key → hash thay đổi → lookup fail.</li>
+    <li><strong>hashCode phải distribute tốt.</strong> Đừng return constant (vd <code>return 1;</code>) → toàn bộ vào 1 bucket → O(n).</li>
+    <li><strong>String, Integer, UUID</strong> đã immutable + hashCode tốt — dùng làm key an toàn.</li>
+  </ol>
+
+  <div class="misconception">
+    <h4>❌ Pitfall: Custom key không override equals/hashCode</h4>
+    <pre><code class="language-java">class UserId {
+    String value;
+    UserId(String v) { value = v; }
+    // ❌ Không override equals/hashCode
+}
+
+Map&lt;UserId, User&gt; map = new HashMap&lt;&gt;();
+map.put(new UserId("u123"), user);
+
+UserId lookup = new UserId("u123");
+map.get(lookup);  // null! Khác instance, default equals = reference equality
+
+// ✅ Fix:
+class UserId {
+    final String value;
+    UserId(String v) { value = v; }
+    @Override public boolean equals(Object o) {
+        return o instanceof UserId &amp;&amp; ((UserId)o).value.equals(value);
+    }
+    @Override public int hashCode() { return value.hashCode(); }
+}</code></pre>
+  </div>
+</section>
+
+<section id="tree">
+  <h2>4. Tree traversal &amp; recursive thinking <span class="k-tag core">CORE</span></h2>
+
+  <h3>4 cách traverse tree</h3>
+  <pre><code class="language-text">Binary tree:
+       1
+      / \
+     2   3
+    / \ / \
+   4  5 6  7
+
+DFS (Depth-First — recursive natural):
+  Preorder  (Root → Left → Right):  1, 2, 4, 5, 3, 6, 7
+    → Copy tree, serialize structure (phải biết root trước)
+  Inorder   (Left → Root → Right):  4, 2, 5, 1, 6, 3, 7
+    → Sorted order cho BST!
+  Postorder (Left → Right → Root):  4, 5, 2, 6, 7, 3, 1
+    → Delete tree (xoá con trước), evaluate expression tree
+
+BFS (Breadth-First — level by level):  1, 2, 3, 4, 5, 6, 7
+  → Shortest path unweighted, level-wise processing</code></pre>
+
+  <h3>Recursive thinking — "leap of faith"</h3>
+  <p>Đa số dev sợ recursion vì cố "trace stack". Sai — sẽ rối ngay với tree &gt; 5 node. Đúng: <em>tin recursive call đã đúng cho subtree</em>, chỉ cần đảm bảo base case + combine.</p>
+
+  <pre><code class="language-java">// Height của tree
+int height(TreeNode node) {
+    if (node == null) return 0;            // base case
+    // Tin height(left) đã đúng. Tin height(right) đã đúng.
+    return 1 + Math.max(height(node.left), height(node.right));
+}
+
+// Validate BST
+boolean isValidBST(TreeNode root) {
+    return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+boolean validate(TreeNode node, long min, long max) {
+    if (node == null) return true;
+    if (node.val &lt;= min || node.val &gt;= max) return false;
+    return validate(node.left, min, node.val)
+        &amp;&amp; validate(node.right, node.val, max);
+}
+
+// Lowest Common Ancestor
+TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {
+    if (root == null || root == p || root == q) return root;
+    TreeNode left = lca(root.left, p, q);
+    TreeNode right = lca(root.right, p, q);
+    if (left != null &amp;&amp; right != null) return root;  // p và q ở 2 phía
+    return left != null ? left : right;
+}</code></pre>
+
+  <h3>BFS — iterative với Queue</h3>
+  <pre><code class="language-java">List&lt;List&lt;Integer&gt;&gt; levelOrder(TreeNode root) {
+    List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+    if (root == null) return result;
+
+    Queue&lt;TreeNode&gt; queue = new ArrayDeque&lt;&gt;();   // ArrayDeque tốt hơn LinkedList
+    queue.offer(root);
+
+    while (!queue.isEmpty()) {
+        int levelSize = queue.size();   // Chốt size để tách level
+        List&lt;Integer&gt; level = new ArrayList&lt;&gt;();
+
+        for (int i = 0; i &lt; levelSize; i++) {
+            TreeNode node = queue.poll();
+            level.add(node.val);
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+        result.add(level);
+    }
+    return result;
+}</code></pre>
+
+  <div class="callout info">
+    <strong>Khi nào DFS vs BFS:</strong><br>
+    <strong>DFS</strong> khi: explore all paths (backtracking, permutation), detect cycle, tree problem natural recursive.<br>
+    <strong>BFS</strong> khi: shortest path unweighted, level-by-level processing, find anything trong "ít step" nhất.<br>
+    <strong>Memory:</strong> DFS stack O(height). BFS queue O(width — max level size). Wide tree → DFS efficient hơn. Deep tree → BFS efficient hơn.
+  </div>
+</section>
+
+<section id="sliding-window">
+  <h2>5. Sliding Window — Pattern cho substring/subarray <span class="k-tag core">CORE</span></h2>
+
+  <h3>2 loại window</h3>
+  <table>
+    <thead><tr><th>Loại</th><th>Đặc điểm</th><th>Use case</th></tr></thead>
+    <tbody>
+      <tr><td>Fixed size</td><td>Window luôn k elements, slide 1 element</td><td>Max sum subarray size k, moving average</td></tr>
+      <tr><td>Variable size</td><td>Expand khi OK, shrink khi violate</td><td>Longest substring with property, rate limiter</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Template variable size</h3>
+  <pre><code class="language-java">int slidingWindow(int[] arr) {
+    int left = 0, result = 0;
+
+    for (int right = 0; right &lt; arr.length; right++) {
+        // 1. Expand: add arr[right] vào window
+        addToWindow(arr[right]);
+
+        // 2. Shrink: nếu violate constraint, di chuyển left
+        while (violatesConstraint()) {
+            removeFromWindow(arr[left]);
+            left++;
+        }
+
+        // 3. Update result với window hợp lệ hiện tại
+        result = Math.max(result, right - left + 1);
+    }
+    return result;
+}</code></pre>
+
+  <p><strong>Why O(n) không O(n²)?</strong> Mặc dù có nested loop (<code>for right</code> + <code>while left</code>), mỗi element vào window đúng 1 lần và ra đúng 1 lần. Total operations = 2n → O(n).</p>
+
+  <h3>Ví dụ: longest substring with K distinct chars</h3>
+  <pre><code class="language-java">int longestKDistinct(String s, int k) {
+    if (k == 0) return 0;
+    Map&lt;Character, Integer&gt; count = new HashMap&lt;&gt;();
+    int left = 0, maxLen = 0;
+
+    for (int right = 0; right &lt; s.length(); right++) {
+        char c = s.charAt(right);
+        count.merge(c, 1, Integer::sum);
+
+        while (count.size() &gt; k) {
+            char leftChar = s.charAt(left);
+            count.merge(leftChar, -1, Integer::sum);
+            if (count.get(leftChar) == 0) count.remove(leftChar);
+            left++;
+        }
+
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}</code></pre>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: Sliding window có hạn chế gì?</h4>
+    <ul>
+      <li><strong>Chỉ work với contiguous (kề nhau).</strong> Subarray OK, subsequence (không cần kề) không dùng được.</li>
+      <li><strong>Cần state có thể incremental update.</strong> Sum, count, max trong window OK. Nhưng median trong window phức tạp (cần 2 heap).</li>
+      <li><strong>Negative values phá monotonicity.</strong> Kadane (max subarray) hoạt động với negative — sliding window không.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="complexity">
+  <h2>6. Complexity analysis — Framework tư duy <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <h3>Big-O cheat sheet</h3>
+  <table>
+    <thead><tr><th>Complexity</th><th>Example</th><th>n=10^6 takes</th></tr></thead>
+    <tbody>
+      <tr><td>O(1)</td><td>HashMap get/put, array index</td><td>~1 ns</td></tr>
+      <tr><td>O(log n)</td><td>Binary search, BST, heap</td><td>~20 ns</td></tr>
+      <tr><td>O(n)</td><td>Linear scan, single loop</td><td>~1 ms</td></tr>
+      <tr><td>O(n log n)</td><td>Sort (merge, timsort, heap sort)</td><td>~20 ms</td></tr>
+      <tr><td>O(n²)</td><td>Nested loop, bubble sort</td><td>~1000 sec ≈ 17 phút</td></tr>
+      <tr><td>O(2^n)</td><td>Brute force subsets</td><td>vô hạn cho n=60</td></tr>
+      <tr><td>O(n!)</td><td>Permutations brute force</td><td>n=20 đã quá lâu</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Space complexity — hay bị quên</h3>
+  <ul>
+    <li><strong>Recursive stack:</strong> O(depth). BST balanced O(log n). BST skewed O(n) — risk stack overflow.</li>
+    <li><strong>Auxiliary structures:</strong> HashMap dedup O(n), queue BFS O(width).</li>
+    <li><strong>Output space</strong> đôi khi không tính (nếu requirement bắt buộc return tất cả).</li>
+  </ul>
+
+  <h3>Space-time trade-off</h3>
+  <p>Senior interviewer thường hỏi: <em>"Dùng thêm O(n) space có giảm time từ O(n²) xuống O(n) không?"</em></p>
+  <pre><code class="language-text">Ví dụ kinh điển: Two Sum
+- Brute force: O(n²) time, O(1) space — nested loop
+- HashMap: O(n) time, O(n) space — trade space for time
+
+Quy tắc thumb: Hash-based dedup hầu như luôn trade O(n) space cho O(n) time.</code></pre>
+
+  <div class="callout warn">
+    <strong>Big-O không phải tất cả:</strong> O(n) với constant lớn có thể chậm hơn O(n log n) với constant nhỏ. Cache locality, branch prediction, SIMD — đều ảnh hưởng. Big-O cho asymptotic; benchmark cho production.
+  </div>
+</section>
+
+<section id="hashmap-patterns">
+  <h2>7. HashMap production patterns <span class="k-tag core">CORE</span></h2>
+
+  <h3>4 pattern dùng đi dùng lại</h3>
+
+  <h4>① Frequency counting</h4>
+  <pre><code class="language-java">Map&lt;String, Integer&gt; countByCategory(List&lt;Product&gt; products) {
+    Map&lt;String, Integer&gt; freq = new HashMap&lt;&gt;();
+    for (Product p : products) {
+        // getOrDefault: 1 lookup thay vì containsKey + get (2 lookups)
+        freq.merge(p.getCategory(), 1, Integer::sum);
+    }
+    return freq;
+}</code></pre>
+
+  <h4>② Grouping</h4>
+  <pre><code class="language-java">Map&lt;String, List&lt;Order&gt;&gt; groupByCustomer(List&lt;Order&gt; orders) {
+    Map&lt;String, List&lt;Order&gt;&gt; groups = new HashMap&lt;&gt;();
+    for (Order o : orders) {
+        // computeIfAbsent: atomic, không NPE, tạo list khi cần
+        groups.computeIfAbsent(o.getCustomerId(), k -&gt; new ArrayList&lt;&gt;())
+              .add(o);
+    }
+    return groups;
+}
+
+// Stream version (nếu prefer):
+Map&lt;String, List&lt;Order&gt;&gt; groups = orders.stream()
+    .collect(Collectors.groupingBy(Order::getCustomerId));</code></pre>
+
+  <h4>③ Deduplication</h4>
+  <pre><code class="language-java">List&lt;Order&gt; dedup(List&lt;Order&gt; orders) {
+    Set&lt;String&gt; seen = new HashSet&lt;&gt;();
+    return orders.stream()
+        .filter(o -&gt; seen.add(o.getOrderId()))  // add returns false nếu đã có
+        .collect(Collectors.toList());
+}</code></pre>
+
+  <h4>④ LRU Cache (LinkedHashMap built-in)</h4>
+  <pre><code class="language-java">public class LRUCache&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+    private final int capacity;
+
+    public LRUCache(int capacity) {
+        // accessOrder = true → LinkedHashMap maintain order theo access (LRU)
+        super(capacity, 0.75f, true);
+        this.capacity = capacity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry&lt;K, V&gt; eldest) {
+        return size() &gt; capacity;  // Auto-evict eldest khi vượt capacity
+    }
+}
+
+// Usage:
+LRUCache&lt;String, User&gt; cache = new LRUCache&lt;&gt;(1000);
+cache.put("u1", user);  // Auto LRU behavior
+
+// ⚠️ KHÔNG thread-safe. Cho concurrent, wrap Collections.synchronizedMap
+// hoặc dùng Caffeine (production library).</code></pre>
+
+  <div class="callout warn">
+    <strong>Production tip:</strong> Đừng tự implement LRU/LFU cho production. Dùng <em>Caffeine</em> (Java) — best-in-class, support TTL, async loading, statistics. Implement tự chỉ để học hoặc khi interview yêu cầu.
+  </div>
+</section>
+
+<section id="tree-problems">
+  <h2>8. Tree problems — Production scenarios <span class="k-tag supp">SUPP</span></h2>
+
+  <p>3 bài tree hay gặp trong backend interview (không phải LeetCode hard):</p>
+
+  <h3>① BFS level order (organization hierarchy print)</h3>
+  <pre><code class="language-java">// Print org chart theo level
+List&lt;List&lt;String&gt;&gt; printOrgChart(Employee ceo) {
+    List&lt;List&lt;String&gt;&gt; levels = new ArrayList&lt;&gt;();
+    if (ceo == null) return levels;
+
+    Queue&lt;Employee&gt; q = new ArrayDeque&lt;&gt;();
+    q.offer(ceo);
+
+    while (!q.isEmpty()) {
+        int n = q.size();
+        List&lt;String&gt; level = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; n; i++) {
+            Employee e = q.poll();
+            level.add(e.getName());
+            for (Employee report : e.getDirectReports()) {
+                q.offer(report);
+            }
+        }
+        levels.add(level);
+    }
+    return levels;
+}</code></pre>
+
+  <h3>② Validate BST (config tree validation)</h3>
+  <pre><code class="language-java">boolean isValidBST(TreeNode root) {
+    return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+boolean validate(TreeNode node, long min, long max) {
+    if (node == null) return true;
+    if (node.val &lt;= min || node.val &gt;= max) return false;
+    return validate(node.left, min, node.val)
+        &amp;&amp; validate(node.right, node.val, max);
+}</code></pre>
+
+  <h3>③ LCA (find common manager of 2 employees)</h3>
+  <pre><code class="language-java">// Lowest Common Ancestor — common manager
+Employee commonManager(Employee root, Employee a, Employee b) {
+    if (root == null || root == a || root == b) return root;
+
+    Employee found = null;
+    int hits = 0;
+    for (Employee report : root.getDirectReports()) {
+        Employee result = commonManager(report, a, b);
+        if (result != null) {
+            hits++;
+            found = result;
+        }
+    }
+    if (hits &gt;= 2) return root;        // Cả a và b trong 2 subtree khác → root là LCA
+    return found;                       // Chỉ 1 phía → tiếp tục bubble up
+}</code></pre>
+</section>
+
+<section id="rate-limiter">
+  <h2>9. Sliding window rate limiter — Production code <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Câu hỏi interview senior phổ biến. Code phải production-ready (thread-safe, memory-bounded):</p>
+
+  <pre><code class="language-java">public class SlidingWindowRateLimiter {
+    private final int maxRequests;
+    private final long windowMs;
+    // Per-user Deque of timestamps
+    private final Map&lt;String, Deque&lt;Long&gt;&gt; perUser = new ConcurrentHashMap&lt;&gt;();
+
+    public SlidingWindowRateLimiter(int maxRequests, long windowMs) {
+        this.maxRequests = maxRequests;
+        this.windowMs = windowMs;
+    }
+
+    public boolean tryAcquire(String userId) {
+        long now = System.currentTimeMillis();
+        long windowStart = now - windowMs;
+
+        Deque&lt;Long&gt; timestamps = perUser.computeIfAbsent(
+            userId, k -&gt; new ArrayDeque&lt;&gt;());
+
+        // Synchronize per-user deque (không lock global)
+        synchronized (timestamps) {
+            // Evict timestamps ngoài window (slide window)
+            while (!timestamps.isEmpty() &amp;&amp; timestamps.peekFirst() &lt; windowStart) {
+                timestamps.pollFirst();
+            }
+
+            if (timestamps.size() &lt; maxRequests) {
+                timestamps.addLast(now);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    // ⚠️ Quan trọng: phải có cleanup, nếu không memory leak với inactive users
+    @Scheduled(fixedRate = 60_000)
+    public void cleanup() {
+        long cutoff = System.currentTimeMillis() - windowMs * 2;
+        perUser.entrySet().removeIf(entry -&gt; {
+            synchronized (entry.getValue()) {
+                return entry.getValue().isEmpty()
+                    || entry.getValue().peekLast() &lt; cutoff;
+            }
+        });
+    }
+}</code></pre>
+
+  <h3>Comparison: 3 rate limit algorithm</h3>
+  <table>
+    <thead><tr><th>Algorithm</th><th>Pros</th><th>Cons</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Fixed window counter</td>
+        <td>Đơn giản, ít memory (1 counter)</td>
+        <td>Edge: burst ở giây 59 + 100 ở giây 61 = 200 trong 2s</td>
+      </tr>
+      <tr>
+        <td>Sliding window log</td>
+        <td>Chính xác tuyệt đối</td>
+        <td>Memory O(n requests/user) — vấn đề với scale</td>
+      </tr>
+      <tr>
+        <td>Token bucket</td>
+        <td>Burst tolerant, memory O(1)/user</td>
+        <td>Phức tạp hơn 1 chút, cần refill logic</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Production thường:</strong> Token bucket (Redis với Lua atomic) cho most cases. Sliding window log chỉ khi bắt buộc chính xác (vd financial transaction limit).</p>
+</section>
+
+<section id="two-pointer">
+  <h2>10. Two Pointer + Binary Search <span class="k-tag core">CORE</span></h2>
+
+  <h3>Two Pointer pattern</h3>
+  <pre><code class="language-java">// Two Sum trên sorted array — O(n) time, O(1) space
+int[] twoSumSorted(int[] arr, int target) {
+    int left = 0, right = arr.length - 1;
+    while (left &lt; right) {
+        int sum = arr[left] + arr[right];
+        if (sum == target) return new int[]{left, right};
+        else if (sum &lt; target) left++;
+        else right--;
+    }
+    return new int[]{};
+}
+
+// Two Sum trên unsorted — O(n) time, O(n) space (HashMap)
+int[] twoSum(int[] arr, int target) {
+    Map&lt;Integer, Integer&gt; seen = new HashMap&lt;&gt;();
+    for (int i = 0; i &lt; arr.length; i++) {
+        int complement = target - arr[i];
+        if (seen.containsKey(complement)) {
+            return new int[]{seen.get(complement), i};
+        }
+        seen.put(arr[i], i);
+    }
+    return new int[]{};
+}</code></pre>
+
+  <h3>Binary Search — Template KHÔNG sai off-by-one</h3>
+  <pre><code class="language-java">// Standard binary search
+int binarySearch(int[] arr, int target) {
+    int left = 0, right = arr.length - 1;
+    while (left &lt;= right) {                          // &lt;= với inclusive right
+        int mid = left + (right - left) / 2;          // Tránh overflow
+        if (arr[mid] == target) return mid;
+        else if (arr[mid] &lt; target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}
+
+// Find FIRST occurrence (lower bound)
+int findFirst(int[] arr, int target) {
+    int left = 0, right = arr.length - 1, result = -1;
+    while (left &lt;= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) {
+            result = mid;
+            right = mid - 1;       // Tiếp tục search LEFT
+        } else if (arr[mid] &lt; target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return result;
+}
+
+// Find LAST occurrence (upper bound - 1)
+int findLast(int[] arr, int target) {
+    int left = 0, right = arr.length - 1, result = -1;
+    while (left &lt;= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) {
+            result = mid;
+            left = mid + 1;        // Tiếp tục search RIGHT
+        } else if (arr[mid] &lt; target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return result;
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>Lý do dùng <code>left + (right - left) / 2</code>:</strong> Với <code>(left + right) / 2</code>, nếu left và right đều gần Integer.MAX_VALUE → tổng overflow → mid âm → bug. <code>left + (right - left) / 2</code> luôn safe.
+  </div>
+</section>
+
+<section id="ds-symptom-recipes">
+<h2>10b. Symptom → DS Choice Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Khi production có vấn đề, dấu hiệu nào báo "wrong DS choice"? Đây là tập recipe trace ngược từ symptom về quyết định DS.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — Lookup nhanh khi cold, chậm sau vài giờ</div>
+<p><strong>Symptom:</strong> Service vừa start, hot map lookup 1ms. Sau 4-6h chạy, cùng API endpoint p99 tăng dần lên 50ms. JVM heap OK, CPU OK. Restart fix.</p>
+<p><strong>3 nguyên nhân thường gặp:</strong></p>
+<ol>
+<li><strong>HashMap không có max size, grow vô tận</strong> — code dùng <code>Map&lt;String, X&gt;</code> làm cache không bound. Rehash khi load factor cao tốn O(n). Fix: <code>Caffeine.newBuilder().maximumSize(10_000).build()</code> với LRU</li>
+<li><strong>HashMap có collision cao do bad hashCode</strong> — key custom object, hashCode trùng nhau → bucket dài → O(n) lookup. Java 8+ chuyển sang Tree khi bucket &gt; 8, nhưng vẫn O(log n). Tool: <code>jmap -histo</code> xem distribution</li>
+<li><strong>String key có suffix random</strong> — hash distribute không đều. Fix: pre-hash key, dùng <code>Long</code> id</li>
+</ol>
+<p><strong>Debug:</strong> JFR/async-profiler flame graph sẽ show <code>HashMap.getNode</code> chiếm CPU bất thường.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — "Tìm gần nhất" / "Top K" chạy chậm khi data tăng</div>
+<p><strong>Symptom:</strong> Endpoint "5 đơn hàng mới nhất của user" lúc data nhỏ chạy 10ms. Khi user có 10K đơn, latency lên 800ms. Code: <code>list.stream().sorted().limit(5)</code>.</p>
+<p><strong>Root cause:</strong> Wrong DS choice — sort toàn bộ list (O(n log n)) để lấy top 5. Should use PriorityQueue (heap) → O(n log k) với k=5 nhỏ.</p>
+<p><strong>Fix pattern:</strong></p>
+<pre><code class="language-java">// ❌ Sort all để lấy top 5
+List&lt;Order&gt; top5Bad = orders.stream()
+    .sorted(Comparator.comparing(Order::getCreatedAt).reversed())
+    .limit(5)
+    .collect(Collectors.toList());
+
+// ✅ Heap chỉ giữ 5 max
+PriorityQueue&lt;Order&gt; heap = new PriorityQueue&lt;&gt;(
+    Comparator.comparing(Order::getCreatedAt));
+for (Order o : orders) {
+    heap.offer(o);
+    if (heap.size() &gt; 5) heap.poll();
+}</code></pre>
+<p><strong>Tổng quát:</strong> Khi thấy "sort + limit K" với K nhỏ, suspect heap. Với data &gt; 1M element, khác biệt 100ms vs 5s.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — Memory tăng dần không OOM nhưng GC pause tăng</div>
+<p><strong>Symptom:</strong> Heap baseline 2GB, sau 8h chạy lên 5GB. GC pause từ 50ms → 800ms. <code>jstat -gc</code> show old gen growing.</p>
+<p><strong>3 nguyên nhân DS-related:</strong></p>
+<ol>
+<li><strong>LinkedList thay vì ArrayList khi không cần insert giữa</strong> — LinkedList overhead 24 byte per element (next/prev/value pointer). 1M Long element = 32MB list vs 12MB ArrayList</li>
+<li><strong>HashMap với value lớn không cleanup</strong> — session store, retry tracker... key expire nhưng không remove. Fix: WeakHashMap hoặc explicit cleanup</li>
+<li><strong>String concat trong loop</strong> — <code>String s = ""; for(...) s += part;</code> tạo O(n²) String garbage. Fix: StringBuilder</li>
+</ol>
+<p><strong>Tool:</strong></p>
+<pre><code class="language-bash"># Heap histogram - tìm class chiếm nhiều memory
+jcmd &lt;pid&gt; GC.class_histogram | head -30
+
+# Tìm map lớn nhất
+jcmd &lt;pid&gt; GC.heap_info
+
+# Async profiler allocation mode
+./profiler.sh -e alloc -d 60 -f alloc.svg &lt;pid&gt;</code></pre>
+</div>
+
+<div class="callout why">
+<div class="ctitle">📋 Quick DS-by-symptom lookup</div>
+<table>
+<thead><tr><th>Symptom</th><th>Likely wrong DS</th><th>Right choice</th></tr></thead>
+<tbody>
+<tr><td>"Lookup theo key chậm"</td><td>List + iterate</td><td>HashMap</td></tr>
+<tr><td>"Lookup theo range"</td><td>HashMap</td><td>TreeMap / B-tree index</td></tr>
+<tr><td>"Top K từ stream lớn"</td><td>Sort all</td><td>PriorityQueue (heap)</td></tr>
+<tr><td>"Check exist trong cluster"</td><td>Set lớn trên 1 node</td><td>Redis SET hoặc Bloom filter</td></tr>
+<tr><td>"FIFO queue cho task"</td><td>ArrayList.remove(0)</td><td>ArrayDeque hoặc LinkedList</td></tr>
+<tr><td>"Concurrent counter"</td><td>HashMap + synchronized</td><td>ConcurrentHashMap + LongAdder</td></tr>
+<tr><td>"Cache có expire"</td><td>HashMap manual cleanup</td><td>Caffeine LRU + TTL</td></tr>
+<tr><td>"Rate limit per user"</td><td>HashMap counter</td><td>Sliding window log/counter trong Redis</td></tr>
+</tbody>
+</table>
+</div>
+
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ 5 anti-patterns <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ #1: Custom key không override equals/hashCode</h4>
+    <p><strong>Symptom:</strong> Put rồi get → null. Map "lost" entry.</p>
+    <p><strong>Fix:</strong> Luôn override cả 2 cho custom key. Hoặc dùng Java <code>record</code> (Java 14+) — auto-generated.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #2: Mutate key sau put</h4>
+    <pre><code class="language-java">List&lt;String&gt; key = new ArrayList&lt;&gt;(List.of("a"));
+map.put(key, "value");
+key.add("b");           // ❌ Hash đã thay đổi
+map.get(key);           // null — Map can't find</code></pre>
+    <p><strong>Fix:</strong> Dùng immutable keys (String, Integer, UUID, record).</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #3: ArrayList.contains() trong loop = O(n²)</h4>
+    <pre><code class="language-java">List&lt;String&gt; seen = new ArrayList&lt;&gt;();
+for (String item : items) {
+    if (!seen.contains(item)) {      // ❌ O(n) mỗi check
+        seen.add(item);
+        process(item);
+    }
+}
+// Total: O(n²) — disaster với n = 100K</code></pre>
+    <p><strong>Fix:</strong> Dùng <code>HashSet</code> — <code>contains()</code> O(1).</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #4: Code ngay không clarify</h4>
+    <p><strong>Symptom:</strong> Interview, đọc đề → code ngay. Bỏ sót edge case: empty input, null, duplicate, negative, overflow.</p>
+    <p><strong>Fix:</strong> 2 phút clarify trước khi code. Hỏi: input size? sorted? duplicates? return what?</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #5: Không nói complexity</h4>
+    <p><strong>Symptom:</strong> Implement xong, interviewer hỏi "complexity?" — bí. Hoặc đoán mò.</p>
+    <p><strong>Fix:</strong> Mỗi solution implement xong, nói thành tiếng "Time O(...), space O(...)". Reflex.</p>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior)</h3>
+    <p><strong>Q1: HashMap vs TreeMap khác gì?</strong></p>
+    <p><em>Trả lời:</em> "HashMap dùng hash table, O(1) average put/get, không ordered. TreeMap dùng Red-Black Tree, O(log n) nhưng key sorted. HashMap khi cần fast lookup, TreeMap khi cần range queries hoặc sorted iteration."</p>
+
+    <p><strong>Q2: DFS vs BFS — chọn khi nào?</strong></p>
+    <p><em>Trả lời:</em> "BFS cho shortest path unweighted, level-by-level. DFS cho explore all paths, backtracking, cycle detection. BFS dùng Queue, DFS dùng Stack (hoặc recursion). Memory: DFS O(depth), BFS O(width)."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (Mid vs Senior)</h3>
+    <p><strong>Q3: HashMap worst case O(n) — khi nào? Java 8 fix?</strong></p>
+    <blockquote>
+      "Worst case khi nhiều key hash về cùng bucket — hash collision. Trước Java 8, bucket = LinkedList → get O(n).<br><br>
+      Java 8 fix: khi chain &gt; 8 nodes &amp;&amp; capacity ≥ 64 → convert LinkedList sang Red-Black Tree. Worst case O(n) → O(log n).<br><br>
+      Plus Java 7+ có randomized hash seed → attacker không predict được collision → prevent DoS attack (CVE-2011-4858 cho Tomcat).<br><br>
+      Trade-off: TreeNode ~2× memory của LinkedList Node. Conversion threshold 8 chọn vì xác suất chain dài đến 8 trong uniform hash distribution &lt; 10^-7 — chỉ trigger với bad hashCode hoặc attack."
+    </blockquote>
+
+    <p><strong>Q4: Implement rate limiter 100 req/phút. Trade-off?</strong></p>
+    <blockquote>
+      "3 approach:<br>
+      ① <strong>Fixed window:</strong> Counter reset mỗi phút. Đơn giản, memory O(1)/user. Edge case: 100 req ở giây 59 + 100 ở giây 61 = 200 req trong 2s.<br>
+      ② <strong>Sliding window log:</strong> Lưu timestamps, đếm trong [now-60s, now]. Chính xác tuyệt đối. Cons: memory O(n requests)/user — vấn đề với 1M users.<br>
+      ③ <strong>Token bucket:</strong> Bucket có capacity, refill rate. Burst tolerant, memory O(1)/user. Smooth rate limiting. Phổ biến nhất production (Kong, Nginx).<br><br>
+      Tôi chọn token bucket cho API public. Sliding window log nếu yêu cầu strict (vd financial limit). Implementation Redis với Lua script cho atomic distributed."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior)</h3>
+    <p><strong>Q5: Design search system tìm order history của user, scale 100M orders.</strong></p>
+    <pre><code class="language-text">Phút 1 — Clarify:
+  - Exact match (orderId) hay full-text search (description)?
+  - Date range query?
+  - Pagination requirement?
+  - Real-time hay near-real-time?
+
+Phút 2 — Data structures:
+  - B-tree index (user_id, created_at) cho list user orders sorted by date
+  - Hash index trên orderId cho exact lookup
+  - Inverted index (Elasticsearch) cho full-text trên description
+
+Phút 3 — Pagination:
+  - Offset pagination: WHERE ... LIMIT 20 OFFSET N
+    O(N) scan + skip → slow với large N
+  - Cursor (keyset): WHERE id &gt; last_seen ORDER BY id LIMIT 20
+    O(log n) always → preferred for large datasets
+
+Phút 4 — Caching:
+  - Top users (Pareto): cache trong Redis Sorted Set
+    ZADD orders:userId score=timestamp member=orderId
+    ZREVRANGEBYSCORE → O(log n + k) range query
+  - Cache TTL 5-15 phút, invalidate on new order
+
+Phút 5 — Trade-offs:
+  + B-tree composite index optimize most common pattern
+  + Cursor pagination scales linearly
+  + Redis ZSET cho hot users only (memory limit)
+  - Schema change: thêm field cần migrate index
+  - Multi-region: read replica + eventual consistency OK</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 2 labs BẮT BUỘC</h2>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Implement LRU Cache không nhìn template (2 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Test L2 — viết từ memory.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Đóng file, mở IDE blank. KHÔNG Google.</li>
+      <li>Implement <code>LRUCache&lt;K, V&gt;</code> với 2 method: <code>get(key)</code>, <code>put(key, value)</code>. Capacity cố định.</li>
+      <li>Approach 1: HashMap + Doubly Linked List (manual). Mục tiêu O(1) cả 2 op.</li>
+      <li>Test với 10 operation sequence. Verify eviction đúng order.</li>
+      <li>Approach 2: extend LinkedHashMap (cheating, nhưng OK cho sanity check).</li>
+      <li>Approach 3: thread-safe version với <code>synchronized</code> hoặc <code>ReentrantLock</code>.</li>
+      <li>Benchmark: 1M op random get/put. So sánh latency 3 approach.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Approach 1 implement &lt; 60 phút, không Google. Test sequence pass.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — Sliding window rate limiter production (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Code production-ready với edge cases.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Implement <code>SlidingWindowRateLimiter</code> với <code>tryAcquire(userId)</code>. Constructor params: <code>maxRequests</code>, <code>windowMs</code>.</li>
+      <li>Test concurrency: 1000 threads cùng call <code>tryAcquire("user1")</code>. Đếm số <code>true</code> trả về — phải đúng <code>maxRequests</code>.</li>
+      <li>Test memory: simulate 100K users, run 10 phút, check heap size không grow unbounded.</li>
+      <li>Implement cleanup job (Scheduled) xoá inactive user data sau 2× window time.</li>
+      <li>Variant: token bucket version. So sánh memory + accuracy với sliding window.</li>
+      <li>Bonus: distributed version với Redis Lua script. Verify atomic.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Pass concurrency test + memory bounded + thread-safe (không sync toàn bộ Map).</p>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho dev chưa biết — &lt; 30s mỗi câu</h3>
+    <ol>
+      <li><strong>"HashMap worst case khi nào? Java 8 fix thế nào?"</strong> — Khi nhiều key hash về cùng bucket (collision). Trước Java 8 bucket = LinkedList O(n). Java 8 convert sang Red-Black Tree khi chain &gt; 8 + capacity ≥ 64 → O(log n). Plus randomized hash seed prevent attack.</li>
+      <li><strong>"Vì sao DB index dùng B-tree không HashMap?"</strong> — 3 lý do: sorted (range query), disk-friendly (cây lùn, ít I/O), persistence stable (không cần rehash khi resize).</li>
+      <li><strong>"Vì sao sliding window O(n) không O(n²) dù có nested loop?"</strong> — Mỗi element vào window đúng 1 lần và ra đúng 1 lần. Total = 2n operations → O(n).</li>
+      <li><strong>"Khi nào TreeMap thay HashMap?"</strong> — Khi cần sorted iteration, range queries (<code>headMap</code>, <code>tailMap</code>, <code>subMap</code>), hoặc tìm closest key. Sacrifice O(log n) vs O(1) for ordering.</li>
+      <li><strong>"Space-time trade-off — ví dụ?"</strong> — Two Sum brute force O(n²) time O(1) space. HashMap version O(n) time O(n) space. Trade O(n) space để giảm time order of magnitude.</li>
+    </ol>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources</h3>
+    <ul>
+      <li><strong>OpenJDK source code</strong> — đọc <code>HashMap.java</code> thật. Truy cập <a href="https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java">github.com/openjdk/jdk</a>.</li>
+      <li><strong>Java Collections framework JEPs</strong> — JEP 180 (HashMap tree conversion).</li>
+      <li><strong>Introduction to Algorithms (CLRS)</strong> — ISBN 978-0262033848. Standard reference.</li>
+      <li><strong>Algorithms (Sedgewick &amp; Wayne, 4th ed)</strong> — ISBN 978-0321573513. Java-focused.</li>
+      <li><strong>Effective Java 3rd</strong> (Joshua Bloch) — Items 10-14 (equals, hashCode). Đọc kỹ contract.</li>
+      <li><strong>Caffeine library</strong> — <a href="https://github.com/ben-manes/caffeine">github.com/ben-manes/caffeine</a>. Reference impl cho cache.</li>
+      <li><strong>System Design Interview Vol 2 (Alex Xu)</strong> — Chapter "Design a Rate Limiter".</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 1.5 tuần</h3>
+    <pre><code class="language-text">Ngày 1: Section 1-2. Pause &amp; Predict + clarify scope (backend vs FAANG).
+Ngày 2: Section 3 (HashMap). Đọc OpenJDK HashMap.java song song.
+Ngày 3: Section 4 (Tree). Implement BFS + DFS + LCA. Gõ tay.
+Ngày 4: Section 5 (Sliding Window). Implement variant longest substring K distinct.
+Ngày 5: Section 6 (Complexity) + Section 10 (Two Pointer + Binary Search). Memorize 3 binary search variants.
+Ngày 6: Section 7 (HashMap patterns) + Section 8 (Tree problems).
+Ngày 7-8: Section 9 (Rate limiter) + Lab 2 (production rate limiter).
+Ngày 9-10: Lab 1 (LRU Cache). Feynman test cuối.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="42-leetcode-patterns-mastery.html">#42 LeetCode Patterns</a> — 20 patterns cho FAANG track.</li>
+      <li><a href="43-algorithm-mental-model.html">#43 Algorithm Mental Model</a> — UMPIRE framework.</li>
+      <li><a href="52-collections-deep-dive.html">#52 Collections Deep Dive</a> — ArrayList/LinkedList/Deque/CHM internals.</li>
+      <li><a href="14-redis.html">#14 Redis</a> — distributed data structures (Sorted Set cho rate limiter).</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng:</strong> 2 lab xong · Feynman 5/5 mượt · Implement LRU + Rate Limiter không Google · Explain được HashMap internals trong 60s.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

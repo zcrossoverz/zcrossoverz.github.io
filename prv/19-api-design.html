@@ -842,6 +842,119 @@ public class GlobalExceptionHandler {
 }</code></pre>
 </section>
 
+<section id="symptom-debug">
+<h2>8b. Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Lỗi API design ít crash app — chúng manifest dưới dạng mobile app cũ break, customer charge trùng, hoặc 1 user bot phá hệ thống cho mọi người. Đây là cách trace ngược.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — Mobile app phiên bản cũ đột nhiên crash sau deploy backend</div>
+<p><strong>Symptom:</strong> Deploy version mới của API endpoint <code>/v1/playlists</code> lúc 10h sáng. 30 phút sau, Sentry báo mobile app v3.2 crash rate 40% (nhưng app v3.5 ổn). Customer phàn nàn.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Access log: filter <code>User-Agent</code> chứa "TuneFlow/3.2" và 5xx response</li>
+<li>Sentry crash: kiểm stack trace — thường là <code>NullPointerException</code> trên field cũ bị rename, hoặc <code>JsonParseException</code> trên format mới</li>
+<li>API gateway: diff response payload trước/sau deploy bằng <code>tcpdump</code> hoặc proxy log</li>
+</ul>
+<p><strong>3 nguyên nhân thường gặp:</strong></p>
+<ol>
+<li><strong>Field rename trong response</strong> — đổi <code>track_count</code> → <code>trackCount</code>. Mobile cũ deserialize fail. Fix: giữ cả 2 field 3 tháng, deprecation warning, monitor adoption</li>
+<li><strong>Field bắt buộc thành optional / ngược lại</strong> — thêm field bắt buộc mới, mobile cũ gửi request không có field này → 400 Bad Request. Fix: chỉ thêm optional field, không thêm required trong cùng version</li>
+<li><strong>Enum value mới</strong> — thêm <code>"status": "PROCESSING"</code> mới. Mobile cũ chỉ handle "ACTIVE/INACTIVE", crash khi switch. Fix: design enum mở từ đầu, default case</li>
+</ol>
+<p><strong>Pattern phòng ngừa:</strong></p>
+<pre><code class="language-java">// Backward-compatible response
+public class PlaylistResponse {
+    private int trackCount;       // new name
+    private int track_count;       // deprecated, kept for v3.2 clients
+
+    // Set both in serialization
+    public int getTrack_count() { return this.trackCount; }
+}</code></pre>
+<p><strong>Anti-fix:</strong> KHÔNG force user update — luôn có user không update app trong 6 tháng. Plan compatibility window từ design phase.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — Customer "tôi bị charge 2 lần cho cùng đơn hàng"</div>
+<p><strong>Symptom:</strong> 5-10 ticket/tuần customer charge trùng. Stripe webhook log show 2 payment_intent cho cùng user trong 10s. Reproduce bằng cách click rapid 2 lần trên web hoặc retry trên mobile khi mạng yếu.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Nginx/load balancer log: tìm 2 request POST <code>/upgrade</code> cùng user_id trong &lt; 5s</li>
+<li>Idempotency key table: kiểm có entry cho cả 2 request không, hay request 2 không gửi key</li>
+<li>Mobile SDK telemetry: retry strategy có persist Idempotency-Key giữa các retry không</li>
+</ul>
+<p><strong>Root cause tree:</strong></p>
+<ol>
+<li><strong>Mobile không gửi Idempotency-Key</strong> — backend tạo key mới mỗi request → 2 request = 2 transaction. Fix: bắt buộc header này ở API gateway, reject nếu thiếu</li>
+<li><strong>Mobile gửi key khác nhau mỗi retry</strong> — sai design: key phải gen 1 lần per intent, không phải per request. Fix: SDK persist key đến khi nhận response 2xx hoặc 4xx terminal</li>
+<li><strong>Backend lưu key nhưng TTL ngắn</strong> — TTL 5 phút, retry sau 6 phút → key đã expire → treat as new. Fix: TTL ≥ 24h cho payment</li>
+<li><strong>Race condition tại backend</strong> — 2 request đến đồng thời, cùng check "key chưa tồn tại" → cùng INSERT. Fix: <code>INSERT ... ON CONFLICT DO NOTHING RETURNING</code>, hoặc unique constraint + catch DuplicateKey</li>
+</ol>
+<p><strong>Debug command:</strong></p>
+<pre><code class="language-sql">-- Tìm duplicate charge
+SELECT user_id, COUNT(*), array_agg(idempotency_key)
+FROM payments
+WHERE created_at &gt; NOW() - INTERVAL '1 day'
+  AND status = 'CHARGED'
+GROUP BY user_id, amount, ROUND(EXTRACT(EPOCH FROM created_at) / 60)
+HAVING COUNT(*) &gt; 1;</code></pre>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — 1 user "phá" rate limit cho mọi user khác</div>
+<p><strong>Symptom:</strong> Endpoint <code>/api/search</code> đột nhiên trả 429 Too Many Requests cho mọi user dù QPS chung chỉ 100/s. Reproduce: 1 bot account spam 5000 req/s.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Rate limiter metric: phân biệt theo dimension (per-user, per-IP, per-API-key, global)</li>
+<li>Top consumer: <code>SELECT user_id, COUNT(*) FROM access_log WHERE created_at &gt; NOW() - INTERVAL '5 min' GROUP BY user_id ORDER BY 2 DESC LIMIT 10</code></li>
+<li>Redis token bucket key: <code>KEYS "ratelimit:*"</code> (chỉ scan, không KEYS production), xem có key nào TTL gần hết và count cao</li>
+</ul>
+<p><strong>Root cause:</strong> Rate limit chỉ apply global (toàn endpoint), không per-user. 1 user spam → tổng QPS vượt limit → mọi user khác bị 429.</p>
+<p><strong>Pattern đúng (multi-tier limit):</strong></p>
+<pre><code class="language-java">@Component
+public class RateLimitFilter {
+    public boolean allow(Request req) {
+        // Tier 1: per-user limit (chống abuse)
+        if (!check("user:" + req.userId, 100, Duration.ofMinutes(1))) {
+            return false; // reject riêng user này
+        }
+        // Tier 2: per-endpoint global (chống ddos)
+        if (!check("global:" + req.endpoint, 10000, Duration.ofMinutes(1))) {
+            return false; // reject all
+        }
+        // Tier 3: per-IP (chống bypass user limit)
+        if (!check("ip:" + req.ip, 500, Duration.ofMinutes(1))) {
+            return false;
+        }
+        return true;
+    }
+}</code></pre>
+<p><strong>Symptom của thiết kế đúng:</strong> Khi 1 user spam, chỉ user đó nhận 429. Global metric không spike. Other users unaffected.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho API Design</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Biết REST verbs (GET/POST/PUT/DELETE), biết "đừng dùng GET cho mutate". Tạo endpoint trả về tất cả data, không pagination. Versioning nghĩ "thêm /v2/ là xong".</p>
+    <p><em>Symptom của L1: endpoint <code>/getUserOrders</code> POST trả 500 records.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Phân biệt cursor vs offset pagination, hiểu idempotency key tại sao cần TTL. Biết 4 cách versioning trade-off. Implement rate limiting per-endpoint.</p>
+    <p><em>Symptom của L2: thiết kế API có pagination, error format consistent, idempotency cho mutation.</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Design backward-compatible từ ngày 1 (additive change only). Multi-tier rate limit (user + endpoint + IP). Sunset deprecated endpoint có plan 6-12 tháng. Recipe 3 ở trên là phản xạ.</p>
+    <p><em>Symptom của L3: PR API change có migration guide cho mobile + deprecation timeline + capacity plan.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="antipatterns">
 <h2>9. Anti-Patterns</h2>
 

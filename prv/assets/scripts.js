@@ -61,4 +61,11 @@ window.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.sidebar').classList.toggle('open');
     });
   }
+
+  // Theme toggle wire-up (button id=themeToggle hoặc class .theme-toggle)
+  const themeBtn = document.getElementById('themeToggle')
+                || document.querySelector('.theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', toggleTheme);
+  }
 });

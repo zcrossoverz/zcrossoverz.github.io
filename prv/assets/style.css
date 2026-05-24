@@ -191,9 +191,25 @@ pre[class*="language-"] {
   overflow-x: auto;
   border: 1px solid var(--border);
 }
+pre:has(> code[class*="language-"]) {
+  background: var(--bg-code) !important;
+  border-radius: var(--radius);
+  padding: 16px 18px !important;
+  margin: 16px 0 !important;
+  font-size: 0.86rem !important;
+  line-height: 1.55 !important;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
 code[class*="language-"] {
   font-family: var(--font-mono) !important;
   font-size: 0.86rem !important;
+}
+pre > code[class*="language-"] {
+  display: block;
+  background: transparent !important;
+  border: 0;
+  padding: 0;
 }
 .code-label {
   display: inline-block;
@@ -680,3 +696,130 @@ footer {
   .layout { grid-template-columns: 1fr; }
   main { padding: 0; }
 }
+
+/* ============ FIXES — added 2026-05-23 ============ */
+
+/* pre/code block khi KHÔNG có class language-* (file mới không dùng Prism) */
+pre:not([class*="language-"]):not(:has(> code[class*="language-"])) {
+  background: var(--bg-code);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin: 16px 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
+pre:not([class*="language-"]):not(:has(> code[class*="language-"])) > code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: normal;
+  display: block;
+  white-space: pre;
+}
+
+/* compare-col (variant của .compare .col mà các file mới hay dùng) */
+.compare-col {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  background: var(--bg-elev);
+}
+.compare-col h4 {
+  margin: 0 0 10px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.compare-col.bad {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+.compare-col.bad h4 {
+  color: var(--danger);
+  border-bottom-color: var(--danger);
+}
+.compare-col.good {
+  background: var(--success-soft);
+  border-color: var(--success);
+}
+.compare-col.good h4 {
+  color: var(--success);
+  border-bottom-color: var(--success);
+}
+.compare-col pre,
+.compare-col code {
+  font-size: 0.8rem;
+}
+.compare-col ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.compare-col p {
+  margin: 8px 0;
+}
+
+/* tier-card (variant của .tier mà các file mới hay dùng) */
+.tier-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin: 18px 0;
+  background: var(--bg-elev);
+  border-left-width: 4px;
+}
+.tier-card h3 {
+  margin-top: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.tier-card.t1 { border-left-color: var(--info); }
+.tier-card.t1 h3 { color: var(--info); }
+.tier-card.t2 { border-left-color: var(--purple, #a855f7); }
+.tier-card.t2 h3 { color: var(--purple, #a855f7); }
+.tier-card.t3 { border-left-color: var(--success); }
+.tier-card.t3 h3 { color: var(--success); }
+.tier-card blockquote {
+  margin: 10px 0;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-muted);
+}
+
+/* callout.info (đảm bảo có, nếu CSS gốc dùng .tip) */
+.callout.info {
+  background: var(--info-soft);
+  border-color: var(--info);
+}
+.callout.info .ctitle {
+  color: var(--info);
+}
+
+/* toc-section (group label trong sidebar) */
+.toc-section {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-faint);
+  margin: 14px 0 6px;
+  padding-left: 12px;
+}
+
+/* k-tag thêm supp, adv nếu chưa có */
+.k-tag.supp { background: rgba(168, 85, 247, 0.15); color: var(--purple, #a855f7); }
+.k-tag.adv { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+
+/* current trong crumb */
+.crumb .current {
+  color: var(--text);
+  font-weight: 500;
+}
+

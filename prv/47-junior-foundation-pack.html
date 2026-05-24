@@ -758,11 +758,103 @@ public class OrderProcessor {
 <p>Xem file #11 SQL Advanced cho chi tiết.</p>
 
 <h3>#7 Logging password / PII</h3>
-<pre><code class="language-java">// ❌ Banking/e-commerce — leak credentials
+<pre><code class="language-java">// ❌ E-commerce / SaaS — leak credentials vào log
 log.info("User login: {} / {}", username, password);
 
 // ✅
 log.info("User login attempt: {}", username);</code></pre>
+</section>
+
+<section id="3-level-foundation">
+<h2>8b. 3 Cấp Độ Mastery — Junior PHẢI biết mình ở đâu <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Bộ junior foundation này dễ rơi vào "đọc rồi tưởng hiểu" vì topic đã quen thuộc. Trước khi tự tin đi phỏng vấn, check thẳng mình ở cấp nào theo từng concept.</p>
+
+<div class="callout why">
+<div class="ctitle">🎯 L1 / L2 / L3 cho 4 chủ đề CORE</div>
+</div>
+
+<h3>Collections — Chọn đúng DS</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (biết tên)</h3>
+    <p>Biết ArrayList vs LinkedList vs HashMap vs TreeMap. Dùng được trong code. Khi gặp bài tập, đa số sẽ default <code>ArrayList</code> hoặc <code>HashMap</code> mà không nghĩ trade-off.</p>
+    <p><em>Symptom:</em> code chạy đúng nhưng không giải thích được "tại sao không dùng LinkedList?"</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (giải thích)</h3>
+    <p>Phân biệt được khi nào ArrayList nhanh hơn LinkedList (random access vs head insert), khi nào HashMap không an toàn (concurrent write). Đọc bảng complexity và explain được. Nhớ <code>HashMap</code> không thread-safe nhưng <code>ConcurrentHashMap</code> là.</p>
+    <p><em>Symptom:</em> review PR đồng nghiệp, comment "chỗ này nên dùng ArrayDeque thay vì LinkedList vì..." kèm lý do.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (phản xạ)</h3>
+    <p>Khi nghe yêu cầu "ghi log truy cập, query 1000 req/s, cần count theo IP" — phản xạ ngay <code>ConcurrentHashMap&lt;String, LongAdder&gt;</code>, biết tại sao <code>AtomicLong</code> không scale bằng <code>LongAdder</code> dưới contention cao.</p>
+    <p><em>Symptom:</em> không cần lookup, biết khi nào hash collision sẽ kill performance.</p>
+  </div>
+</div>
+
+<h3>Big-O — Tính nhẩm</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết O(1), O(n), O(n²), O(log n) là gì. Biết nested loop = O(n²). Không tự tin tính cho recursive function hoặc khi loop có break.</p>
+    <p><em>Symptom:</em> khi hỏi complexity, dừng 5-10 giây để đếm.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Tính được Big-O cho code mixed (loop + HashMap lookup, recursion + memo). Biết phân biệt average vs worst case. Hiểu space complexity (recursion stack, auxiliary array).</p>
+    <p><em>Symptom:</em> khi tối ưu code, nói được "đang O(n²), có thể giảm xuống O(n log n) bằng sort + binary search".</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Code-as-you-think — viết code đồng thời tính complexity, không cần thêm pass. Trade-off được time vs space (vd: dùng prefix sum O(n) space để giảm query từ O(n) xuống O(1)). Biết khi nào O(n²) chấp nhận được (n nhỏ &lt; 100).</p>
+    <p><em>Symptom:</em> trong system design interview, ước lượng latency từ complexity + data size + hardware.</p>
+  </div>
+</div>
+
+<h3>equals / hashCode / Comparable</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết phải override cả equals và hashCode. Biết Integer cached -128 đến 127. Đôi khi quên implement Comparable khi dùng TreeSet.</p>
+    <p><em>Symptom:</em> bug "TreeMap không chấp nhận key" — không hiểu vì sao.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Giải thích contract: equals reflexive/symmetric/transitive, hashCode consistent với equals. Biết tại sao mutable field trong hashCode = bug. Dùng record được khi cần.</p>
+    <p><em>Symptom:</em> debug "HashSet contains trả false dù object giống nhau" → kiểm hashCode dùng mutable field bị thay đổi.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Design POJO làm cache key — biết phải immutable + hashCode pre-compute để tránh recompute. Biết Comparable phải consistent với equals (consistent with equals). Recipe "khi nào dùng record vs class với @EqualsAndHashCode" là phản xạ.</p>
+    <p><em>Symptom:</em> code review từ chối PR có <code>List&lt;MutableConfig&gt;</code> làm HashMap key.</p>
+  </div>
+</div>
+
+<h3>Exception Hygiene</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết phân biệt checked/unchecked exception. Biết try-catch syntax. Có xu hướng <code>catch(Exception e) { e.printStackTrace(); }</code> rồi tiếp tục.</p>
+    <p><em>Symptom:</em> production có log "Exception: null" mà không biết tại sao.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Biết fail-fast principle, biết exception swallow = bug. Biết phải log full stack trace. Biết try-with-resources cho resource cleanup. Custom exception cho business logic.</p>
+    <p><em>Symptom:</em> review PR yêu cầu thêm context vào exception ("OrderService failed for user X") thay vì rethrow trần.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Thiết kế exception hierarchy cho service (business exception vs system exception vs validation). Biết exception boundary (catch ở layer có context, không catch ở deep stack). Custom exception có error code đủ cho client + đủ cho debug.</p>
+    <p><em>Symptom:</em> service có error catalog (mỗi error có code, description, recovery action) — không phải string message random.</p>
+  </div>
+</div>
+
+<div class="callout tip">
+<div class="ctitle">📝 Cách dùng 3-level cho self-check</div>
+<p>Với mỗi concept ở trên, viết ra giấy: "tôi đang ở L1, L2 hay L3?" Nếu chưa chắc, đó là dấu hiệu chưa đạt. L1 → đọc lại section tương ứng. L2 → làm 2-3 bài tập apply. L3 → đi phỏng vấn được.</p>
+<p>Mục tiêu junior trước khi lên mid: <strong>L2 cho 4/4 concept CORE, L3 cho ít nhất 1</strong>. Đừng cố nhồi mọi thứ lên L3 cùng lúc.</p>
+</div>
+
 </section>
 
 <section id="build-projects">

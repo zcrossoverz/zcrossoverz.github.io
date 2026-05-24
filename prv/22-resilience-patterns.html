@@ -508,6 +508,73 @@ Supplier&lt;Route&gt; guarded = Decorators.ofSupplier(supplier)
   </div>
 </section>
 
+<section id="three-level-resilience">
+<h2>8b. 3 Cấp Độ Mastery Cho Resilience Patterns <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Resilience patterns dễ thấy "đã apply" (có annotation, có config) nhưng implement sai còn nguy hiểm hơn không có. 3 trục dưới phân biệt rõ.</p>
+
+<div class="callout why">
+<div class="ctitle">🎯 L1 / L2 / L3 cho 3 chủ đề CORE</div>
+</div>
+
+<h3>Circuit Breaker</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "circuit breaker = ngắt khi downstream hỏng". Add <code>@CircuitBreaker</code> với config default. Không biết tham số nào quan trọng.</p>
+    <p><em>Symptom:</em> code có circuit breaker nhưng trong incident chưa từng OPEN — chỉ vì threshold quá cao.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Phân biệt 3 state CLOSED / OPEN / HALF_OPEN. Hiểu sliding window (count vs time), failure rate threshold, wait duration. Biết circuit breaker bảo vệ caller (nhanh fail), không phải callee.</p>
+    <p><em>Symptom:</em> review config: <code>slidingWindowSize=10, failureRateThreshold=50, waitDurationInOpenState=30s</code> — explain được từng số tại sao chọn vậy.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Tune dựa trên evidence từ chaos test. Biết không apply CB cho mọi call (chỉ external + idempotent). Pair với fallback và bulkhead. Recipe debug "CB không bao giờ trip" hoặc "CB trip nhầm vì timeout sai" là phản xạ.</p>
+    <p><em>Symptom:</em> chaos test cho thấy CB trip đúng khi downstream slow, fallback rate báo lên dashboard, không có cascading failure.</p>
+  </div>
+</div>
+
+<h3>Retry + Backoff + Jitter</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "retry khi fail". Implement <code>for(i=0;i&lt;3;i++) try{call();break;}catch{Thread.sleep(1000);}</code>. Không hiểu thundering herd.</p>
+    <p><em>Symptom:</em> deploy fix bug, 100 service retry cùng lúc → downstream chết tiếp.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Phân biệt fixed / linear / exponential backoff. Biết jitter (random offset) chống thundering herd. Biết retry chỉ áp dụng cho idempotent operation. Phân biệt retryable (5xx, timeout) vs non-retryable (4xx).</p>
+    <p><em>Symptom:</em> code có <code>RetryConfig.custom().maxAttempts(3).waitDuration(...).retryExceptions(IOException.class)</code> + giải thích retry chỉ POST nào idempotent.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Multi-tier retry: inline 3 lần (exponential + jitter 50-200ms), nếu fail đẩy retry queue với delay tăng (5min, 1h, 24h), cuối cùng DLQ. Retry budget per-caller để không spam. Cho user 1 attempt only nếu deadline ngắn (request-time fallback). Recipe debug "retry storm gây cascading" là phản xạ.</p>
+    <p><em>Symptom:</em> service có "retry budget metric" + alert khi retry rate &gt; 30% của tổng requests.</p>
+  </div>
+</div>
+
+<h3>Bulkhead & Resource Isolation</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết tên bulkhead. Không nghĩ về thread pool / connection pool isolation. Mọi external call share 1 pool default.</p>
+    <p><em>Symptom:</em> 1 dependency slow → tất cả thread block, app trả 5xx cho mọi endpoint.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Hiểu thread pool isolation = mỗi external call có pool riêng, slow 1 không ảnh hưởng khác. Phân biệt semaphore bulkhead (count limit) vs thread pool bulkhead (concurrent + queue). Biết Hikari pool isolation cho DB.</p>
+    <p><em>Symptom:</em> design có pool config riêng cho payment / inventory / recommendation, không share.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Size pool dựa trên Little's Law: <code>concurrency = throughput × latency</code>. Bulkhead theo dimension (per-tenant, per-priority, per-region). Biết reject early (semaphore) tốt hơn queue dài. Pair với rate limit để bảo vệ pool. Recipe "1 user phá pool" là phản xạ.</p>
+    <p><em>Symptom:</em> capacity plan có pool size tính theo Little's Law + bulkhead matrix cho từng tenant tier.</p>
+  </div>
+</div>
+
+</section>
+
 <section id="antipatterns">
   <h2>Anti-Patterns — Resilience làm sai còn nguy hiểm hơn không làm <span class="k-tag core">CORE</span></h2>
   <div class="table-wrap">

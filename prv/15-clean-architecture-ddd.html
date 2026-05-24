@@ -1,263 +1,436 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#15 — Clean Architecture & DDD | Java Backend Interview Prep</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-<link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#15 — Clean Architecture &amp; DDD (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 4 — Architecture<span class="sep">/</span><strong>#15 Clean Architecture & DDD</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm D · Kiến Trúc &amp; Thiết Kế</span>
+    <span class="sep">›</span>
+    <span class="current">#15 Clean Architecture &amp; DDD</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
 </div>
 
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
-  <nav class="toc">
-    <a href="#intro">Tổng quan & vì sao</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#mental-model">2. Mental Model</a>
-    <div class="sub">
-      <a href="#layers">4 Layers & Dependency Rule</a>
-      <a href="#ddd-blocks">DDD Building Blocks</a>
-      <a href="#bounded-context">Bounded Context</a>
-    </div>
-    <a href="#implementation">3. Production-grade Code</a>
-    <div class="sub">
-      <a href="#money">Money Value Object</a>
-      <a href="#aggregate">Order Aggregate</a>
-      <a href="#repo">Repository Pattern</a>
-      <a href="#usecase">Use Case / App Service</a>
-      <a href="#package">Package Structure</a>
-    </div>
-    <a href="#tradeoffs">4. Trade-offs & Anti-patterns</a>
-    <a href="#logging">5. Logging trong Clean Arch</a>
-    <a href="#migration">6. Migration Strategy</a>
-    <a href="#interview">7. Interview Framework</a>
-  </nav>
-</aside>
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 7 modules</a>
+      <a href="#real-problem">1. Bài toán: Order/Cart chaos</a>
+      <a href="#why-exists">2. Vì sao Clean Arch tồn tại</a>
+      <div class="toc-section">Building blocks (cấp explain)</div>
+      <a href="#dependency-rule">3. Dependency Rule</a>
+      <a href="#value-object">4. Value Object</a>
+      <a href="#entity">5. Entity</a>
+      <a href="#aggregate">6. Aggregate Root</a>
+      <a href="#repository">7. Repository (đúng nghĩa)</a>
+      <a href="#use-case">8. Use Case / Application Service</a>
+      <a href="#bounded-context">9. Bounded Context</a>
+      <div class="toc-section">Apply (cấp thực hành)</div>
+      <a href="#refactor">10. Refactor: Anemic → Rich Domain</a>
+      <a href="#domain-events">11. Domain Events + Outbox</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ 7 anti-patterns</a>
+      <a href="#when-not">❌ Khi nào KHÔNG dùng DDD</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
 
-<main>
-<div class="content">
+  <main>
+    <div class="content">
 
+<!-- ==================== HERO ==================== -->
 <section class="hero">
-  <span class="meta-tag">🟠 HIGH PRIORITY — Senior Signal</span>
-  <h1>#15 — Clean Architecture & DDD</h1>
-  <p class="lead">Senior interview luôn probe <strong>architecture thinking</strong>. File này dạy mental model để bạn design hệ thống <em>maintainable, testable, evolution-ready</em> — không phải chỉ "code chạy được". Examples dùng <strong>e-commerce / order management</strong> để dễ liên hệ.</p>
+  <div class="meta-tag">Nhóm D · Architecture · File 1/3 · Soạn theo quy tắc CHỐNG HIỂU GIẢ</div>
+  <h1>Clean Architecture &amp; DDD — Hiểu cơ chế, không thuộc buzzword</h1>
+  <p class="lead">
+    DDD và Clean Architecture là 2 chủ đề <em>dễ tạo "hiểu giả" nhất trong kiến trúc backend</em>. Đọc 1 bài blog là gật gù "à hiểu", nhưng khi code thật vẫn viết Anemic Model, Repository return <code>Page&lt;T&gt;</code> của Spring Data, aggregate phình to thành god object. File này KHÔNG giải thích pattern theo kiểu "có 5 building blocks: A, B, C, D, E" — mà ép bạn dừng lại <strong>tự predict</strong>, nhận diện <strong>khi nào pattern SAI</strong>, và chạy <strong>code reproduce bug</strong> để biết thực sự hiểu hay chỉ recognize chữ.
+  </p>
   <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">D — Kiến Trúc & Thiết Kế</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">2 tuần đọc + thực hành</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#16 Design Patterns, #17 Microservices, #18 Event-Driven</div></div>
-    <div class="meta-item"><div class="k">Phase</div><div class="v">4 — Architecture</div></div>
+    <div><strong>🎯 Mục tiêu</strong><br>Distinguish 3 cấp: biết tên · explain cơ chế · apply trong refactor thật</div>
+    <div><strong>📅 Thời lượng</strong><br>2 tuần đọc + 3 labs refactor — KHÔNG đọc một mạch</div>
+    <div><strong>📚 Prereq</strong><br>OOP solid · Đã viết app Spring có &gt; 1 service layer · Biết đau khi maintain Anemic Model</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 High · Senior interview luôn probe architecture thinking</div>
   </div>
 </section>
 
-<section id="intro">
-<h2 class="no-border">Tại Sao Clean Architecture + DDD?</h2>
-<p>Khi codebase nhỏ (1 controller, 1 service, 1 entity), bạn không cần bất kỳ pattern nào. Code phẳng và "chạy được" là đủ. Nhưng khi:</p>
-<ul>
-<li>Codebase phình lên <strong>50K+ dòng</strong></li>
-<li>Có <strong>5-10 dev</strong> cùng touch chung modules</li>
-<li>Business rules <strong>thay đổi liên tục</strong> theo nghiệp vụ</li>
-<li>Bạn cần <strong>swap infrastructure</strong> (đổi DB, đổi messaging) không break code</li>
-</ul>
-<p>Thì code phẳng trở thành <em>"big ball of mud"</em>: thay 1 dòng phải test 10 module, mỗi feature mới mất 1 tuần. Clean Architecture + DDD là <strong>boundary technique</strong> để giữ codebase navigable theo thời gian.</p>
+<!-- ==================== ILLUSION WARNING ==================== -->
+<section id="illusion">
+  <h2>⚠️ Cảnh báo trước khi đọc — Bẫy "hiểu giả"</h2>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao file này là "Senior Signal"</div>
-  <p>Junior code "làm sao chạy". Senior code "làm sao maintain 3 năm sau". Interviewer hỏi architecture không phải để check syntax — họ check xem bạn có hiểu <strong>cost của coupling</strong>, <strong>cost của swap technology</strong>, và <strong>cost của onboarding</strong>. Đây là kiến thức không học được nếu chỉ làm CRUD app.</p>
-</div>
+  <div class="callout warn">
+    <strong>"Hiểu giả"</strong> (illusion of understanding) là trạng thái: đọc xong tài liệu, cảm thấy hiểu, kể lại được tên các pattern — nhưng KHÔNG explain được cơ chế, KHÔNG nhận ra khi pattern bị áp dụng sai, KHÔNG apply được trong code thật. Đây là failure mode phổ biến nhất khi học DDD qua blog / sách / video AI.<br><br>
+
+    <strong>Vì sao DDD đặc biệt dễ tạo hiểu giả:</strong>
+    <ul>
+      <li>Vocabulary đẹp (Aggregate, Bounded Context, Anti-Corruption Layer) → não thưởng cho việc nhớ tên thay vì hiểu cơ chế</li>
+      <li>Pattern nhìn "hợp lý hiển nhiên" sau khi đọc → ảo giác "tôi biết rồi"</li>
+      <li>Không có lỗi compile khi sai — code Anemic vẫn chạy, vẫn pass test → không có feedback loop</li>
+      <li>Senior nói chuyện DDD bằng tiếng Việt + thuật ngữ tiếng Anh trộn → nhớ tiếng nghe hay, không nhớ logic</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ "hiểu" — bạn đang ở đâu?</h3>
+  <table>
+    <thead>
+      <tr><th>Cấp</th><th>Dấu hiệu</th><th>Test tự đánh giá</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>L1 — Biết tên</strong></td>
+        <td>Đọc qua blog 1–2 lần. Biết "Aggregate Root" là gì <em>trong câu của người khác</em>.</td>
+        <td>Liệt kê được 5 building blocks DDD? OK cấp L1.</td>
+      </tr>
+      <tr>
+        <td><strong>L2 — Explain cơ chế</strong></td>
+        <td>Tự diễn đạt được lý do tồn tại, dùng ví dụ của mình, nhận ra khi pattern bị áp dụng sai.</td>
+        <td>Có thể trả lời <em>"Vì sao Repository return <code>Page&lt;T&gt;</code> là sai?"</em> trong 30 giây không vấp.</td>
+      </tr>
+      <tr>
+        <td><strong>L3 — Apply</strong></td>
+        <td>Đã refactor Anemic Model thành Rich Domain trên codebase thật ≥ 1 lần. Đã debug bug từ aggregate phình to.</td>
+        <td>Show được PR/commit refactor 1 service từ Anemic → Rich Domain.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Mục tiêu file này:</strong> Chuyển bạn từ L1 → L2 (qua đọc + Pause &amp; Predict + counter-examples), rồi từ L2 → L3 (qua 3 labs cuối file). Nếu chỉ đọc lý thuyết suông mà không làm lab → bạn vẫn ở L1 dù <em>cảm thấy</em> đã ở L2. Đây chính là hiểu giả.
+  </div>
 </section>
 
+<!-- ==================== HOW TO READ ==================== -->
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc — KHÔNG đọc một mạch</h3>
+  <ol>
+    <li><strong>Mọi "Pause &amp; Predict" phải dừng lại viết câu trả lời.</strong> Viết ra giấy / Notes app. KHÔNG đọc câu trả lời ngay. Nếu trả lời sai → đọc explanation kỹ hơn. Nếu trả lời đúng → bạn đang ở L2 cho concept đó.</li>
+    <li><strong>Sau mỗi concept, tự đặt câu hỏi: "Khi nào pattern này SAI?"</strong> File có sẵn counter-example, nhưng tự nghĩ trước rồi so sánh. Recognize ≠ understand.</li>
+    <li><strong>Code phải gõ lại bằng tay, không copy-paste.</strong> Não nhớ khác khi tay gõ. Đặc biệt phần Refactor (Section 10) — gõ cả 2 phiên bản (Anemic + Rich) để cảm nhận sự khác biệt.</li>
+    <li><strong>Mỗi 30 phút đóng tab, tự kể lại đoạn vừa đọc cho... cái cây / con mèo / brick wall.</strong> Nếu bí 1 câu → đó là chỗ hiểu giả. Quay lại đọc.</li>
+    <li><strong>3 labs cuối file là bắt buộc, không phải tùy chọn.</strong> Nếu skip lab → bạn vẫn ở L1. Cứ ghi nhớ điều này.</li>
+  </ol>
+</div>
+
+<!-- ==================== ROADMAP ==================== -->
+<section id="roadmap">
+  <h2>🗺️ Roadmap 7 modules — Theo thứ tự</h2>
+  <p>Mỗi module = 1 building block. Học theo thứ tự vì module sau dùng intuition module trước.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>Dependency Rule</strong> · CORE · Code chỉ depend INWARD — Domain không biết DB/HTTP/framework</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>Value Object</strong> · CORE · Immutable + định nghĩa bằng giá trị — Money, Email, OrderId</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>Entity</strong> · CORE · Có identity persist qua thay đổi — Customer, Order</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>Aggregate Root</strong> · HIGH-SIGNAL · Transaction boundary + invariant guard — chỉ Root được expose ra ngoài</div></div>
+    <div class="roadmap-item core"><span class="num">M5</span><div><strong>Repository</strong> · CORE · Interface ở Domain · Implementation ở Infrastructure · KHÔNG return <code>Page&lt;T&gt;</code></div></div>
+    <div class="roadmap-item core"><span class="num">M6</span><div><strong>Use Case</strong> · CORE · Orchestrate domain objects · Không chứa business rules</div></div>
+    <div class="roadmap-item supp"><span class="num">M7</span><div><strong>Bounded Context</strong> · HIGH-SIGNAL · Cùng từ "Order" có meaning khác trong context khác</div></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Tại sao thứ tự này:</strong> Dependency Rule trước vì nó là khung — không có khung thì các pattern khác không biết đặt chỗ nào. Value Object trước Entity vì VO đơn giản hơn (immutable, không có identity). Aggregate trước Repository vì Repository operate trên Aggregate. Use Case sau cùng vì nó dùng tất cả ở dưới. Bounded Context cuối vì đó là <em>scope</em> của tất cả pattern trên — phải hiểu pattern trước, mới hiểu scope.
+  </div>
+</section>
+
+<!-- ==================== REAL PROBLEM ==================== -->
 <section id="real-problem">
-<h2>1. Bài Toán Thực Tế — Order System Của Một Sàn TMĐT</h2>
+  <h2>1. Bài toán thực: E-commerce Order chaos <span class="k-tag core">CORE</span></h2>
 
-<h3>Tình huống: Sàn ShopVN có monolith hỗn loạn</h3>
-<p>Hệ thống order của sàn ShopVN có <code>OrderController</code> gọi trực tiếp <code>OrderRepository</code>, validate giỏ hàng, trừ stock, tạo invoice, ghi log, gửi email — tất cả trong 1 method controller dài 300 dòng. Khi cần thêm 1 phương thức thanh toán mới (ví dụ <em>VNPay</em> sau khi đã hỗ trợ <em>Momo</em> và <em>COD</em>), engineer phải đụng vào:</p>
-<ul>
-<li><strong>Controller</strong> (validation rules thay đổi)</li>
-<li><strong>Service layer</strong> (logic rải rác giữa <code>OrderService</code> và <code>PaymentService</code>)</li>
-<li><strong>Repository</strong> (orders table thêm column <code>payment_method</code>)</li>
-<li><strong>Entity classes</strong> (Order, Customer mọc thêm properties)</li>
-<li><strong>Database schema</strong></li>
-<li><strong>External service</strong> (fee calculator, fraud check)</li>
-</ul>
-
-<p>Business logic <strong>scatter khắp nơi</strong>: controllers validate, services orchestrate, entities mutate state của chính mình, repositories enforce rules. Thêm 1 feature = <strong>sửa 15 file</strong> + regression test 8 modules. Code review mất 3 ngày. PR conflict liên tục.</p>
-
-<div class="callout danger">
-  <div class="ctitle">🔥 Triệu chứng "Big Ball of Mud"</div>
-  <ul style="margin:8px 0 0 20px">
-  <li>Không biết business rule nằm ở đâu (Controller? Service? Entity? Stored procedure?)</li>
-  <li>Test unit phải boot full Spring context → mỗi test 5-10 giây</li>
-  <li>Đổi DB từ MySQL → PostgreSQL = rewrite 30% code</li>
-  <li>Junior mới onboard mất 3 tháng mới "biết nên sửa file nào"</li>
+  <p>Một team e-commerce có monolith 3 năm tuổi. <code>OrderController</code> gọi trực tiếp <code>OrderRepository</code>, fetch order, trừ stock, tính discount, lưu transaction — tất cả trong 1 method controller. Khi thêm 1 promotion mới (ví dụ: "Mua 2 tặng 1") phải sửa:</p>
+  <ul>
+    <li>Controller (validate input mới)</li>
+    <li>OrderService (logic discount mới)</li>
+    <li>PromotionService (logic apply rule)</li>
+    <li>InventoryService (giảm stock theo qty mới)</li>
+    <li>Order entity (thêm field <code>promotionApplied</code>)</li>
+    <li>Database migration (cột mới)</li>
+    <li>2 batch job (daily report + reconciliation)</li>
   </ul>
-</div>
 
-<h3>5 câu hỏi suy ngẫm</h3>
-<ol>
-<li>Vì sao thêm 1 payment method lại cần đụng controller?</li>
-<li>Làm sao <strong>isolate</strong> "payment method logic" để có thể thay đổi mà không ảnh hưởng order/stock logic?</li>
-<li>"Bounded context" là gì và vì sao ShopVN cần <strong>nhiều bounded context</strong>?</li>
-<li>Nếu <code>Order</code> tồn tại trong cả OrderContext và ShippingContext, 2 chỗ này khác nhau thế nào?</li>
-<li>Làm sao tránh <code>Customer</code> aggregate phình lên 50 fields vì trộn lẫn nhiều concern?</li>
-</ol>
+  <p>Business logic <strong>scatter khắp nơi</strong>: controller validate, service orchestrate, entity mutate state của chính nó qua setter public, repository enforce business rules (chỉ cho update nếu status = PENDING). Thêm feature thứ 6 cần touch 15 file và regression test 8 module.</p>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict — Trước khi đọc tiếp</h4>
+    <p>Hãy <strong>viết ra giấy</strong> 2 câu trả lời trước khi đọc Section 2:</p>
+    <ol>
+      <li>Trong code chaos ở trên, dòng nào là "business rule" (có thể thay đổi vì policy thay đổi) vs "technical concern" (có thể thay đổi vì tech thay đổi)?</li>
+      <li>Nếu bạn phải thêm promotion mới mà KHÔNG sửa 15 file, bạn sẽ <strong>tách</strong> code ra như thế nào? Vẽ sơ đồ.</li>
+    </ol>
+    <p><em>Quy tắc: KHÔNG đọc Section 2 trước khi viết xong. Nếu bạn skip bước này → đang để não thưởng cho cảm giác "đã hiểu" mà chưa thực sự nghĩ.</em></p>
+  </div>
+
+  <h3>4 câu hỏi buộc tư duy</h3>
+  <ol>
+    <li>Vì sao thêm promotion mới phải sửa controller? <em>(Hint: controller biết quá nhiều)</em></li>
+    <li>Làm sao isolate "promotion logic" để thay đổi mà không ảnh hưởng order/inventory core?</li>
+    <li>"Bounded context" là gì và vì sao hệ này cần &gt; 1 context?</li>
+    <li>Nếu Order trong PromotionContext khác Order trong ShippingContext (khác fields, khác behavior), làm sao tránh "god class" có 50 fields?</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Chi phí thực:</strong> Một team Vietnamese e-commerce mid-size (~50 dev) báo cáo trung bình 6–8 giờ cho 1 feature nhỏ (vì regression 8 module). Sau khi refactor sang Clean + DDD: 1–2 giờ/feature, regression scope giảm còn 1–2 module. ROI refactor: thu hồi sau 2–3 tháng.
+  </div>
 </section>
 
-<section id="mental-model">
-<h2>2. Mental Model</h2>
+<!-- ==================== WHY EXISTS ==================== -->
+<section id="why-exists">
+  <h2>2. Vì sao Clean Architecture &amp; DDD tồn tại? <span class="k-tag core">CORE</span></h2>
 
-<h3 id="layers">4 Layers & Dependency Rule</h3>
+  <div class="k-banner core">
+    <strong>Quy tắc đọc:</strong> Phần này giải thích VÌ SAO, không phải WHAT. Nếu bạn skip phần này và nhảy tới "5 building blocks" — bạn sẽ nhớ tên 5 pattern nhưng KHÔNG biết khi nào áp dụng. Đây chính là hiểu giả cấp độ kinh điển.
+  </div>
 
-<div class="diagram">
-<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
-  <defs>
-    <style>
-      .ring-pres { fill: #fef2f2; stroke: #dc2626; stroke-width: 2; }
-      .ring-app { fill: #fffbeb; stroke: #d97706; stroke-width: 2; }
-      .ring-dom { fill: #ecfdf5; stroke: #059669; stroke-width: 2.5; }
-      .ring-infra { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2; }
-      .lbl { fill: #0f172a; font-weight: 700; font-size: 14px; }
-      .lbl-sm { fill: #475569; font-size: 11px; }
-      .arrow { stroke: #dc2626; stroke-width: 2; fill: none; marker-end: url(#ar); }
-    </style>
-    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
-    </marker>
-  </defs>
-  <!-- Concentric rings -->
-  <ellipse cx="360" cy="190" rx="340" ry="160" class="ring-pres"/>
-  <ellipse cx="360" cy="190" rx="280" ry="130" class="ring-app"/>
-  <ellipse cx="360" cy="190" rx="200" ry="95" class="ring-infra"/>
-  <ellipse cx="360" cy="190" rx="120" ry="60" class="ring-dom"/>
+  <h3>Pain point 1: Business logic scatter</h3>
+  <p>Khi không có Domain layer rõ ràng, business rules <em>rò rỉ</em> khắp nơi:</p>
+  <ul>
+    <li>Controller validate: <code>if (order.getStatus() != "PENDING") throw ...</code> ← rule "chỉ update đơn pending" ở Controller</li>
+    <li>Service: <code>if (item.getQuantity() &gt; stock.getAvailable()) throw ...</code> ← rule "không vượt stock" ở Service</li>
+    <li>Repository: <code>@Modifying @Query("UPDATE order SET ... WHERE status = 'PENDING'")</code> ← rule lại ở Repository</li>
+    <li>Frontend: validate cùng rule lần thứ 4 ← duplication 4 lớp</li>
+  </ul>
+  <p>Hệ quả: thay đổi 1 rule (vd cho phép update đơn SHIPPED nếu chưa giao) phải sửa 4 chỗ, dễ miss 1 chỗ → bug production.</p>
 
-  <text x="360" y="48" text-anchor="middle" class="lbl" fill="#dc2626">Presentation</text>
-  <text x="360" y="65" text-anchor="middle" class="lbl-sm">REST Controller, GraphQL, gRPC adapter</text>
+  <h3>Pain point 2: Domain phụ thuộc Infrastructure</h3>
+  <p>Khi entity có <code>@Entity</code>, repository return <code>Page&lt;Order&gt;</code>, service inject <code>EntityManager</code> — code business <strong>không thể test mà không boot Spring</strong>. Mỗi test mất 5–15 giây để load context. Test suite 200 test mất 30 phút. Hệ quả: dev skip test, bug lọt production.</p>
 
-  <text x="360" y="92" text-anchor="middle" class="lbl" fill="#d97706">Application (Use Cases)</text>
-  <text x="360" y="108" text-anchor="middle" class="lbl-sm">Orchestrate, DTO mapping, transaction boundary</text>
+  <h3>Pain point 3: God Object</h3>
+  <p>Khi không có Bounded Context, Order entity bị mọi feature "đắp" thêm field:</p>
+  <pre><code class="language-java">class Order {
+    Long id;
+    // Promotion context cần:
+    PromotionCode code;
+    Discount discount;
+    // Shipping context cần:
+    Address shippingAddress;
+    Carrier carrier;
+    String trackingNumber;
+    // Inventory context cần:
+    List&lt;ReservationId&gt; reservations;
+    // Reporting context cần:
+    BigDecimal totalRevenue;
+    Map&lt;String, Object&gt; analyticsTags;
+    // ... 50 fields, không ai biết field nào dùng cho ai
+}</code></pre>
+  <p>Hệ quả: load Order = load 50 fields. Update 1 field = lock cả entity. Test 1 feature phải mock 49 field khác.</p>
 
-  <text x="360" y="135" text-anchor="middle" class="lbl" fill="#4f46e5">Infrastructure</text>
-  <text x="360" y="150" text-anchor="middle" class="lbl-sm">DB impl, Kafka, Redis, 3rd-party API client</text>
+  <h3>3 lời giải mà Clean Arch + DDD đề xuất</h3>
+  <table>
+    <thead>
+      <tr><th>Pain</th><th>Giải pháp</th><th>Pattern tương ứng</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Business logic scatter</td><td>Đẩy logic vào Entity / Aggregate. Service chỉ orchestrate.</td><td>Rich Domain Model, Aggregate</td></tr>
+      <tr><td>Domain phụ thuộc Infrastructure</td><td>Domain layer KHÔNG biết DB/HTTP/framework. Infrastructure implement interface domain.</td><td>Dependency Rule</td></tr>
+      <tr><td>God Object</td><td>Tách model theo context. Order trong Promotion ≠ Order trong Shipping.</td><td>Bounded Context, Anti-Corruption Layer</td></tr>
+    </tbody>
+  </table>
 
-  <text x="360" y="185" text-anchor="middle" class="lbl" fill="#059669">DOMAIN</text>
-  <text x="360" y="200" text-anchor="middle" class="lbl-sm">Entities, Value Objects,</text>
-  <text x="360" y="213" text-anchor="middle" class="lbl-sm">Aggregates, Repository interface</text>
+  <div class="callout info">
+    <strong>Insight quan trọng:</strong> Clean Architecture + DDD KHÔNG phải để code "đẹp hơn" hay "professional hơn". Chúng tồn tại để giải quyết 3 pain cụ thể ở trên. Nếu code của bạn KHÔNG có 3 pain này (vd CRUD đơn giản), áp dụng DDD = over-engineering. Xem Section "Khi nào KHÔNG dùng DDD" cuối file.
+  </div>
 
-  <!-- Dependency arrows (always inward) -->
-  <path d="M 100 220 Q 200 250 280 220" class="arrow"/>
-  <text x="155" y="270" class="lbl-sm" fill="#dc2626" font-weight="600">Dependency Rule:</text>
-  <text x="155" y="284" class="lbl-sm" fill="#dc2626">code chỉ depend INWARD</text>
-</svg>
-<div class="caption">4 layers Clean Architecture — vòng trong (Domain) không biết gì về vòng ngoài</div>
-</div>
-
-<p><strong>Dependency Rule:</strong> Code chỉ depend <strong>INWARD</strong>. Domain layer <em>không biết</em> HTTP, database, hoặc framework. Infrastructure implement domain interface.</p>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao Domain layer phải "pure"?</div>
-  <p>Business rules là tài sản giá trị nhất của hệ thống — chúng thể hiện <em>"công ty làm gì để kiếm tiền"</em>. Database, framework, HTTP là <strong>chi tiết kỹ thuật</strong> có thể thay đổi (MySQL → Postgres, Spring → Quarkus, REST → gRPC). Nếu domain biết về MySQL, đổi DB = rewrite business rules. Tách rời = business rules <strong>sống lâu hơn</strong> mọi technology choice.</p>
-</div>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao test domain mà cần boot Spring là dấu hiệu xấu?</div>
-  <p>Test domain logic nên chạy <strong>milliseconds</strong>, không phải seconds. Nếu phải <code>@SpringBootTest</code> mới test được business rule → có nghĩa domain đang phụ thuộc framework. Mỗi PR developer chạy 200 test trong 30s vs 30 phút = khác biệt productivity rõ rệt.</p>
-</div>
-
-<h3 id="ddd-blocks">DDD Building Blocks</h3>
-
-<div class="pillar-grid">
-<div class="pillar">
-  <div class="num">Block 1</div>
-  <h4>Entity</h4>
-  <p>Có <strong>identity duy nhất</strong>. <code>Order</code> với <code>orderId</code> — mutable (status đổi từ PENDING → PAID → SHIPPED), nhưng vẫn cùng 1 order. Identity tồn tại kể cả tất cả attribute đổi.</p>
-</div>
-<div class="pillar">
-  <div class="num">Block 2</div>
-  <h4>Value Object</h4>
-  <p>Không có identity, định nghĩa bằng <strong>attributes</strong>. <code>Money(100, "VND")</code> — immutable, cần Money khác → new instance. So sánh bằng value: <code>Money(100,VND).equals(Money(100,VND))</code> → true.</p>
-</div>
-<div class="pillar">
-  <div class="num">Block 3</div>
-  <h4>Aggregate</h4>
-  <p>Cluster entities + value objects với 1 <strong>aggregate root</strong>. Transaction boundary = aggregate boundary. Save toàn bộ aggregate atomically. Không aggregate nào chứa aggregate root khác.</p>
-</div>
-<div class="pillar">
-  <div class="num">Block 4</div>
-  <h4>Repository</h4>
-  <p>Interface trong domain layer (business chỉ care abstraction). Implementation ở infrastructure. <code>OrderRepository.findById(orderId)</code> — không biết SQL/JPA/Mongo.</p>
-</div>
-<div class="pillar">
-  <div class="num">Block 5</div>
-  <h4>Domain Service</h4>
-  <p>Logic không thuộc về entity/VO nào cụ thể. Ví dụ <code>PricingDomainService.calculateOrderTotal(order, promotions, taxRules)</code> — operate trên multiple entities, không "thuộc" riêng entity nào.</p>
-</div>
-<div class="pillar">
-  <div class="num">Block 6</div>
-  <h4>Domain Event</h4>
-  <p>Something happened (<code>OrderPlaced</code>, <code>ItemShipped</code>). Immutable, publishable. Decouple bounded contexts → ShippingContext không cần biết OrderContext.</p>
-</div>
-</div>
-
-<h3 id="bounded-context">Bounded Context — Cùng từ "Order", khác nghĩa</h3>
-
-<p>Bounded context là <strong>boundary</strong> nơi 1 model áp dụng. Trong sàn ShopVN:</p>
-
-<div class="table-wrap">
-<table>
-<thead><tr><th>Context</th><th>"Order" nghĩa là</th><th>Properties quan tâm</th></tr></thead>
-<tbody>
-<tr><td><strong>OrderContext</strong> (checkout)</td><td>Giỏ hàng đã confirm + payment intent</td><td>items, totalPrice, paymentMethod, customerId, status</td></tr>
-<tr><td><strong>InventoryContext</strong></td><td>Lệnh trừ stock</td><td>orderId, items[productId, quantity, warehouseId]</td></tr>
-<tr><td><strong>ShippingContext</strong></td><td>Đơn cần giao</td><td>orderId, address, weight, courier, trackingNumber</td></tr>
-<tr><td><strong>FinanceContext</strong></td><td>Doanh thu phải ghi nhận</td><td>orderId, invoiceNumber, taxAmount, settlementDate</td></tr>
-</tbody>
-</table>
-</div>
-
-<p><strong>Cùng từ "Order", 4 nghĩa khác nhau.</strong> Bounded context buộc bạn <strong>dịch tường minh</strong> (Anti-Corruption Layer) khi cross boundary.</p>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao không gộp thành 1 "Order" mega-class?</div>
-  <p>Nếu có 1 class <code>Order</code> chứa tất cả fields (items, address, invoiceNumber, taxAmount, trackingNumber, ...) → class này có <strong>50+ fields</strong> và <strong>4 team</strong> cùng modify. Mỗi PR sẽ conflict. Mỗi test phải mock 30 dependencies. Mỗi DB query <code>SELECT * FROM orders</code> load 50 column dù chỉ cần 3. Bounded context tách thành <strong>4 model nhỏ</strong>, mỗi team own 1 context, ship features độc lập.</p>
-</div>
+  <h3>Lịch sử ngắn — vì sao đến bây giờ vẫn relevant</h3>
+  <ul>
+    <li><strong>2003</strong> — Eric Evans xuất bản <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em> (Addison-Wesley). Cuốn sách gốc, đặt nền móng cho Entity, Value Object, Aggregate, Bounded Context. Ngôn ngữ hơi học thuật, nhiều dev mới đọc bị khô.</li>
+    <li><strong>2013</strong> — Vaughn Vernon xuất bản <em>Implementing Domain-Driven Design</em>. Cách giải thích dễ tiếp cận hơn + ví dụ code Java. Cuốn này được dev backend gọi là "the red book" và là tài liệu chính để học DDD đúng cách.</li>
+    <li><strong>2012</strong> — Uncle Bob (Robert C. Martin) bài blog "The Clean Architecture" đề xuất Dependency Rule + 4 layer concentric (Domain → Application → Interface Adapters → Frameworks). Tài liệu trên blog ngắn (~5 trang) nhưng ảnh hưởng cực lớn.</li>
+    <li><strong>2017</strong> — Uncle Bob xuất bản <em>Clean Architecture: A Craftsman's Guide</em> (Prentice Hall). Sách mở rộng từ blog post.</li>
+    <li><strong>2015–nay</strong> — Microservices boom đẩy DDD lên trở thành mainstream. Bounded Context = candidate cho microservice boundary. Mọi tutorial microservice tử tế đều dạy DDD trước.</li>
+    <li><strong>2020+</strong> — Hexagonal Architecture (Alistair Cockburn) + Ports &amp; Adapters → variant của Clean Arch. Vaughn Vernon xuất bản <em>Strategic Monoliths and Microservices</em> (2021) cập nhật DDD cho thời đại cloud-native.</li>
+  </ul>
+  <p><em>Verifiable: Eric Evans DDD — ISBN 978-0321125217. Vaughn Vernon IDDD — ISBN 978-0321834577. Clean Architecture — ISBN 978-0134494166. Uncle Bob blog — blog.cleancoder.com.</em></p>
 </section>
 
-<section id="implementation">
-<h2>3. Production-Grade Implementation</h2>
+<!-- ==================== DEPENDENCY RULE ==================== -->
+<section id="dependency-rule">
+  <h2>3. Dependency Rule — Code chỉ depend INWARD <span class="k-tag core">CORE</span></h2>
 
-<h3 id="money">Money — Value Object (Immutable, Type-Safe)</h3>
-<pre><code class="language-java">package com.shopvn.order.domain;
+  <div class="k-banner core">
+    <strong>L2 check:</strong> Sau section này bạn phải explain được: "Vì sao Domain layer KHÔNG được import <code>org.springframework.*</code>?" Nếu trả lời được trong 30s = L2. Nếu phải đọc lại = vẫn L1.
+  </div>
+
+  <h3>Vẽ Dependency Rule</h3>
+  <pre><code class="language-text">┌──────────────────────────────────────────────────────────────┐
+│  Presentation (REST Controller, HTTP DTO)                    │
+│       │                                                      │
+│       ▼ depends on                                           │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Application (Use Case, Command, Query)              │   │
+│  │       │                                              │   │
+│  │       ▼ depends on                                   │   │
+│  │  ┌──────────────────────────────────────────────┐   │   │
+│  │  │  Domain (Entity, VO, Aggregate, Repo iface)  │   │   │
+│  │  │  ← Trung tâm: KHÔNG depend ai cả             │   │   │
+│  │  └──────────────────────────────────────────────┘   │   │
+│  │                                                      │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  Infrastructure (JPA Repo impl, Kafka, Redis)                │
+│       │                                                      │
+│       └──── implements Domain interfaces ◄──┐                │
+│                                              │                │
+│       Lưu ý: Infrastructure depend INWARD vào Domain          │
+│       (qua interface), KHÔNG Domain depend ra Infrastructure  │
+└──────────────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>Quy tắc cụ thể — Domain layer được phép import gì?</h3>
+  <table>
+    <thead>
+      <tr><th>Import</th><th>Trong Domain?</th><th>Vì sao</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>java.util.*</code>, <code>java.time.*</code>, <code>java.math.*</code></td><td>✅ OK</td><td>JDK core, không phải framework</td></tr>
+      <tr><td>Domain class khác trong cùng package</td><td>✅ OK</td><td>Domain trong domain</td></tr>
+      <tr><td><code>org.springframework.*</code></td><td>❌ KHÔNG</td><td>Framework — coupling Domain với Spring</td></tr>
+      <tr><td><code>jakarta.persistence.@Entity</code>, <code>@Id</code></td><td>❌ KHÔNG</td><td>JPA = Infrastructure concern</td></tr>
+      <tr><td><code>com.fasterxml.jackson.*</code></td><td>❌ KHÔNG</td><td>JSON serialization = HTTP layer</td></tr>
+      <tr><td><code>org.slf4j.Logger</code></td><td>⚠️ Tranh cãi</td><td>Cả 2 phái — xem callout dưới</td></tr>
+      <tr><td><code>lombok.*</code></td><td>⚠️ Tránh nếu có thể</td><td>Annotation processor — leak vào bytecode</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Câu hỏi tranh cãi — Logger có được dùng trong Domain?</strong> 2 phái:
+    <ul>
+      <li><strong>Phái strict (Uncle Bob):</strong> KHÔNG. Domain communicate qua Domain Event, Application layer subscribe event để log. Lý do: log là cross-cutting concern, không phải business logic.</li>
+      <li><strong>Phái pragmatic:</strong> CÓ, vì SLF4J là facade (chỉ là interface), implementation ở runtime. Tương tự cách Domain dùng <code>java.util.Logger</code>.</li>
+    </ul>
+    Quan điểm của file này: <em>Tránh nếu có thể, dùng Domain Event để communicate trạng thái</em>. Khi bí (vd debug deep) thì SLF4J cũng chấp nhận được — không phải tội ác chết người.
+  </div>
+
+  <h3>Counter-example — Code vi phạm Dependency Rule</h3>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Domain biết JPA</h4>
+      <pre><code class="language-java">// File: domain/Order.java
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "orders")
+public class Order {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Column(name = "total")
+    private BigDecimal total;
+
+    // ❌ Vi phạm: Domain biết về JPA
+    // → Đổi sang MongoDB phải sửa hết
+    // → Test domain phải có JPA runtime
+}</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Domain thuần Java</h4>
+      <pre><code class="language-java">// File: domain/Order.java
+// KHÔNG import jakarta.persistence
+
+public class Order {
+    private final OrderId id;
+    private Money total;
+    // ... pure Java, không annotation framework
+}
+
+// File: infrastructure/persistence/OrderJpaEntity.java
+@Entity
+@Table(name = "orders")
+class OrderJpaEntity {
+    @Id private String id;
+    @Column private BigDecimal total;
+    // Mapping từ/sang domain object qua mapper
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước khi đọc tiếp Section 4: <strong>nếu Domain layer chứa <code>@Entity</code>, hãy nghĩ ra 3 hậu quả cụ thể</strong>. Viết ra giấy. Không skip — phần này test L1 vs L2.</p>
+  </div>
+
+  <div class="callout info">
+    <strong>Đáp án:</strong>
+    <ol>
+      <li><strong>Không test được Domain mà không boot persistence context.</strong> Mỗi test mất 5–15s vì <code>@DataJpaTest</code> phải khởi tạo H2/Hibernate.</li>
+      <li><strong>Đổi tech stack = rewrite Domain.</strong> Migrate JPA → MongoDB phải sửa annotation, sửa relationships, sửa query — business logic bị rò rỉ.</li>
+      <li><strong>JPA semantics rò rỉ vào Domain.</strong> Lazy loading, dirty checking, identity map — những thứ này là JPA-specific, làm Domain object có behavior khác với pure Java (vd <code>order.getItems()</code> có thể throw <code>LazyInitializationException</code> ngoài context).</li>
+    </ol>
+    Nếu bạn viết được ≥ 2 hậu quả → L2 cho Dependency Rule.
+  </div>
+</section>
+
+<!-- ==================== VALUE OBJECT ==================== -->
+<section id="value-object">
+  <h2>4. Value Object — Immutable, định nghĩa bằng giá trị <span class="k-tag core">CORE</span></h2>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause — Trước explanation</h4>
+    <p><strong>Trả lời 2 câu trước khi đọc tiếp:</strong></p>
+    <ol>
+      <li>Nếu Money là String <code>"100 USD"</code> và Email là String <code>"a@b.com"</code> — code <code>sendEmail(money)</code> compile được hay không?</li>
+      <li>Khi tạo <code>new Money(amount, currency)</code>, nếu amount âm thì ứng xử thế nào? Throw runtime hay return null?</li>
+    </ol>
+  </div>
+
+  <h3>VO trả lời 3 câu hỏi sau</h3>
+  <ol>
+    <li><strong>Type safety:</strong> Compiler chặn <code>sendEmail(money)</code> vì Money ≠ Email. String không làm được điều này.</li>
+    <li><strong>Validation tập trung:</strong> Logic "amount không âm, currency không null" chỉ viết 1 lần trong constructor. Không scatter khắp Service.</li>
+    <li><strong>Immutability:</strong> Không thể <code>money.setAmount(-999)</code>. Muốn thay đổi = tạo Money mới.</li>
+  </ol>
+
+  <h3>Quy tắc nhận diện VO</h3>
+  <p>1 object là Value Object nếu thoả MỌI tiêu chí:</p>
+  <ul>
+    <li>Không có identity riêng — 2 instance cùng giá trị = bằng nhau (override <code>equals</code> + <code>hashCode</code> theo content).</li>
+    <li>Immutable — sau constructor, không có setter. Mọi "thay đổi" trả về instance mới.</li>
+    <li>Self-validating — constructor đảm bảo invariant. Không tồn tại instance "invalid".</li>
+    <li>Không phụ thuộc lifecycle. Có thể create/destroy free, không tracking.</li>
+  </ul>
+
+  <h3>Implementation runnable — Money</h3>
+  <pre><code class="language-java">package com.example.shop.domain;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.Objects;
 
-// Value Object: No identity, immutable, compared by value
 public final class Money {
     private final BigDecimal amount;
     private final Currency currency;
 
-    // Private constructor — force factory method để validate
+    // Private constructor — buộc dùng factory để validate
     private Money(BigDecimal amount, Currency currency) {
+        Objects.requireNonNull(amount, "amount required");
+        Objects.requireNonNull(currency, "currency required");
         if (amount.signum() &lt; 0) {
-            throw new IllegalArgumentException("Money amount cannot be negative");
+            throw new IllegalArgumentException(
+                "Money cannot be negative: " + amount + " " + currency
+            );
         }
-        if (currency == null) {
-            throw new IllegalArgumentException("Currency cannot be null");
-        }
-        // setScale(2) → tránh floating-point error, đảm bảo 2 chữ số thập phân
-        this.amount = amount.setScale(2, RoundingMode.HALF_UP);
+        // Scale chuẩn cho currency (USD/VND = 2 decimal, JPY = 0)
+        this.amount = amount.setScale(
+            currency.getDefaultFractionDigits(),
+            RoundingMode.HALF_UP
+        );
         this.currency = currency;
     }
 
@@ -265,15 +438,33 @@ public final class Money {
         return new Money(amount, currency);
     }
 
+    public static Money of(double amount, String currencyCode) {
+        return new Money(BigDecimal.valueOf(amount), Currency.getInstance(currencyCode));
+    }
+
+    public static Money zero(Currency currency) {
+        return new Money(BigDecimal.ZERO, currency);
+    }
+
     public Money add(Money other) {
-        // Cross-currency operation phải EXPLICIT — không silent bug
-        // (VND + USD = meaningless sum, force caller convert trước)
         requireSameCurrency(other);
         return new Money(this.amount.add(other.amount), this.currency);
     }
 
-    public Money multiply(int factor) {
-        return new Money(this.amount.multiply(BigDecimal.valueOf(factor)), this.currency);
+    public Money subtract(Money other) {
+        requireSameCurrency(other);
+        BigDecimal result = this.amount.subtract(other.amount);
+        if (result.signum() &lt; 0) {
+            throw new IllegalStateException(
+                "Subtraction would produce negative money: " + this + " - " + other
+            );
+        }
+        return new Money(result, this.currency);
+    }
+
+    public Money multiply(int times) {
+        if (times &lt; 0) throw new IllegalArgumentException("times must be >= 0");
+        return new Money(this.amount.multiply(BigDecimal.valueOf(times)), this.currency);
     }
 
     public boolean isGreaterThan(Money other) {
@@ -284,698 +475,1214 @@ public final class Money {
     private void requireSameCurrency(Money other) {
         if (!this.currency.equals(other.currency)) {
             throw new IllegalArgumentException(
-                "Currency mismatch: " + this.currency + " vs " + other.currency);
+                "Currency mismatch: " + this.currency + " vs " + other.currency
+            );
         }
     }
 
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Money)) return false;
-        Money m = (Money) o;
-        return amount.equals(m.amount) && currency.equals(m.currency);
+        Money money = (Money) o;
+        return amount.equals(money.amount) &amp;&amp; currency.equals(money.currency);
     }
-    @Override public int hashCode() { return Objects.hash(amount, currency); }
-    @Override public String toString() { return amount.toPlainString() + " " + currency.getCurrencyCode(); }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(amount, currency);
+    }
+
+    @Override
+    public String toString() {
+        return amount.toPlainString() + " " + currency.getCurrencyCode();
+    }
 }</code></pre>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao Money là Value Object, không phải <code>BigDecimal</code> trần?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Type safety</strong>: <code>void charge(Money amount)</code> không thể truyền nhầm <code>quantity</code> (cũng là BigDecimal). Compiler bảo vệ.</li>
-  <li><strong>Currency built-in</strong>: tránh bug "trừ VND khỏi USD"</li>
-  <li><strong>Validation centralized</strong>: chỉ 1 chỗ check non-negative, scale 2, không scatter</li>
-  <li><strong>Self-documenting</strong>: <code>Money totalPrice</code> rõ ràng hơn <code>BigDecimal totalPrice</code></li>
+  <h3>Counter-example — Khi nào VO bị áp dụng SAI?</h3>
+  <div class="misconception">
+    <h4>❌ Sai 1: VO có setter "vì cần update giao diện"</h4>
+    <pre><code class="language-java">public class Money {
+    private BigDecimal amount;
+    public void setAmount(BigDecimal a) { this.amount = a; } // ❌ Mất immutability
+}</code></pre>
+    <p><strong>Hệ quả:</strong> 2 caller cùng giữ reference đến cùng Money, 1 caller <code>setAmount</code> → caller kia thấy giá trị đổi → race condition. Cộng thêm equals/hashCode broken vì hashCode đổi khi instance đã trong HashMap.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Sai 2: VO không validate trong constructor</h4>
+    <pre><code class="language-java">public class Email {
+    public final String value;
+    public Email(String value) {
+        this.value = value; // ❌ Cho phép Email("not-an-email")
+    }
+}</code></pre>
+    <p><strong>Hệ quả:</strong> Tồn tại Email "invalid" lẫn trong system. Mọi caller dùng Email phải validate lại → defensive code scatter → 1 chỗ quên validate = bug.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Sai 3: Dùng VO thay vì Entity</h4>
+    <pre><code class="language-java">// User có 100K instance, identity bằng email
+// → Tạo VO User(email, name, ...) ← SAI
+// User có identity (userId), tồn tại qua thời gian, balance có thể đổi
+// → Phải là Entity, không phải VO</code></pre>
+    <p><strong>Quy tắc:</strong> Nếu object có lifecycle (created → mutated → archived) và identity cần persist qua thay đổi → Entity. Nếu chỉ là "giá trị" (Money, Email, Address) → VO.</p>
+  </div>
+
+  <div class="callout success">
+    <strong>L2 check:</strong> Explain được "Vì sao Money phải override equals?" trong 20 giây? OK L2. Nếu vẫn cần Google → đọc lại "Quy tắc nhận diện VO" + tự code lại Money từ đầu không nhìn template.
+  </div>
+</section>
+
+<!-- ==================== ENTITY ==================== -->
+<section id="entity">
+  <h2>5. Entity — Có identity persist qua thay đổi <span class="k-tag core">CORE</span></h2>
+
+  <h3>Định nghĩa Entity (không phải @Entity của JPA)</h3>
+  <p><strong>Lưu ý quan trọng:</strong> "Entity" trong DDD KHÁC <code>@Entity</code> của JPA. DDD Entity = concept ở Domain. JPA <code>@Entity</code> = annotation ở Infrastructure. Có thể có Customer (DDD Entity) mà không có <code>@Entity Customer</code> (JPA) — vd dùng MongoDB.</p>
+
+  <p>Một object là DDD Entity nếu:</p>
+  <ul>
+    <li>Có identity unique (CustomerId, OrderId) — identity được assign ở constructor và không bao giờ đổi.</li>
+    <li>Equality dựa trên identity, KHÔNG dựa trên content. <code>customer1.equals(customer2)</code> chỉ khi cùng CustomerId, dù name/email khác.</li>
+    <li>Có lifecycle: created → mutate → (archived/deleted). State đổi nhưng vẫn là cùng entity.</li>
+    <li>Mutable — có behavior thay đổi state. Nhưng KHÔNG có public setter trần. Mọi thay đổi qua method có ý nghĩa business.</li>
   </ul>
-</div>
 
-<h3 id="aggregate">Order — Aggregate Root với Domain Events</h3>
-<pre><code class="language-java">package com.shopvn.order.domain;
+  <h3>Counter-example — Anemic Model (Entity giả)</h3>
+  <div class="misconception">
+    <h4>❌ Anemic — Entity chỉ là data holder</h4>
+    <pre><code class="language-java">public class Customer {
+    private Long id;
+    private String name;
+    private String email;
+    private CustomerStatus status;
 
-import java.time.Instant;
-import java.util.*;
+    // Toàn getter + setter, không có method business
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public CustomerStatus getStatus() { return status; }
+    public void setStatus(CustomerStatus s) { this.status = s; }
+}
 
-// Aggregate Root: Transaction boundary. Mọi thay đổi đi qua Order.
-public class Order {
-    private final OrderId orderId;
-    private final CustomerId customerId;
-    private final List&lt;OrderLine&gt; lines;  // Entity con — Order là root
-    private Money totalPrice;
-    private OrderStatus status;
-    private final List&lt;Object&gt; domainEvents = new ArrayList&lt;&gt;();
-
-    // Private constructor — force factory
-    private Order(OrderId orderId, CustomerId customerId) {
-        this.orderId = orderId;
-        this.customerId = customerId;
-        this.lines = new ArrayList&lt;&gt;();
-        this.totalPrice = Money.of(BigDecimal.ZERO, Currency.getInstance("VND"));
-        this.status = OrderStatus.DRAFT;
-    }
-
-    // Factory method — encapsulate logic tạo + emit initial event
-    public static Order placeNewOrder(CustomerId customerId, List&lt;OrderLine&gt; items) {
-        Order order = new Order(OrderId.generate(), customerId);
-        items.forEach(order::addLine);
-        order.confirm();
-        return order;
-    }
-
-    public void addLine(OrderLine line) {
-        // Business invariant: chỉ add line khi order DRAFT
-        if (status != OrderStatus.DRAFT) {
-            throw new IllegalStateException("Cannot modify confirmed order");
+// Logic ở Service:
+@Service
+class CustomerService {
+    public void deactivate(Long id) {
+        Customer c = repo.findById(id);
+        if (c.getStatus() == CustomerStatus.ACTIVE) {
+            c.setStatus(CustomerStatus.DEACTIVATED);
+            c.setDeactivatedAt(Instant.now());
+            // Logic "phải check ACTIVE" có thể bị quên ở caller khác
         }
-        lines.add(line);
+        repo.save(c);
+    }
+}</code></pre>
+    <p><strong>Symptom:</strong> Service nào cũng có thể <code>customer.setStatus(DEACTIVATED)</code> mà không check rule. Logic scatter. 6 tháng sau, Customer có 20 method service, không ai biết transition state hợp lệ là gì.</p>
+  </div>
+
+  <h3>✅ Rich Domain — Entity đóng gói behavior</h3>
+  <pre><code class="language-java">public class Customer {
+    private final CustomerId id;        // identity — final
+    private Name name;
+    private Email email;
+    private CustomerStatus status;
+    private Instant deactivatedAt;
+
+    private Customer(CustomerId id, Name name, Email email) {
+        this.id = Objects.requireNonNull(id);
+        this.name = Objects.requireNonNull(name);
+        this.email = Objects.requireNonNull(email);
+        this.status = CustomerStatus.ACTIVE;
+    }
+
+    public static Customer register(CustomerId id, Name name, Email email) {
+        return new Customer(id, name, email);
+    }
+
+    // Business method, không phải setter
+    public void deactivate() {
+        if (this.status != CustomerStatus.ACTIVE) {
+            throw new IllegalStateException(
+                "Cannot deactivate customer in status " + this.status
+            );
+        }
+        this.status = CustomerStatus.DEACTIVATED;
+        this.deactivatedAt = Instant.now();
+    }
+
+    public void changeEmail(Email newEmail) {
+        if (this.status == CustomerStatus.DEACTIVATED) {
+            throw new IllegalStateException("Cannot change email of deactivated customer");
+        }
+        this.email = newEmail;
+    }
+
+    // Identity-based equality
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Customer)) return false;
+        return id.equals(((Customer) o).id);
+    }
+
+    @Override public int hashCode() { return id.hashCode(); }
+
+    // Getters readonly — KHÔNG có setter public
+    public CustomerId getId() { return id; }
+    public Email getEmail() { return email; }
+    public CustomerStatus getStatus() { return status; }
+}</code></pre>
+
+  <div class="callout info">
+    <strong>So sánh:</strong> Trong Anemic, rule "chỉ ACTIVE mới deactivate được" có thể được enforce ở Service nhưng dễ quên. Trong Rich, rule nằm <em>trong</em> entity — không thể bypass. Caller nào gọi <code>customer.deactivate()</code> đều phải đi qua check. Đây là encapsulation đúng nghĩa.
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: Counter-example cho Rich Domain</h4>
+    <p>Khi nào Rich Domain KHÔNG phù hợp?</p>
+    <ul>
+      <li><strong>Read-heavy reporting model:</strong> Object chỉ để hiển thị (vd <code>SalesReport</code> 30 fields) — Rich không thêm value. Dùng DTO/Projection.</li>
+      <li><strong>Migration / ETL pipeline:</strong> Object đi qua transformation, không có business rule. Plain POJO/record đủ.</li>
+      <li><strong>Integration object:</strong> Wrap response của 3rd-party API — nó không phải Domain của bạn, không cần Rich.</li>
+    </ul>
+    <p>Quy tắc: Rich Domain cho <em>business entity có rule</em>. POJO cho <em>data carrier</em>.</p>
+  </div>
+</section>
+
+<!-- ==================== AGGREGATE ==================== -->
+<section id="aggregate">
+  <h2>6. Aggregate Root — Transaction boundary <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> Aggregate là concept khó nhất DDD. 90% senior interview probe sâu chỗ này. Hiểu nửa vời = thiết kế aggregate phình to → performance disaster. Hiểu đúng = phân biệt được mid vs senior.
+  </div>
+
+  <h3>Aggregate trả lời 2 câu hỏi</h3>
+  <ol>
+    <li><strong>Boundary lưu atomic nào?</strong> — Lưu Order phải lưu toàn bộ OrderItem cùng lúc. Không thể lưu Order trước, OrderItem sau (race condition).</li>
+    <li><strong>Invariant nào phải đảm bảo cùng nhau?</strong> — "Total Order = sum của OrderItem.subtotal". Nếu update 1 OrderItem mà không update Total → invariant vỡ.</li>
+  </ol>
+
+  <h3>Aggregate Root vs các entity trong aggregate</h3>
+  <p>Mỗi Aggregate có <strong>đúng 1 Root</strong> (entity được expose ra ngoài). Các entity khác trong aggregate là "internal":</p>
+
+  <pre><code class="language-text">Order (Aggregate Root) ────────► được expose, có Repository riêng
+  ├── OrderItem (internal)  ──► KHÔNG có Repository riêng, KHÔNG được reference từ ngoài
+  ├── ShippingInfo (VO)
+  └── DiscountApplied (VO)
+
+Rule cứng:
+1. Code ngoài aggregate CHỈ giữ reference đến Root, KHÔNG đến OrderItem
+2. Mọi modification đi qua Root: order.addItem(...), order.removeItem(...)
+3. Save = save toàn bộ aggregate atomic
+4. KHÔNG có repository OrderItemRepository ở Domain
+   (nếu cần load OrderItem riêng cho report → đó là read model, không phải aggregate)</code></pre>
+
+  <h3>Implementation — Order Aggregate</h3>
+  <pre><code class="language-java">public class Order {
+    private final OrderId id;
+    private final CustomerId customerId;
+    private final List&lt;OrderItem&gt; items;       // internal — không expose mutable list
+    private OrderStatus status;
+    private Money total;
+
+    private Order(OrderId id, CustomerId customerId) {
+        this.id = id;
+        this.customerId = customerId;
+        this.items = new ArrayList&lt;&gt;();
+        this.status = OrderStatus.DRAFT;
+        this.total = Money.zero(Currency.getInstance("USD"));
+    }
+
+    public static Order create(OrderId id, CustomerId customerId) {
+        return new Order(id, customerId);
+    }
+
+    // Mọi modification qua method có ý nghĩa business
+    public void addItem(ProductId productId, int quantity, Money unitPrice) {
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot modify items of " + status + " order");
+        }
+        if (quantity &lt;= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        OrderItem item = new OrderItem(productId, quantity, unitPrice);
+        this.items.add(item);
+        recalculateTotal();   // ← invariant: total luôn = sum(items)
+    }
+
+    public void removeItem(ProductId productId) {
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot modify items of " + status + " order");
+        }
+        this.items.removeIf(item -&gt; item.getProductId().equals(productId));
         recalculateTotal();
     }
 
-    public void confirm() {
-        if (lines.isEmpty()) {
-            throw new IllegalStateException("Cannot confirm empty order");
+    public void submit() {
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Cannot submit empty order");
         }
-        this.status = OrderStatus.CONFIRMED;
-        recordEvent(new OrderConfirmedEvent(orderId, customerId, totalPrice, Instant.now()));
-    }
-
-    public void markPaid(PaymentId paymentId) {
-        if (status != OrderStatus.CONFIRMED) {
-            throw new IllegalStateException("Order must be CONFIRMED before payment");
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Order already submitted");
         }
-        this.status = OrderStatus.PAID;
-        recordEvent(new OrderPaidEvent(orderId, paymentId, Instant.now()));
-    }
-
-    public void cancel(String reason) {
-        if (status == OrderStatus.SHIPPED || status == OrderStatus.DELIVERED) {
-            throw new IllegalStateException("Cannot cancel shipped order");
-        }
-        this.status = OrderStatus.CANCELLED;
-        recordEvent(new OrderCancelledEvent(orderId, reason, Instant.now()));
+        this.status = OrderStatus.SUBMITTED;
     }
 
     private void recalculateTotal() {
-        Money sum = Money.of(BigDecimal.ZERO, Currency.getInstance("VND"));
-        for (OrderLine line : lines) sum = sum.add(line.subtotal());
-        this.totalPrice = sum;
+        this.total = items.stream()
+            .map(OrderItem::getSubtotal)
+            .reduce(Money.zero(Currency.getInstance("USD")), Money::add);
     }
 
-    // Record event nhưng KHÔNG publish ngay. Publish sau khi save thành công.
-    private void recordEvent(Object event) { this.domainEvents.add(event); }
-
-    public List&lt;Object&gt; pullDomainEvents() {
-        List&lt;Object&gt; events = new ArrayList&lt;&gt;(domainEvents);
-        domainEvents.clear();
-        return events;
+    // Expose readonly view, KHÔNG return mutable list
+    public List&lt;OrderItem&gt; getItems() {
+        return Collections.unmodifiableList(items);
     }
 
-    // Getters
-    public OrderId getOrderId() { return orderId; }
+    public OrderId getId() { return id; }
     public OrderStatus getStatus() { return status; }
-    public Money getTotalPrice() { return totalPrice; }
-    public List&lt;OrderLine&gt; getLines() { return Collections.unmodifiableList(lines); }
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao methods trên Order, không phải <code>OrderService.confirm(order)</code>?</div>
-  <p>Khi method <em>thuộc về</em> entity, code có 3 lợi ích:</p>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Discoverability</strong>: IDE auto-complete <code>order.</code> hiện tất cả operations hợp lệ. Junior mới onboard nhìn class thấy ngay nghiệp vụ.</li>
-  <li><strong>Encapsulation</strong>: validate state trong method, ai cũng không thể bypass. <code>OrderService</code> bên ngoài có thể quên check, entity thì không.</li>
-  <li><strong>Single source of truth</strong>: logic "cancel order" chỉ ở 1 nơi (Order entity), không duplicate ở 3 service.</li>
-  </ul>
-  <p>Đây là khác biệt giữa <strong>Anemic Domain Model</strong> (entity = data bag) và <strong>Rich Domain Model</strong> (entity = data + behavior).</p>
-</div>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao <code>pullDomainEvents()</code> thay vì publish ngay trong method?</div>
-  <p>Nếu <code>confirm()</code> publish event ngay → DB save fail mà event đã ra ngoài → downstream tưởng order confirmed, nhưng DB chưa lưu. <strong>Bug data inconsistency.</strong></p>
-  <p>Pattern đúng: entity <em>record</em> events vào list, repository <em>publish</em> sau khi save thành công. Tách rõ "ý định emit" và "thực sự emit". Đi kèm pattern này thường có <strong>Outbox Pattern</strong> (xem #18) để guarantee delivery.</p>
-</div>
-
-<h3 id="repo">Repository Pattern — Interface trong Domain, Impl ở Infrastructure</h3>
-
-<div class="code-label">Domain layer — Interface (pure Java, no framework)</div>
-<pre><code class="language-java">package com.shopvn.order.domain;
-
-public interface OrderRepository {
-    Optional&lt;Order&gt; findById(OrderId orderId);
-    void save(Order order);
-    List&lt;Order&gt; findByCustomerId(CustomerId customerId);
-    // KHÔNG có @Query, KHÔNG có Spring Page&lt;T&gt;, KHÔNG có Specification
-    // Phức tạp hơn? Đó là việc của Read Model (xem CQRS ở #17)
-}</code></pre>
-
-<div class="code-label">Infrastructure layer — JPA Implementation</div>
-<pre><code class="language-java">package com.shopvn.order.infrastructure.persistence;
-
-import com.shopvn.order.domain.*;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public class JpaOrderRepository implements OrderRepository {
-    private final SpringDataOrderRepo jpaRepo;
-    private final DomainEventPublisher eventPublisher;
-
-    public JpaOrderRepository(SpringDataOrderRepo jpaRepo, DomainEventPublisher eventPublisher) {
-        this.jpaRepo = jpaRepo;
-        this.eventPublisher = eventPublisher;
-    }
-
-    @Override
-    public Optional&lt;Order&gt; findById(OrderId orderId) {
-        return jpaRepo.findById(orderId.value())
-            .map(this::toDomain);
-    }
-
-    @Override
-    public void save(Order order) {
-        // 1. Save aggregate
-        OrderJpaEntity entity = toJpaEntity(order);
-        jpaRepo.save(entity);
-
-        // 2. Publish events SAU KHI save thành công
-        // Nếu save fail → exception throw → events không được publish
-        order.pullDomainEvents().forEach(eventPublisher::publish);
-    }
-
-    private Order toDomain(OrderJpaEntity entity) { /* ... mapping ... */ }
-    private OrderJpaEntity toJpaEntity(Order order) { /* ... mapping ... */ }
+    public Money getTotal() { return total; }
 }
 
-// Spring Data JPA interface — internal, không leak ra ngoài
-interface SpringDataOrderRepo extends JpaRepository&lt;OrderJpaEntity, String&gt; {}</code></pre>
+// OrderItem — internal entity, package-private
+class OrderItem {
+    private final ProductId productId;
+    private final int quantity;
+    private final Money unitPrice;
+    private final Money subtotal;
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao repository interface ở Domain, impl ở Infrastructure?</div>
-  <p>Đây là <strong>Dependency Inversion Principle</strong> applied. Domain <em>declare</em> what it needs ("tôi cần save Order"), Infrastructure <em>provide</em> how ("tôi dùng JPA"). Kết quả:</p>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Test domain</strong> với <code>InMemoryOrderRepository</code> (Map&lt;OrderId, Order&gt;) — không cần boot DB</li>
-  <li><strong>Swap impl</strong>: đổi JPA → MongoDB chỉ cần viết <code>MongoOrderRepository</code> implement cùng interface</li>
-  <li><strong>Domain không "biết"</strong> JPA exist → không bị tempt sử dụng JPA-specific features (Specification, Page, etc.) lẫn vào business logic</li>
+    OrderItem(ProductId productId, int quantity, Money unitPrice) {
+        this.productId = productId;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.subtotal = unitPrice.multiply(quantity);
+    }
+
+    public ProductId getProductId() { return productId; }
+    public Money getSubtotal() { return subtotal; }
+}</code></pre>
+
+  <h3>Counter-example — Aggregate quá lớn</h3>
+  <div class="misconception">
+    <h4>❌ Sai: Customer aggregate chứa tất cả Order</h4>
+    <pre><code class="language-java">public class Customer {
+    private CustomerId id;
+    private Name name;
+    private List&lt;Order&gt; orders;  // ❌ 1 customer có 500 orders sau 3 năm
+}
+
+// Load customer = load 500 orders vào memory
+// Update name → JPA dirty check toàn bộ orders → slow + risk update sai
+// Test customer phải mock 500 orders</code></pre>
+    <p><strong>Vì sao sai:</strong> Customer và Order là 2 aggregate khác nhau, không invariant nào ràng buộc chúng "phải lưu cùng nhau". Quy tắc: <em>aggregate chỉ chứa entity mà invariant business đòi hỏi phải atomic với root</em>.</p>
+    <p><strong>Fix:</strong> Customer và Order là 2 aggregate riêng. Order reference Customer bằng CustomerId (chỉ ID), không embed Customer object.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Sai: Reference internal entity từ ngoài</h4>
+    <pre><code class="language-java">// External code:
+OrderItem item = orderItemRepository.findById(itemId); // ❌ Bypass Order
+item.setQuantity(999);  // ← Vỡ invariant: Order.total không cập nhật
+
+// Đúng:
+Order order = orderRepository.findById(orderId);
+order.updateItemQuantity(itemId, 999); // ← Order recalculate total</code></pre>
+  </div>
+
+  <h3>Quy tắc thiết kế Aggregate — checklist</h3>
+  <ol>
+    <li><strong>Aggregate đủ nhỏ.</strong> Vaughn Vernon rule of thumb: aggregate chứa &lt; vài chục entity. Nếu &gt; 1000 → chắc chắn sai.</li>
+    <li><strong>Reference giữa aggregates bằng ID, không embed.</strong> Order chứa <code>CustomerId</code>, không phải <code>Customer</code>.</li>
+    <li><strong>1 transaction = 1 aggregate.</strong> Nếu use case cần update 2 aggregate → dùng 2 transaction + Domain Event (eventual consistency) hoặc tách use case khác.</li>
+    <li><strong>Root là entry point duy nhất.</strong> Code ngoài không được giữ reference đến internal entity.</li>
+    <li><strong>Repository chỉ cho Aggregate Root.</strong> Không có <code>OrderItemRepository</code>.</li>
+  </ol>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trong design "Customer có 500 orders", giả sử bạn đã tách Customer và Order thành 2 aggregate. Use case mới: <em>"Khi customer bị banned, cancel tất cả pending orders của họ"</em>. Bạn thiết kế thế nào? Viết ra giấy 2 cách.</p>
+  </div>
+
+  <div class="callout info">
+    <strong>Đáp án:</strong>
+    <ul>
+      <li><strong>Cách 1 (eventual consistency, được khuyến nghị):</strong> Customer.ban() publish <code>CustomerBannedEvent</code>. OrderHandler subscribe event, query pending orders của customer, gọi <code>order.cancel()</code> cho từng order. Mỗi cancel = 1 transaction riêng.</li>
+      <li><strong>Cách 2 (strong consistency, hiếm khi cần):</strong> Use case mở 1 transaction lớn, load Customer + tất cả pending orders, update tất cả. Có risk lock contention nếu nhiều orders.</li>
+    </ul>
+    Mặc định DDD ưu tiên cách 1. Nếu chọn cách 2 mà không suy nghĩ = vẫn L1.
+  </div>
+</section>
+
+<!-- ==================== REPOSITORY ==================== -->
+<section id="repository">
+  <h2>7. Repository — Đúng nghĩa, không phải DAO trá hình <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Câu hỏi probe senior:</strong> "Khi nào Repository return <code>Page&lt;T&gt;</code> của Spring Data là sai?" — đây là câu test L2 phổ biến nhất trong interview Spring/DDD.
+  </div>
+
+  <h3>Repository trả lời 3 câu hỏi</h3>
+  <ol>
+    <li><strong>Where:</strong> Interface ở Domain layer. Implementation ở Infrastructure.</li>
+    <li><strong>What:</strong> Operate trên Aggregate Root, không trên entity internal.</li>
+    <li><strong>How:</strong> API nhìn như "collection in memory" — <code>save</code>, <code>findById</code>, <code>delete</code>. Không expose query DSL (Specification, Criteria, JPQL).</li>
+  </ol>
+
+  <h3>Interface chuẩn ở Domain</h3>
+  <pre><code class="language-java">// File: domain/OrderRepository.java
+package com.example.shop.domain;
+
+public interface OrderRepository {
+    Order findById(OrderId id);              // throws OrderNotFoundException
+    Optional&lt;Order&gt; findByIdOptional(OrderId id);
+    void save(Order order);
+    void delete(OrderId id);
+
+    // ✅ OK: query có ý nghĩa business
+    List&lt;Order&gt; findPendingByCustomer(CustomerId customerId);
+
+    // ❌ KHÔNG: expose DB pagination
+    // Page&lt;Order&gt; findAll(Pageable pageable);
+
+    // ❌ KHÔNG: expose DB query DSL
+    // List&lt;Order&gt; findAll(Specification&lt;Order&gt; spec);
+}</code></pre>
+
+  <h3>Counter-example — DAO trá hình "Repository"</h3>
+  <div class="misconception">
+    <h4>❌ Đặt tên Repository nhưng hành xử như DAO</h4>
+    <pre><code class="language-java">// File: domain/OrderRepository.java ← sai vị trí
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+public interface OrderRepository extends JpaRepository&lt;Order, Long&gt; {
+    Page&lt;Order&gt; findAll(Pageable pageable);       // ❌ Page là Spring Data type
+    List&lt;Order&gt; findAll(Specification&lt;Order&gt; spec); // ❌ Specification couple DB
+    @Query("SELECT o FROM Order o WHERE ...") // ❌ JPQL ở Domain
+    List&lt;Order&gt; findByCustomCriteria(...);
+}</code></pre>
+    <p><strong>Symptom thực tế:</strong></p>
+    <ul>
+      <li>Domain layer KHÔNG test được mà không bootstrap Spring Data → unit test &gt; 5s mỗi cái.</li>
+      <li>Đổi tech (MongoDB, DynamoDB) phải rewrite Repository interface, kéo theo rewrite caller.</li>
+      <li>Pagination semantics (offset, cursor) leak vào use case → use case phải biết "page size 20, sort by createdAt desc" — đây là concern của presentation/infrastructure, không phải business.</li>
+    </ul>
+  </div>
+
+  <h3>Vì sao Page&lt;T&gt; là Infrastructure concern?</h3>
+  <p>Pagination là cách <em>truyền data</em> qua boundary (HTTP, gRPC, DB cursor). Domain không quan tâm "20 record/page" — đó là quyết định của UI hoặc API contract. Domain chỉ quan tâm "list pending orders của customer X".</p>
+
+  <p><strong>Cách đúng:</strong> Application/Read Model layer xử lý pagination, không phải Domain.</p>
+
+  <pre><code class="language-java">// Application layer
+@Service
+public class ListPendingOrdersUseCase {
+    private final OrderRepository orderRepo;
+
+    public PagedResult&lt;OrderSummary&gt; execute(CustomerId customerId, PageRequest req) {
+        // Domain return list — pagination ở đây
+        List&lt;Order&gt; orders = orderRepo.findPendingByCustomer(customerId);
+        List&lt;OrderSummary&gt; summaries = orders.stream()
+            .map(this::toSummary)
+            .collect(toList());
+        // Slice manual hoặc dùng utility — không bay xuống Domain
+        return PagedResult.of(summaries, req);
+    }
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>Lưu ý pragmatic:</strong> Cho project nhỏ/MVP, dùng <code>JpaRepository</code> trực tiếp ở Application layer (skip Domain Repository interface) là acceptable. Đó là trade-off — nhưng phải biết mình đang skip Domain Repository có chủ đích, không phải vì không hiểu.
+  </div>
+
+  <h3>Tách Read Model — CQRS lite</h3>
+  <p>Khi cần query phức tạp (search, filter, sort), tách 2 path:</p>
+  <ul>
+    <li><strong>Write path:</strong> Repository operate trên Aggregate, đảm bảo invariant.</li>
+    <li><strong>Read path:</strong> Query Service đọc trực tiếp từ DB, return DTO/Projection, không qua Aggregate.</li>
   </ul>
-</div>
+  <pre><code class="language-java">// Write path
+public interface OrderRepository {
+    Order findById(OrderId id);
+    void save(Order order);
+}
 
-<h3 id="usecase">Use Case / Application Service</h3>
-<pre><code class="language-java">package com.shopvn.order.application;
+// Read path — không return Aggregate, return projection
+public interface OrderQueryService {
+    PagedResult&lt;OrderListItem&gt; search(OrderSearchCriteria criteria, PageRequest req);
+    OrderDetailView getDetail(OrderId id);
+}
 
-import com.shopvn.order.domain.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+// Implementation có thể dùng JPA, jOOQ, raw SQL — Domain không quan tâm</code></pre>
+</section>
+
+<!-- ==================== USE CASE ==================== -->
+<section id="use-case">
+  <h2>8. Use Case / Application Service — Orchestrator, không phải business <span class="k-tag core">CORE</span></h2>
+
+  <h3>Use Case làm gì và KHÔNG làm gì</h3>
+  <table>
+    <thead>
+      <tr><th>Use Case LÀM</th><th>Use Case KHÔNG LÀM</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Load aggregate qua Repository</td><td>Chứa business rule (rule ở Entity/Aggregate)</td></tr>
+      <tr><td>Gọi method của Aggregate</td><td>Validate field-level (validation ở VO/Entity constructor)</td></tr>
+      <tr><td>Save aggregate</td><td>Build SQL/Query (đó là Infrastructure)</td></tr>
+      <tr><td>Publish Domain Event</td><td>HTTP/JSON parsing (đó là Presentation)</td></tr>
+      <tr><td>Transaction boundary</td><td>Cross-aggregate orchestration phức tạp (dùng Domain Event)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Implementation chuẩn</h3>
+  <pre><code class="language-java">package com.example.shop.application;
+
+import com.example.shop.domain.*;
 
 @Service
-public class PlaceOrderUseCase {
+public class SubmitOrderUseCase {
     private final OrderRepository orderRepo;
-    private final ProductCatalog productCatalog;
-    private final InventoryService inventoryService;
+    private final InventoryReservationService inventoryService;
 
-    public PlaceOrderUseCase(OrderRepository orderRepo, ProductCatalog productCatalog,
-                              InventoryService inventoryService) {
+    public SubmitOrderUseCase(OrderRepository orderRepo,
+                              InventoryReservationService inventoryService) {
         this.orderRepo = orderRepo;
-        this.productCatalog = productCatalog;
         this.inventoryService = inventoryService;
     }
 
     @Transactional
-    public OrderId execute(PlaceOrderCommand command) {
-        // 1. Reserve inventory (orchestration với context khác)
-        for (var line : command.lines()) {
-            inventoryService.reserve(line.productId(), line.quantity());
-        }
+    public void execute(SubmitOrderCommand cmd) {
+        // 1. Load aggregate
+        Order order = orderRepo.findById(OrderId.of(cmd.getOrderId()));
 
-        // 2. Build domain objects từ command
-        List&lt;OrderLine&gt; orderLines = command.lines().stream()
-            .map(l -&gt; {
-                var product = productCatalog.findById(l.productId());
-                return new OrderLine(l.productId(), product.name(), product.price(), l.quantity());
-            })
-            .toList();
+        // 2. Reserve inventory (cross-aggregate, qua service)
+        inventoryService.reserve(order.getItems());
 
-        // 3. Invoke domain logic
-        Order order = Order.placeNewOrder(command.customerId(), orderLines);
+        // 3. Gọi business method của Aggregate
+        order.submit();
 
-        // 4. Persist (repository sẽ publish events sau save)
+        // 4. Save → Repository publish DomainEvent qua outbox
         orderRepo.save(order);
-
-        return order.getOrderId();
     }
 }
 
-// Command = pure data structure, không có behavior
-public record PlaceOrderCommand(
-    CustomerId customerId,
-    List&lt;OrderLineRequest&gt; lines
-) {}
+// Command DTO — input boundary
+public record SubmitOrderCommand(String orderId) {}</code></pre>
 
-public record OrderLineRequest(ProductId productId, int quantity) {}</code></pre>
+  <h3>Counter-example — Use Case chứa business logic</h3>
+  <div class="misconception">
+    <h4>❌ Use Case chứa rule</h4>
+    <pre><code class="language-java">@Service
+public class SubmitOrderUseCase {
+    public void execute(SubmitOrderCommand cmd) {
+        Order order = orderRepo.findById(cmd.getOrderId());
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao tách Use Case khỏi Controller?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Test không cần HTTP</strong>: unit test PlaceOrderUseCase với JUnit + Mockito, không cần MockMvc</li>
-  <li><strong>Multiple entry points</strong>: cùng use case có thể trigger từ REST, GraphQL, message queue, scheduled job — không duplicate logic</li>
-  <li><strong>Transaction boundary rõ ràng</strong>: <code>@Transactional</code> ở use case level — controller chỉ HTTP concerns, không quản lý DB transaction</li>
-  </ul>
-</div>
+        // ❌ Business rule ở Use Case
+        if (order.getItems().isEmpty()) {
+            throw new IllegalStateException("Empty order");
+        }
+        if (order.getStatus() != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Already submitted");
+        }
+        order.setStatus(OrderStatus.SUBMITTED);  // ❌ Mutate qua setter
+        order.setSubmittedAt(Instant.now());
 
-<h3 id="package">Package Structure — Tổ chức theo Layer</h3>
-<pre><code class="language-text">com.shopvn.order
-├── domain/                          [DOMAIN LAYER — pure Java, no framework]
-│   ├── Order.java                   Aggregate root
-│   ├── OrderId.java                 Value Object
-│   ├── OrderLine.java               Entity con
-│   ├── OrderStatus.java             Enum
-│   ├── Money.java                   Value Object
-│   ├── CustomerId.java
-│   ├── OrderRepository.java         Interface only
-│   ├── PricingDomainService.java
-│   └── event/
-│       ├── OrderConfirmedEvent.java
-│       ├── OrderPaidEvent.java
-│       └── OrderCancelledEvent.java
-│
-├── application/                     [APPLICATION LAYER — orchestration]
-│   ├── PlaceOrderUseCase.java
-│   ├── CancelOrderUseCase.java
-│   ├── command/
-│   │   └── PlaceOrderCommand.java
-│   └── port/
-│       ├── DomainEventPublisher.java   Interface
-│       └── PaymentGateway.java         Interface (external service)
-│
-├── infrastructure/                  [INFRASTRUCTURE LAYER — impl details]
-│   ├── persistence/
-│   │   ├── JpaOrderRepository.java
-│   │   └── OrderJpaEntity.java
-│   ├── messaging/
-│   │   └── KafkaEventPublisher.java
-│   └── payment/
-│       └── StripePaymentGateway.java
-│
-└── presentation/                    [PRESENTATION LAYER — HTTP, gRPC, GraphQL]
-    └── rest/
-        ├── OrderController.java
-        └── dto/
-            ├── PlaceOrderRequest.java
-            └── OrderResponse.java</code></pre>
-
-<div class="callout tip">
-  <div class="ctitle">💡 Quy tắc package — Verify Dependency Rule</div>
-  <p>Dùng <strong>ArchUnit</strong> để enforce ở CI:</p>
-<pre style="margin:8px 0 0 0"><code class="language-java">@Test
-void domainShouldNotDependOnInfrastructure() {
-    noClasses().that().resideInAPackage("..domain..")
-        .should().dependOnClassesThat().resideInAnyPackage(
-            "..infrastructure..", "org.springframework..", "javax.persistence.."
-        )
-        .check(importedClasses);
+        orderRepo.save(order);
+    }
 }</code></pre>
-  <p style="margin-top:8px">Test này fail nếu ai đó accidentally import <code>@Entity</code> vào domain — bắt lỗi ở PR review chứ không phải production.</p>
-</div>
+    <p><strong>Symptom:</strong> Rule "Order phải có ≥ 1 item mới submit được" có thể bị quên ở Use Case khác (BatchSubmitUseCase, AutomatedRetrySubmit...). Trong Rich Domain, rule nằm trong <code>order.submit()</code> — không thể bypass.</p>
+  </div>
+
+  <h3>Quy tắc đơn giản</h3>
+  <p>Khi viết Use Case, đặt câu hỏi: <em>"Logic này nếu tôi cần dùng ở 1 entry point khác (CLI, batch job, message handler), tôi có copy code không?"</em></p>
+  <ul>
+    <li>Nếu CÓ copy → logic phải ở Domain (Entity/Aggregate), không ở Use Case.</li>
+    <li>Nếu KHÔNG (chỉ 1 entry point này dùng) → có thể ở Use Case, nhưng vẫn nên cân nhắc đẩy xuống Domain.</li>
+  </ul>
 </section>
 
-<section id="tradeoffs">
-<h2>4. Trade-offs & Anti-Patterns</h2>
+<!-- ==================== BOUNDED CONTEXT ==================== -->
+<section id="bounded-context">
+  <h2>9. Bounded Context — Cùng từ "Order" có thể khác nghĩa <span class="k-tag core">HIGH-SIGNAL</span></h2>
 
-<h3>Khi nào dùng Clean Architecture + DDD?</h3>
-
-<div class="compare">
-<div class="col good">
-  <div class="col-head">✅ Dùng khi</div>
-  <div class="col-body">
-  <ul>
-  <li>Hệ thống phức tạp, business rules evolve liên tục</li>
-  <li>Nhiều team own domains khác nhau (cần bounded context tường minh)</li>
-  <li>Long-term maintenance critical (e-commerce, fintech, healthcare)</li>
-  <li>Cần swap infrastructure mà không break business</li>
-  <li>Codebase &gt; 30K LOC hoặc dự kiến grow</li>
-  </ul>
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> Bounded Context là khái niệm strategic DDD — phân biệt người dùng tactical pattern (Entity, VO, Aggregate) với người hiểu DDD đúng nghĩa. Senior interview probe sâu chỗ này.
   </div>
-</div>
-<div class="col bad">
-  <div class="col-head">❌ KHÔNG dùng nếu</div>
-  <div class="col-body">
-  <ul>
-  <li>CRUD app với 3 bảng, không có business logic phức tạp</li>
-  <li>Prototype / MVP — lean on framework conveniences trước</li>
-  <li>1 developer, simple admin tool</li>
-  <li>Team chưa nắm OOP solid (DDD là pattern OOP nâng cao)</li>
-  </ul>
-  </div>
-</div>
-</div>
 
-<h3>Anti-Pattern #1 — Anemic Domain Model</h3>
+  <h3>Định nghĩa</h3>
+  <p>Bounded Context = boundary mà 1 model cụ thể áp dụng. Trong cùng business, 1 từ ("Order", "Customer", "Product") có thể có ý nghĩa khác trong context khác.</p>
 
-<div class="compare">
-<div class="col bad">
-  <div class="col-head">❌ Entity chỉ là data bag</div>
-<pre><code class="language-java">@Entity
-public class Order {
-    private Long id;
-    private BigDecimal total;
-    private String status;
-    // Chỉ getters/setters
-}
+  <h3>Ví dụ e-commerce — Order trong 4 context</h3>
+  <table>
+    <thead>
+      <tr><th>Context</th><th>Order là gì</th><th>Fields chính</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Sales/Cart</strong></td><td>Giỏ hàng đang chờ checkout</td><td>items, total, discountCode, customerId</td></tr>
+      <tr><td><strong>Fulfillment</strong></td><td>Đơn cần đóng gói &amp; xuất kho</td><td>packingItems, warehouseId, pickingStatus</td></tr>
+      <tr><td><strong>Shipping</strong></td><td>Đơn đang vận chuyển</td><td>carrier, trackingNumber, deliveryEstimate, address</td></tr>
+      <tr><td><strong>Accounting</strong></td><td>Giao dịch cần ghi nhận doanh thu</td><td>revenueAmount, vatAmount, journalEntryId</td></tr>
+    </tbody>
+  </table>
 
-@Service
-public class OrderService {
-    public void cancel(Long id) {
-        Order o = repo.findById(id);
-        if (o.getStatus().equals("SHIPPED"))
-            throw new Exception();
-        o.setStatus("CANCELLED");
-        repo.save(o);
-    }
-}</code></pre>
-</div>
-<div class="col good">
-  <div class="col-head">✅ Rich Domain Model</div>
-<pre><code class="language-java">public class Order {
-    private OrderStatus status;
+  <p>4 model Order có ID chung (orderId) nhưng mỗi context <em>chỉ giữ field nó cần</em>. Không có "god Order" 50 fields.</p>
 
-    public void cancel(String reason) {
-        if (status == OrderStatus.SHIPPED)
-            throw new IllegalStateException(
-                "Cannot cancel shipped order");
-        this.status = OrderStatus.CANCELLED;
-        recordEvent(new OrderCancelledEvent(...));
-    }
-}</code></pre>
-</div>
-</div>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao Anemic Model có hại?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Logic scatter</strong>: 3 nơi gọi <code>setStatus("CANCELLED")</code> → 3 chỗ phải nhớ check shipped. Khi rule đổi → sửa 3 chỗ.</li>
-  <li><strong>No encapsulation</strong>: bất cứ ai có order reference đều set status = "BANANA" → invariant broken.</li>
-  <li><strong>Khó test</strong>: phải test thông qua service + repo, không test riêng business rule được.</li>
-  <li><strong>"Service" phình to</strong>: cuối cùng OrderService 2000 dòng — God class.</li>
-  </ul>
-</div>
-
-<h3>Anti-Pattern #2 — Repository Trả Về Infrastructure Types</h3>
-
-<pre><code class="language-java">// ❌ Domain phụ thuộc Spring Data
-public interface OrderRepository {
-    Page&lt;Order&gt; findAll(Pageable pageable);  // Page là Spring type!
-    Specification&lt;Order&gt; getActiveSpec();    // Spring Data Specification
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li>Domain layer phụ thuộc Spring → test domain phải có Spring → mất point của Clean Architecture</li>
-  <li>Đổi JPA → MongoDB phải rewrite interface (vì Spring Data interface không tương thích)</li>
-  <li>Pagination là infrastructure concern (offset vs cursor) — không thuộc domain logic</li>
-  </ul>
-</div>
-
-<p><strong>Fix:</strong> Domain repo trả về <code>List&lt;Order&gt;</code> hoặc domain-specific pagination object. Pagination handle ở Application layer.</p>
-
-<h3>Anti-Pattern #3 — Use Case Gọi Use Case</h3>
-
-<pre><code class="language-java">// ❌ Tạo coupling giữa use cases
-@Service
-public class PlaceOrderUseCase {
-    public void execute(PlaceOrderCommand cmd) {
-        // ...
-        // Gửi welcome email
-        sendWelcomeEmailUseCase.execute(new WelcomeCommand(cmd.customerId()));
-        // Log audit
-        auditUseCase.execute(new AuditCommand(...));
-    }
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <p>Use case ban đầu chỉ <em>"place order"</em> — giờ kéo theo email + audit. Khi cần thêm SMS notification, inventory event, fraud check... use case này phình to. <strong>Tighter coupling = harder testing + harder change</strong>.</p>
-</div>
-
-<p><strong>Fix:</strong> Dùng <strong>Domain Events</strong>. Use case <em>chỉ publish event</em> <code>OrderPlacedEvent</code>. Email service, audit service, inventory service đều <em>subscribe</em> event đó độc lập.</p>
-
-<pre><code class="language-java">@EventListener(OrderPlacedEvent.class)
-public void onOrderPlaced(OrderPlacedEvent event) {
-    emailService.sendOrderConfirmation(event.customerId(), event.orderId());
-}
-
-@EventListener(OrderPlacedEvent.class)
-public void onOrderPlacedForAudit(OrderPlacedEvent event) {
-    auditService.logOrderEvent(event);
-}</code></pre>
-
-<h3>Anti-Pattern #4 — Một Bounded Context = Một Microservice (Dogma)</h3>
-
-<pre><code class="language-text">// ❌ Over-segmentation — nanoservices
-order-service/          (200 LOC)
-order-pricing-service/  (150 LOC)
-order-validation-service/ (100 LOC)
-order-audit-service/    (80 LOC)
-
-Mỗi service cần:
-- CI/CD pipeline riêng
-- Load balancer
-- Database riêng
-- Monitoring
-- On-call rotation
-// Network overhead &gt; business value</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <p>Microservice mang <strong>operational cost</strong> rất cao. Nếu service quá nhỏ, cost vận hành lớn hơn benefit của decoupling. Mỗi cuộc gọi giữa services = network latency + retry logic + circuit breaker + tracing setup.</p>
-</div>
-
-<p><strong>Fix:</strong> 1 microservice có thể chứa <strong>nhiều bounded context</strong> nếu cùng team own. Khi team tách → tách service. Đừng tách trước.</p>
-
-<h3>Anti-Pattern #5 — Over-Engineering DDD Cho CRUD Đơn Giản</h3>
-
-<p>Form đăng ký user 4 field (name, email, phone, address) → có người design:</p>
-<ul>
-<li><code>UserAggregate</code> với 5 value objects</li>
-<li>3 domain services để "validate"</li>
-<li>Event sourcing cho audit trail</li>
-<li>400 dòng code cho 4 fields</li>
-</ul>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <p>DDD designed cho <strong>complex domain</strong>. Đăng ký user là CRUD đơn giản — không có business rule phức tạp, không có invariant cross-entity. Áp DDD = onboarding nightmare (junior mở 10 file mới hiểu 1 form), tests chậm (boot container), debug khó.</p>
-</div>
-
-<p><strong>Fix:</strong> Tactical DDD cho phần <em>core domain</em> (complex business). Simple CRUD pattern cho admin/configuration/lookup tables. Mix tự nhiên trong cùng codebase.</p>
-
-<h3>Anti-Pattern #6 — Aggregate Quá Lớn</h3>
-
-<pre><code class="language-java">// ❌ Customer aggregate chứa TẤT CẢ orders + reviews + addresses
-public class Customer {
-    private CustomerId id;
-    private List&lt;Order&gt; orders;        // 500 orders trong lifetime
-    private List&lt;Review&gt; reviews;      // 200 reviews
-    private List&lt;Address&gt; addresses;   // 10 shipping addresses
-    // Load customer = load 700+ entities vào memory!
-}</code></pre>
-
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao sai?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li><strong>Memory</strong>: 1 request load 700 objects → OOM khi 1000 concurrent users</li>
-  <li><strong>Transaction lock</strong>: save 1 review = lock toàn customer aggregate → contention cao</li>
-  <li><strong>Slow loading</strong>: query 700 rows mỗi lần dù chỉ cần customer name</li>
-  </ul>
-</div>
-
-<p><strong>Fix:</strong> Order, Review là aggregate riêng. Customer aggregate chỉ chứa data cần cho business rules của chính nó (profile, status, loyalty tier). Reference cross-aggregate bằng <strong>ID</strong>, không embed:</p>
-
-<pre><code class="language-java">public class Customer {
-    private CustomerId id;
-    private String name;
-    private LoyaltyTier tier;
-    // KHÔNG có List&lt;Order&gt; — Order là aggregate riêng
-}
-
+  <h3>Counter-example — Shared Kernel sai</h3>
+  <div class="misconception">
+    <h4>❌ Tạo Order class chung cho cả 4 context</h4>
+    <pre><code class="language-java">// shared/Order.java — 1 class dùng cho mọi context
 public class Order {
     private OrderId id;
-    private CustomerId customerId;  // Reference bằng ID
-    // ...
+    private List&lt;OrderItem&gt; items;       // Sales cần
+    private DiscountCode discount;       // Sales cần
+    private WarehouseId warehouseId;     // Fulfillment cần
+    private String trackingNumber;       // Shipping cần
+    private Money revenueAmount;         // Accounting cần
+    private Money vatAmount;             // Accounting cần
+    // ... 50 fields
 }</code></pre>
+    <p><strong>Hệ quả:</strong></p>
+    <ul>
+      <li>Mọi team đều phải import shared Order — 1 thay đổi → 4 team rebuild.</li>
+      <li>Accounting team không hiểu vì sao có <code>warehouseId</code> trong model.</li>
+      <li>Schema DB phải có 50 cột — query nào cũng load toàn bộ.</li>
+      <li>Test fulfillment phải set 30 field accounting không liên quan.</li>
+    </ul>
+  </div>
 
-<div class="callout tip">
-  <div class="ctitle">📏 Rule of thumb</div>
-  <p>Aggregate nên chứa <strong>&lt; 1000 entities</strong> ở load. Hơn thì tách. Quy tắc: <em>"có gì cần consistent ngay lập tức?"</em> → trong 1 aggregate. <em>"có gì có thể eventual consistent?"</em> → aggregate riêng + domain event.</p>
-</div>
-</section>
+  <h3>Anti-Corruption Layer — translate giữa context</h3>
+  <p>Khi Context A cần data từ Context B, KHÔNG import model của B trực tiếp. Tạo <strong>ACL adapter</strong> dịch model:</p>
 
-<section id="logging">
-<h2>5. Logging Trong Clean Architecture — Đặt Ở Đâu?</h2>
+  <pre><code class="language-java">// Trong Shipping context, cần info Order từ Sales context
 
-<div class="compare">
-<div class="col bad">
-  <div class="col-head">❌ Log trong Domain</div>
-<pre><code class="language-java">package com.shopvn.order.domain;
-import org.slf4j.Logger;  // Domain depend SLF4J!
+// ❌ SAI: import com.example.sales.Order
+// → Shipping depend Sales schema
 
-public class Order {
-    private static final Logger log =
-        LoggerFactory.getLogger(Order.class);
+// ✅ ĐÚNG: ACL adapter
+package com.example.shipping.acl;
 
-    public void cancel(String reason) {
-        log.info("Cancelling order {}", id);
-        // Domain không nên biết về logging
+@Component
+public class SalesContextAdapter {
+    private final SalesApiClient salesClient;
+
+    // Translate Sales.Order → Shipping.ShippableOrder
+    public ShippableOrder fetchOrderForShipping(OrderId orderId) {
+        SalesOrderDto dto = salesClient.getOrder(orderId.toString());
+        // Map sang model riêng của Shipping context
+        return new ShippableOrder(
+            OrderId.of(dto.id()),
+            mapAddress(dto.shippingAddress()),
+            mapItems(dto.items())
+            // Bỏ qua các field Shipping không cần (discountCode, customerId, ...)
+        );
     }
 }</code></pre>
-</div>
-<div class="col good">
-  <div class="col-head">✅ Log ở Application layer</div>
-<pre><code class="language-java">package com.shopvn.order.application;
 
+  <div class="callout success">
+    <strong>Lợi ích ACL:</strong> Sales đổi schema (vd rename <code>discountCode</code> → <code>promoCode</code>) — chỉ ACL adapter cần sửa. Code business của Shipping không touch.
+  </div>
+
+  <h3>Context Map — 5 quan hệ chuẩn</h3>
+  <p>Khi vẽ context map, các quan hệ thường gặp:</p>
+  <ul>
+    <li><strong>Customer / Supplier:</strong> Context A (customer) phụ thuộc Context B (supplier). B "phục vụ" A — A có ảnh hưởng đến roadmap của B (vd negotiate API changes).</li>
+    <li><strong>Conformist:</strong> A phải dùng đúng model của B (vd integrate 3rd-party). A không có ảnh hưởng.</li>
+    <li><strong>Anti-Corruption Layer:</strong> A tạo adapter dịch model B → model A. Đắt hơn nhưng bảo vệ A khỏi thay đổi của B.</li>
+    <li><strong>Shared Kernel:</strong> 2 context dùng chung 1 subset model (phải đồng thuận). Hiếm khi cần, dễ bị abuse.</li>
+    <li><strong>Open Host Service:</strong> Context expose API/event public, các context khác consume tự do (vd Publisher → Subscribers).</li>
+  </ul>
+
+  <div class="break-it">
+    <h4>🔨 Khi nào KHÔNG cần Bounded Context?</h4>
+    <ul>
+      <li>Hệ thống &lt; 10K LOC, 1 dev — overhead tách context lớn hơn lợi ích.</li>
+      <li>CRUD admin tool — không có business rule đáng tách.</li>
+      <li>Team duy nhất maintain toàn bộ — không có team boundary để align với context boundary.</li>
+    </ul>
+    <p>Bounded Context có giá trị khi: team boundary rõ ràng, business rule khác biệt giữa các phần, hoặc khi cần scale team (Conway's Law).</p>
+  </div>
+</section>
+
+<!-- ==================== REFACTOR ==================== -->
+<section id="refactor">
+  <h2>10. Refactor: Anemic Model → Rich Domain <span class="k-tag core">CORE</span></h2>
+
+  <p>Đây là phần "apply" — từ L2 lên L3. Bạn sẽ thấy <em>cùng feature, 2 cách viết</em>. Khuyến nghị: gõ lại cả 2 phiên bản bằng tay để cảm nhận khác biệt.</p>
+
+  <h3>Feature: Submit Order với business rules</h3>
+  <p>Rules:</p>
+  <ol>
+    <li>Order phải có ≥ 1 item mới submit được</li>
+    <li>Mỗi item quantity ≥ 1</li>
+    <li>Total = sum(item.subtotal) — phải khớp</li>
+    <li>Chỉ DRAFT mới submit được</li>
+    <li>Sau submit, không thể addItem nữa</li>
+  </ol>
+
+  <h3>Version A — Anemic (trước refactor)</h3>
+  <pre><code class="language-java">// Entity:
+public class Order {
+    private Long id;
+    private String status; // DRAFT, SUBMITTED, ...
+    private BigDecimal total;
+    private List&lt;OrderItem&gt; items = new ArrayList&lt;&gt;();
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public BigDecimal getTotal() { return total; }
+    public void setTotal(BigDecimal total) { this.total = total; }
+    public List&lt;OrderItem&gt; getItems() { return items; }
+    public void setItems(List&lt;OrderItem&gt; items) { this.items = items; }
+}
+
+// Service:
 @Service
-@Slf4j
-public class CancelOrderUseCase {
-    public void execute(CancelOrderCommand cmd) {
-        log.info("Cancel order: id={}, reason={}",
-            cmd.orderId(), cmd.reason());
-        try {
-            // ... business logic
-        } catch (IllegalStateException e) {
-            log.warn("Cancel failed: {}", e.getMessage());
-            throw e;
+public class OrderService {
+    public void addItem(Long orderId, Long productId, int qty, BigDecimal price) {
+        Order order = repo.findById(orderId).orElseThrow();
+        if (!order.getStatus().equals("DRAFT")) {
+            throw new IllegalStateException("Cannot modify " + order.getStatus());
+        }
+        if (qty &lt; 1) throw new IllegalArgumentException("Quantity must be positive");
+
+        OrderItem item = new OrderItem();
+        item.setProductId(productId);
+        item.setQuantity(qty);
+        item.setUnitPrice(price);
+        item.setSubtotal(price.multiply(BigDecimal.valueOf(qty)));
+        order.getItems().add(item);
+
+        // Recalculate total
+        BigDecimal newTotal = BigDecimal.ZERO;
+        for (OrderItem it : order.getItems()) {
+            newTotal = newTotal.add(it.getSubtotal());
+        }
+        order.setTotal(newTotal);
+        repo.save(order);
+    }
+
+    public void submit(Long orderId) {
+        Order order = repo.findById(orderId).orElseThrow();
+        if (order.getItems().isEmpty()) {
+            throw new IllegalStateException("Empty order");
+        }
+        if (!order.getStatus().equals("DRAFT")) {
+            throw new IllegalStateException("Already submitted");
+        }
+        order.setStatus("SUBMITTED");
+        repo.save(order);
+    }
+}</code></pre>
+
+  <h3>Symptom của Anemic — tự thử reproduce</h3>
+  <div class="edge-cases">
+    <h4>⚠️ Test reproduce bug — Anemic phá vỡ thế nào?</h4>
+    <ol>
+      <li><strong>Bypass invariant:</strong> Caller khác có thể <code>order.setTotal(BigDecimal.ZERO)</code> dù items không rỗng → total sai. Compile được, không có warning.</li>
+      <li><strong>State illegal:</strong> Tạo <code>new Order()</code> với status = null → object tồn tại ở trạng thái không hợp lệ.</li>
+      <li><strong>Rule scatter:</strong> Rule "qty ≥ 1" chỉ ở OrderService.addItem. Nếu có BatchOrderService cũng add item mà quên check → bug.</li>
+      <li><strong>Test phải mock Service:</strong> Để test rule "không submit empty order" phải spin up OrderService + mock repository. Test slow.</li>
+    </ol>
+  </div>
+
+  <h3>Version B — Rich Domain (sau refactor)</h3>
+  <pre><code class="language-java">// Entity với business methods:
+public class Order {
+    private final OrderId id;
+    private OrderStatus status;
+    private Money total;
+    private final List&lt;OrderItem&gt; items;
+
+    private Order(OrderId id) {
+        this.id = Objects.requireNonNull(id);
+        this.status = OrderStatus.DRAFT;
+        this.total = Money.zero(Currency.getInstance("USD"));
+        this.items = new ArrayList&lt;&gt;();
+    }
+
+    public static Order create(OrderId id) {
+        return new Order(id);
+    }
+
+    public void addItem(ProductId productId, int quantity, Money unitPrice) {
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Cannot add item to " + status + " order");
+        }
+        if (quantity &lt; 1) {
+            throw new IllegalArgumentException("Quantity must be >= 1");
+        }
+        items.add(new OrderItem(productId, quantity, unitPrice));
+        this.total = recomputeTotal();
+    }
+
+    public void submit() {
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Cannot submit empty order");
+        }
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Order in status " + status + " cannot be submitted");
+        }
+        this.status = OrderStatus.SUBMITTED;
+    }
+
+    private Money recomputeTotal() {
+        return items.stream()
+            .map(OrderItem::getSubtotal)
+            .reduce(Money.zero(Currency.getInstance("USD")), Money::add);
+    }
+
+    public OrderId getId() { return id; }
+    public OrderStatus getStatus() { return status; }
+    public Money getTotal() { return total; }
+    public List&lt;OrderItem&gt; getItems() { return Collections.unmodifiableList(items); }
+}
+
+// Service mỏng:
+@Service
+public class OrderUseCases {
+    private final OrderRepository repo;
+
+    public OrderUseCases(OrderRepository repo) { this.repo = repo; }
+
+    @Transactional
+    public void addItem(OrderId orderId, ProductId productId, int qty, Money price) {
+        Order order = repo.findById(orderId);
+        order.addItem(productId, qty, price);
+        repo.save(order);
+    }
+
+    @Transactional
+    public void submit(OrderId orderId) {
+        Order order = repo.findById(orderId);
+        order.submit();
+        repo.save(order);
+    }
+}</code></pre>
+
+  <div class="callout success">
+    <strong>Khác biệt observable:</strong>
+    <ul>
+      <li>Service mỏng đi 80%. Logic 30 dòng còn 3 dòng.</li>
+      <li>Mọi entry point gọi <code>order.submit()</code> đều phải qua check rule. Không bypass.</li>
+      <li>Test rule không cần Spring — <code>new Order(...).submit()</code> + assert exception. Sub-second test.</li>
+      <li>Type-safety: <code>Money</code>, <code>OrderId</code>, <code>ProductId</code> không thể nhầm với nhau ở compile time.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== DOMAIN EVENTS ==================== -->
+<section id="domain-events">
+  <h2>11. Domain Events + Outbox Pattern <span class="k-tag supp">SUPP</span></h2>
+
+  <p>Khi 1 aggregate thay đổi state, các context khác cần biết. Cách <em>sai</em>: gọi trực tiếp service khác. Cách <em>đúng</em>: publish Domain Event, downstream listen.</p>
+
+  <h3>Domain Event là gì</h3>
+  <p>Object immutable mô tả "việc gì đã xảy ra trong domain" — tên ở past tense (<code>OrderSubmitted</code>, <code>CustomerDeactivated</code>, không phải <code>SubmitOrder</code>). Event chứa enough info để downstream xử lý mà KHÔNG cần callback ngược.</p>
+
+  <pre><code class="language-java">// Event là record immutable
+public record OrderSubmittedEvent(
+    OrderId orderId,
+    CustomerId customerId,
+    Money total,
+    Instant submittedAt
+) {}</code></pre>
+
+  <h3>Aggregate record event</h3>
+  <pre><code class="language-java">public class Order {
+    // ... fields ...
+    private final List&lt;Object&gt; domainEvents = new ArrayList&lt;&gt;();
+
+    public void submit() {
+        if (items.isEmpty()) throw new IllegalStateException("Empty");
+        if (status != OrderStatus.DRAFT) throw new IllegalStateException(...);
+        this.status = OrderStatus.SUBMITTED;
+        // Record event — chưa publish
+        domainEvents.add(new OrderSubmittedEvent(id, customerId, total, Instant.now()));
+    }
+
+    public List&lt;Object&gt; getDomainEventsAndClear() {
+        List&lt;Object&gt; events = new ArrayList&lt;&gt;(domainEvents);
+        domainEvents.clear();
+        return events;
+    }
+}</code></pre>
+
+  <h3>Vì sao cần Outbox Pattern</h3>
+  <div class="misconception">
+    <h4>❌ Naive publish — bug consistency</h4>
+    <pre><code class="language-java">@Transactional
+public void submit(OrderId id) {
+    Order order = repo.findById(id);
+    order.submit();
+    repo.save(order);                    // DB commit
+    kafkaPublisher.publish(events);      // ❌ Kafka down → event mất, DB đã commit
+}</code></pre>
+    <p><strong>Symptom:</strong> Order đã SUBMITTED trong DB nhưng Notification service không nhận event → khách không có email confirm. Audit log thiếu. Reconciliation báo lệch.</p>
+  </div>
+
+  <h3>✅ Outbox Pattern</h3>
+  <p>Idea: lưu event vào bảng <code>outbox</code> trong CÙNG transaction với business data. Async job đọc outbox publish ra Kafka. Atomic guarantee được giữ vì cùng DB transaction.</p>
+
+  <pre><code class="language-java">// Repository:
+@Repository
+public class JpaOrderRepository implements OrderRepository {
+    private final SpringDataOrderRepo orderJpa;
+    private final OutboxRepository outboxRepo;
+    private final ObjectMapper mapper;
+
+    @Override
+    @Transactional
+    public void save(Order order) {
+        // 1. Save aggregate
+        orderJpa.save(toEntity(order));
+
+        // 2. Save events vào outbox (CÙNG TRANSACTION)
+        for (Object event : order.getDomainEventsAndClear()) {
+            OutboxRow row = new OutboxRow();
+            row.setId(UUID.randomUUID().toString());
+            row.setAggregateType("Order");
+            row.setAggregateId(order.getId().toString());
+            row.setEventType(event.getClass().getSimpleName());
+            row.setPayload(mapper.writeValueAsString(event));
+            row.setCreatedAt(Instant.now());
+            row.setStatus(OutboxStatus.PENDING);
+            outboxRepo.save(row);
+        }
+        // 3. Transaction commit → cả 2 atomic
+    }
+}
+
+// Scheduled job poll outbox:
+@Component
+public class OutboxPoller {
+    @Scheduled(fixedDelay = 1000)
+    public void poll() {
+        List&lt;OutboxRow&gt; pending = outboxRepo.findPending(100);
+        for (OutboxRow row : pending) {
+            try {
+                kafkaPublisher.publish(row.getEventType(), row.getPayload());
+                outboxRepo.markPublished(row.getId());
+            } catch (Exception e) {
+                // Để retry lần sau, KHÔNG mark published
+                log.warn("Publish failed for outbox {}", row.getId(), e);
+            }
         }
     }
 }</code></pre>
-</div>
-</div>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao Domain không nên log?</div>
-  <ul style="margin:8px 0 0 20px">
-  <li>Logging framework (SLF4J/Logback) là <strong>infrastructure concern</strong>. Domain depend infrastructure = phá dependency rule.</li>
-  <li>Test domain phải mock logger → noise trong test.</li>
-  <li>Domain logic phải <em>"silent"</em> — chỉ raise events. Application layer quyết định log/notify/audit.</li>
-  </ul>
-</div>
-
-<p>Domain communicate qua <strong>Domain Events</strong>. Application layer subscribe + log:</p>
-
-<pre><code class="language-java">@Component
-@Slf4j
-public class OrderEventLogger {
-    @EventListener
-    public void onOrderConfirmed(OrderConfirmedEvent event) {
-        log.info("Order confirmed: orderId={}, customerId={}, total={}",
-            event.orderId(), event.customerId(), event.total());
-    }
-
-    @EventListener
-    public void onOrderCancelled(OrderCancelledEvent event) {
-        log.warn("Order cancelled: orderId={}, reason={}",
-            event.orderId(), event.reason());
-    }
-}</code></pre>
+  <div class="callout info">
+    <strong>Guarantees của Outbox:</strong>
+    <ul>
+      <li><strong>At-least-once delivery:</strong> Event sẽ publish ít nhất 1 lần (có thể nhiều lần nếu poller retry). Downstream phải idempotent.</li>
+      <li><strong>Eventual consistency:</strong> Có lag từ commit đến publish (~ms đến seconds tuỳ poll interval).</li>
+      <li><strong>Trade-off:</strong> Phức tạp hơn naive publish, nhưng đảm bảo không mất event.</li>
+    </ul>
+  </div>
 </section>
 
-<section id="migration">
-<h2>6. Migration Strategy — Từ Anemic Sang Rich Domain Model</h2>
+<!-- ==================== ANTI-PATTERNS ==================== -->
+<section id="antipatterns">
+  <h2>⚠️ 7 anti-patterns kinh điển <span class="k-tag core">CORE</span></h2>
 
-<p>Không ai bắt đầu codebase mới sạch. Realistic là bạn join team với 500K LOC monolith Anemic. Migration đúng cách:</p>
+  <div class="misconception">
+    <h4>❌ #1: Anemic Domain Model</h4>
+    <p><strong>Symptom:</strong> Entity chỉ có getter/setter, mọi logic ở Service. Rule scatter, dễ bypass. Test phải spin up Service.</p>
+    <p><strong>Fix:</strong> Đẩy logic vào Entity/Aggregate. Service mỏng đi 70-80%. Xem Section 10.</p>
+  </div>
 
-<div class="diagram">
-<svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" font-size="13">
-  <defs><style>
-    .phase{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.5}
-    .phase-good{fill:#ecfdf5;stroke:#059669;stroke-width:1.5}
-    .lbl{font-weight:600;fill:#0f172a}
-    .desc{fill:#475569;font-size:11px}
-    .arrow{stroke:#4f46e5;stroke-width:2;fill:none;marker-end:url(#a)}
-  </style>
-  <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/></marker></defs>
+  <div class="misconception">
+    <h4>❌ #2: Repository return infrastructure type</h4>
+    <p><strong>Symptom:</strong> Domain Repository return <code>Page&lt;T&gt;</code>, <code>Specification&lt;T&gt;</code>, <code>Pageable</code>. Domain depend Spring Data.</p>
+    <p><strong>Fix:</strong> Repository return domain object hoặc List. Pagination ở Application layer.</p>
+  </div>
 
-  <rect x="20" y="40" width="200" height="80" rx="8" class="phase"/>
-  <text x="120" y="64" text-anchor="middle" class="lbl">Phase 1 — Identify (2 tuần)</text>
-  <text x="120" y="84" text-anchor="middle" class="desc">Map bounded contexts</text>
-  <text x="120" y="100" text-anchor="middle" class="desc">Vẽ context map</text>
-  <text x="120" y="116" text-anchor="middle" class="desc">KHÔNG refactor code</text>
+  <div class="misconception">
+    <h4>❌ #3: Use Case gọi Use Case</h4>
+    <p><strong>Symptom:</strong> SubmitOrderUseCase gọi SendEmailUseCase trực tiếp → coupling. Khi đổi email logic phải test cả 2.</p>
+    <p><strong>Fix:</strong> SubmitOrderUseCase publish <code>OrderSubmittedEvent</code>. EmailHandler subscribe event. Loose coupling.</p>
+  </div>
 
-  <rect x="250" y="40" width="200" height="80" rx="8" class="phase"/>
-  <text x="350" y="64" text-anchor="middle" class="lbl">Phase 2 — Strangler (4-8 tuần)</text>
-  <text x="350" y="84" text-anchor="middle" class="desc">Tạo domain layer mới</text>
-  <text x="350" y="100" text-anchor="middle" class="desc">Route new features qua đó</text>
-  <text x="350" y="116" text-anchor="middle" class="desc">Code cũ vẫn chạy song song</text>
+  <div class="misconception">
+    <h4>❌ #4: 1 microservice = 1 bounded context (dogma)</h4>
+    <p><strong>Symptom:</strong> Nanoservice. 5 service mỗi cái 200 LOC. Network overhead &gt; business value. Debug nightmare.</p>
+    <p><strong>Fix:</strong> 1 microservice có thể chứa nhiều bounded context nếu ownership rõ. Tách service khi team boundary hoặc scale boundary đòi hỏi.</p>
+  </div>
 
-  <rect x="480" y="40" width="200" height="80" rx="8" class="phase-good"/>
-  <text x="580" y="64" text-anchor="middle" class="lbl">Phase 3 — Events (2-4 tuần)</text>
-  <text x="580" y="84" text-anchor="middle" class="desc">Add domain events</text>
-  <text x="580" y="100" text-anchor="middle" class="desc">Downstream subscribe events</text>
-  <text x="580" y="116" text-anchor="middle" class="desc">Outbox pattern</text>
+  <div class="misconception">
+    <h4>❌ #5: Over-engineer DDD cho CRUD</h4>
+    <p><strong>Symptom:</strong> Form đăng ký 4 field → tạo Aggregate + 3 Value Object + Domain Event + Outbox. 400 LOC cho 4 field.</p>
+    <p><strong>Fix:</strong> DDD cho complex domain. CRUD đơn giản dùng JPA Entity + Service direct, không gồng.</p>
+  </div>
 
-  <line x1="220" y1="80" x2="250" y2="80" class="arrow"/>
-  <line x1="450" y1="80" x2="480" y2="80" class="arrow"/>
+  <div class="misconception">
+    <h4>❌ #6: Domain Event mất (Kafka down)</h4>
+    <p><strong>Symptom:</strong> Naive publish sau commit. Kafka down → event mất → downstream lệch state. Reconciliation khó.</p>
+    <p><strong>Fix:</strong> Outbox Pattern. Event vào DB cùng transaction, poll publish async. Xem Section 11.</p>
+  </div>
 
-  <text x="350" y="180" text-anchor="middle" class="lbl" font-size="14">Vì sao Strangler Fig thay vì Big Bang Rewrite?</text>
-  <text x="350" y="205" text-anchor="middle" class="desc">Big Bang = 6 tháng không ship feature → business nói "không"</text>
-  <text x="350" y="222" text-anchor="middle" class="desc">Strangler = ship feature liên tục, refactor dần dần</text>
-  <text x="350" y="239" text-anchor="middle" class="desc">Risk thấp: domain model sai → rollback 1 aggregate, không phải toàn bộ</text>
-</svg>
-</div>
+  <div class="misconception">
+    <h4>❌ #7: Aggregate phình to (god aggregate)</h4>
+    <p><strong>Symptom:</strong> Customer aggregate chứa List&lt;Order&gt; chứa List&lt;OrderItem&gt;... Load 1 customer = load 10K record. OOM.</p>
+    <p><strong>Fix:</strong> Tách aggregate. Reference bằng ID. Aggregate có invariant ràng buộc atomic mới ở chung. Xem Section 6.</p>
+  </div>
 
-<div class="callout why">
-  <div class="ctitle">🎯 Vì sao Strangler Fig hiệu quả?</div>
-  <p>Code mới sống <em>"bên cạnh"</em> code cũ. Mỗi feature mới hoặc bug fix → cơ hội migrate 1 aggregate. Sau 6-12 tháng, code cũ <strong>tự nhiên "chết"</strong> vì không còn ai dùng. Pattern này tránh được "<em>chúng tôi không thể rewrite vì business cần feature</em>" — vì bạn vẫn ship feature, song song refactor.</p>
-</div>
+  <div class="break-it">
+    <h4>🔨 Anti-pattern nào nguy hiểm nhất?</h4>
+    <p><strong>#1 (Anemic).</strong> Vì:</p>
+    <ul>
+      <li>Khó detect — code chạy được, test pass được.</li>
+      <li>Lan rộng — 1 service Anemic dễ khiến cả team theo style đó.</li>
+      <li>Refactor cost cao — phải sửa cả Entity + Service + Test cùng lúc.</li>
+      <li>Mất luôn lợi ích DDD: rule scatter, không reuse được logic, test slow.</li>
+    </ul>
+  </div>
 </section>
 
+<!-- ==================== WHEN NOT TO USE ==================== -->
+<section id="when-not">
+  <h2>❌ Khi nào KHÔNG dùng DDD + Clean Architecture <span class="k-tag core">CORE</span></h2>
+
+  <div class="callout warn">
+    <strong>Sự thật ít người nói:</strong> DDD + Clean Arch là <em>cost</em> đáng kể. Áp dụng sai bối cảnh = over-engineer. File này chống hiểu giả nên phải nói rõ.
+  </div>
+
+  <h3>5 dấu hiệu KHÔNG dùng</h3>
+  <ol>
+    <li><strong>CRUD app &lt; 5 tables, không có business rule phức tạp.</strong> Form đăng ký, admin panel, simple blog. Spring Boot + JPA Entity + @RestController đủ.</li>
+    <li><strong>Prototype / MVP &lt; 3 tháng lifespan.</strong> Mục tiêu validate idea, không phải maintain dài hạn. Speed &gt; correctness.</li>
+    <li><strong>1 dev solo, không có team boundary.</strong> Bounded Context align với team boundary. Không có team thì không có context để align.</li>
+    <li><strong>Domain expertise chưa đủ.</strong> DDD đòi hỏi <em>ubiquitous language</em> với domain expert. Nếu chưa có domain expert hoặc business rule chưa stable → DDD sẽ phải refactor liên tục.</li>
+    <li><strong>Team chưa quen DDD.</strong> Áp dụng DDD trên team chưa hiểu = code "DDD-flavored" nhưng vẫn Anemic + Repository expose Page&lt;T&gt; + Use Case chứa rule. Tệ hơn không có DDD vì giả vờ có.</li>
+  </ol>
+
+  <h3>Decision matrix</h3>
+  <table>
+    <thead>
+      <tr><th>Bối cảnh</th><th>Approach</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CRUD admin / form đơn giản</td><td>Spring Boot direct (Controller → Service → JpaRepository)</td></tr>
+      <tr><td>Prototype validate idea</td><td>Direct, không DDD. Refactor sau nếu MVP success.</td></tr>
+      <tr><td>Domain phức tạp, rule evolve, team &gt; 5</td><td>Clean Arch + Tactical DDD (Entity, VO, Aggregate)</td></tr>
+      <tr><td>Multi-team, multi-domain, microservices</td><td>Strategic DDD (Bounded Context, ACL, Context Map) + Tactical</td></tr>
+      <tr><td>Finance, healthcare (audit critical)</td><td>Full DDD + Event Sourcing (cân nhắc)</td></tr>
+    </tbody>
+  </table>
+
+  <p>Quy tắc: <em>Apply pattern khi có pain mà pattern giải quyết</em>. Đừng apply pattern vì nó "đúng".</p>
+</section>
+
+<!-- ==================== INTERVIEW ==================== -->
 <section id="interview">
-<h2>7. Interview Framework</h2>
+  <h2>🎯 3-tier interview framework — DDD &amp; Clean Arch</h2>
 
-<div class="tier t1">
-  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid-level gate</span></div>
-  <div class="q">Q: Phân biệt Entity và Value Object?</div>
-  <div class="a">"Entity có identity persist (Order với orderId — kể cả status đổi vẫn là cùng 1 order). Value Object không có identity, định nghĩa bằng value (Money = amount + currency). Entity mutable, Value Object immutable. Compare: entity bằng ID (<code>order1.id.equals(order2.id)</code>), value object bằng content (<code>money1.equals(money2)</code>)."</div>
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior signal, ai cũng phải biết)</h3>
 
-  <div class="q">Q: Repository trong DDD là gì?</div>
-  <div class="a">"Repository là interface trong domain layer, đại diện cho persistence abstraction. Caller dùng như đang lưu aggregate vào collection: <code>orderRepo.save(order)</code>, <code>orderRepo.findById(orderId)</code>. Implementation (JPA, MongoDB, in-memory) ở infrastructure — domain không biết DB cụ thể, không biết SQL/NoSQL. Lý do: domain testable không cần DB, swap DB không break business logic."</div>
-</div>
+    <p><strong>Q1: Entity và Value Object khác nhau như thế nào?</strong></p>
+    <p><em>Trả lời:</em> "Entity có identity persist qua thay đổi (Customer với CustomerId vẫn là cùng Customer dù name/email đổi), equality by identity. Value Object KHÔNG có identity, định nghĩa bằng content (<code>Money(100, USD)</code> bằng nhau bất kỳ instance nào), immutable, equality by value. Quy tắc: nếu có lifecycle + identity cần persist → Entity. Nếu chỉ là 'giá trị' (Money, Email, Address) → VO."</p>
 
-<div class="tier t2">
-  <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Mid → Senior</span></div>
-  <div class="q">Q: Design use case "place order". Yêu cầu: (a) reserve inventory + tạo order atomic, (b) emit audit trail, (c) dễ thêm payment method mới sau này.</div>
-  <div class="a">"<strong>Aggregate</strong>: Order là root, chứa OrderLine entities. Order method <code>place()</code> validate invariants (lines không empty, total &gt; 0), emit OrderConfirmedEvent.<br><br>
-  <strong>Use Case</strong>: PlaceOrderUseCase orchestrate inventory.reserve() + order.place() + orderRepo.save(). <code>@Transactional</code> ở use case → atomic giữa DB save và inventory reserve (cùng DB) hoặc dùng Saga (nếu inventory là service riêng).<br><br>
-  <strong>Audit</strong>: Event-driven — OrderConfirmedEvent published sau khi save. AuditService @EventListener subscribe và log/persist. Không pollute use case với audit logic.<br><br>
-  <strong>Payment method extensibility</strong>: PaymentMethod là Strategy pattern. PaymentGateway interface ở domain (port), implementation StripeGateway/MomoGateway/VNPayGateway ở infrastructure (adapter). Thêm method mới = add 1 implementation, không sửa use case."</div>
+    <p><strong>Q2: Repository trong DDD là gì?</strong></p>
+    <p><em>Trả lời:</em> "Interface ở Domain layer, đại diện cho persistence abstraction. API nhìn như 'collection in memory': <code>findById(id)</code>, <code>save(aggregate)</code>. Implementation (JPA, MongoDB, ...) ở Infrastructure — Domain không biết DB. Repository chỉ operate trên Aggregate Root, không cho entity internal."</p>
+  </div>
 
-  <div class="q">Q: Có OrderContext và ShippingContext, đều có "Order" với attributes khác nhau. Giải thích bounded context + anti-corruption layer.</div>
-  <div class="a">"Mỗi context own definition riêng của Order. OrderContext care: customerId, items, totalPrice, paymentStatus. ShippingContext care: orderId, address, weight, carrier, trackingNumber.<br><br>
-  Khi ShippingContext cần info từ OrderContext (ví dụ địa chỉ giao), dùng <strong>Anti-Corruption Layer</strong> (ACL) — 1 adapter trong ShippingContext gọi OrderContext API và <strong>translate</strong> DTO của Order Context thành ShippingOrder model.<br><br>
-  Lý do: nếu ShippingContext import OrderContext models trực tiếp → coupling chặt → OrderContext refactor tên field, ShippingContext break. ACL absorbs change. Khi OrderContext đổi <code>customerId</code> thành <code>buyerId</code>, chỉ ACL phải update."</div>
-</div>
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (phân biệt mid vs senior)</h3>
 
-<div class="tier t3">
-  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior signal</span></div>
-  <div class="q">Q: Sàn ShopVN sáp nhập với 1 sàn khác (Marketplace). Design bounded contexts cho hệ thống mới.</div>
-  <div class="a">"Identify contexts cốt lõi:<br>
-  <strong>1. CatalogContext</strong> — product master data, mỗi sàn brings existing catalog → cần unification strategy (deduplicate, merge SKUs)<br>
-  <strong>2. OrderContext</strong> — checkout, payment intent (mỗi sàn process độc lập trước, eventual merge)<br>
-  <strong>3. InventoryContext</strong> — stock của seller, cần aggregate cross-sàn để tránh oversell<br>
-  <strong>4. CustomerContext</strong> — buyer profile, KYC (unify, deduplicate by email/phone)<br>
-  <strong>5. SellerContext</strong> — vendor onboarding, payout (mỗi sàn có sellers riêng → namespace để tránh ID collision)<br>
-  <strong>6. ShippingContext</strong> — fulfillment (có thể share carriers chung)<br>
-  <strong>7. FinanceContext</strong> — consolidated revenue, settlement (new context, đọc từ OrderContext + SellerContext)<br><br>
-  <strong>Migration strategy</strong>:<br>
-  Phase 1: coexist — mỗi sàn vẫn chạy độc lập, sync data qua events (CDC từ DB cũ → Kafka → consumer).<br>
-  Phase 2: shared contexts (CustomerContext, CatalogContext) migrate trước vì có dedupe value.<br>
-  Phase 3: gradual data migration sang unified DB.<br>
-  Phase 4: retire legacy systems.<br><br>
-  Trong mỗi context, áp Clean Architecture (domain isolated). Giữa contexts: domain events + ACL. Tránh share DB cross-context — chỉ share via API/event."</div>
-</div>
+    <p><strong>Q3: Vì sao Repository return <code>Page&lt;T&gt;</code> của Spring Data là sai?</strong></p>
+    <blockquote>
+      "<code>Page&lt;T&gt;</code> là type của Spring Data — nó là infrastructure concern. Khi Domain Repository return <code>Page&lt;T&gt;</code>:<br><br>
+      ① Domain layer depend Spring Data → mất tính framework-agnostic. Đổi sang MongoDB Reactive phải rewrite Repository interface.<br>
+      ② Pagination semantics (offset, cursor, sort) leak vào Domain. Use case phải biết 'page size 20'. Đó không phải business concern.<br>
+      ③ Unit test Domain phải có Spring Data runtime → test slow.<br><br>
+      Cách đúng: Domain Repository return <code>List&lt;T&gt;</code> hoặc <code>Optional&lt;T&gt;</code>. Pagination ở Application layer hoặc tách Read Model (CQRS lite) — Query Service return <code>PagedResult&lt;DTO&gt;</code>, không qua Aggregate."
+    </blockquote>
+
+    <p><strong>Q4: Thiết kế Order aggregate với rules: (a) items atomic với Order, (b) total = sum(items), (c) chỉ DRAFT mới modify được. Show code.</strong></p>
+    <p><em>Approach:</em> Order là Aggregate Root, OrderItem internal entity. Order method <code>addItem/removeItem</code> validate status + recalculate total trong cùng method (invariant). Items expose qua <code>Collections.unmodifiableList</code>. Constructor private, factory <code>Order.create()</code>. Status enum, không phải String. Repository save toàn bộ aggregate atomic (1 DB transaction). Code đầy đủ ở Section 6 của file này.</p>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior signal)</h3>
+
+    <p><strong>Q5: Hệ e-commerce có Order trong 4 context: Sales (cart), Fulfillment (đóng gói), Shipping (vận chuyển), Accounting (doanh thu). Mỗi context cần dữ liệu Order khác nhau. Thiết kế.</strong></p>
+    <pre><code class="language-text">Approach trong 5 phút:
+
+Phút 1 — Identify Bounded Contexts:
+  Sales Context: Order = cart, fields {items, total, customerId, discountCode}
+  Fulfillment Context: Order = pickup list, fields {packingItems, warehouseId, picker}
+  Shipping Context: Order = parcel, fields {carrier, tracking, address}
+  Accounting Context: Order = revenue entry, fields {revenue, vat, journalId}
+
+Phút 2 — Mỗi context có Order model riêng:
+  KHÔNG shared kernel "god Order" 50 fields.
+  Mỗi context có Order(orderId, ...riêng) — orderId là correlation key.
+
+Phút 3 — Context Map relationships:
+  Sales (Publisher) → publish OrderSubmittedEvent
+  Fulfillment (Subscriber) → react: tạo Picking task
+  Shipping (Subscriber) → react sau "OrderPicked": tạo Shipment
+  Accounting (Subscriber) → react sau "OrderDelivered": ghi revenue entry
+
+Phút 4 — Anti-Corruption Layer:
+  Khi Fulfillment cần info từ Sales:
+    Fulfillment.SalesContextAdapter — call Sales API → map sang
+    Fulfillment.PickableOrder (model riêng), bỏ field không cần.
+  Lợi ích: Sales đổi schema không break Fulfillment.
+
+Phút 5 — Trade-offs:
+  + Loose coupling: 4 team deploy độc lập
+  + Test focused: mỗi context test riêng
+  + Eventual consistency: order trạng thái diverge ngắn hạn — khách hàng UX cần xử lý
+  - Distributed tracing phức tạp (correlation ID + outbox pattern)
+  - Reconciliation cần — daily job verify cả 4 context khớp
+  - Nếu team &lt; 5, overhead cao hơn benefit → cân nhắc monolith với module boundary</code></pre>
+  </div>
 </section>
 
-<footer>
-<div>📁 #15 Clean Architecture & DDD · Phase 4 — Architecture</div>
-<div>Tiếp theo: #16 Design Patterns · #17 Microservices Patterns</div>
-</footer>
+<!-- ==================== BUILD PROJECTS ==================== -->
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 3 lab BẮT BUỘC để lên L3</h2>
 
-</div>
-</main>
+  <div class="callout warn">
+    <strong>Quan trọng:</strong> 3 lab dưới đây là phần phân biệt L2 (explain) với L3 (apply). Nếu skip 3 lab này, bạn vẫn ở L2 dù <em>cảm thấy</em> đã master. Mỗi lab tốn 2-4 giờ, KHÔNG skip.
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Refactor Anemic → Rich Domain (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tay làm thật để cảm nhận khác biệt.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo Spring Boot project với 2 entity: <code>BlogPost</code> (id, title, content, status, publishedAt) và <code>Comment</code> (id, postId, content, createdAt).</li>
+      <li>Viết version A — Anemic: BlogPost với toàn getter/setter, logic ở BlogPostService (rules: publish chỉ khi status=DRAFT, addComment chỉ khi published).</li>
+      <li>Test version A bằng cách viết 1 test "có thể bypass rule": <code>blogPost.setStatus("PUBLISHED"); blogPost.setPublishedAt(null);</code> — confirm rằng được phép (bug tiềm ẩn).</li>
+      <li>Refactor sang version B — Rich Domain: methods <code>publish()</code>, <code>addComment()</code>, không setter public. Identity với <code>BlogPostId</code> VO.</li>
+      <li>Verify: thử <code>blogPost.setStatus(...)</code> — compile error. Test rule bằng <code>new BlogPost(...).publish()</code> + assert exception, không cần Spring.</li>
+      <li>Đo thời gian test: A vs B. B phải nhanh hơn ít nhất 10×.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Push commit lên GitHub (private OK). Diff trước/sau thấy: Service mỏng đi &gt; 50%, không còn setter public, test &lt; 100ms.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — Reproduce aggregate phình to → tách (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự mắt thấy performance disaster của god aggregate.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Setup project với <code>Author</code> aggregate chứa <code>List&lt;BlogPost&gt;</code> (JPA <code>@OneToMany(cascade=ALL, fetch=EAGER)</code>).</li>
+      <li>Seed 1 Author có 10.000 BlogPost (data generator script).</li>
+      <li>Đo thời gian load: <code>authorRepo.findById(1L)</code>. Sẽ thấy &gt; 3-5 giây + N+1 query log.</li>
+      <li>Refactor: Author là 1 aggregate, BlogPost là aggregate khác. BlogPost reference <code>AuthorId</code> bằng ID. Author KHÔNG chứa <code>List&lt;BlogPost&gt;</code>.</li>
+      <li>Đo lại: <code>authorRepo.findById(1L)</code> — phải &lt; 50ms.</li>
+      <li>Cần list posts của author → <code>blogPostRepo.findByAuthor(authorId)</code> — explicit query, có pagination.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Benchmark trước/sau. Phải đo được latency giảm &gt; 50× và memory giảm đáng kể.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 3 — Bounded Context với ACL (4 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tay build 2 context giao tiếp qua ACL.</p>
+    <p><strong>Scenario:</strong> Mini e-commerce với 2 module Maven (cùng project, khác package):</p>
+    <ul>
+      <li><code>shop-catalog/</code> — Product context. Product có id, name, price, category, description, images.</li>
+      <li><code>shop-cart/</code> — Cart context. Cart cần biết price + name + thumbnail của product.</li>
+    </ul>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Trong catalog: tạo <code>Product</code> entity với 6 fields. Repository, REST endpoint <code>GET /products/{id}</code>.</li>
+      <li>Trong cart: KHÔNG import <code>com.example.catalog.Product</code>. Tạo <code>CatalogContextAdapter</code> trong package <code>cart.acl</code>.</li>
+      <li>Adapter call catalog API, map response sang <code>ProductSummary</code> (model riêng của Cart, chỉ có id, name, price, thumbnailUrl).</li>
+      <li>Cart aggregate <code>Cart</code> chứa list <code>CartItem(ProductSummary, quantity)</code>.</li>
+      <li>Thử "break test": đổi <code>Product.price</code> thành <code>BigDecimal</code> + thêm currency field trong catalog. Refactor adapter, KHÔNG sửa Cart code.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Cart module có 0 dependency với Catalog model. Khi Catalog schema đổi, chỉ ACL adapter cần sửa. Có thể chứng minh qua git diff: refactor commit chỉ touch <code>cart/acl/</code> directory.</p>
+  </div>
+</section>
+
+<!-- ==================== FEYNMAN END ==================== -->
+<section id="feynman-end">
+  <h2>🧠 Feynman test — Verify L2/L3</h2>
+
+  <div class="feynman">
+    <h3>🎓 Test Feynman — không nhìn file, giải thích cho dev chưa biết DDD</h3>
+    <p>Đóng tab. Mở Notes app. Tự trả lời 5 câu trong &lt; 30 giây mỗi câu:</p>
+    <ol>
+      <li><strong>"Vì sao Domain layer KHÔNG được import <code>jakarta.persistence.@Entity</code>?"</strong> — Dependency Rule. Domain là trung tâm, không depend ai. JPA là Infrastructure. Import = couple Domain với JPA → mất framework-agnostic, test phải bootstrap JPA runtime, đổi MongoDB phải rewrite Domain.</li>
+      <li><strong>"Vì sao Repository return <code>Page&lt;T&gt;</code> là sai?"</strong> — <code>Page</code> là Spring Data type, infrastructure concern. Pagination leak vào Domain. Domain Repo return <code>List&lt;T&gt;</code>, pagination ở Application/Read Model.</li>
+      <li><strong>"Khi nào Anemic Model đủ, không cần Rich Domain?"</strong> — CRUD đơn giản, không có business rule. Form đăng ký, admin panel, simple blog. DDD overhead &gt; benefit.</li>
+      <li><strong>"Vì sao Aggregate cần đủ nhỏ? Test ra sao?"</strong> — Aggregate lớn = load nặng + lock contention + memory. Test: nếu invariant của aggregate KHÔNG đòi entity X phải atomic với root → tách X ra aggregate riêng, reference bằng ID.</li>
+      <li><strong>"Bounded Context là gì? Cho ví dụ cùng từ khác nghĩa."</strong> — Boundary mà 1 model áp dụng. Cùng từ có meaning khác. VD: Order trong Sales context = cart (items, total). Order trong Shipping context = parcel (carrier, tracking). Khác fields, khác behavior, cùng orderId.</li>
+    </ol>
+    <p>Bí 1 câu → quay lại section tương ứng. Tất cả 5 câu &lt; 30 giây mỗi câu = L2 confirmed.</p>
+  </div>
+
+  <div class="callout warn">
+    <strong>L3 check — quan trọng:</strong> Câu trả lời mượt = L2. Để lên L3, bắt buộc phải hoàn thành 3 lab ở Section trên. Lab refactor thật + reproduce bug thật + build cross-context thật = L3. Không có shortcut.
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — KHÔNG tin file này 100%</h3>
+    <p>File chống hiểu giả nên đòi hỏi bạn verify primary sources:</p>
+    <ul>
+      <li><strong>Eric Evans — Domain-Driven Design (2003)</strong>, ISBN 978-0321125217. The "blue book". Phần I (Strategic) + Phần II (Tactical) là canonical reference.</li>
+      <li><strong>Vaughn Vernon — Implementing Domain-Driven Design (2013)</strong>, ISBN 978-0321834577. The "red book". Có code Java, dễ học hơn blue book.</li>
+      <li><strong>Vaughn Vernon — Domain-Driven Design Distilled (2016)</strong>, ISBN 978-0134434421. Tóm tắt 150 trang, đọc trong cuối tuần.</li>
+      <li><strong>Robert C. Martin — Clean Architecture (2017)</strong>, ISBN 978-0134494166. Dependency Rule, layer diagram chuẩn.</li>
+      <li><strong>Alistair Cockburn — Hexagonal Architecture</strong>, blog gốc tại <a href="https://alistair.cockburn.us/hexagonal-architecture/">alistair.cockburn.us</a>. Variant của Clean Arch.</li>
+      <li><strong>Martin Fowler blog</strong> — <a href="https://martinfowler.com/bliki/">martinfowler.com/bliki</a>. Bài "AnemicDomainModel", "BoundedContext", "AggregateRoot" là phải đọc.</li>
+      <li><strong>DDD Community</strong> — <a href="https://github.com/ddd-crew">github.com/ddd-crew</a>. Templates và workshop materials.</li>
+    </ul>
+
+    <p><strong>Khi nào trust file này, khi nào verify:</strong></p>
+    <ul>
+      <li>Concepts (Aggregate, Repository, Bounded Context) — file này chuẩn theo Evans + Vernon.</li>
+      <li>Java code template — TRUST nhưng test lại với version Java/Spring của bạn. Spring 6 vs 5 vài chỗ khác.</li>
+      <li>Anti-pattern symptoms — verify trên codebase team. Mỗi team có failure mode đặc thù.</li>
+      <li>Outbox Pattern implementation — verify với Microsoft Patterns &amp; Practices và Chris Richardson <em>Microservices Patterns</em> (2018).</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 2 tuần — Từ L1 đến L3</h3>
+    <pre><code class="language-text">Tuần 1 — Mental models (L1 → L2)
+  Ngày 1:  Section 1-2 (Bài toán + Vì sao tồn tại). Viết Pause & Predict.
+  Ngày 2:  Section 3 (Dependency Rule). Vẽ diagram lên giấy.
+  Ngày 3:  Section 4-5 (Value Object + Entity). Code Money + Email từ đầu.
+  Ngày 4:  Section 6 (Aggregate). Đọc Vernon IDDD chương 10 song song.
+  Ngày 5:  Section 7-8 (Repository + Use Case).
+  Ngày 6:  Section 9 (Bounded Context). Vẽ context map cho 1 project bạn đang làm.
+  Ngày 7:  Feynman test 5 câu. Bí câu nào → quay lại section đó.
+
+Tuần 2 — Apply (L2 → L3)
+  Ngày 8-9:   Lab 1 (Refactor Anemic → Rich). Push commit.
+  Ngày 10-11: Lab 2 (Aggregate phình to). Benchmark trước/sau.
+  Ngày 12-14: Lab 3 (Bounded Context + ACL). Build 2 module.
+
+Cuối tuần 2: review code production team, identify 3 anti-patterns. Propose refactor.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps sau khi master file này:</strong>
+    <ol>
+      <li><a href="16-design-patterns.html">#16 Design Patterns</a> — Strategy, Factory, Observer áp dụng trong Domain layer.</li>
+      <li><a href="17-microservices-patterns.html">#17 Microservices Patterns</a> — Bounded Context → microservice boundary, Saga, API Gateway.</li>
+      <li><a href="18-event-driven-architecture.html">#18 Event-Driven Architecture</a> — Domain Event scale lên, Event Sourcing deep-dive.</li>
+      <li><a href="13-distributed-transaction.html">#13 Distributed Transaction</a> — Saga pattern cho cross-aggregate consistency.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng vào #16:</strong> 3 labs xong + Feynman 5/5 mượt + Refactor 1 service production từ Anemic → Rich. Nếu chỉ đọc xong file này mà chưa lab → quay lại làm lab. Không có shortcut từ L2 lên L3.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

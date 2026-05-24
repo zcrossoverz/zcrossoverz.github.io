@@ -767,6 +767,86 @@ CREATE INDEX idx_name_gin ON products USING gin(name gin_trgm_ops);
 SELECT * FROM products WHERE name ILIKE '%iPhone%';</code></pre>
 </section>
 
+<section id="symptom-debug">
+<h2>10b. Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Không chỉ biết "đừng làm X" — phải nhận diện symptom <em>khi nào</em> bug xảy ra trong production và debug bằng tool nào. Đây là phần phân biệt junior vs senior.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — Endpoint p95 latency tăng đột ngột (200ms → 3s)</div>
+<p><strong>Symptom:</strong> APM/Grafana báo p95 endpoint <code>/api/orders/search</code> nhảy từ 200ms lên 3s. Error rate không tăng. CPU/mem app server bình thường.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Slow query log (MySQL: <code>long_query_time=1</code>; Postgres: <code>log_min_duration_statement=500</code>)</li>
+<li>Hikari pool: <code>hikaricp_connections_pending</code> (&gt;0 = thiếu connection vì query chậm giữ pool)</li>
+<li>DB metric: <code>pg_stat_activity</code> hoặc MySQL <code>SHOW PROCESSLIST</code> — xem query nào đang chạy lâu</li>
+</ul>
+<p><strong>Debug 5 bước:</strong></p>
+<ol>
+<li><code>EXPLAIN (ANALYZE, BUFFERS) &lt;query&gt;</code> — tìm <code>Seq Scan</code> trên bảng lớn hoặc <code>Rows Removed by Filter</code> cao</li>
+<li>Check planner stats outdated: <code>SELECT last_analyze FROM pg_stat_user_tables WHERE relname='orders'</code> → nếu cũ &gt; 1 tuần, <code>ANALYZE orders</code></li>
+<li>So sánh execution plan trước/sau khi data tăng — đôi khi planner đổi strategy khi table grow (vd: từ index scan → seq scan vì estimate sai)</li>
+<li>Nếu plan đúng nhưng vẫn chậm: check disk I/O wait (<code>iostat -x 1</code>), buffer cache hit ratio</li>
+<li>Nếu vẫn không ra: enable <code>auto_explain</code> module để log query plan thực tế</li>
+</ol>
+<p><strong>Anti-fix:</strong> KHÔNG add index ngay khi thấy chậm. 70% case là <strong>missing statistics</strong> hoặc <strong>parameter sniffing</strong>, không phải thiếu index. Add index sai = ghi chậm + storage tăng + planner càng confuse.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — Query "đôi khi" chậm, không reproduce được</div>
+<p><strong>Symptom:</strong> Cùng query, dev/staging chạy 50ms, prod đôi khi 5s. Run trực tiếp bằng <code>psql</code> luôn nhanh. Chỉ chậm khi qua app.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>App log: stack trace có timestamp của Hibernate <code>org.hibernate.SQL</code> + thời gian execute</li>
+<li>P6Spy hoặc datasource-proxy log để có timing thực tế từ JDBC layer</li>
+<li>DB lock wait: <code>SELECT * FROM pg_locks WHERE NOT granted</code></li>
+</ul>
+<p><strong>3 nguyên nhân thường gặp:</strong></p>
+<ol>
+<li><strong>Lock contention</strong> — query bị block bởi transaction khác. <code>pg_locks</code> sẽ show waiting. Fix: rút ngắn transaction giữ lock, hoặc dùng <code>SELECT FOR UPDATE SKIP LOCKED</code></li>
+<li><strong>Connection pool exhausted</strong> — query nhanh nhưng phải wait pool. <code>hikaricp_connections_acquire</code> sẽ cao. Fix: tăng pool hoặc fix N+1 query đang giữ connection lâu</li>
+<li><strong>Prepared statement plan cache</strong> — Hibernate cache plan cũ với param khác distribution. Fix: <code>hibernate.query.plan_cache_max_size</code> hoặc dùng <code>OPTION (RECOMPILE)</code> trên SQL Server</li>
+</ol>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — Index tồn tại nhưng EXPLAIN không dùng</div>
+<p><strong>Symptom:</strong> Có index <code>idx_status_created</code> trên <code>(status, created_at)</code> nhưng <code>EXPLAIN</code> vẫn show <code>Seq Scan</code>.</p>
+<p><strong>Checklist 6 nguyên nhân (theo độ phổ biến):</strong></p>
+<ol>
+<li><strong>Predicate function-wrapped</strong>: <code>WHERE DATE(created_at) = '2026-05-01'</code> — sửa thành <code>WHERE created_at &gt;= '2026-05-01' AND created_at &lt; '2026-05-02'</code></li>
+<li><strong>Type mismatch</strong>: cột <code>VARCHAR</code> nhưng query truyền <code>INT</code> → planner cast, defeats index. Check <code>pg_typeof(column)</code></li>
+<li><strong>Selectivity thấp</strong>: nếu 80% rows có <code>status='active'</code>, planner chọn seq scan rẻ hơn. Đúng — không phải bug</li>
+<li><strong>Statistics outdated</strong>: planner ước tính sai. <code>ANALYZE table_name</code></li>
+<li><strong>Leftmost prefix sai</strong>: index <code>(a, b, c)</code> không hỗ trợ query <code>WHERE b = ?</code></li>
+<li><strong>OR condition</strong>: <code>WHERE a = 1 OR b = 2</code> thường không index được trừ khi có 2 index riêng + planner chọn bitmap scan</li>
+</ol>
+<p><strong>Tool quyết định:</strong> Postgres <code>EXPLAIN (ANALYZE, BUFFERS, VERBOSE)</code> sẽ show <code>Filter</code> condition và <code>Rows Removed by Filter</code> — số này &gt; 90% scanned rows = planner đang scan quá nhiều.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho SQL debugging</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Đọc EXPLAIN biết phân biệt <code>Seq Scan</code> vs <code>Index Scan</code>. Biết "index = nhanh hơn", "FK nên có index". Khi gặp query chậm thường react bằng "thêm index".</p>
+    <p><em>Symptom của L1: gợi ý fix mà chưa đọc execution plan.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Đọc được <code>cost=</code>, <code>actual time=</code>, <code>rows=</code> vs <code>estimated=</code>. Phân biệt được khi nào planner sai (statistics outdated) vs khi nào query sai (function wrap, type mismatch). Biết leftmost prefix rule và composite index column order.</p>
+    <p><em>Symptom của L2: hỏi "data distribution thế nào?" trước khi đề xuất fix.</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Trước khi add index, đo cost của ghi (insert/update lag), storage, và planner behavior trên data thật. Biết khi nào KHÔNG nên add index (selectivity thấp, write-heavy, table sắp partition). Recipe debug 3 nguyên nhân ở trên là phản xạ, không phải lookup.</p>
+    <p><em>Symptom của L3: pull request có benchmark trước/sau + giải thích trade-off ghi/đọc.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="build-projects">
 <h2>11. Build Projects</h2>
 

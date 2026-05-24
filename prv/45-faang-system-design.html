@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#45 — FAANG System Design HLD (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm M · FAANG Track</span>
+    <span class="sep">›</span>
+    <span class="current">#45 FAANG System Design</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 4S + 5 designs</a>
+      <a href="#why">1. Vì sao file này khác #37</a>
+      <div class="toc-section">4S Framework</div>
+      <a href="#s1-scenario">2. S1 — Scenario (5')</a>
+      <a href="#s2-service">3. S2 — Service (10')</a>
+      <a href="#s3-storage">4. S3 — Storage (10')</a>
+      <a href="#s4-scale">5. S4 — Scale (15')</a>
+      <div class="toc-section">5 designs kinh điển</div>
+      <a href="#design-url">D1. URL Shortener</a>
+      <a href="#design-twitter">D2. Twitter Feed (fanout)</a>
+      <a href="#design-uber">D3. Uber matching</a>
+      <a href="#design-chat">D4. Chat app</a>
+      <a href="#design-youtube">D5. YouTube streaming</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#level-bar">6. L4 vs L5 expectation</a>
+      <a href="#patterns-cheat">7. Common patterns cheatsheet</a>
+      <a href="#antipatterns">⚠️ 7 anti-patterns</a>
+      <a href="#interview">🎯 3-tier rubric</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm M · FAANG Track · File chống hiểu giả</div>
+  <h1>FAANG System Design HLD — 4S framework + 5 designs walkthrough</h1>
+  <p class="lead">
+    File này KHÁC <a href="37-system-design-interview.html">#37</a>: #37 là <em>framework chung</em>, file này là <em>FAANG-specific bar</em> với 4S framework + 5 design kinh điển walkthrough đầy đủ. Đa số candidate VN đọc Alex Xu Vol 1 cảm thấy "hiểu" — vào mock thì lộ ngay không estimate được capacity, không justify được trade-off, không phân biệt được L4 và L5 expectation. File này dạy cả 3 + Pause/Predict để self-check.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>4S reflex + 5 designs trong 45 phút + L4 trade-off vocabulary</div>
+    <div><strong>📅 Thời lượng</strong><br>Tháng 5 trong 6-month roadmap · 5-8 mock</div>
+    <div><strong>📚 Prereq</strong><br><a href="37-system-design-interview.html">#37</a> framework + <a href="44-faang-coding-playbook.html">#44</a> coding round prep</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔥 Critical — System Design round = 1/4 onsite signal</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — System Design dễ false confidence nhất</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao System Design tạo hiểu giả mạnh hơn coding:</strong>
+    <ul>
+      <li><strong>Đọc tutorial cảm thấy hiểu</strong> — Alex Xu walkthrough rõ. Mock thì không biết bắt đầu từ đâu.</li>
+      <li><strong>Capacity numbers không thực hành</strong> — Đọc "100M DAU = 1K QPS" mà chưa tự tính 10 lần.</li>
+      <li><strong>Trade-off như buzzword</strong> — Nói "Cassandra vs MySQL" mà không justify được khi nào nên dùng cái nào trong context cụ thể.</li>
+      <li><strong>L4 và L5 bar mơ hồ</strong> — Không biết L4 cần gì, L5 cần thêm gì → tối ưu sai chỗ.</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td>L1 — Đọc tutorial</td><td>Biết URL shortener cần ID generator + Cassandra + Redis.</td><td>Vẽ được architecture trong 60s cho 1 bài đã đọc?</td></tr>
+      <tr><td>L2 — Apply 4S</td><td>Áp dụng 4S framework không skip step. Capacity tính trong 5'.</td><td>Cho bài <em>lạ</em>: design feature X — đi 4S đúng trong 45' không vướng.</td></tr>
+      <tr><td>L3 — FAANG bar</td><td>Mock 5+ với peer/senior. Trade-off có chiều sâu.</td><td>L4 mock peer feedback ≥ 7/10. L5: handle 2-3 follow-up sâu.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li><strong>Đọc <a href="37-system-design-interview.html">#37</a> trước.</strong> File này build trên framework #37. Skip #37 = nhảy bậc, hiểu giả.</li>
+    <li><strong>Capacity estimation phải tính trên giấy.</strong> Section S1 có template + 5 design có numbers. Tự tính lại cho mỗi design — không chỉ đọc.</li>
+    <li><strong>5 designs đọc 1 cái/ngày.</strong> KHÔNG đọc 5 cái trong 1 ngày — overload. 1 cái/ngày + tự re-draw lại sau.</li>
+    <li><strong>Sau mỗi design, đóng tab, tự vẽ lại từ memory.</strong> Cách duy nhất biết đã hiểu hay chỉ recognize.</li>
+    <li><strong>5 mock bắt buộc sau khi đọc xong.</strong> Pramp + senior. Mock với 5 design này tốt nhất (đã có baseline để compare).</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap 4S Framework + 5 designs</h2>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">S1</span><div><strong>Scenario</strong> · 5' · CORE · FR + NFR + Capacity (DAU → QPS → storage)</div></div>
+    <div class="roadmap-item core"><span class="num">S2</span><div><strong>Service</strong> · 10' · CORE · Box-arrow architecture + APIs (top 5)</div></div>
+    <div class="roadmap-item core"><span class="num">S3</span><div><strong>Storage</strong> · 10' · CORE · DB choice + schema + sharding strategy</div></div>
+    <div class="roadmap-item core"><span class="num">S4</span><div><strong>Scale</strong> · 15' · HIGH-SIGNAL · Bottleneck identify + optimize + trade-off articulate</div></div>
+    <div class="roadmap-item supp"><span class="num">D1-5</span><div><strong>5 Designs</strong> · URL shortener / Twitter / Uber / Chat / YouTube — walkthrough đầy đủ</div></div>
+  </div>
+
+  <div class="callout info">
+    <strong>4S so với 5-step #37:</strong> 5-step (Clarify → Estimate → HLD → Deep Dive → Trade-off) là <em>process</em>. 4S là <em>deliverable structure</em>. Có thể nói: 5-step là "verb" (làm gì khi nào), 4S là "noun" (output gồm những gì). Dùng song song — 5-step quản lý thời gian, 4S quản lý content.
+  </div>
+</section>
+
+<section id="why">
+  <h2>1. Vì sao file này khác #37? <span class="k-tag core">CORE</span></h2>
+
+  <p>3 khác biệt chính:</p>
+
+  <table>
+    <thead><tr><th>Aspect</th><th>#37 System Design Interview</th><th>#45 FAANG System Design (file này)</th></tr></thead>
+    <tbody>
+      <tr><td>Audience</td><td>VN senior backend (BIDV, MB, fintech)</td><td>FAANG L4/L5 onsite</td></tr>
+      <tr><td>Framework</td><td>5-step process (Clarify → Estimate → HLD → Deep Dive → Trade-off)</td><td>4S structure (Scenario → Service → Storage → Scale)</td></tr>
+      <tr><td>Depth</td><td>1 worked example (URL shortener)</td><td>5 walkthroughs (URL, Twitter, Uber, Chat, YouTube)</td></tr>
+      <tr><td>Bar</td><td>Sufficient cho VN ~25-40tr role</td><td>L4 ($200K+ TC), L5 ($350K+ TC)</td></tr>
+      <tr><td>Mock count</td><td>3 mock recommended</td><td>5-8 mock cho L4, 8+ cho L5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Khi nào đọc file nào?</h3>
+  <ul>
+    <li>Apply VN bank/fintech senior: <a href="37-system-design-interview.html">#37</a> đủ.</li>
+    <li>Apply FAANG L4: đọc <a href="37-system-design-interview.html">#37</a> → <strong>file này</strong>.</li>
+    <li>Apply FAANG L5+: file này + Alex Xu Vol 2 + Hello Interview deep dives.</li>
+  </ul>
+</section>
+
+<section id="s1-scenario">
+  <h2>2. S1 — Scenario (5 phút) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> 5 phút clarify TRƯỚC khi vẽ gì. 3 trục: FR (features), NFR (scale/latency), Capacity (DAU/QPS/storage). Capacity numbers PHẢI viết ra giấy, không tính nhẩm.
+  </div>
+
+  <h3>3 trục clarifying</h3>
+
+  <h4>① Functional Requirements (FR)</h4>
+  <pre><code class="language-text">- Core features bắt buộc (vs nice-to-have)?
+- User flow (đi từ đâu đến đâu)?
+- Read-heavy or write-heavy?
+- Real-time or eventual?
+- Mobile + web hay chỉ 1?</code></pre>
+
+  <h4>② Non-Functional Requirements (NFR)</h4>
+  <pre><code class="language-text">- Number of users? (DAU)
+- Latency target? (P99 &lt; 100ms? 1s?)
+- Availability? (99.9% = 8.76h downtime/year, 99.99% = 52 min)
+- Consistency model? (strong / eventual / session)
+- Geo distribution? (single region / global)</code></pre>
+
+  <h4>③ Capacity estimation</h4>
+  <pre><code class="language-text">DAU × actions/day = total requests/day
+÷ 86,400 sec = average QPS
+× peak factor (3-5×) = peak QPS
+
+Storage: records/day × bytes/record × retention years
+       × replication factor (3) + backup</code></pre>
+
+  <h3>Capacity cheatsheet — memorize</h3>
+  <pre><code class="language-text">Time:
+  1 day        = 86,400 sec   ≈ 100K
+  1 month      = 2.6M sec
+  1 year       = 31.5M sec
+
+Data sizes (memorize):
+  ASCII char   = 1 byte
+  UTF-8 char   = 1-4 bytes (avg 2)
+  int          = 4 bytes
+  long/double  = 8 bytes
+  UUID         = 16 bytes (binary), 36 bytes (string)
+  Timestamp    = 8 bytes
+
+Common content:
+  Tweet         ~280 chars × 2 = 560 bytes
+  Email         ~50 chars × 2  = 100 bytes
+  Web page HTML ~100 KB
+  Image (JPEG)  ~500 KB - 5 MB
+  Video minute  ~10 MB
+
+Network &amp; latency:
+  1 Gbps      = 125 MB/s
+  Round-trip US-EU = 100 ms
+  Disk read   = 10 ms (HDD), 0.1 ms (SSD), 0.05 ms (NVMe)
+  RAM read    = 100 ns
+  L1 cache    = 1 ns</code></pre>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Practice</h4>
+    <p>Đóng tab. Tự tính capacity cho bài: <em>"Instagram-like photo sharing, 500M DAU, mỗi user upload 2 photo/tuần, đọc feed 20 lần/ngày."</em> Tính 5 số:</p>
+    <ol>
+      <li>Upload writes QPS (peak)</li>
+      <li>Feed reads QPS (peak)</li>
+      <li>Storage 5 năm photos (assume 500KB/photo)</li>
+      <li>Bandwidth read peak (assume 100KB/feed page)</li>
+      <li>Cache size cho top 10% hot photos</li>
+    </ol>
+    <p>Đáp án ở Section S4 (cuối).</p>
+  </div>
+</section>
+
+<section id="s2-service">
+  <h2>3. S2 — Service (10 phút) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> Vẽ box-and-arrow. KHÔNG vào code. Define top 5 API endpoint. Components đi từ Client → Edge → Service → Data layer.
+  </div>
+
+  <h3>Component template (cho gần như mọi design)</h3>
+  <pre><code class="language-text">Client → CDN → Load Balancer → API Gateway → Services
+                                             ↓
+                                          Cache (Redis)
+                                             ↓
+                                    Database (master + replicas)
+                                             ↓
+                                    Message Queue (Kafka)
+                                             ↓
+                                    Worker / Background Jobs
+                                             ↓
+                                    Object Storage (S3)</code></pre>
+
+  <h3>Define top 5 APIs</h3>
+  <pre><code class="language-text">POST /api/v1/users          { email, name, password }
+POST /api/v1/login          { email, password } → { token }
+GET  /api/v1/feed/{userId}  → list of posts
+POST /api/v1/posts          { content, media }
+GET  /api/v1/post/{postId}  → post detail</code></pre>
+
+  <p>Đừng define quá nhiều API trong S2 — chỉ 5 cái core. Còn lại nhắc khi cần ở S3/S4.</p>
+</section>
+
+<section id="s3-storage">
+  <h2>4. S3 — Storage (10 phút) <span class="k-tag core">CORE</span></h2>
+
+  <p>3 câu hỏi phải trả lời:</p>
+  <ol>
+    <li><strong>DB choice?</strong> SQL vs NoSQL vs Graph vs Time-series</li>
+    <li><strong>Schema?</strong> Tables + columns + relationships</li>
+    <li><strong>Sharding strategy?</strong> By userId? geographic? hash?</li>
+  </ol>
+
+  <h3>Decision matrix — DB choice</h3>
+  <table>
+    <thead><tr><th>Need</th><th>DB Choice</th><th>Vì sao</th></tr></thead>
+    <tbody>
+      <tr><td>ACID transactions, complex queries</td><td>PostgreSQL, MySQL</td><td>Mature, JOIN, isolation</td></tr>
+      <tr><td>Massive scale, eventual consistency</td><td>Cassandra, DynamoDB</td><td>Horizontal scale, write-optimized</td></tr>
+      <tr><td>Document/JSON</td><td>MongoDB, DocumentDB</td><td>Schema flexibility</td></tr>
+      <tr><td>Graph relationships</td><td>Neo4j</td><td>Multi-hop queries</td></tr>
+      <tr><td>Time-series metrics</td><td>InfluxDB, TimescaleDB</td><td>Compression, downsampling</td></tr>
+      <tr><td>Full-text search</td><td>Elasticsearch</td><td>Inverted index, ranking</td></tr>
+      <tr><td>Cache</td><td>Redis, Memcached</td><td>In-memory, low latency</td></tr>
+      <tr><td>Object/Blob</td><td>S3, GCS</td><td>Cheap, durable, scale-out</td></tr>
+      <tr><td>Counter / leaderboard</td><td>Redis Sorted Set</td><td>O(log n) range queries</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sharding strategies</h3>
+  <pre><code class="language-text">Hash sharding:
+  shard = hash(key) % N
+  + Uniform distribution
+  - Range query phải scatter-gather
+  - Resharding khó (rehash toàn bộ)
+
+Range sharding:
+  shard theo key range (userId 0-1M shard 1, 1M-2M shard 2)
+  + Range query dễ
+  - Hot spot nếu key skewed
+
+Consistent hashing:
+  shard = hash(key) → ring position → nearest node
+  + Resharding chỉ move 1/N data
+  + Phổ biến trong Cassandra, Redis Cluster
+
+Geo sharding:
+  shard theo geographic region
+  + Low latency cho user
+  - Cross-region query expensive</code></pre>
+</section>
+
+<section id="s4-scale">
+  <h2>5. S4 — Scale (15 phút) <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Đây là trục phân biệt L4 và L5.</strong> L4: identify 2-3 bottleneck. L5: multiple trade-off level + alternatives. Articulate trade-off = senior signal.
+  </div>
+
+  <h3>Bottleneck checklist</h3>
+  <pre><code class="language-text">1. Read amplification?       → Add cache (Redis), CDN
+2. Write amplification?      → Async (queue), batch, sharding
+3. Hot key (skewed traffic)? → Consistent hashing, request coalescing
+4. Single point of failure?  → Replicate, multi-AZ
+5. Database overload?        → Read replicas, sharding
+6. Network bandwidth?        → Compression, edge serving (CDN)
+7. Latency?                   → Geo-distributed, edge cache</code></pre>
+
+  <h3>Trade-offs to articulate</h3>
+  <pre><code class="language-text">- Strong vs Eventual consistency
+- Read vs Write throughput (master-master vs master-slave)
+- Latency vs Cost (cache TTL, replication factor)
+- Storage cost vs Compute cost
+- CAP theorem: choose 2 of 3 (network partition luôn xảy ra → choose CP or AP)
+- PACELC: in case of Partition, CP/AP; Else, Latency vs Consistency</code></pre>
+
+  <h3>📌 Đáp án Pause &amp; Predict — Instagram capacity</h3>
+  <div class="callout info">
+    <strong>Câu hỏi từ S1:</strong> Instagram 500M DAU, 2 photo/tuần upload, 20 feed reads/day.
+    <pre><code class="language-text">Writes (upload):
+  500M × 2/tuần / 7 ngày = 143M uploads/day
+  ÷ 86,400 sec = 1,650/sec average
+  Peak ×3 = 5,000 uploads/sec
+
+Reads (feed):
+  500M × 20 / 86,400 = 116K reads/sec average
+  Peak ×3 = 348K reads/sec (cần CDN heavy)
+
+Storage 5 năm photos:
+  143M × 500KB × 365 × 5 = 130 PB
+  → Cần tier storage: hot (S3 Standard) + cold (S3 Glacier)
+
+Bandwidth read peak:
+  348K reads × 100KB = 35 GB/sec
+  → CDN bắt buộc
+
+Cache hot photos:
+  Pareto 10% × 143M × 365 × 5 = 26B photos
+  Cache 1% top hot: 260M × 500KB = 130 TB
+  → Multi-tier cache cluster Redis</code></pre>
+    ±50% OK. Off 1 magnitude = practice thêm.
+  </div>
+</section>
+
+<section id="design-url">
+  <h2>D1. URL Shortener — Walkthrough đầy đủ <span class="k-tag core">CORE</span></h2>
+
+  <h3>S1: Scenario</h3>
+  <p><strong>FR:</strong></p>
+  <ul>
+    <li><code>POST /shorten?longURL=...</code> → returns <code>shortURL</code> (e.g., <code>bit.ly/abc123</code>)</li>
+    <li><code>GET /abc123</code> → redirect to longURL</li>
+    <li>Optional: custom alias, expiration, click analytics</li>
+  </ul>
+
+  <p><strong>NFR:</strong></p>
+  <ul>
+    <li>100M URLs created/day → 100M / 86,400 ≈ <strong>1,150 writes/sec</strong></li>
+    <li>Read:Write = 100:1 → <strong>115K reads/sec</strong></li>
+    <li>Latency: P99 &lt; 100ms (redirect critical)</li>
+    <li>Availability: 99.9%</li>
+  </ul>
+
+  <p><strong>Capacity:</strong></p>
+  <pre><code class="language-text">100M URLs/day × 365 × 5 years = 180B URLs total
+Each record: 7-byte short + 200-byte long + 8-byte timestamp ≈ 250 bytes
+Total storage: 180B × 250 = 45 TB (manageable, no need to delete)</code></pre>
+
+  <h3>S2: Service</h3>
+  <pre><code class="language-text">                        ┌── ShortCode Generator (ZooKeeper or counter)
+Client → CDN → LB → URL Service ──── Redis (hot URLs, LRU)
+                        └── DB (Cassandra/MySQL)
+                              ↓
+                          Click events → Kafka → BigQuery (analytics)</code></pre>
+
+  <p><strong>APIs:</strong></p>
+  <pre><code class="language-text">POST /api/shorten
+  Request:  { longUrl: "https://...", customAlias?: string }
+  Response: { shortUrl: "https://bit.ly/abc123", expiry: timestamp }
+
+GET /:shortCode
+  Response: 301 redirect to longUrl
+            (async publish click event to Kafka)</code></pre>
+
+  <h3>S3: Storage</h3>
+  <pre><code class="language-text">Table: urls (Cassandra)
+  short_code (PK):   string (7 chars, base62)
+  long_url:          string
+  user_id:           string
+  created_at:        timestamp
+  expiry:            timestamp?
+
+Click counts (separate table or Redis counter):
+  short_code → counter (Redis INCR)
+  Async flush daily to BigQuery for analytics
+
+Index: short_code PK = O(1) lookup by short</code></pre>
+
+  <h3>Short code generation — 3 approach</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>Option 1: Hash longURL</h4>
+      <pre><code class="language-text">MD5(longURL)[0:7]
++ Deterministic
+- Collisions possible
+- Custom alias conflict
+- Same URL → same short
+  (đôi khi không muốn)</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>Option 2: Counter + base62</h4>
+      <pre><code class="language-text">id = ZooKeeper.next()
+shortCode = base62(id)
+7 chars = 62^7 = 3.5T unique
++ No collision
++ Sequential
+- Predictable (security?)</code></pre>
+    </div>
+  </div>
+
+  <p><strong>Option 3 (hybrid):</strong> Counter + random salt. Đảm bảo unique + unpredictable.</p>
+
+  <h3>S4: Scale</h3>
+  <pre><code class="language-text">Bottleneck 1: Read 115K req/s on DB
+  → Redis cache (LRU, TTL 24h)
+    Cache hit rate ~95% → DB load = 6K reads/s, manageable
+    Cache size: top 10M URLs × 250 bytes = 2.5 GB (1 Redis instance đủ)
+
+Bottleneck 2: Write 1.1K req/s + counter contention
+  → Pre-allocate range: mỗi app server lấy 1000 IDs từ ZooKeeper
+    Fallback ZooKeeper khi exhausted
+  → No bottleneck cho 100K writes/sec
+
+Bottleneck 3: Storage 45TB
+  → Shard by short_code (consistent hashing N nodes)
+    Hot nodes cho popular URLs → replicate factor 3
+
+Bottleneck 4: Analytics writes overwhelm DB
+  → Async via Kafka. App publishes click event,
+    Spark/Flink aggregates daily into BigQuery
+
+Bottleneck 5: Geo latency
+  → CDN at edge, cache redirect for 1 hour
+    Edge writes go to nearest region, async replicate</code></pre>
+
+  <h3>Final architecture</h3>
+  <pre><code class="language-text">                                ┌─ Redis Cluster ─┐
+Client ─→ CDN ─→ LB ─→ App ─────┤                  │
+                                └─ Cassandra ──────┤
+                                          ↓        │
+                                  Kafka ←─┘         │
+                                          ↓        │
+                                  Spark → BigQuery │
+                                                    │
+ID Gen ←─ ZooKeeper ←──────────────────────────────┘</code></pre>
+
+  <h3>Trade-offs để discuss</h3>
+  <ul>
+    <li><strong>Cassandra vs MySQL:</strong> Cassandra wins write-heavy + horizontal scale, sacrifice strong consistency. URL shortener tolerate eventual OK.</li>
+    <li><strong>Counter vs Hash:</strong> Counter cleaner; predictable URLs cho phép enumeration attack. Trade-off cho startup OK, enterprise dùng hybrid.</li>
+    <li><strong>Cache TTL 24h:</strong> Trade-off freshness vs hit rate. URL hiếm update → TTL dài OK.</li>
+  </ul>
+</section>
+
+<section id="design-twitter">
+  <h2>D2. Twitter Feed — Famous Fanout Problem <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <h3>S1: Scenario</h3>
+  <p><strong>FR:</strong></p>
+  <ul>
+    <li>Post tweet (280 chars text, optional image/video)</li>
+    <li>Follow/unfollow user</li>
+    <li>Home feed: chronological tweets from followees</li>
+    <li>Trending topics (optional)</li>
+  </ul>
+
+  <p><strong>NFR:</strong></p>
+  <ul>
+    <li>200M DAU</li>
+    <li>Avg user follows 200, posts 2 tweets/day</li>
+    <li>Tweet writes: 200M × 2 / 86,400 ≈ <strong>4,600 writes/sec</strong></li>
+    <li>Feed reads: 200M × 10 reads/day / 86,400 ≈ <strong>23K reads/sec</strong></li>
+    <li>Latency: feed P99 &lt; 200ms</li>
+  </ul>
+
+  <p><strong>Capacity:</strong></p>
+  <pre><code class="language-text">Tweets/year: 200M × 2 × 365 = 146B/year
+Per tweet ~1KB → 146 TB/year, 730 TB cho 5 năm
+
+User graph: 200M users × 200 follows × 16 bytes = 640 GB
+  (feasible — single multi-shard DB cluster)</code></pre>
+
+  <h3>S2: Service</h3>
+  <pre><code class="language-text">                          ┌─ Tweet Service
+                          ├─ User Service
+Client → LB → Gateway ────┼─ Follow Service
+                          ├─ Feed Service ─── Redis (timeline cache)
+                          └─ Search Service ── Elasticsearch</code></pre>
+
+  <h3>S3: Storage</h3>
+  <pre><code class="language-text">Tweets (Cassandra):
+  tweet_id (PK):    long (snowflake)
+  user_id:          long
+  content:          string (280 chars)
+  media_url?:       string
+  created_at:       timestamp
+
+Follows (wide-column or graph):
+  follower_id (PK), followee_id (CK)
+
+User (PostgreSQL hoặc DynamoDB):
+  user_id, name, email, bio, profile_url
+
+Timelines (Redis):
+  user:{userId}:home_timeline → LIST of tweet_ids
+  (LPUSH new tweets, LTRIM oldest, keep ~800)</code></pre>
+
+  <h3>S4: Scale — Fanout problem (trục chính)</h3>
+
+  <h4>Approach 1: Pull (read-time fanout)</h4>
+  <pre><code class="language-text">User opens feed → Service queries:
+  - Get list of followees from DB
+  - For each, get latest tweets from Cassandra
+  - Merge sorted by time, top N
+  - Return
+
++ Cheap write: chỉ insert tweet
+- Expensive read: 200 followee queries/feed open
+  Slow cho popular users (Twitter active user nhiều follow)</code></pre>
+
+  <h4>Approach 2: Push (write-time fanout)</h4>
+  <pre><code class="language-text">User posts tweet → Service:
+  - Insert tweet into Cassandra
+  - For each follower, push tweet_id vào Redis list:
+    user:{follower}:home_timeline LPUSH
+
++ Cheap read: single Redis fetch
+- Expensive write: celebrity 100M followers = 100M Redis writes
+  Đây là "Justin Bieber problem"</code></pre>
+
+  <h4>Approach 3: Hybrid (industry standard)</h4>
+  <pre><code class="language-text">Default: Push fanout via Kafka workers cho regular users
+But: celebrity users (&gt; X followers, vd 1M) dùng Pull
+
+Feed service merges:
+  - User's pushed tweets (from regular users họ follow)
+  - Pull-fetched tweets từ celebrities
+
+Result: 95% writes light (push), 5% reads heavier (pull cho celeb)
+This là approach Twitter, Facebook thực tế dùng.</code></pre>
+
+  <h3>Trade-offs</h3>
+  <ul>
+    <li><strong>Push vs Pull:</strong> Latency at read (push) vs write (pull). Hybrid để optimize cả 2.</li>
+    <li><strong>Cassandra vs DynamoDB:</strong> Similar capability, choose by ecosystem (Amazon → DynamoDB).</li>
+    <li><strong>Redis timeline depth:</strong> Cache 800 tweets (typical scroll). Hơn = memory expensive, ít user scroll deep.</li>
+    <li><strong>Eventual consistency OK:</strong> Tweet xuất hiện chậm 1-2s acceptable. Read-your-write quan trọng cho UX.</li>
+  </ul>
+
+  <h3>Follow-up L4/L5</h3>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(56,189,248,0.08)">
+      <h4>L4 follow-up: Viral tweet</h4>
+      <p>"Tweet viral, cần handle?"</p>
+      <p><em>Approach:</em> Trending detection via stream processing (Flink), boost cache TTL, increase read replicas dynamically.</p>
+    </div>
+    <div class="compare-col" style="background:rgba(168,85,247,0.08)">
+      <h4>L5 follow-up: Recommendation + ranking</h4>
+      <p>"Feed ranked không phải chronological?"</p>
+      <p><em>Approach:</em> ML model scoring (engagement, recency, social). Feature store, online inference at edge. Offline batch update daily, online refine real-time.</p>
+    </div>
+  </div>
+</section>
+
+<section id="design-uber">
+  <h2>D3. Uber / Ride Sharing — Geospatial &amp; Real-time <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <h3>S1: Scenario</h3>
+  <p><strong>FR:</strong></p>
+  <ul>
+    <li>Driver ping location every 4 seconds</li>
+    <li>Rider request ride A → B, matched with nearest driver</li>
+    <li>Real-time ETA updates</li>
+    <li>Trip completion + payment</li>
+  </ul>
+
+  <p><strong>NFR:</strong></p>
+  <ul>
+    <li>1M concurrent drivers, 5M concurrent riders</li>
+    <li>Driver pings = 1M / 4 = <strong>250K writes/sec</strong> (location updates)</li>
+    <li>Match request = 100K/sec peak</li>
+    <li>P99 match latency &lt; 1s</li>
+  </ul>
+
+  <h3>S2: Service</h3>
+  <pre><code class="language-text">                       ┌─ Location Service (sharded by geohash)
+                       ├─ Match Service
+Client → Gateway ──────┼─ Trip Service
+                       ├─ Payment Service
+                       └─ Notification Service (push, SMS)</code></pre>
+
+  <h3>S3: Storage</h3>
+
+  <h4>Driver location — Redis Geo commands</h4>
+  <pre><code class="language-text">GEOADD drivers &lt;lon&gt; &lt;lat&gt; "&lt;driver_id&gt;"
+GEORADIUS drivers &lt;rider_lon&gt; &lt;rider_lat&gt; 5 km WITHCOORD
+  → Returns drivers trong 5km, sorted by distance</code></pre>
+
+  <h4>Trips — Cassandra</h4>
+  <pre><code class="language-text">Table: trips
+  trip_id (PK):    UUID
+  rider_id, driver_id, start_loc, end_loc
+  status: REQUESTED | MATCHED | IN_PROGRESS | COMPLETED
+  fare, payment_id
+  created_at, completed_at</code></pre>
+
+  <h3>S4: Scale</h3>
+
+  <h4>Sharding by Geohash</h4>
+  <pre><code class="language-text">World divided into 6-char geohash cells (~1km × 1km)
+Each cell handled by 1 server (or shard).
+
+Driver location update → goes to right cell server.
+Match request → query 9 cells (3×3 grid around rider).
+
+→ Massive parallelism, no global lock.
+→ Each server handles ~250K / số cells ops/sec → manageable.
+
+Geohash advantages:
++ Hierarchical (zoom in/out by char length)
++ Prefix string distance ~ physical distance
++ Range queries trên contiguous space</code></pre>
+
+  <h4>Real-time updates với WebSocket</h4>
+  <pre><code class="language-text">Driver app ↔ Location Service (WebSocket persistent)
+Rider app  ↔ Trip Service (WebSocket)
+
+Match flow:
+  1. Rider request → Trip Service
+  2. Trip Service query Match Service (geohash query)
+  3. Match Service GEORADIUS → top 5 drivers
+  4. Trip Service publishes match event qua Kafka
+  5. Driver Service forwards match event → driver app via WebSocket
+  6. Driver accept/reject within 15s
+  7. Confirmed → trip MATCHED, both sides notified</code></pre>
+
+  <h3>Trade-offs</h3>
+  <ul>
+    <li><strong>Update frequency 4s vs 1s:</strong> 1s = 4× server load. 4s đủ accuracy cho matching, smoother UX.</li>
+    <li><strong>Geohash vs R-tree:</strong> Geohash đơn giản, distribute dễ. R-tree linh hoạt query complex shape — Uber dùng Geohash + custom indexing.</li>
+    <li><strong>Strong consistency cho trip state:</strong> Mandatory (không double-book driver). Use distributed lock hoặc CAS.</li>
+    <li><strong>Surge pricing:</strong> ML model query geohash density → pricing multiplier. Real-time update qua Kafka.</li>
+  </ul>
+</section>
+
+<section id="design-chat">
+  <h2>D4. WhatsApp / Chat App <span class="k-tag core">CORE</span></h2>
+
+  <h3>S1: Scenario</h3>
+  <p><strong>FR:</strong></p>
+  <ul>
+    <li>1-on-1 chat (text, image, video)</li>
+    <li>Group chat (up to 256 members)</li>
+    <li>Online/offline status</li>
+    <li>Read receipts, delivery receipts</li>
+    <li>E2E encryption</li>
+  </ul>
+
+  <p><strong>NFR:</strong></p>
+  <ul>
+    <li>2B users, 1B DAU</li>
+    <li>100B messages/day = <strong>1.2M msg/sec average</strong></li>
+    <li>Peak 3× = 3.5M msg/sec</li>
+    <li>P99 latency &lt; 500ms</li>
+  </ul>
+
+  <h3>S2: Service</h3>
+  <pre><code class="language-text">                            ┌─ Auth Service
+Client (mobile) → LB → GW ──┼─ Chat Service (WebSocket)
+                            ├─ Storage Service
+                            └─ Push Notification (offline users)
+
+Persistent: mỗi client → 1 WebSocket connection tới chat server</code></pre>
+
+  <h3>S3: Storage</h3>
+  <pre><code class="language-text">Messages (Cassandra, partitioned by chat_id):
+  chat_id (PK), message_id (CK by time)
+  sender_id, content_encrypted, sent_at, received_at, read_at
+
+User connections (Redis):
+  online:{user_id} → "server_id_42"
+  (Which chat server holds this user's WebSocket)</code></pre>
+
+  <h3>S4: Scale</h3>
+
+  <h4>Connection routing</h4>
+  <pre><code class="language-text">1B online users / 100K connections per server = 10K servers needed
+Each user → consistent hashing → which server holds connection
+Redis lookup: online:{user_id} → server_id</code></pre>
+
+  <h4>Message delivery flow</h4>
+  <pre><code class="language-text">1. User A sends msg to User B
+2. A's chat server stores msg vào Cassandra
+3. Lookup B's connection → "server_id_42"
+4. Forward msg via internal RPC tới server 42
+5. Server 42 pushes msg over WebSocket tới B's app
+6. B nhận → send ACK back → server stores received_at
+7. B đọc → send read receipt → server stores read_at
+
+If B offline:
+  → Server 42 lookup fail → trigger push notification (APNS/FCM)
+  → When B online lại → fetch missed messages từ Cassandra</code></pre>
+
+  <h4>Group chat fanout</h4>
+  <pre><code class="language-text">1 sender → 256 receivers = 256 deliveries
+Approach: Kafka topic per group
+  → fanout workers consume messages from topic
+  → mỗi worker chịu N members, forward via WebSocket
+Throttle group: 256 max prevents abuse</code></pre>
+
+  <h3>Trade-offs</h3>
+  <ul>
+    <li><strong>E2E encryption:</strong> Server không đọc message → no server-side search, no spam filter. Trade-off security cho features.</li>
+    <li><strong>Delivery guarantee:</strong> At-least-once via ACK từ receiver. Duplicate detection bằng message_id.</li>
+    <li><strong>Storage:</strong> Messages encrypted, key ở user device only. Backup encrypted (iCloud, Google Drive).</li>
+    <li><strong>Online presence:</strong> Real-time vs eventual. Real-time (1s heartbeat) = expensive. Eventual (30s) UX vẫn OK.</li>
+  </ul>
+</section>
+
+<section id="design-youtube">
+  <h2>D5. YouTube / Video Streaming <span class="k-tag core">CORE</span></h2>
+
+  <h3>S1: Scenario</h3>
+  <p><strong>FR:</strong></p>
+  <ul>
+    <li>Upload video</li>
+    <li>Watch video (adaptive streaming)</li>
+    <li>Search, recommendation</li>
+    <li>Like, comment, subscribe</li>
+  </ul>
+
+  <p><strong>NFR:</strong></p>
+  <ul>
+    <li>2B DAU, 500 hours of video uploaded per minute</li>
+    <li>Watch: 1B hours/day → <strong>~35M concurrent streams</strong></li>
+    <li>Storage growing: 500h/min × 60 × 24 × 365 ≈ 260M hours/year</li>
+    <li>Per hour ~600 MB → <strong>~150 PB/year</strong>, EB-scale total</li>
+  </ul>
+
+  <h3>S2: Service</h3>
+  <pre><code class="language-text">Upload flow:
+Client → Upload Service → Object Storage (S3)
+                       → Encoding Service (multiple resolutions)
+                       → Metadata Service (DB)
+                       → CDN Origin Push
+
+Watch flow:
+Client → CDN Edge → Origin (cache miss) → S3
+                → Manifest (HLS/DASH) → segment URLs</code></pre>
+
+  <h3>S3: Storage</h3>
+  <pre><code class="language-text">Video metadata (DynamoDB):
+  video_id, title, description, uploader, tags,
+  duration, resolutions[], thumbnail_url
+
+Video files (S3):
+  s3://yt-videos/{video_id}/manifest.m3u8
+  s3://yt-videos/{video_id}/720p_segment_001.ts
+  s3://yt-videos/{video_id}/720p_segment_002.ts
+  s3://yt-videos/{video_id}/1080p_segment_001.ts
+  ...
+
+User data (DynamoDB):
+  watch_history, subscriptions, liked_videos
+
+Comments (Cassandra):
+  Partitioned by video_id, sorted by time</code></pre>
+
+  <h3>S4: Scale</h3>
+
+  <h4>Encoding pipeline</h4>
+  <pre><code class="language-text">Raw upload → Kafka job queue → Encoding workers (FFmpeg)
+  - Transcode to 360p, 480p, 720p, 1080p, 4K
+  - Generate HLS manifest (.m3u8) + segments (.ts) every 6s
+  - Generate thumbnails (multiple frames)
+  → Push to CDN origin</code></pre>
+
+  <h4>CDN strategy</h4>
+  <pre><code class="language-text">Multi-tier caching:
+  Edge (POP)  → small, hot videos, ~1 sec từ user
+  Regional    → ~50% library, ~10ms
+  Origin (S3) → 100% library, ~100ms
+
+Cache eviction: LRU + popularity-based prefetch (ML)
+ML predicts hot videos overnight → pre-warm edge cache</code></pre>
+
+  <h4>Recommendation pipeline</h4>
+  <pre><code class="language-text">Offline batch: Spark on logs daily → user-video affinity scores
+Online serving: Redis với sorted set per user
+Real-time signals: Kafka stream → update partial scores
+
+Inference: 2-tower neural net (user embedding × video embedding)
+Re-rank top 1000 candidates trong ~10ms</code></pre>
+
+  <h3>Trade-offs</h3>
+  <ul>
+    <li><strong>Adaptive bitrate (HLS/DASH):</strong> Client picks resolution based on network. Smooth UX cho cả 4G và fiber.</li>
+    <li><strong>Storage tier:</strong> Hot (S3) / Warm (S3-IA) / Cold (Glacier). 80% videos không xem trong 30 ngày → Glacier (90% cheaper).</li>
+    <li><strong>Live streaming:</strong> Separate path với low-latency HLS, ~3s delay (vs VOD 30s+).</li>
+    <li><strong>Copyright detection:</strong> Content ID scan upload. Async pipeline. Trade-off: false positive vs miss piracy.</li>
+  </ul>
+</section>
+
+<section id="level-bar">
+  <h2>6. L4 vs L5 vs L6 — Khác biệt thực tế <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="tier-card t1">
+    <h3>L4 expectation</h3>
+    <ul>
+      <li>Vẽ được box-and-arrow đầy đủ trong 30-45 phút</li>
+      <li>Identify 2-3 bottleneck, suggest solution</li>
+      <li>Capacity estimation đúng order of magnitude</li>
+      <li>Hiểu trade-off cơ bản (SQL vs NoSQL, push vs pull)</li>
+    </ul>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>L5 expectation = L4 + sâu hơn</h3>
+    <ul>
+      <li><strong>Multiple trade-off levels:</strong> "If we choose Cassandra, we sacrifice X for Y. But if we use Spanner, we get Z but cost W."</li>
+      <li><strong>LLD on 1 critical service:</strong> schema, API contract, error handling</li>
+      <li><strong>Migration story:</strong> "How do we evolve from system today to this?"</li>
+      <li><strong>Cross-team:</strong> "How does this interact with team B's service?"</li>
+    </ul>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>L6 expectation = L5 + organizational</h3>
+    <ul>
+      <li>Define entire system across 5+ teams</li>
+      <li>ROI analysis (cost-benefit)</li>
+      <li>Hire &amp; grow plan</li>
+      <li>Multi-year roadmap (1-3 năm)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="patterns-cheat">
+  <h2>7. Common patterns cheatsheet <span class="k-tag supp">SUPP</span></h2>
+
+  <h3>Read-heavy → Cache + CDN</h3>
+  <pre><code class="language-text">Layer 1: Browser cache (HTTP headers, ~minutes)
+Layer 2: CDN edge (~hours)
+Layer 3: Application cache (Redis, ~seconds-hours)
+Layer 4: DB query cache
+Layer 5: Storage</code></pre>
+
+  <h3>Write-heavy → Async via Queue</h3>
+  <pre><code class="language-text">Client → API → Kafka/SQS → Worker → DB
+       (fast ack, async process)</code></pre>
+
+  <h3>Hot key → Consistent hashing + replication</h3>
+  <pre><code class="language-text">Replicate hot keys to N nodes
+Read randomly từ any of N
+Write to all (với quorum)</code></pre>
+
+  <h3>Search → Inverted index</h3>
+  <pre><code class="language-text">Document → Tokenize → Postings list
+"hello world" → hello: [doc1, doc5], world: [doc1]
+Query "hello" → return docs containing
+Tools: Elasticsearch, Solr</code></pre>
+
+  <h3>Recommendation → Offline batch + online serving</h3>
+  <pre><code class="language-text">Batch: Spark on logs daily → user-item scores
+Serve: Redis sorted set → top N for user
+Update real-time: Kafka stream → partial recompute</code></pre>
+
+  <h3>Real-time updates → WebSocket + Pub/Sub</h3>
+  <pre><code class="language-text">Persistent connection per user
+Server-side: Redis Pub/Sub hoặc Kafka
+Notify on event → push over WebSocket</code></pre>
+
+  <h3>Geo-distributed → Multi-region với eventual consistency</h3>
+  <pre><code class="language-text">Mỗi region có full stack
+Cross-region replication (async)
+DNS-based routing (closest region)
+Strong consistency chỉ cho user's data trong their region</code></pre>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ 7 anti-patterns trong FAANG System Design mock <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ #1: Skip Scenario, jump straight to Service</h4>
+    <p><strong>Symptom:</strong> "I'll use 3 services and Cassandra and Kafka..." — không clarify gì.</p>
+    <p><strong>Fix:</strong> "First let me clarify: how many users? read/write ratio?" 5 phút clarify TRƯỚC khi vẽ.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #2: "Just use Kafka for everything"</h4>
+    <p><strong>Symptom:</strong> Throw Kafka at every async problem.</p>
+    <p><strong>Fix:</strong> Justify: "Kafka because we have async + replay + consumer groups. vs SQS simpler if don't need replay. vs RabbitMQ better cho low throughput + complex routing."</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #3: No capacity numbers</h4>
+    <p><strong>Symptom:</strong> "Lots of users, lots of data" — vague.</p>
+    <p><strong>Fix:</strong> "100M DAU, 1KB per record, 86,400s/day → 1.2K writes/sec." Show math.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #4: Magic auto-scaling</h4>
+    <p><strong>Symptom:</strong> "K8s sẽ auto-scale" — waving hands.</p>
+    <p><strong>Fix:</strong> "Read replicas based on CPU &gt; 70%, scale 2-10 replicas. Cold start time 30s, pre-warm khi traffic predict tăng."</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #5: No trade-off discussion</h4>
+    <p><strong>Symptom:</strong> "I chose Cassandra" — không justify.</p>
+    <p><strong>Fix:</strong> "I chose Cassandra over MySQL for write throughput, sacrificing strong consistency. Acceptable here because feed eventually consistent OK for users."</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #6: Micro-optimize early</h4>
+    <p><strong>Symptom:</strong> Spend 20 phút trên bloom filter implementation trong 45-min round.</p>
+    <p><strong>Fix:</strong> "I'd add bloom filter for cache prefilter, classic LRU otherwise." Mention optimization, don't implement đầy đủ.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #7: No diagram</h4>
+    <p><strong>Symptom:</strong> Talk-only design, không vẽ.</p>
+    <p><strong>Fix:</strong> Vẽ box-and-arrow rõ ràng (Excalidraw / paper / Google Doc). Interviewer cần visual để follow.</p>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Junior (pre-L4)</h3>
+    <p><strong>Q1: 4S framework là gì? Time budget mỗi step?</strong></p>
+    <p><em>Trả lời:</em> "Scenario (5'), Service (10'), Storage (10'), Scale (15'), Q&amp;A (5'). Total 45 phút. Scenario = clarify FR/NFR/capacity. Service = box-arrow architecture + top 5 APIs. Storage = DB choice + schema + sharding. Scale = bottleneck + trade-off."</p>
+
+    <p><strong>Q2: Capacity estimation cho 100M DAU app, 10 actions/user/day?</strong></p>
+    <p><em>Trả lời:</em> "100M × 10 / 86,400 = ~12K avg QPS. Peak 3× = 36K QPS. Bandwidth: 12K × 500 bytes = 6 MB/sec đơn giản. Storage: depends actions — 1KB/action × 1B/day = 1 TB/day = 365 TB/year. Add replication 3× = 1 PB/year."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Mid (L4 bar)</h3>
+    <p><strong>Q3: Twitter Feed fanout — Push vs Pull, choose nào?</strong></p>
+    <blockquote>
+      "Hybrid. Push fanout (write-time) cho regular users — cheap reads at cost of celebrity write problem. Pull fanout (read-time) cho celebrity users (&gt; 1M followers) — avoid 100M Redis writes per tweet.<br><br>
+      Feed Service merges 2 sources khi user open timeline: pushed tweets từ regular followees + pull-fetched tweets từ celebs họ follow. Sort by time, return top 800 cached trong Redis.<br><br>
+      Trade-off: hybrid phức tạp implement hơn pure push hoặc pure pull. Industry standard (Twitter, Facebook) chấp nhận complexity vì 95% latency tốt + cost manageable."
+    </blockquote>
+
+    <p><strong>Q4: Uber driver location update — design 250K writes/sec?</strong></p>
+    <blockquote>
+      "Shard by geohash. World chia thành cells ~1km × 1km bằng 6-char geohash. Mỗi cell có 1 server (hoặc shard) chịu trách nhiệm.<br><br>
+      Driver location update 4s → routed to cell server based on driver's current geohash. Redis GEO commands trên cell server: <code>GEOADD drivers lon lat driver_id</code>. Mỗi cell server chỉ chịu drivers trong cell đó → load distribute.<br><br>
+      Match request: query 9 cells (3×3 grid around rider). <code>GEORADIUS</code> trả top N nearest. Parallel queries, fast (~10ms total).<br><br>
+      Trade-off: Geohash đơn giản hơn R-tree, distribute dễ. Hot cells (downtown SF) cần replicate. Trip state PHẢI strong consistency (không double-book) — dùng distributed lock cho transition state."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Senior (L5 bar)</h3>
+    <p><strong>Q5: Design YouTube từ scratch cho 2B DAU. Migration story từ 100M DAU current state.</strong></p>
+    <pre><code class="language-text">Phút 1 — Scenario:
+  FR: upload, watch, search, recommend, like/comment
+  NFR: 2B DAU, 500h/min upload, 35M concurrent streams
+  Capacity: ~150 PB/year storage, EB total
+
+Phút 2 — Service (high-level):
+  Upload path: Client → Upload Service → S3 → Encoding (FFmpeg) → CDN push
+  Watch path: Client → CDN Edge → Origin S3 → manifest m3u8 + segments
+  Metadata: DynamoDB. Comments: Cassandra. Recommendation: ML pipeline.
+
+Phút 3 — Storage details:
+  Videos: S3 multi-tier (Hot/Warm/Glacier based on access pattern ML)
+  Metadata: DynamoDB sharded by video_id
+  Watch history: Kafka stream → batch insert Cassandra (cheap writes)
+  Recommendation: Redis Sorted Set per user, refresh daily
+
+Phút 4 — Scale + bottleneck:
+  Encoding throughput: 500h/min × 5 resolutions = 2500h/min encoding
+    → Distributed workers, Kafka job queue, FFmpeg
+  CDN: 35M concurrent × 1 Mbps avg = 35 Tbps egress
+    → Multi-tier cache (edge popular, regional medium, origin all)
+    → Pre-warm cache cho expected viral videos
+  Storage: cheap S3 Standard for hot 7-day, IA cho 30-day, Glacier 365+
+    → 80% videos cold → Glacier saves 90% cost vs Standard
+
+Phút 5 — Migration story L5:
+  Current 100M DAU → Target 2B DAU (20× growth)
+  Phase 1 (3 tháng): scale current architecture, add replicas
+  Phase 2 (6 tháng): migrate to multi-region active-active
+    → DNS routing closest region, async replication
+  Phase 3 (6 tháng): Encoding pipeline refactor
+    → Move from monolithic FFmpeg cluster to serverless (Lambda)
+    → Cost reduce 40% via spot instances
+  Phase 4 (ongoing): ML recommendation upgrade
+    → Migrate from collaborative filtering to 2-tower neural net
+    → A/B test, 5% rollout per week
+  Trade-off: 18 tháng total migration, business cần ship features parallel
+    → Strangler pattern: new architecture alongside old, gradual migration</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 5 mock BẮT BUỘC + 1 lab</h2>
+
+  <div class="callout warn">
+    <strong>Bắt buộc 5-8 mock cho L4, 8+ cho L5.</strong> File này chỉ ra cách + walkthrough — không thay được mock thật.
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab — Self-mock 5 designs (5 ngày)</h3>
+    <p><strong>Mục tiêu:</strong> Reproduce từ memory, không nhìn file.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Ngày 1: URL Shortener — self-mock 45 phút, không nhìn file. Sau xong, mở D1 so sánh.</li>
+      <li>Ngày 2: Twitter Feed.</li>
+      <li>Ngày 3: Uber.</li>
+      <li>Ngày 4: Chat app.</li>
+      <li>Ngày 5: YouTube.</li>
+      <li>Track gap: bài nào miss bottleneck, bài nào không estimate được capacity, bài nào trade-off yếu.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> 5 design + diagram + capacity + 3+ trade-off mỗi cái, không nhìn file.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Mock 1-5 — Peer mock with feedback</h3>
+    <p><strong>Schedule:</strong> 1 mock/tuần × 5 tuần.</p>
+    <ul>
+      <li>Mock 1: URL Shortener (warm-up, đã làm self)</li>
+      <li>Mock 2: Twitter Feed (fanout focus)</li>
+      <li>Mock 3: Random từ Alex Xu Vol 1 (chưa làm trước)</li>
+      <li>Mock 4: Uber (geospatial focus)</li>
+      <li>Mock 5: Random từ Alex Xu Vol 2 (harder)</li>
+    </ul>
+    <p>Sau mỗi mock: peer feedback theo 4S structure. Self-eval: gap với #45 walkthrough là gì.</p>
+    <p><strong>Acceptance:</strong> Mock 5 peer feedback ≥ 7/10. Trend improving across 5 mock.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Mock 6-8 — Paid với senior FAANG</h3>
+    <p>Sau peer mock đã ổn → Interviewing.io với senior FAANG engineer (paid ~$200/session).</p>
+    <p>Mục đích: get real signal. Senior FAANG feedback hardest. Pass paid mock thường = ready cho thật.</p>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho dev chưa biết — &lt; 30s mỗi câu</h3>
+    <ol>
+      <li><strong>"4S framework gồm gì?"</strong> — Scenario (FR/NFR/capacity 5'), Service (architecture + APIs 10'), Storage (DB/schema/sharding 10'), Scale (bottleneck + trade-off 15'). 4S quản lý content, 5-step #37 quản lý process.</li>
+      <li><strong>"Twitter Feed Push vs Pull — chọn nào?"</strong> — Hybrid. Push (write-time fanout) cho regular users — cheap reads. Pull (read-time fanout) cho celebrities — avoid 100M Redis writes. Feed merges 2 sources cho user.</li>
+      <li><strong>"Uber match — vì sao Geohash thay R-tree?"</strong> — Geohash đơn giản, distribute dễ qua sharded servers. Each cell = 1 server. R-tree linh hoạt query hơn nhưng khó shard. Uber chấp nhận simplicity cho scale.</li>
+      <li><strong>"YouTube tier storage — vì sao?"</strong> — 80% videos cold (không xem trong 30 ngày). S3 Glacier saves 90% cost vs Standard. Trade-off: retrieval 3-5h cho Glacier — acceptable cho cold videos không cần realtime.</li>
+      <li><strong>"L4 vs L5 system design khác gì?"</strong> — L4: vẽ box-arrow, identify 2-3 bottleneck, capacity correct order. L5 = L4 + multiple trade-off levels, LLD 1 service, migration story, cross-team interaction.</li>
+    </ol>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources</h3>
+    <ul>
+      <li><strong>System Design Interview Vol 1 + 2</strong> (Alex Xu) — ISBN 979-8664653403, 978-1736049129. Best-in-class.</li>
+      <li><strong>Designing Data-Intensive Applications</strong> (Kleppmann) — ISBN 978-1449373320. Foundational.</li>
+      <li><strong>Grokking the System Design Interview</strong> (Educative.io) — paid course pattern-based.</li>
+      <li><strong>ByteByteGo</strong> (Alex Xu) — YouTube channel + paid newsletter.</li>
+      <li><strong>Hello Interview</strong> — <a href="https://www.hellointerview.com">hellointerview.com</a> system design deep dives.</li>
+      <li><strong>system-design-primer</strong> — <a href="https://github.com/donnemartin/system-design-primer">github.com/donnemartin/system-design-primer</a> (free, comprehensive).</li>
+      <li><strong>Engineering blogs</strong>: Netflix, Uber, Stripe, Discord, Cloudflare — real architecture lessons.</li>
+      <li><strong>Pramp.com</strong> free peer mock. <strong>Interviewing.io</strong> paid với FAANG eng.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap Tháng 5 (1 tháng)</h3>
+    <pre><code class="language-text">Tuần 1: Đọc Section 1-7 (4S + 5 designs). 1 design/ngày + self-mock đơn giản.
+
+Tuần 2: 2 peer mock (Pramp). Focus: 4S structure, capacity numbers.
+        Track gap: trục nào weakest (Service / Storage / Scale).
+
+Tuần 3: 1 peer + 1 paid mock (Interviewing.io). Senior FAANG feedback.
+        Self-eval: L4 bar hay chưa.
+
+Tuần 4: 2 mock final với senior. Focus follow-up handling, trade-off depth.
+        Practice migration story (L5 prep).</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="46-faang-behavioral-deep-dive.html">#46 FAANG Behavioral</a> — final pillar onsite loop.</li>
+      <li><a href="44-faang-coding-playbook.html">#44 FAANG Coding Playbook</a> — refresh nếu rusty.</li>
+      <li><a href="17-microservices-patterns.html">#17 Microservices</a> — deeper architecture patterns.</li>
+      <li><a href="14-redis.html">#14 Redis</a> + <a href="20-apache-kafka.html">#20 Kafka</a> — building blocks dùng trong mọi design.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng onsite:</strong> 8 mock với peer feedback ≥ 7/10 · 5 design walk-through từ memory · 4S framework reflex · Trade-off vocab fluent · L4 bar self-eval clear.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

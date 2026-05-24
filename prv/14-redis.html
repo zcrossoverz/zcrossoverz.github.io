@@ -864,6 +864,130 @@ SCAN 0 MATCH user:* COUNT 100</code></pre>
 <p>User session stored forever → memory bloat. Always TTL.</p>
 </section>
 
+<section id="symptom-debug">
+<h2>9b. Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Lỗi Redis trong production thường không log error rõ — chúng xuất hiện dưới dạng latency spike, OOM, hoặc DB load đột ngột tăng. Đây là cách trace ngược.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — Cache stampede: DB CPU 100%, app timeout</div>
+<p><strong>Symptom:</strong> 10h tối flash sale, hot product cache expire. Trong 200ms, 50K request cùng miss cache → đập DB. DB CPU 100%, connection pool exhausted, app trả 503.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Redis: <code>INFO stats</code> — <code>keyspace_misses</code> spike</li>
+<li>App APM: latency p99 endpoint <code>/products/:id</code> nhảy từ 20ms → 5s+</li>
+<li>DB: <code>SHOW PROCESSLIST</code> show hàng trăm query identical (cùng product_id) chạy parallel</li>
+<li>Connection pool metric: <code>hikaricp_connections_pending</code> spike</li>
+</ul>
+<p><strong>3 cách fix (theo độ trade-off):</strong></p>
+<ol>
+<li><strong>Single-flight lock (Redis SETNX)</strong> — chỉ 1 request đi DB, rest đợi result trong Redis. Simple, work cho hot key đơn lẻ</li>
+<li><strong>Probabilistic early refresh (XFetch)</strong> — refresh trước khi expire dựa trên xác suất theo time-to-live còn lại. Không có thundering herd, không có lock contention</li>
+<li><strong>Two-tier TTL (soft + hard)</strong> — soft TTL trả stale data + async refresh, hard TTL mới block. Tốt cho data eventual consistent</li>
+</ol>
+<p><strong>Recovery khi đang firefighting:</strong></p>
+<pre><code class="language-bash"># 1. Pre-warm cache cho top 100 hot keys
+redis-cli --eval prewarm.lua hot_products
+
+# 2. Tạm tăng TTL cho hot keys (4h thay vì 5min) để giảm miss
+# 3. Add rate limit ở app layer để không spam DB
+# 4. Kill query đang chạy: pg_terminate_backend(pid)</code></pre>
+<p><strong>Anti-fix:</strong> KHÔNG xoá hết cache để "fresh data" trong lúc traffic peak — gây stampede toàn cục.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — Distributed lock "rò rỉ": product oversold</div>
+<p><strong>Symptom:</strong> Inventory 10 chiếc, flash sale bán được 12 đơn. Lock SETNX đã có nhưng vẫn fail.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>App log: tìm log "lock acquired" và "lock released" cho cùng key — đếm xem có release nào miss không</li>
+<li>Redis: <code>TTL lock:product:123</code> trong lúc traffic — nếu TTL còn nhưng có 2 request claim ownership thì lock leak</li>
+<li>App GC log: nếu pause &gt; lock TTL, holder bị "evict" mà không biết, 2 holder cùng tồn tại</li>
+</ul>
+<p><strong>5 nguyên nhân thường gặp (xếp theo độ phổ biến):</strong></p>
+<ol>
+<li><strong>No TTL on lock</strong> — holder crash, lock không expire, mọi request stuck. Always <code>SET key val NX EX 30</code></li>
+<li><strong>TTL ngắn hơn critical section</strong> — lock 5s nhưng DB query 10s → lock expire giữa chừng, request khác vào → 2 critical section chạy đồng thời. Fix: TTL &gt; max critical time × 2</li>
+<li><strong>Không kiểm token khi release</strong> — request A release lock của request B vì code <code>DEL key</code>. Fix: dùng Lua script atomic kiểm token</li>
+<li><strong>GC pause/STW lâu hơn TTL</strong> — JVM pause 8s, lock TTL 5s. Khi pause xong, holder cũ tiếp tục như mới owning lock. Fix: fencing token (Martin Kleppmann), kiểm version ở DB level</li>
+<li><strong>Redis failover mất lock state</strong> — master down, failover sang replica chưa replicate lock. Redlock cố giải quyết nhưng có controversy</li>
+</ol>
+<p><strong>Pattern đúng (Redisson-style):</strong></p>
+<pre><code class="language-java">String token = UUID.randomUUID().toString();
+String script = """
+    if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
+        return 1
+    else return 0 end""";
+boolean acquired = (Long)jedis.eval(script, 1, "lock:product:123", token, "30") == 1L;
+try {
+    if (acquired) {
+        // critical section
+    }
+} finally {
+    // release ONLY if I still own it (atomic)
+    String releaseScript = """
+        if redis.call('GET', KEYS[1]) == ARGV[1] then
+            return redis.call('DEL', KEYS[1])
+        else return 0 end""";
+    jedis.eval(releaseScript, 1, "lock:product:123", token);
+}</code></pre>
+<p><strong>Đúng cho oversell:</strong> KHÔNG dùng distributed lock cho inventory deduction. Dùng atomic <code>DECRBY</code> + reject nếu kết quả &lt; 0. Đơn giản, không có lock leak.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — Redis OOM / latency spike đột ngột</div>
+<p><strong>Symptom:</strong> Redis trước đây ổn, đột nhiên latency p99 từ 1ms → 200ms. <code>used_memory</code> nhảy lên gần <code>maxmemory</code>. Một số GET trả nil dù vừa SET.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li><code>INFO memory</code>: <code>used_memory_peak</code>, <code>maxmemory_policy</code>, <code>evicted_keys</code> (eviction đang xảy ra)</li>
+<li><code>INFO commandstats</code>: <code>cmdstat_keys</code>, <code>cmdstat_smembers</code> — tìm command tốn nhiều thời gian</li>
+<li><code>SLOWLOG GET 50</code>: xem 50 command chậm nhất, thường là <code>KEYS *</code>, <code>SMEMBERS</code> trên set lớn, <code>LRANGE</code> trên list lớn</li>
+<li><code>MEMORY USAGE &lt;key&gt;</code> trên key nghi ngờ — tìm key &gt; 10MB</li>
+</ul>
+<p><strong>3 nguyên nhân theo độ phổ biến:</strong></p>
+<ol>
+<li><strong>Big keys</strong> — 1 hash/list/set chứa hàng triệu element. Xóa nó block Redis vài giây. Tool: <code>redis-cli --bigkeys</code> scan cluster tìm</li>
+<li><strong>O(N) command trên large structure</strong> — <code>SMEMBERS</code> 1 set 1M element block 200ms. Fix: <code>SSCAN</code> với cursor</li>
+<li><strong>Eviction policy sai</strong> — <code>maxmemory-policy noeviction</code> + memory full → mọi write fail. Đổi <code>allkeys-lru</code> hoặc <code>volatile-ttl</code> tuỳ use case</li>
+</ol>
+<p><strong>Emergency fix:</strong></p>
+<pre><code class="language-bash"># 1. Tìm big key (KHÔNG dùng KEYS *)
+redis-cli --bigkeys
+
+# 2. Xoá big key async (Redis 4+) — không block
+redis-cli UNLINK huge_key
+
+# 3. Tạm tăng maxmemory hoặc đổi policy nếu chưa kịp fix code
+redis-cli CONFIG SET maxmemory 8gb
+redis-cli CONFIG SET maxmemory-policy allkeys-lru
+
+# 4. Tìm O(N) command chậm
+redis-cli SLOWLOG GET 100 | grep -i 'smembers\|keys\|lrange'</code></pre>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho Redis</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Biết Redis là "key-value store, in-memory, nhanh". Biết các command cơ bản GET/SET/HGET. Dùng <code>@Cacheable</code> không hiểu cache-aside.</p>
+    <p><em>Symptom của L1: cache mọi thứ, không nghĩ về invalidation hay TTL.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Phân biệt các pattern caching (cache-aside, read-through, write-behind), biết cache stampede và 3 cách prevent. Hiểu distributed lock cần TTL + token release.</p>
+    <p><em>Symptom của L2: đặt câu hỏi "TTL bao nhiêu? Eviction policy gì?" khi review design.</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Biết khi nào KHÔNG dùng Redis (large object, primary store, strong consistency). Đọc <code>SLOWLOG</code> và <code>INFO</code> để diagnose. Biết Redlock controversy và alternative (fencing token). Recipe 3 ở trên là phản xạ.</p>
+    <p><em>Symptom của L3: design có capacity plan cho Redis (memory growth model + eviction strategy) trước khi go-live.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="build-projects">
 <h2>10. Build Projects</h2>
 

@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#34 — Audit Logging &amp; Compliance (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm J · Compliance &amp; Security Patterns</span>
+    <span class="sep">›</span>
+    <span class="current">#34 Audit Logging</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 6 modules</a>
+      <a href="#real-problem">1. Bài toán: audit bị giả mạo</a>
+      <a href="#definition">2. 3 tính chất bắt buộc</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#hash-chain">3. Hash chaining</a>
+      <a href="#worm">4. WORM storage tier</a>
+      <a href="#non-repudiation">5. Non-repudiation stack</a>
+      <div class="toc-section">Production</div>
+      <a href="#schema">6. Audit Event schema</a>
+      <a href="#service">7. Audit Service + chain</a>
+      <a href="#aop">8. AOP tự động capture</a>
+      <a href="#tiered">9. Tiered storage compliance</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ 5 anti-patterns</a>
+      <a href="#fail-mode">⚖️ Fail-open vs fail-closed</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm J · Compliance · File chống hiểu giả</div>
+  <h1>Audit Logging — Immutable, Tamper-Evident, Non-Repudiable</h1>
+  <p class="lead">
+    Audit logging là kỹ năng bị <em>under-rated</em> trong backend interview — ai cũng "biết" log action ra DB, nhưng khi probe "DBA của bạn xoá row trong audit_log thì làm sao phát hiện?" hoặc "S3 Object Lock GOVERNANCE vs COMPLIANCE khác gì?" thì lộ ngay. File này dạy bạn vừa <strong>cơ chế</strong> (hash chain, WORM, non-repudiation), vừa <strong>compliance reality</strong> (HIPAA, GDPR, SOX, PCI-DSS) — và ép bạn phân biệt audit "đúng nghĩa" với log scatter mà 90% project gọi nhầm là audit.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Implement tamper-evident log + hiểu storage tier + biết khi nào audit fail-closed</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #30 Cryptography, #20 Kafka</div>
+    <div><strong>📚 Prereq</strong><br>HMAC/SHA basics · DB transaction · Spring AOP · S3/cloud storage basic</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔴 Critical cho healthcare / fintech / regulated industries</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" trong Audit Logging</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao audit log dễ hiểu nhầm:</strong>
+    <ul>
+      <li>"Audit log" bị dùng chung với "application log" / "access log" — 3 thứ khác nhau hoàn toàn về requirement.</li>
+      <li>Pattern "lưu vào bảng audit_log" nghe đơn giản → não thưởng cho cảm giác hiểu. Nhưng nếu DBA có DELETE permission, audit log đó vô giá trị về mặt pháp lý.</li>
+      <li>Buzzword "blockchain audit" / "tamper-proof" được dùng marketing → dev nhầm là cần distributed consensus, thực ra hash chain đơn giản đủ.</li>
+      <li>Compliance regulations (GDPR, HIPAA, SOX, PCI-DSS) phức tạp — đa số dev không đọc spec gốc, chỉ nghe lại từ "compliance officer".</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ hiểu</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td>L1 — Biết tên</td><td>Biết "lưu audit vào DB", "có hash" để check tamper.</td><td>Phân biệt audit log vs application log trong 1 câu?</td></tr>
+      <tr><td>L2 — Explain cơ chế</td><td>Giải thích hash chain detect tamper thế nào, vì sao HMAC thay SHA256.</td><td>Trả lời "DBA có thể bypass hash chain không?" trong 30s.</td></tr>
+      <tr><td>L3 — Apply</td><td>Đã implement audit + verify integrity job + biết tier storage cost.</td><td>Show code production có hash chain + tiered storage strategy.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li>Pause &amp; Predict mọi nơi có — viết câu trả lời trước khi đọc đáp án.</li>
+    <li>Section 3 (Hash Chain) gõ tay code, không copy. Verify integrity logic phải tự viết được không nhìn.</li>
+    <li>Section 4 (WORM) đọc kèm tab AWS docs về S3 Object Lock — verify 2 mode GOVERNANCE/COMPLIANCE bằng AWS docs gốc, không tin file này 100%.</li>
+    <li>Sau mỗi anti-pattern, mở project hiện tại check có dính không.</li>
+    <li>Lab 1 (Hash chain tamper detector) bắt buộc — không làm = vẫn L1.</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap 6 modules</h2>
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>Audit vs App log</strong> · CORE · 3 tính chất khác biệt: immutable, tamper-evident, non-repudiable</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>Hash chaining</strong> · CORE · Detect tampering bằng HMAC chain, vì sao HMAC ≠ SHA256</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>WORM storage</strong> · HIGH-SIGNAL · 4 tầng: app / DB / OS / hardware-cloud. S3 Object Lock GOVERNANCE vs COMPLIANCE</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>Non-repudiation</strong> · CORE · Auth + AuthZ + Action + Signature + Timestamp authority</div></div>
+    <div class="roadmap-item core"><span class="num">M5</span><div><strong>AOP capture</strong> · HIGH-SIGNAL · Cross-cutting concern, không pollute business code</div></div>
+    <div class="roadmap-item supp"><span class="num">M6</span><div><strong>Compliance reality</strong> · SUPP · GDPR / HIPAA / SOX / PCI-DSS — retention &amp; access</div></div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán: Insider sửa audit log <span class="k-tag core">CORE</span></h2>
+
+  <p>Một SaaS platform quản lý hồ sơ bệnh nhân (healthcare). Nhân viên IT cấp cao tên A có DB superuser. Vì lý do cá nhân, A truy cập trái phép hồ sơ của 1 celebrity:</p>
+
+  <pre><code class="language-text">[T+0]   A đăng nhập với account của mình
+[T+10s] A query SELECT * FROM patients WHERE name = 'Celebrity X'
+        → Hệ thống tự động ghi audit:
+          INSERT INTO audit_log (user_id, action, entity_id, timestamp)
+          VALUES ('userA', 'VIEW_PATIENT', 'pat_999', '2026-05-23 14:00:10')
+
+[T+5min] A nhận ra mình đã để dấu vết, mở DB tool:
+         DELETE FROM audit_log
+         WHERE user_id = 'userA'
+           AND timestamp BETWEEN '2026-05-23 14:00:00' AND '2026-05-23 14:00:30';
+
+[T+10min] A cũng modify các log khác để cover thêm:
+          UPDATE audit_log SET action = 'LIST_PATIENTS'
+          WHERE user_id = 'userA' AND id IN (...);
+
+[T+1 month] Celebrity X phát hiện hồ sơ bị leak, kiện platform
+[T+1 month + 1 day] Compliance officer query audit log
+                    → Không có dấu vết userA truy cập
+                    → "Audit log clean, không có dấu hiệu vi phạm"</code></pre>
+
+  <h3>Hệ quả thực</h3>
+  <ul>
+    <li>Platform mất khả năng prove "ai đã làm" — pháp lý không có evidence</li>
+    <li>HIPAA fine (Mỹ): tối đa $1.5M/year per violation category. EU GDPR: tối đa €20M hoặc 4% global revenue.</li>
+    <li>Mất niềm tin của customer — celebrity có thể public hoá vụ việc</li>
+    <li>Insider threat: nhân viên có quyền cao tiếp tục lạm dụng</li>
+  </ul>
+
+  <h3>4 câu hỏi buộc tư duy</h3>
+  <ol>
+    <li>Làm sao biết audit log có bị sửa/xoá không?</li>
+    <li>Nếu DBA có quyền DELETE, làm sao ngăn họ xoá audit?</li>
+    <li>Lưu audit ở DB thì DBA bypass được. Lưu đâu là "thực sự bất biến"?</li>
+    <li>Nếu phải prove với toà án rằng user A đã làm action X lúc T, cần gì?</li>
+  </ol>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước đọc Section 2, viết:</p>
+    <ol>
+      <li>Bạn nghĩ giải pháp đơn giản nhất là gì? Pseudocode.</li>
+      <li>DBA có thể bypass giải pháp đó không? Nếu có thì cách nào?</li>
+    </ol>
+    <p><em>Đa số dev nghĩ "thêm cột hash, check hash". Đúng nhưng chưa đủ — DBA có thể sửa cả hash. Sẽ thấy giới hạn ở Section 3.</em></p>
+  </div>
+</section>
+
+<section id="definition">
+  <h2>2. Audit log vs Application log — 3 tính chất phải có <span class="k-tag core">CORE</span></h2>
+
+  <p>"Audit log" bị dùng nhầm rất phổ biến. Để tránh hiểu giả, định nghĩa rõ:</p>
+
+  <table>
+    <thead><tr><th>Loại log</th><th>Mục đích</th><th>Tính chất</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Application log</strong></td>
+        <td>Debug, troubleshoot</td>
+        <td>Mutable, có thể rotate/delete. Format đa dạng (text, JSON).</td>
+      </tr>
+      <tr>
+        <td><strong>Access log</strong></td>
+        <td>Phân tích traffic, security</td>
+        <td>Append-only nhưng có thể rotate. Standard format (CLF, JSON).</td>
+      </tr>
+      <tr>
+        <td><strong>Audit log</strong></td>
+        <td>Compliance, forensic, legal evidence</td>
+        <td>3 tính chất bắt buộc — xem dưới.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3 tính chất bắt buộc của Audit log</h3>
+  <ol>
+    <li><strong>Immutable</strong> — Sau khi ghi, không thể UPDATE hoặc DELETE. Cả admin, cả DBA, cả CEO không xoá được.</li>
+    <li><strong>Tamper-evident</strong> — Nếu ai cố sửa, phải <em>phát hiện được</em>. Hash chain là cơ chế phổ biến.</li>
+    <li><strong>Non-repudiable</strong> — Người thực hiện action không thể phủ nhận. Cần auth + signature + trusted timestamp.</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Test self-check:</strong> Project bạn có "audit_log table" nhưng admin DB có thể DELETE row? Đó là <em>activity log</em>, KHÔNG phải audit log. Trong compliance audit, log đó vô giá trị.
+  </div>
+
+  <h3>Mục đích thật của audit log</h3>
+  <ol>
+    <li><strong>Compliance — regulatory requirement.</strong> HIPAA (healthcare), GDPR (EU personal data), SOX (financial reporting), PCI-DSS (payment). Mỗi cái có retention rule khác nhau.</li>
+    <li><strong>Forensic — sau incident.</strong> Investigation: ai access data, khi nào, từ đâu. Audit phải đủ chi tiết để reconstruct timeline.</li>
+    <li><strong>Legal evidence.</strong> Trong toà, audit log phải đủ chứng minh "user A đã làm X lúc T" — đòi hỏi cả 3 tính chất ở trên.</li>
+    <li><strong>Insider threat detection.</strong> Detect bất thường: user bình thường access 1000 record/ngày đột nhiên access 100K.</li>
+  </ol>
+</section>
+
+<section id="hash-chain">
+  <h2>3. Hash chaining — Detect tampering <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>L2 check:</strong> Sau section này phải explain được "Vì sao dùng HMAC thay SHA256" + "DBA bypass được hash chain không?" trong &lt; 30 giây.
+  </div>
+
+  <h3>Cơ chế hash chain</h3>
+  <pre><code class="language-text">Entry 1: { data: "User A view patient_999 at T1" }
+  hash_1 = HMAC(data_1 + "GENESIS", secret_key)
+
+Entry 2: { data: "User A view patient_888 at T2", prev_hash: hash_1 }
+  hash_2 = HMAC(data_2 + hash_1, secret_key)
+
+Entry 3: { data: "User B login at T3", prev_hash: hash_2 }
+  hash_3 = HMAC(data_3 + hash_2, secret_key)
+
+Nếu attacker sửa Entry 2:
+  → Recompute hash_2' với data mới
+  → Nhưng hash_2' ≠ hash_2 lưu trong Entry 3.prev_hash
+  → Toàn bộ chain từ Entry 2 trở đi INVALID khi verify
+  → Tampering detected!
+
+Nếu attacker muốn fix:
+  → Phải recompute hash_2, hash_3, hash_4, ... đến cuối chain
+  → Phải biết secret_key của HMAC → KHÔNG bypass được nếu key được bảo vệ</code></pre>
+
+  <h3>Vì sao HMAC thay SHA256?</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ SHA256 trần</h4>
+      <pre><code class="language-text">hash = SHA256(audit_data)
+
+// Ai cũng compute được — không cần key
+// DBA sửa data → recompute SHA256 →
+// chain vẫn valid → KHÔNG detect được tampering</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ HMAC-SHA256</h4>
+      <pre><code class="language-text">hash = HMAC_SHA256(audit_data, secret_key)
+
+// Chỉ người có secret_key compute được
+// Secret_key lưu trong HSM / KMS,
+// không cho DBA access
+// → DBA sửa data nhưng KHÔNG re-sign được
+// → Verify job phát hiện invalid hash</code></pre>
+    </div>
+  </div>
+
+  <h3>Implementation runnable</h3>
+  <pre><code class="language-java">@Service
+@Slf4j
+public class AuditChainService {
+
+    private final AuditEventRepository repo;
+    private final HmacService hmacService;      // wraps HSM/KMS call
+    private final ReentrantLock chainLock = new ReentrantLock();
+
+    /**
+     * Append event với hash chain.
+     * Lưu ý: getLastHash + insert phải atomic — nếu không thì 2 thread
+     * cùng đọc prev_hash, chain sẽ branch.
+     *
+     * Dùng app-level lock đơn giản cho single-instance.
+     * Multi-instance: dùng DB advisory lock hoặc serializable transaction.
+     */
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public AuditEvent append(AuditEventRequest req) {
+        chainLock.lock();
+        try {
+            String prevHash = repo.getLastHash().orElse("GENESIS");
+
+            String dataToSign = buildDataString(req, prevHash);
+            String hmacHash = hmacService.computeHmac(dataToSign);
+
+            AuditEvent event = AuditEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .userId(req.getUserId())
+                .action(req.getAction())
+                .entityType(req.getEntityType())
+                .entityId(req.getEntityId())
+                .beforeState(req.getBeforeState())
+                .afterState(req.getAfterState())
+                .ipAddress(req.getIpAddress())
+                .eventTime(req.getEventTime())
+                .serverTime(Instant.now())      // trust server, not client
+                .previousHash(prevHash)
+                .currentHash(hmacHash)
+                .build();
+
+            repo.save(event);
+            return event;
+        } finally {
+            chainLock.unlock();
+        }
+    }
+
+    /**
+     * Verify integrity của chain trong khoảng [from, to].
+     * Chạy scheduled job (daily/weekly) hoặc on-demand.
+     * Phát hiện 2 loại tampering:
+     *   1. Event bị sửa: recompute HMAC ≠ stored hash
+     *   2. Event bị xoá: prev_hash mismatch giữa các event liền kề
+     */
+    public AuditIntegrityReport verifyChain(Instant from, Instant to) {
+        List&lt;AuditEvent&gt; events = repo.findInTimeRange(from, to);
+        List&lt;String&gt; violations = new ArrayList&lt;&gt;();
+
+        String expectedPrevHash = events.isEmpty() ? null
+            : repo.getHashBefore(events.get(0).getServerTime()).orElse("GENESIS");
+
+        for (AuditEvent event : events) {
+            // Check 1: prev_hash trỏ đúng event trước
+            if (!event.getPreviousHash().equals(expectedPrevHash)) {
+                violations.add("Chain break at " + event.getEventId()
+                    + ": expected prev " + expectedPrevHash
+                    + " but stored " + event.getPreviousHash());
+            }
+
+            // Check 2: recompute hash xem có khớp
+            String recomputed = hmacService.computeHmac(
+                buildDataString(event, event.getPreviousHash()));
+            if (!recomputed.equals(event.getCurrentHash())) {
+                violations.add("Tampered event: " + event.getEventId());
+            }
+
+            expectedPrevHash = event.getCurrentHash();
+        }
+
+        return AuditIntegrityReport.builder()
+            .totalEvents(events.size())
+            .violations(violations)
+            .intact(violations.isEmpty())
+            .verifiedAt(Instant.now())
+            .build();
+    }
+
+    private String buildDataString(AuditEventRequest r, String prevHash) {
+        // Canonical serialization — thứ tự field cố định
+        return String.join("|",
+            r.getUserId(), r.getAction(), r.getEntityType(), r.getEntityId(),
+            String.valueOf(r.getEventTime().toEpochMilli()), prevHash);
+    }
+}</code></pre>
+
+  <h3>Giới hạn của hash chain — DBA bypass?</h3>
+  <div class="break-it">
+    <h4>🔨 Câu hỏi probe senior</h4>
+    <p>Nếu DBA có quyền DELETE + access HSM secret key, có bypass được hash chain không?</p>
+    <p><strong>Câu trả lời:</strong> CÓ. Nếu DBA có cả 2:</p>
+    <ol>
+      <li>DELETE/UPDATE rows trong audit DB</li>
+      <li>HMAC secret để re-sign chain</li>
+    </ol>
+    <p>→ DBA recompute toàn bộ hash từ point tampering đến cuối → chain looks valid.</p>
+    <p><strong>Defence:</strong> Phải <em>tách quyền</em>: DBA không có HSM access, HSM admin không có DB access. Plus: replicate audit ra <em>WORM storage</em> bên ngoài DBA control (xem Section 4). Hash chain detect tampering ở DB-level; WORM ngăn tampering ở storage-level.</p>
+  </div>
+</section>
+
+<section id="worm">
+  <h2>4. WORM storage — 4 tầng immutability <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>WORM = Write Once Read Many. Audit muốn thực sự immutable phải có WORM ở storage layer, không chỉ application layer.</p>
+
+  <h3>4 tầng immutability — từ yếu đến mạnh</h3>
+  <table>
+    <thead><tr><th>Tầng</th><th>Cơ chế</th><th>Ai bypass được?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Application</strong></td>
+        <td>Soft delete, append-only API, không expose DELETE endpoint</td>
+        <td>DBA hoặc anyone với DB access bypass dễ dàng</td>
+      </tr>
+      <tr>
+        <td><strong>2. Database</strong></td>
+        <td>Revoke UPDATE/DELETE permission, trigger ngăn delete</td>
+        <td>DB SUPERUSER bypass — bypass trigger, regrant permission</td>
+      </tr>
+      <tr>
+        <td><strong>3. OS/Filesystem</strong></td>
+        <td><code>chattr +i</code> immutable flag, append-only filesystem</td>
+        <td>OS root bypass được (<code>chattr -i</code>)</td>
+      </tr>
+      <tr>
+        <td><strong>4. Hardware/Cloud WORM</strong></td>
+        <td>AWS S3 Object Lock COMPLIANCE, Azure Immutable Blob, write-once tape</td>
+        <td>KHÔNG AI bypass trong retention period — kể cả AWS root account</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>AWS S3 Object Lock — 2 modes phải biết</h3>
+  <pre><code class="language-text">GOVERNANCE mode:
+  - Admins với s3:BypassGovernanceRetention permission có thể delete
+  - Dùng cho: business data cần "soft immutable" cho compliance
+  - Tradeoff: linh hoạt, nhưng cần policy chặt cho ai có bypass permission
+
+COMPLIANCE mode:
+  - KHÔNG AI delete được trong retention period
+  - Kể cả AWS root account của bạn
+  - Kể cả AWS support
+  - Dùng cho: legal hold, regulatory data (SEC 17a-4, FINRA, CFTC)
+  - Tradeoff: rigid — đặt nhầm retention 10 năm = chờ 10 năm</code></pre>
+
+  <div class="callout warn">
+    <strong>Lưu ý production:</strong> COMPLIANCE mode là "irrevocable" — bạn KHÔNG đặt retention period dài hơn cần thiết. Đặt nhầm 50 năm với 1 TB data = ràng buộc lưu trữ 50 năm, không refund được. Tốt nhất: prototype với GOVERNANCE trước, chỉ switch sang COMPLIANCE khi process đã stable.
+  </div>
+
+  <h3>Tiered storage strategy (cost-aware)</h3>
+  <pre><code class="language-text">┌──────────────────────────────────────────────────────────────┐
+│ Hot tier   │ PostgreSQL append-only         │ 0-90 ngày      │
+│ (active)   │ Hash chained                   │ Fast query     │
+│            │ Cost: high                     │ Real-time ops  │
+├──────────────────────────────────────────────────────────────┤
+│ Warm tier  │ S3 Standard + Object Lock      │ 90 ngày - 3yr  │
+│            │ Parquet format (compressed)    │ Athena query   │
+│            │ GOVERNANCE mode                │ Compliance     │
+├──────────────────────────────────────────────────────────────┤
+│ Cold tier  │ S3 Glacier + Object Lock       │ 3yr - 10yr     │
+│            │ COMPLIANCE mode (truly WORM)   │ 3-5h retrieval │
+│            │ Cost: ~$0.004/GB/month         │ Legal/audit    │
+└──────────────────────────────────────────────────────────────┘
+
+Tiết kiệm cost: S3 Glacier ~ 1/6 cost S3 Standard.
+Long-term audit 10 năm dùng Glacier — không ai query real-time cần.</code></pre>
+</section>
+
+<section id="non-repudiation">
+  <h2>5. Non-repudiation stack <span class="k-tag core">CORE</span></h2>
+
+  <p>"Non-repudiation" = người làm action không thể phủ nhận đã làm. Cần 5 lớp chứng cứ:</p>
+
+  <table>
+    <thead><tr><th>Layer</th><th>Câu trả lời</th><th>Cơ chế</th></tr></thead>
+    <tbody>
+      <tr><td>1. Authentication</td><td>Ai login?</td><td>JWT, session, MFA — proof of identity</td></tr>
+      <tr><td>2. Authorization</td><td>Quyền gì?</td><td>RBAC/ABAC logs — proof of permission tại thời điểm</td></tr>
+      <tr><td>3. Action logging</td><td>Đã làm gì?</td><td>Audit event với before/after state</td></tr>
+      <tr><td>4. Digital signature</td><td>User đã approve?</td><td>Ký bằng private key — chỉ user có key đó</td></tr>
+      <tr><td>5. Timestamp Authority (TSA)</td><td>Chính xác lúc nào?</td><td>RFC 3161 TSA service ký timestamp — không dùng server clock</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Vì sao server clock không đủ:</strong> Server clock có thể bị admin chỉnh (NTP skew, manual set). TSA là third-party trusted service ký timestamp bằng cert chuẩn — không thể backdate. Đối với legal evidence quan trọng (chữ ký hợp đồng, transaction sealed), dùng TSA bắt buộc.
+  </div>
+</section>
+
+<section id="schema">
+  <h2>6. Audit Event Schema — WHO / WHAT / WHEN / WHERE <span class="k-tag core">CORE</span></h2>
+
+  <pre><code class="language-java">@Entity
+@Table(name = "audit_events",
+       indexes = {
+           @Index(name = "idx_user_time", columnList = "userId,eventTime"),
+           @Index(name = "idx_entity", columnList = "entityType,entityId")
+       })
+@Immutable          // Hibernate — ngăn update khi đã trong session
+public class AuditEvent {
+
+    @Id
+    private String eventId;             // UUID v4
+
+    // WHO
+    private String userId;
+    private String userEmail;
+    private String sessionId;
+    private String ipAddress;
+    private String userAgent;
+
+    // WHAT
+    private String action;              // VIEW_PATIENT, UPDATE_ORDER, EXPORT_DATA
+    private String entityType;          // Patient, Order, Document
+    private String entityId;
+
+    // STATE CHANGE — quan trọng cho audit "ai đã sửa gì"
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private JsonNode beforeState;       // State trước (null nếu là CREATE/READ)
+    @Column(columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private JsonNode afterState;        // State sau (null nếu là DELETE/READ)
+
+    // CONTEXT
+    private String requestId;           // Correlation ID
+    private String traceId;             // OpenTelemetry
+    private String serviceId;           // Service nào tạo event
+
+    // WHEN
+    private Instant eventTime;          // Business time (caller-supplied)
+    private Instant serverTime;         // Server-stamped — KHÔNG trust client
+
+    // INTEGRITY
+    private String previousHash;
+    private String currentHash;
+
+    // OUTCOME
+    private String result;              // SUCCESS / FAILURE / DENIED
+    private String errorCode;
+    private String errorMessage;
+
+    // protected default constructor for JPA
+    protected AuditEvent() {}
+    // ... builder, getters ONLY (no setters — immutable)
+}</code></pre>
+
+  <h3>Quy tắc thiết kế schema</h3>
+  <ol>
+    <li><strong>Before/After state quan trọng cho UPDATE.</strong> Chỉ log "user A updated patient_999" KHÔNG đủ — cần biết field nào, từ giá trị gì sang giá trị gì.</li>
+    <li><strong>2 timestamp: eventTime (business) + serverTime (truth).</strong> Client có thể gửi eventTime sai (delay, manipulation). serverTime là server-stamped, dùng làm thứ tự thật.</li>
+    <li><strong>Result phải có FAILURE và DENIED.</strong> Failed attempts cũng audit — brute force / unauthorized attempt phải trace được.</li>
+    <li><strong>NO setter public, immutable.</strong> JPA <code>@Immutable</code> + Lombok không gen setter. Constructor private, factory <code>AuditEvent.create()</code>.</li>
+  </ol>
+
+  <div class="misconception">
+    <h4>❌ Schema anti-pattern</h4>
+    <ul>
+      <li><strong>Lưu sensitive data plain trong before/after state.</strong> Password, CVV, SSN, medical record number — không log raw. Mask/redact: <code>"password": "[REDACTED]"</code>, hoặc tokenize.</li>
+      <li><strong>Không có serverTime, chỉ có eventTime.</strong> Client có thể fake. Audit thứ tự không đáng tin.</li>
+      <li><strong>Result thiếu DENIED.</strong> Chỉ log SUCCESS/FAILURE → mất permission-check failures, không detect được unauthorized access attempts.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="service">
+  <h2>7. Audit Service implementation <span class="k-tag core">CORE</span></h2>
+
+  <p>Service đầy đủ kết hợp hash chain + async replication ra Kafka cho immutable backup:</p>
+
+  <pre><code class="language-java">@Service
+@Slf4j
+public class AuditService {
+
+    private final AuditChainService chainService;     // hash chain logic ở Section 3
+    private final KafkaTemplate&lt;String, AuditEvent&gt; kafkaTemplate;
+    private final AlertService alertService;
+
+    @Value("${audit.kafka-topic}")
+    private String auditTopic;
+
+    /**
+     * Main entry point — gọi từ AOP aspect hoặc trực tiếp service.
+     * Strategy:
+     *   1. Synchronous: append vào DB với hash chain (đảm bảo integrity)
+     *   2. Async: publish ra Kafka cho immutable replication
+     *   3. Periodic: dump từ Kafka sang S3 Object Lock
+     */
+    public AuditEvent recordEvent(AuditEventRequest request) {
+        // Mask sensitive fields TRƯỚC khi lưu
+        AuditEventRequest masked = maskSensitive(request);
+
+        // Append vào DB với hash chain (synchronous)
+        AuditEvent event = chainService.append(masked);
+
+        // Replicate ra Kafka async — không block business operation
+        kafkaTemplate.send(auditTopic, event.getEventId(), event)
+            .whenComplete((res, ex) -&gt; {
+                if (ex != null) {
+                    // Kafka replication fail không break DB write,
+                    // nhưng phải alert security team
+                    log.error("Audit Kafka replication failed: eventId={}",
+                              event.getEventId(), ex);
+                    alertService.sendCritical(
+                        "Audit replication failure",
+                        "Event " + event.getEventId() + " not in Kafka");
+                }
+            });
+
+        return event;
+    }
+
+    private AuditEventRequest maskSensitive(AuditEventRequest req) {
+        // Redact known sensitive fields
+        JsonNode masked = redactFields(req.getBeforeState(),
+            "password", "ssn", "cardNumber", "cvv", "privateKey");
+        return req.withBeforeState(masked);
+    }
+}</code></pre>
+
+  <h3>Verify integrity — scheduled job</h3>
+  <pre><code class="language-java">@Component
+public class AuditIntegrityScheduler {
+
+    private final AuditChainService chainService;
+    private final AlertService alertService;
+    private final AuditIntegrityReportRepository reportRepo;
+
+    /**
+     * Chạy mỗi đêm — verify audit chain của ngày hôm trước.
+     * Phát hiện tampering trong vòng 24h.
+     */
+    @Scheduled(cron = "0 0 3 * * *")  // 3 AM daily
+    public void verifyYesterday() {
+        Instant yesterday = LocalDate.now().minusDays(1)
+            .atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant today = LocalDate.now()
+            .atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        AuditIntegrityReport report = chainService.verifyChain(yesterday, today);
+        reportRepo.save(report);
+
+        if (!report.isIntact()) {
+            // CRITICAL alert — audit tampering detected
+            alertService.sendCritical(
+                "AUDIT TAMPERING DETECTED",
+                "Period: " + yesterday + " to " + today +
+                "\nViolations:\n" + String.join("\n", report.getViolations())
+            );
+        }
+    }
+}</code></pre>
+</section>
+
+<section id="aop">
+  <h2>8. AOP tự động capture <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Vì sao AOP thay vì gọi <code>auditService.record()</code> ở mỗi service method? <strong>Vì developer quên gọi = security gap.</strong> AOP cross-cutting concern không pollute business code.</p>
+
+  <pre><code class="language-java">// Annotation đánh dấu method cần audit
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Auditable {
+    String action();
+    String entityType();
+    String entityIdParam() default "";  // tên param chứa entityId
+    boolean captureBeforeState() default false;
+}
+
+@Aspect
+@Component
+@Slf4j
+public class AuditAspect {
+
+    private final AuditService auditService;
+    private final HttpServletRequest httpRequest;
+    private final BeforeStateCaptor stateCaptor;
+    private final ObjectMapper objectMapper;
+
+    @Around("@annotation(auditable)")
+    public Object around(ProceedingJoinPoint pjp, Auditable auditable) throws Throwable {
+        String entityId = extractEntityId(pjp, auditable.entityIdParam());
+
+        // Capture state TRƯỚC khi method chạy (cho UPDATE/DELETE)
+        JsonNode beforeState = null;
+        if (auditable.captureBeforeState()) {
+            beforeState = stateCaptor.snapshot(auditable.entityType(), entityId);
+        }
+
+        Throwable error = null;
+        Object result = null;
+        try {
+            result = pjp.proceed();
+            return result;
+        } catch (AccessDeniedException ex) {
+            error = ex;
+            throw ex;
+        } catch (Throwable ex) {
+            error = ex;
+            throw ex;
+        } finally {
+            // Luôn ghi audit — kể cả khi method fail
+            // Lý do: failed attempts cần audit (brute force, unauthorized)
+            try {
+                String userId = currentUserId();
+                AuditEventRequest req = AuditEventRequest.builder()
+                    .userId(userId)
+                    .action(auditable.action())
+                    .entityType(auditable.entityType())
+                    .entityId(entityId)
+                    .beforeState(beforeState)
+                    .afterState(result != null ? objectMapper.valueToTree(result) : null)
+                    .ipAddress(httpRequest.getRemoteAddr())
+                    .userAgent(httpRequest.getHeader("User-Agent"))
+                    .requestId(MDC.get("requestId"))
+                    .eventTime(Instant.now())
+                    .result(error == null ? "SUCCESS"
+                          : error instanceof AccessDeniedException ? "DENIED" : "FAILURE")
+                    .errorMessage(error != null ? error.getMessage() : null)
+                    .build();
+
+                auditService.recordEvent(req);
+            } catch (Exception auditEx) {
+                // Audit fail là CRITICAL — nhưng phải quyết định fail-open hay fail-closed
+                // Xem Section "Fail-open vs fail-closed"
+                log.error("AUDIT FAILURE - eventId would have been for action={}",
+                          auditable.action(), auditEx);
+                // CHỌN fail-closed cho action quan trọng:
+                if (isCriticalAction(auditable.action()) &amp;&amp; error == null) {
+                    throw new AuditFailureException(
+                        "Audit failed for critical operation — rolling back");
+                }
+            }
+        }
+    }
+}</code></pre>
+
+  <h3>Usage</h3>
+  <pre><code class="language-java">@Service
+public class PatientService {
+
+    @Auditable(action = "VIEW_PATIENT", entityType = "Patient",
+               entityIdParam = "patientId")
+    public Patient getPatient(String patientId) {
+        return patientRepo.findById(patientId).orElseThrow();
+    }
+
+    @Auditable(action = "UPDATE_PATIENT", entityType = "Patient",
+               entityIdParam = "patientId", captureBeforeState = true)
+    public Patient updatePatient(String patientId, PatientUpdate update) {
+        Patient p = patientRepo.findById(patientId).orElseThrow();
+        p.applyUpdate(update);
+        return patientRepo.save(p);
+    }
+}</code></pre>
+
+  <div class="callout success">
+    <strong>Lợi ích AOP approach:</strong> ① Business code clean — không có audit call lẫn vào. ② Không thể quên — annotation = audit guaranteed. ③ Consistent format — mọi audit event có cùng schema, tự động ip/userAgent/requestId.
+  </div>
+</section>
+
+<section id="tiered">
+  <h2>9. Tiered Storage Strategy <span class="k-tag supp">SUPP</span></h2>
+
+  <h3>Yaml config thực tế</h3>
+  <pre><code class="language-yaml"># Tiered storage — balance cost với access pattern
+
+hot:
+  description: "0-90 days, real-time operations"
+  storage: PostgreSQL append-only
+  features: Hash chain, fast indexed query
+  cost: high
+  access: "App services, dashboard, alerts"
+
+warm:
+  description: "90 days - 3 years, compliance queries"
+  storage: AWS S3 Standard + Object Lock GOVERNANCE
+  format: Parquet (compressed, columnar)
+  features: Athena SQL query, partition by date
+  cost: medium
+  access: "Compliance team, internal audits"
+
+cold:
+  description: "3-10+ years, regulatory retention"
+  storage: AWS S3 Glacier Deep Archive + Object Lock COMPLIANCE
+  format: Encrypted Parquet
+  features: Truly immutable, retrieval 3-5h
+  cost: low (~$0.0036/GB/month)
+  access: "Legal, regulators, post-incident forensic"</code></pre>
+
+  <h3>Retention requirements — đọc spec gốc</h3>
+  <table>
+    <thead><tr><th>Regulation</th><th>Domain</th><th>Retention</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>GDPR Article 30</td><td>EU personal data</td><td>"As long as necessary" — phải có chính sách</td><td>EUR-Lex Regulation 2016/679</td></tr>
+      <tr><td>HIPAA §164.530(j)</td><td>US healthcare</td><td>6 năm minimum</td><td>HHS.gov HIPAA Privacy Rule</td></tr>
+      <tr><td>SOX §802</td><td>US financial reporting</td><td>7 năm</td><td>SOX Act 2002</td></tr>
+      <tr><td>PCI-DSS 10.7</td><td>Payment card data</td><td>1 năm online + archive thêm</td><td>PCI Security Standards Council</td></tr>
+      <tr><td>SEC 17a-4</td><td>US broker-dealer</td><td>3-6 năm WORM</td><td>SEC.gov regulation</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Đọc spec gốc, không tin lại:</strong> Bảng này lược kê. Mỗi regulation có exception, special case, sub-rule. KHÔNG quote bảng này cho compliance officer — luôn cite spec gốc. File này chỉ giúp bạn biết tồn tại để search.
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ 5 anti-patterns kinh điển <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ #1: Audit log trong cùng DB với business data</h4>
+    <p><strong>Symptom:</strong> DBA có quyền DELETE cả audit_log và business_data → bypass dễ. Backup restore → wipe audit. Single point of failure.</p>
+    <p><strong>Fix:</strong> Separate audit DB (khác schema ít nhất, khác instance lý tưởng). Revoke UPDATE/DELETE từ app user. Replicate ra Kafka + WORM storage.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #2: Không capture before/after state</h4>
+    <pre><code class="language-java">// ❌ Chỉ log action — không evidence
+"User A updated patient_999 at 14:00"
+// Sửa cái gì? Không biết.
+
+// ✅ Log đủ state
+"User A updated patient_999 at 14:00
+ BEFORE: {diagnosis: 'flu',     prescription: 'rest'}
+ AFTER:  {diagnosis: 'covid-19', prescription: 'paxlovid'}"</code></pre>
+    <p><strong>Symptom:</strong> Khi investigate, không thể reconstruct timeline. Forensic team phải đoán mò.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #3: Audit blocking trong hot path</h4>
+    <pre><code class="language-java">// ❌ Audit sync trong transaction — chậm, risk timeout
+@Transactional
+public void doBusinessOp() {
+    update();
+    auditService.recordEvent(...);  // DB write blocking
+    externalApi.call();              // Slow audit → toàn bộ slow
+}
+
+// ✅ Outbox pattern — audit event trong cùng transaction,
+// nhưng publish async sau commit
+@Transactional
+public void doBusinessOp() {
+    update();
+    outboxRepo.save(AuditOutboxEntry.from(event)); // same tx, fast
+}
+// Background processor đọc outbox → publish to audit pipeline</code></pre>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #4: Không alert khi audit system fail</h4>
+    <p><strong>Symptom:</strong> Audit Kafka down → silent fail. Attacker có window để cover tracks. Compliance officer phát hiện sau 3 tháng.</p>
+    <p><strong>Fix:</strong> Monitor audit pipeline health như business critical: write lag, success rate, integrity verify job. Alert nếu lag &gt; threshold. Cho critical ops (payment, medical record update) cân nhắc fail-closed.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ #5: Sensitive data không encrypt/mask</h4>
+    <pre><code class="language-java">// ❌ Audit log = data breach waiting to happen
+{
+  "action": "RESET_PASSWORD",
+  "beforeState": {"hash": "$2a$10$RealBcryptHash..."},
+  "afterState":  {"newPassword": "User'sActualPassword123"}
+}
+// Audit log leak = mọi password leak
+
+// ✅ Mask/redact sensitive
+{
+  "action": "RESET_PASSWORD",
+  "beforeState": {"hash": "[REDACTED]"},
+  "afterState":  {"newPassword": "[REDACTED]"}
+}</code></pre>
+    <p><strong>Quy tắc:</strong> Whitelist field log, blacklist mọi field nghi vấn. Sensitive fields known: password, ssn, cardNumber, cvv, privateKey, accessToken, refreshToken.</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Anti-pattern nguy hiểm nhất?</h4>
+    <p><strong>#5 (Sensitive data unmasked).</strong> Vì: audit log thường lưu lâu (5-10 năm), backup nhiều nơi, access nhiều team → 1 leak = catastrophic. Không như password hash (chỉ valid khi DB live), audit dump leak vĩnh viễn — mọi password trong đó cracked sớm muộn.</p>
+  </div>
+</section>
+
+<section id="fail-mode">
+  <h2>⚖️ Fail-open vs Fail-closed — Trade-off senior <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Audit system down. Có nên block business operation không?</p>
+
+  <table>
+    <thead><tr><th>Mode</th><th>Behavior khi audit fail</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Fail-open</strong></td>
+        <td>Cho phép operation tiếp tục, log error</td>
+        <td>+ Availability cao<br>− Có window không audit, attacker có thể abuse</td>
+      </tr>
+      <tr>
+        <td><strong>Fail-closed</strong></td>
+        <td>Reject operation, throw exception</td>
+        <td>+ Security strict — không action nào không audit<br>− Availability giảm — audit fail = service fail</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Quy tắc thực tế</h3>
+  <ul>
+    <li><strong>Critical financial/medical ops:</strong> fail-closed. Payment, prescription, contract sign → audit phải work hoặc không cho làm.</li>
+    <li><strong>Read operations:</strong> fail-open OK thường. View patient list — audit fail không nên block.</li>
+    <li><strong>Bulk operations:</strong> fail-closed. Export 10K records, send 100K email — phải audit.</li>
+    <li><strong>Default mặc định:</strong> fail-open cho dev/staging, fail-closed cho production sensitive ops.</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Hybrid approach:</strong> Có audit pipeline 2 lớp — local DB (sync, fail-closed cho critical) + Kafka replication (async, fail-open OK). Local DB write phải succeed; Kafka publish có thể retry. Cân bằng giữa availability và auditability.
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior)</h3>
+    <p><strong>Q1: Audit log là gì? Khác application log như thế nào?</strong></p>
+    <p><em>Trả lời:</em> "Audit log là bản ghi compliance — ai làm gì, với data nào, lúc nào, từ đâu. Khác application log ở 3 tính chất: immutable (không sửa/xoá được), tamper-evident (sửa thì detect được), non-repudiable (không phủ nhận được). Application log để debug, có thể delete/rotate. Audit log để compliance/legal, không bao giờ xoá trong retention period."</p>
+
+    <p><strong>Q2: Cho ví dụ regulation yêu cầu audit log.</strong></p>
+    <p><em>Trả lời:</em> "GDPR Article 30 — EU personal data processing. HIPAA — US healthcare data, 6 năm retention. SOX — US financial reporting, 7 năm. PCI-DSS 10.7 — payment card processing, 1 năm online + archive. Mỗi cái có retention requirement riêng, design storage tiered theo đó."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (Mid vs Senior)</h3>
+    <p><strong>Q3: Implement tamper-evident audit log. DBA có bypass được không?</strong></p>
+    <blockquote>
+      "Implement hash chain: mỗi event chứa HMAC-SHA256 của data + hash của event trước, dùng secret key. Verify job chạy daily phát hiện 2 loại tampering: ① event bị sửa (recompute HMAC ≠ stored hash), ② event bị xoá (prev_hash mismatch giữa các event liền kề).<br><br>
+      Vì sao HMAC thay SHA256: SHA256 ai cũng compute, DBA sửa data → recompute → chain valid. HMAC cần secret key — DBA không có key thì không re-sign được.<br><br>
+      DBA bypass: nếu DBA có cả DB access và HSM secret key, vẫn bypass được — re-sign toàn bộ chain. Defence: tách quyền — DBA không có HSM access. Plus replicate ra WORM storage external (S3 Object Lock COMPLIANCE mode) bên ngoài DBA control. Hash chain detect ở DB-level; WORM ngăn ở storage-level."
+    </blockquote>
+
+    <p><strong>Q4: Compliance audit 10 năm retention. Cost optimize thế nào?</strong></p>
+    <blockquote>
+      "Tiered storage: ① Hot tier (PostgreSQL append-only, hash chain) cho 0-90 ngày — fast query cho operations. ② Warm tier (S3 Standard + Object Lock GOVERNANCE, Parquet) cho 90 ngày - 3 năm — Athena SQL query cho compliance team. ③ Cold tier (S3 Glacier Deep Archive + Object Lock COMPLIANCE) cho 3-10 năm — truly immutable.<br><br>
+      Cost: S3 Glacier Deep Archive ~$0.001/GB/month vs S3 Standard ~$0.023/GB/month = tiết kiệm ~95%. Trade-off: retrieval Glacier 3-5 giờ, nhưng 10-year data không cần real-time.<br><br>
+      Important: Glacier COMPLIANCE mode irrevocable — đặt retention 10 năm = ràng buộc 10 năm thật. Start với GOVERNANCE mode, switch COMPLIANCE chỉ khi process stable."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior)</h3>
+    <p><strong>Q5: Design audit system cho healthcare SaaS, 50M events/ngày, HIPAA compliance, audit query SLA 2 giờ.</strong></p>
+    <pre><code class="language-text">Phút 1 — Scope &amp; estimation:
+  50M events/day = 580 events/sec average, peak ~2000/sec.
+  Size: ~1 KB/event × 50M = 50 GB/day = ~18 TB/year.
+  10-year retention = ~180 TB cold storage.
+
+Phút 2 — Write path:
+  Application → @Auditable AOP → AuditService
+    → 1) Local DB (Postgres append-only, hash chained) — sync
+    → 2) Kafka audit topic — async replicate
+  Kafka consumer → S3 Object Lock (GOVERNANCE mode for warm tier)
+  Lifecycle policy → tự động chuyển S3 → Glacier Deep Archive sau 3 năm
+
+Phút 3 — Read path (2h SLA):
+  Compliance query → AWS Athena trên S3 Parquet
+  Partition: year/month/day/userId-bucket → query 1 user trong 1 ngày
+    chỉ scan 1 partition (~MB), không phải toàn 50 GB
+  Pre-built query templates: "all access by user X", "all access to patient Y"
+
+Phút 4 — Integrity &amp; non-repudiation:
+  Scheduled verify job (daily 3 AM) — verify chain của ngày trước
+  HMAC secret trong AWS KMS, key rotation hàng năm
+  Cho legal-critical events: thêm RFC 3161 TSA timestamp
+  Alert nếu verify fail — security incident response
+
+Phút 5 — Trade-offs:
+  + Tiered storage: cost optimize cho long retention
+  + Async Kafka: không block business, có audit replication
+  + Athena query: SQL trên S3, không cần data warehouse
+  - Async replication có lag — local DB là source of truth ngắn hạn
+  - Hash chain bottleneck nếu single-threaded write — dùng partitioned chain
+    (chain per tenant) cho horizontal scale
+  - Glacier COMPLIANCE mode irrevocable — cẩn thận retention setup</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 2 labs BẮT BUỘC</h2>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Hash chain tamper detector (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự mắt thấy chain break khi tamper data.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo Spring Boot project. AuditEvent entity với prevHash + currentHash.</li>
+      <li>Implement HMAC-SHA256 với secret key trong app.yml (dev only — production phải HSM/KMS).</li>
+      <li>Implement AuditChainService.append() với chain logic. Insert 10 sự kiện sequential.</li>
+      <li>Verify job: AuditIntegrityReport scanning toàn bộ chain. Đầu tiên chạy — phải pass (intact = true).</li>
+      <li>SQL: <code>UPDATE audit_events SET action = 'XXX' WHERE eventId = '...'</code> — tamper 1 event.</li>
+      <li>Re-run verify. Phải thấy violation với eventId đó.</li>
+      <li>Bonus: SQL <code>DELETE FROM audit_events WHERE id = N</code> — xoá event giữa chain. Re-run verify. Phải thấy chain break ở event sau (prev_hash mismatch).</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Reproduce 2 scenario tampering (modify + delete) + verify job phát hiện. Commit lên GitHub.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — AOP audit + Outbox replication (4 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Audit không pollute business code + replicate async.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo <code>@Auditable</code> annotation + <code>AuditAspect</code>.</li>
+      <li>Tạo PatientService với 3 method: viewPatient, updatePatient, deletePatient — annotate @Auditable.</li>
+      <li>Setup outbox table <code>audit_outbox</code>. AuditAspect lưu vào outbox (cùng transaction với business).</li>
+      <li>Background job (Scheduled) poll outbox, publish ra Kafka topic <code>audit-events</code>. Mark outbox row published.</li>
+      <li>Kafka consumer (separate microservice) — đọc audit-events, ghi vào S3 (dùng LocalStack cho local test).</li>
+      <li>Test scenarios:
+        <ul>
+          <li>Normal: viewPatient → outbox + Kafka + S3 (eventually consistent).</li>
+          <li>Failure: updatePatient throw exception → audit vẫn ghi (FAILURE result).</li>
+          <li>Crash: kill Kafka mid-replication → restart → outbox poll lại → eventual delivery.</li>
+        </ul>
+      </li>
+    </ol>
+    <p><strong>Acceptance:</strong> 3 scenario pass + business code không có audit call nào (chỉ annotation). README mô tả flow.</p>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test — Verify hiểu thật</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho dev chưa biết — không nhìn file</h3>
+    <p>Đóng tab. Trả lời 5 câu, &lt; 30 giây mỗi câu:</p>
+    <ol>
+      <li><strong>"Phân biệt audit log với application log?"</strong> — Application log để debug, có thể delete/rotate. Audit log để compliance/legal, có 3 tính chất bắt buộc: immutable, tamper-evident, non-repudiable. Không bao giờ xoá trong retention period.</li>
+      <li><strong>"Vì sao HMAC thay SHA256 trong hash chain?"</strong> — SHA256 ai cũng compute. DBA sửa data → recompute SHA256 → chain valid → không detect được. HMAC cần secret key — DBA không có key thì không re-sign được. Secret key lưu HSM/KMS.</li>
+      <li><strong>"S3 Object Lock GOVERNANCE vs COMPLIANCE khác gì?"</strong> — GOVERNANCE: admin với bypass permission có thể delete. COMPLIANCE: KHÔNG AI delete được trong retention period, kể cả AWS root account. COMPLIANCE dùng cho regulatory data thật, GOVERNANCE cho business immutable mềm.</li>
+      <li><strong>"Vì sao AOP capture audit thay vì gọi auditService trong business code?"</strong> — Developer quên gọi = security gap. AOP là cross-cutting concern, đảm bảo mọi method có @Auditable đều được audit. Plus: business code clean, không lẫn audit logic.</li>
+      <li><strong>"Fail-open vs fail-closed khi audit fail?"</strong> — Fail-open: cho phép operation, log error → availability cao nhưng có window không audit. Fail-closed: reject operation → security strict nhưng giảm availability. Critical ops (payment, medical) → fail-closed. Read ops → fail-open OK.</li>
+    </ol>
+    <p>Bí 1 câu → đó là chỗ hiểu giả. Quay lại section tương ứng.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources (KHÔNG tin file này 100%)</h3>
+    <ul>
+      <li><strong>NIST SP 800-92 — Guide to Computer Security Log Management</strong>: <a href="https://csrc.nist.gov/publications/detail/sp/800-92/final">csrc.nist.gov SP 800-92</a>. Foundation document, đọc Chapter 4 (Log Management Infrastructure).</li>
+      <li><strong>AWS S3 Object Lock docs</strong>: <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html">docs.aws.amazon.com/AmazonS3/object-lock</a>. Verify GOVERNANCE vs COMPLIANCE mode bằng spec chính thức.</li>
+      <li><strong>RFC 3161 — Time-Stamp Protocol</strong>: <a href="https://datatracker.ietf.org/doc/html/rfc3161">datatracker.ietf.org rfc3161</a>. Spec gốc cho trusted timestamp.</li>
+      <li><strong>HIPAA Security Rule §164.312(b) — Audit Controls</strong>: HHS.gov. Requirements cụ thể cho healthcare.</li>
+      <li><strong>OWASP Logging Cheat Sheet</strong>: <a href="https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html">cheatsheetseries.owasp.org Logging</a>. Practical security guidance.</li>
+      <li><strong>Designing Data-Intensive Applications</strong> (Martin Kleppmann), Chapter 5 (Replication) + Chapter 9 (Consistency). Hiểu why immutable log + replication.</li>
+      <li><strong>Site Reliability Engineering</strong> (Google SRE book), Chapter 26 — Data Integrity. Practical strategies từ Google.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 1 tuần master Audit Logging</h3>
+    <pre><code class="language-text">Ngày 1: Section 1-2 (Bài toán + 3 tính chất). Pause &amp; Predict viết tay.
+Ngày 2: Section 3 (Hash chain) — Lab 1 part 1 (chain + insert).
+Ngày 3: Lab 1 part 2 (tamper detector + verify job).
+Ngày 4: Section 4-5 (WORM + Non-repudiation). Đọc AWS S3 Object Lock docs.
+Ngày 5: Section 6-7 (Schema + Service). Gõ tay code.
+Ngày 6: Section 8 + Lab 2 (AOP + Outbox replication).
+Ngày 7: Section 9 (Tiered storage) + Section 10 (Fail-open/closed) + Feynman test.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="33-idempotency.html">#33 Idempotency</a> — pair với audit cho exactly-once + compliance.</li>
+      <li><a href="30-cryptography.html">#30 Cryptography</a> — HMAC, HSM, digital signature deep dive.</li>
+      <li><a href="32-digital-signature-econtract.html">#32 Digital Signature</a> — Non-repudiation với PKI + TSA.</li>
+      <li><a href="20-apache-kafka.html">#20 Kafka</a> — immutable log architecture, replay capability.</li>
+      <li><a href="26-observability.html">#26 Observability</a> — phân biệt audit log vs ops log clearly.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng:</strong> 2 lab xong + Feynman 5/5 + Hiểu được khi nào fail-closed + Đã implement @Auditable trong project thật.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

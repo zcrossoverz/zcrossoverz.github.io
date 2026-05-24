@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#49 — Exception &amp; Logging | Java Backend Interview Prep</title>
+  <title>#49 — Exception & Logging (Junior Survival Kit) | Java Backend Interview Prep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,564 +13,1276 @@
 <body>
 
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#49 Exception &amp; Logging</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm N · Junior Foundation</span>
+    <span class="sep">›</span>
+    <span class="current">#49 Exception &amp; Logging</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
 </div>
 
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
-  <nav class="toc">
-    <a href="#how-to-read">Cách đọc file này</a>
-    <a href="#roadmap">🗺️ Roadmap</a>
-    <a href="#intro">Tổng quan</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. Exception boundary</a>
-    <a href="#concept-1">3. Custom exception</a>
-    <a href="#concept-2">4. Structured logging</a>
-    <a href="#concept-3">5. PII and secret safety</a>
-    <a href="#antipatterns">Anti-patterns</a>
-    <a href="#edge-cases">Edge Cases</a>
-    <a href="#mastery-plan">Mastery Plan</a>
-    <a href="#practice-bank">Practice Bank</a>
-    <a href="#build-projects">Build Projects</a>
-    <a href="#drill-bank">Interview Drill Bank</a>
-    <a href="#self-test">Self-Test</a>
-    <a href="#interview">Interview Framework</a>
-    <a href="#feynman-end">Feynman Closing</a>
-  </nav>
-</aside>
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 10 modules</a>
+      <div class="toc-section">Phần A — Exception</div>
+      <a href="#real-problem">1. 3 câu chuyện chết production</a>
+      <a href="#hierarchy">2. Exception hierarchy</a>
+      <a href="#syntax">3. try / try-with-resources</a>
+      <a href="#custom-exception">4. Custom exception</a>
+      <a href="#exception-antipatterns">5. 7 anti-patterns exception</a>
+      <div class="toc-section">Phần B — Logging</div>
+      <a href="#log-levels">6. 5 log levels</a>
+      <a href="#slf4j-logback">7. SLF4J + Logback setup</a>
+      <a href="#mdc">8. MDC — trace context</a>
+      <a href="#log-antipatterns">9. 6 anti-patterns logging</a>
+      <a href="#structured-logging">10. Structured logging (JSON)</a>
+      <div class="toc-section">Mastery</div>
+      <a href="#three-level">🎯 3 cấp độ Mastery</a>
+      <a href="#symptom-debug">🚨 Symptom → Debug recipes</a>
+      <a href="#exercises">🔧 3 Exercises</a>
+      <a href="#interview">🎤 Interview framework</a>
+      <a href="#feynman">🧠 Feynman test</a>
+      <a href="#checklist">✅ Checklist thành thạo</a>
+    </nav>
+  </aside>
 
-<main>
-<div class="content">
+  <main>
+    <div class="content">
+
 <section class="hero">
-  <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#49 — Exception &amp; Logging</h1>
-  <p class="lead">Exception và logging là survival kit của backend production: lỗi phải được phân loại, log phải đủ context, và không được làm lộ dữ liệu nhạy cảm.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#26 Observability, #29 Security</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">Food delivery checkout</div></div>
+  <span class="meta-tag">#49 · Junior Foundation</span>
+  <h1>Exception &amp; Logging — Junior Survival Kit</h1>
+  <p class="lead">80% thời gian debug production đến từ exception handle sai + log thiếu context. File này lấp đúng gap đó cho junior 0-2 năm.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + setup logback thật</span>
+    <span class="phase-tag">Domain: E-commerce / SaaS</span>
   </div>
 </section>
 
-
-<div class="study-banner" id="how-to-read">
-  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
-  <div class="sb-rules">
-    <p>Junior rất dễ đọc trôi chảy rồi tưởng đã hiểu. Dùng file này theo luật học chủ động:</p>
-    <ol>
-      <li>Dừng ở mỗi block Pause &amp; Predict và tự trả lời trước khi xem phần giải.</li>
-      <li>Với mỗi Bad vs Good, tự nói vì sao code sai gây bug thật, không chỉ nói "code xấu".</li>
-      <li>Chạy lại ít nhất 2 ví dụ trên máy cá nhân, đổi input để phá happy path.</li>
-      <li>Sau mỗi section lớn, dùng Feynman: giải thích lại cho một bạn junior trong 90 giây.</li>
-      <li>Làm Build Exercise. Không làm bài tập thì kiến thức vẫn ở mức đọc hiểu, chưa thành kỹ năng.</li>
-    </ol>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — đặc trưng Exception &amp; Logging</h2>
+  <p>Đây là 2 chủ đề junior dễ "đọc xong tưởng hiểu" nhất, vì syntax đơn giản và đã quen thuộc. Bạn rơi vào hiểu giả nếu:</p>
+  <ul>
+    <li>Biết viết <code>try-catch</code>, nhưng KHÔNG giải thích được khác biệt <code>catch(Exception e)</code> vs <code>catch(SQLException e)</code> ngoài "specific hơn"</li>
+    <li>Biết dùng SLF4J, nhưng KHÔNG biết tại sao <code>log.info("user=" + u)</code> tệ hơn <code>log.info("user={}", u)</code></li>
+    <li>Biết khái niệm MDC, nhưng chưa từng debug 1 request bằng traceId</li>
+    <li>Biết "đừng log password", nhưng không biết list cụ thể PII nào không được log</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp độ — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> biết tên try-catch, log levels. Code chạy nhưng debug khó.<br>
+    <strong>L2 (Explain):</strong> giải thích được why của từng anti-pattern, dùng MDC + parameterized log.<br>
+    <strong>L3 (Apply):</strong> production debug 3h sáng dùng traceId search Kibana ra root cause &lt;15 phút.</p>
   </div>
-</div>
+</section>
 
+<section id="how-to-read">
+  <h2>📖 5 quy tắc đọc — KHÔNG đọc một mạch</h2>
+  <ol>
+    <li>Mỗi <strong>Pause &amp; Predict</strong> phải dừng lại, viết câu trả lời ra giấy/Notes. KHÔNG đọc đáp án ngay.</li>
+    <li>Mỗi anti-pattern đọc xong, tự nói thành lời: "code này sai vì... nếu chạy production sẽ gây..."</li>
+    <li>Code phải gõ tay (không copy-paste), tự chạy 1 file Spring Boot demo.</li>
+    <li>Phần MDC bắt buộc làm Lab — setup filter, gửi 3 request đồng thời, verify traceId riêng.</li>
+    <li>Cuối file: Feynman test 5 câu. Bí 1 câu = quay lại section tương ứng.</li>
+  </ol>
+</section>
 
 <section id="roadmap">
-  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
-  <div class="roadmap">
-    <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Exception boundary — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> Custom exception — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> Structured logging — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> PII and secret safety — ADV: senior signal.</div></div>
-  </div>
-</section>
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: section 1, 2, 5, 9 (exception bài toán + hierarchy + 7 anti-patterns + 6 logging anti-patterns).</p>
+  <p>Nếu có <strong>1 ngày</strong>: thêm 3, 4, 8 (try-with-resources + custom exception + MDC).</p>
+  <p>Nếu có <strong>1 tuần</strong>: full + 3 exercises.</p>
 
-<section id="intro">
-  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Exception &amp; Logging là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
-  <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
-  <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Exception &amp; Logging</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Exception & Logging xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
-  </div>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>3 câu chuyện chết production</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>Exception hierarchy + Checked/Unchecked</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>3</td><td>try / try-with-resources / multi-catch</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>4</td><td>Custom Exception cho domain</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>5</td><td>7 anti-patterns exception</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>6</td><td>5 log levels (Error/Warn/Info/Debug/Trace)</td><td><span class="phase-tag">CORE ★</span></td><td>10min</td></tr>
+      <tr><td>7</td><td>SLF4J + Logback config</td><td>SUPPLEMENTARY</td><td>20min</td></tr>
+      <tr><td>8</td><td>MDC — trace context</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>9</td><td>6 anti-patterns logging</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>10</td><td>Structured logging JSON</td><td>ADVANCED</td><td>15min</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Exception &amp; Logging sai trong project Food delivery checkout <span class="k-tag core">CORE</span></h2>
-  <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
-  <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">try { createOrder(request); } catch (Exception e) { log.error(&quot;error&quot;); return &quot;OK&quot;; }</code></pre>
-  <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
-  <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
-    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
-    <ol><li>Failure mode đầu tiên bạn nghĩ tới là gì?</li><li>Nếu data/input/traffic tăng 100 lần thì đoạn này còn ổn không?</li><li>Bạn sẽ test hoặc debug bằng cách nào để chứng minh?</li></ol>
-    <div class="pause-hint">Nếu trả lời còn mơ hồ, đọc kỹ phần concept và tự chạy lại ví dụ.</div>
-  </div>
-</section>
+  <h2>1. Bài toán thực tế — 3 câu chuyện chết production <span class="phase-tag">CORE ★</span></h2>
 
-
-<section id="concept-0">
-  <h2>2. Exception boundary <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Không nuốt lỗi và không leak exception sai layer.
-  </div>
-  <p>Exception nên được xử lý ở boundary có đủ context để quyết định recover, convert response hoặc fail.</p>
-  <p>Bắt quá sớm làm mất stack trace; ném quá thô làm caller không biết xử lý.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Production debug phụ thuộc vào stack trace và error semantics.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Swallow exception</div>
-    <pre><code class="language-java">try { checkout(); } catch (Exception e) { }</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Log context + rethrow</div>
-    <pre><code class="language-java">try { checkout(); }
-catch (InventoryException e) {
-  log.warn(&quot;Checkout failed: orderId={}&quot;, orderId, e);
-  throw e;
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #1 — "Order biến mất, log chỉ có 1 dòng 'error'"</div>
+    <p><strong>Bối cảnh:</strong> Order service của sàn TMĐT. 3 giờ sáng PagerDuty kêu: "order create error rate 12%". On-call ssh vào server, đọc log:</p>
+    <pre><code class="language-text">ERROR
+ERROR
+ERROR
+something went wrong
+process failed</code></pre>
+    <p>Không có stack trace. Không user ID. Không order ID. Code:</p>
+    <pre><code class="language-java">try {
+    orderService.create(req);
+} catch (Exception e) {
+    log.error("error");  // ← chỉ có thế này
+    return ResponseEntity.status(500).build();
 }</code></pre>
-  </div>
-</div>
-
-  
-  <div class="misconception">
-    <div class="mc-head">🧠 Misconception Check — Exception boundary</div>
-    <div class="mc-wrong">"Catch exception để app không crash là tốt."</div>
-    <div class="mc-right">Nếu caller tưởng thành công trong khi operation fail, đó là data integrity bug.</div>
+    <p><strong>Hậu quả:</strong> Mất 6 tiếng reproduce trên staging. Cuối cùng phát hiện là <code>NullPointerException</code> do thiếu validate <code>address == null</code> trong checkout API mới deploy. Mất 1.2 tỷ doanh thu trong 6h.</p>
+    <p><strong>Bài học:</strong> Log error mà không có context = không log gì. Phải có stack trace + business ID + user ID.</p>
   </div>
 
-</section>
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #2 — "Log file có 50K dòng password"</div>
+    <p><strong>Bối cảnh:</strong> Junior debug login flow, để tiện thì:</p>
+    <pre><code class="language-java">log.info("Login attempt: email={}, password={}", email, password);</code></pre>
+    <p>Code merge lên production. Log ELK index 7 ngày = 50K dòng password customer plaintext. Security team phát hiện trong audit định kỳ. Compliance team escalate:</p>
+    <ul>
+      <li>GDPR violation tiềm năng — fine €20M hoặc 4% revenue</li>
+      <li>Phải force reset password 50K customer</li>
+      <li>Phải khai báo với cơ quan bảo vệ dữ liệu trong 72h</li>
+      <li>Junior bị warning, manager bị PIP</li>
+    </ul>
+    <p><strong>Bài học:</strong> 1 dòng log sai = thiệt hại lớn hơn 1 năm lương junior. Luôn có "PII never-log list" trong tay.</p>
+  </div>
 
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #3 — "e.printStackTrace() không vào log file"</div>
+    <p><strong>Bối cảnh:</strong> Payment integration service. Junior viết:</p>
+    <pre><code class="language-java">try {
+    paymentGateway.charge(orderId, amount);
+} catch (Exception e) {
+    e.printStackTrace();  // ← chỗ này
+    throw new RuntimeException(e);
+}</code></pre>
+    <p>Production có bug rằng 0.5% request fail. On-call mở Kibana search "PaymentService" — không có ERROR log nào về charge. Tại sao? Vì <code>printStackTrace()</code> in ra <code>System.err</code>, mà container Docker đã redirect <code>stderr</code> ra <code>/dev/null</code>.</p>
+    <p><strong>Hậu quả:</strong> Mất 2 tuần tracking bug. Cuối cùng phải dùng tcpdump capture HTTP request giữa app và payment gateway để biết bug.</p>
+    <p><strong>Bài học:</strong> <code>printStackTrace()</code> KHÔNG bao giờ dùng trong production. Luôn dùng SLF4J logger.</p>
+  </div>
 
-<section id="concept-1">
-  <h2>3. Custom exception <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Tên lỗi phải nói đúng nghiệp vụ.
-  </div>
-  <p>Custom exception giúp phân loại lỗi domain, validation, downstream và system.</p>
-  <p>Luôn giữ cause khi wrap exception, nếu không root cause biến mất.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>ControllerAdvice/API error response cần error code ổn định.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Throw RuntimeException chung</div>
-    <pre><code class="language-java">throw new RuntimeException(&quot;failed&quot;);</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Domain exception có code</div>
-    <pre><code class="language-java">throw new ProductNotAvailableException(productId, cause);</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-2">
-  <h2>4. Structured logging <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Log để query, không chỉ để đọc mắt.
-  </div>
-  <p>Log tốt có event name, ids, status, duration và traceId.</p>
-  <p>Message cần ổn định để search, context nên là field thay vì nối chuỗi lung tung.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Khi incident xảy ra, grep/query log là đường sống.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Log thiếu context</div>
-    <pre><code class="language-java">log.error(&quot;error&quot;);</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Log đủ context</div>
-    <pre><code class="language-java">log.error(&quot;checkout_failed orderId={} userId={} reason={}&quot;, orderId, userId, reason, ex);</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-3">
-  <h2>5. PII and secret safety <span class="k-tag advanced">ADVANCED</span></h2>
-  <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Log sai có thể thành security incident.
-  </div>
-  <p>Không log password, token, full address, phone/email raw nếu không cần.</p>
-  <p>Mask hoặc hash định danh khi cần correlation.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Junior thường log payload để debug và vô tình làm lộ dữ liệu.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Log raw request</div>
-    <pre><code class="language-java">log.info(&quot;request={}&quot;, request);</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Log masked fields</div>
-    <pre><code class="language-java">log.info(&quot;checkout_start orderId={} userHash={}&quot;, orderId, hash(userId));</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="antipatterns">
-  <h2>Anti-Patterns — Lỗi junior hay mắc <span class="k-tag core">CORE</span></h2>
-  <div class="table-wrap">
-    <table><thead><tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr></thead><tbody><tr><td>Chỉ học lệnh/API, không học mental model</td><td>High</td><td>Gặp case lạ là panic</td><td>Vẽ state/timeline trước khi gõ lệnh</td></tr>
-<tr><td>Không test edge case</td><td>High</td><td>Bug chỉ lộ ở production</td><td>Thêm test empty/null/large/concurrent</td></tr>
-<tr><td>Copy snippet không hiểu</td><td>Medium</td><td>Không debug được khi fail</td><td>Tự giải thích từng dòng</td></tr>
-<tr><td>Che lỗi bằng try/catch hoặc workaround</td><td>High</td><td>Root cause bị giấu</td><td>Fix mechanism, không chỉ symptom</td></tr>
-<tr><td>Không viết README/runbook</td><td>Medium</td><td>Người sau không vận hành được</td><td>Document workflow và rollback</td></tr></tbody></table>
-  </div>
-</section>
-
-<section id="edge-cases">
-  <h2>🎯 Edge Cases — Production Reality <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="edge-cases">
-    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
-    <p class="ec-intro">Happy path chưa đủ. Junior cần học cách hỏi: input lạ, data lớn, concurrency, security và vận hành thì sao?</p>
-    <ul class="ec-list"><li><strong>Race condition</strong>: Hai thao tác cùng chạy có thể ghi đè state; cần lock/atomic workflow khi phù hợp.</li>
-<li><strong>Scale limit</strong>: Dataset hoặc repo lớn làm thao tác vốn ổn ở local trở nên chậm.</li>
-<li><strong>Security</strong>: Không để lộ secret, token, PII trong log, command history hoặc commit.</li>
-<li><strong>Data integrity</strong>: Phải biết khi nào thao tác làm mất dữ liệu và cách rollback.</li>
-<li><strong>Time/timezone</strong>: Log, file timestamp, commit time và scheduler nên dùng UTC/ISO khi debug.</li>
-<li><strong>Concurrent access</strong>: Nhiều dev/process cùng chạm vào cùng resource cần quy ước rõ.</li>
-<li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
-  </div>
-  <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Exception &amp; Logging trong project thật</div>
-    <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
-    <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
-  </div>
-</section>
-
-
-<section id="mastery-plan">
-  <h2>Mastery Plan — 14 ngày biến kiến thức thành phản xạ <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
   <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Exception &amp; Logging.</div>
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc tiếp</div>
+    <div class="pause-q">Viết ra giấy:</div>
     <ol>
-      <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
-      <li>Lúc đó bạn thiếu mental model nào?</li>
-      <li>Nếu gặp lại hôm nay, bạn sẽ debug nhanh hơn bằng bước nào?</li>
+      <li>3 câu chuyện trên, mỗi cái có 1 anti-pattern. Tên đúng anti-pattern là gì?</li>
+      <li>Trong câu chuyện #2, nếu phải fix nhanh (hot-fix), bạn sẽ làm gì với 50K dòng password đã có trong ELK index?</li>
+      <li>Câu chuyện #3, nếu KHÔNG có log, dùng cách nào diagnose bug 0.5% trong payment service? Đề xuất 3 cách.</li>
     </ol>
-    <div class="pause-hint">Nếu không nhớ lỗi thật, hãy tự tạo bug trong Build Exercise.</div>
+    <div class="pause-hint">Đáp án ở Section 5 (anti-patterns) và Section 9 (logging anti-patterns). Đừng đọc đáp án ngay.</div>
   </div>
-  <div class="table-wrap">
-    <table><thead><tr><th>Ngày</th><th>Việc làm</th><th>Evidence phải có</th><th>Rủi ro nếu bỏ qua</th></tr></thead><tbody><tr><td>Day 1</td><td>Đọc Roadmap + Intro, ghi lại 5 câu hỏi chưa chắc</td><td>Có note 5 câu hỏi</td><td>Đọc trôi nhưng không biết mình không biết gì</td></tr>
-<tr><td>Day 2</td><td>Chạy bad code và quan sát lỗi</td><td>Có output lỗi hoặc test fail</td><td>Chỉ đọc code, không thấy failure thật</td></tr>
-<tr><td>Day 3</td><td>Refactor bad code sang good code</td><td>Có commit before/after</td><td>Sửa theo cảm giác, không giữ behavior</td></tr>
-<tr><td>Day 4</td><td>Viết edge case tests</td><td>Ít nhất 5 test edge cases</td><td>Chỉ test happy path</td></tr>
-<tr><td>Day 5</td><td>Giải thích Feynman 5 phút</td><td>Có bản ghi âm/note</td><td>Nói được định nghĩa nhưng không có ví dụ</td></tr>
-<tr><td>Day 6</td><td>Đọc official docs liên quan</td><td>Ghi 3 điểm docs nói khác hiểu ban đầu</td><td>Tin AI/content tóm tắt tuyệt đối</td></tr>
-<tr><td>Day 7</td><td>Tự tạo một bug biến thể</td><td>Có test reproduce bug</td><td>Không biết cách phá code</td></tr>
-<tr><td>Day 8</td><td>Viết mini runbook/debug steps</td><td>Có checklist command/action</td><td>Gặp lỗi thật lại panic</td></tr>
-<tr><td>Day 9</td><td>Review code cũ của bản thân</td><td>Tìm ít nhất 3 anti-patterns</td><td>Không chuyển kiến thức vào code review</td></tr>
-<tr><td>Day 10</td><td>Pair với bạn khác hoặc tự role-play</td><td>Trả lời 5 drill questions</td><td>Không luyện nói nên interview lắp bắp</td></tr>
-<tr><td>Day 11</td><td>Tối ưu hoặc cleanup solution</td><td>Có reasoning trade-off</td><td>Refactor làm code phức tạp hơn</td></tr>
-<tr><td>Day 12</td><td>Chạy với input lớn/concurrent nếu phù hợp</td><td>Có số liệu hoặc observation</td><td>Không biết scale behavior</td></tr>
-<tr><td>Day 13</td><td>Viết README dạy lại topic</td><td>README 500-1000 từ</td><td>Kiến thức chỉ nằm trong đầu</td></tr>
-<tr><td>Day 14</td><td>Làm mock interview 20 phút</td><td>Có feedback list</td><td>Không biết lỗ hổng còn lại</td></tr></tbody></table>
+</section>
+
+<section id="hierarchy">
+  <h2>2. Exception Hierarchy + Checked vs Unchecked <span class="phase-tag">CORE ★</span></h2>
+  <p>Trước khi biết cách handle exception, phải biết exception <em>là gì</em>. Hierarchy quyết định "có buộc handle hay không", "khi nào catch", "khi nào throw".</p>
+
+  <h3>Java Throwable Hierarchy</h3>
+  <pre><code class="language-text">Throwable
+├── Error                           ← Đừng bao giờ catch
+│   ├── OutOfMemoryError            (JVM hết heap)
+│   ├── StackOverflowError          (recursion vô hạn)
+│   └── NoClassDefFoundError        (classpath sai)
+│
+└── Exception
+    ├── RuntimeException            ← UNCHECKED — không bắt buộc handle
+    │   ├── NullPointerException      (bug logic — quên null check)
+    │   ├── IllegalArgumentException  (input validation fail)
+    │   ├── IllegalStateException     (object state sai)
+    │   ├── ClassCastException        (cast sai type)
+    │   ├── IndexOutOfBoundsException
+    │   └── 90% custom exception nên extend cái này
+    │
+    └── (Checked Exception)         ← CHECKED — phải handle hoặc throws
+        ├── IOException              (file, network)
+        ├── SQLException             (database)
+        ├── InterruptedException     (thread)
+        └── ClassNotFoundException</code></pre>
+
+  <h3>3 loại — học thuộc bảng này</h3>
+  <table>
+    <thead><tr><th>Loại</th><th>Nghĩa</th><th>Catch hay không?</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td><code>Error</code></td><td>JVM problem, app không recover được</td><td>❌ KHÔNG catch</td><td>OutOfMemoryError</td></tr>
+      <tr><td><code>RuntimeException</code> (unchecked)</td><td>Bug logic hoặc validation. Không buộc compile-time handle</td><td>Catch nếu biết phải làm gì</td><td>NPE, IllegalArgument, custom business exception</td></tr>
+      <tr><td>Checked Exception</td><td>External I/O. Caller được "buộc" handle hoặc throws</td><td>BẮT BUỘC handle hoặc declare</td><td>IOException, SQLException</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Checked vs Unchecked</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>Spring framework wrap <code>SQLException</code> thành <code>DataAccessException</code> (unchecked). Tại sao?</li>
+      <li>Khi bạn viết custom <code>OrderNotFoundException</code>, nên extend <code>Exception</code> hay <code>RuntimeException</code>? Vì sao?</li>
+      <li>Java có thêm checked exception lần cuối khoảng năm 2005. Tại sao modern Java tránh checked exception?</li>
+    </ol>
+    <div class="pause-hint">Đáp án ngay dưới — viết câu trả lời trước.</div>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Code Review Checklist cho topic này</h3>
-  <p>Dùng checklist này khi review PR của chính mình. Nó cố tình cụ thể để tránh câu “nhìn ổn”.</p>
-  <ol><li>Tên biến/method có nói đúng intent không?</li>
-<li>Input null/empty/invalid được xử lý rõ chưa?</li>
-<li>Data lớn có làm complexity đổi cấp không?</li>
-<li>Có shared mutable state không?</li>
-<li>Lỗi có bị swallow hoặc che mất stack trace không?</li>
-<li>Log có đủ context nhưng không lộ secret không?</li>
-<li>Có rollback/recovery path nếu thao tác fail giữa chừng không?</li>
-<li>Có test chứng minh edge case quan trọng không?</li>
-<li>Code có phụ thuộc implementation thay vì abstraction không cần thiết không?</li>
-<li>Có comment giải thích mechanism khó, không comment hiển nhiên không?</li>
-<li>Có source official nào confirm behavior không?</li>
-<li>Có cách reproduce bug nếu người khác hỏi không?</li>
-<li>Có trade-off được ghi trong README/PR description không?</li>
-<li>Có tránh domain-specific assumption quá hẹp không?</li>
-<li>Có thể dạy lại cho junior khác trong 10 phút không?</li></ol>
+  <h3>📌 Đáp án Pause &amp; Predict</h3>
+  <ol>
+    <li><strong>Spring wrap SQLException</strong>: vì SQLException quá generic (error code 1062 = duplicate key MySQL khác Postgres). Spring chuyển thành hierarchy nghĩa (DuplicateKeyException, DataIntegrityViolationException, ...) → caller switch theo loại, không phải parse error code thủ công. Đồng thời chuyển sang unchecked vì caller hiếm khi recover được — chỉ retry hoặc fail.</li>
+    <li><strong>OrderNotFoundException → extends RuntimeException</strong>: vì caller thường không recover được (không tìm thấy order → trả 404). Force caller declare <code>throws</code> mọi nơi = noise. Modern style: 90% custom exception là unchecked, chỉ checked khi caller THỰC SỰ có thể recover (vd: retry I/O).</li>
+    <li><strong>Modern Java tránh checked</strong>: clutter signature (<code>throws IOException</code> lan khắp call chain), lambda + functional interface không support checked exception tốt (<code>Function&lt;T,R&gt;</code> không throws), caller thường wrap thành RuntimeException dù sao → noise không có giá trị. Spring/Jakarta EE đều dùng unchecked-first.</li>
+  </ol>
 
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không có evidence</div>
-    <pre><code class="language-text">I think this should work.\nNo test. No command output. No rollback note.</code></pre>
+  <h3>Counter-example — Khi nào KHÔNG dùng custom exception</h3>
+  <div class="callout warn">
+    <div class="ctitle">❌ KHÔNG tạo custom exception khi…</div>
+    <ul>
+      <li><strong>Java đã có exception đúng nghĩa</strong>: <code>IllegalArgumentException</code> cho invalid argument, <code>IllegalStateException</code> cho state sai. Đừng tạo <code>InvalidEmailException</code> nếu chỉ cần <code>throw new IllegalArgumentException("invalid email")</code></li>
+      <li><strong>Exception chỉ throw 1 chỗ và caller không cần phân biệt</strong>: tạo class mới = boilerplate không có giá trị</li>
+      <li><strong>Để "đẹp" mà không thêm field/errorCode</strong>: nếu custom exception chỉ extend RuntimeException thêm tên thì không khác gì RuntimeException với message khác nhau</li>
+    </ul>
+    <p><strong>Quy tắc:</strong> Tạo custom exception khi caller cần <strong>distinguish</strong> (catch riêng từng loại), HOẶC khi cần thêm <strong>structured data</strong> (errorCode, requiredAmount, availableAmount).</p>
   </div>
-  <div class="col good">
-    <div class="col-head">✅ Có evidence tối thiểu</div>
-    <pre><code class="language-text">Test: passes edge cases.\nCommand/output recorded.\nKnown trade-off documented.\nRollback/recovery step written.</code></pre>
+</section>
+
+<section id="syntax">
+  <h2>3. try / try-with-resources / multi-catch <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>3.1 try-catch-finally — pattern cũ</h3>
+  <pre><code class="language-java">FileInputStream fis = null;
+try {
+    fis = new FileInputStream("orders.csv");
+    // process
+} catch (FileNotFoundException e) {
+    log.error("File not found", e);
+    throw new ImportException(e);
+} catch (IOException e) {
+    log.error("IO error", e);
+} finally {
+    // Luôn chạy, dù có exception hay không
+    if (fis != null) {
+        try {
+            fis.close();
+        } catch (IOException e) {
+            log.warn("Failed to close", e);
+        }
+    }
+}</code></pre>
+  <p>→ <strong>Verbose</strong>, dễ quên close, dễ NPE check. Java 7+ có <code>try-with-resources</code> thay thế.</p>
+
+  <h3>3.2 try-with-resources (Java 7+) — pattern mới</h3>
+  <pre><code class="language-java">// ✅ Auto-close mọi resource implements AutoCloseable
+try (FileInputStream fis = new FileInputStream("orders.csv");
+     BufferedReader reader = new BufferedReader(new InputStreamReader(fis))) {
+
+    String line;
+    while ((line = reader.readLine()) != null) {
+        process(line);
+    }
+} catch (IOException e) {
+    log.error("Order import failed: file=orders.csv", e);
+    throw new ImportException("Failed to import orders", e);
+}
+// fis, reader auto-close kể cả có exception
+// Close theo thứ tự NGƯỢC: reader trước, fis sau</code></pre>
+
+  <h3>3.3 Multi-catch (Java 7+)</h3>
+  <pre><code class="language-java">try {
+    riskyOperation();
+} catch (IOException | SQLException e) {  // 1 block xử lý 2 type
+    log.error("External resource failed", e);
+    throw new ServiceException(e);
+}</code></pre>
+
+  <h3>3.4 Bẫy <code>finally</code> — return bị override</h3>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Câu interview kinh điển</div>
+    <pre><code class="language-java">public int trickQuestion() {
+    try {
+        return 1;
+    } finally {
+        return 2;  // ❌ Finally override return của try!
+    }
+}
+// Output: 2</code></pre>
+    <p><strong>Quy tắc:</strong> KHÔNG <code>return</code> trong <code>finally</code>. Chỉ cleanup, không thay đổi flow.</p>
+    <p>Tương tự: KHÔNG throw exception trong finally — sẽ swallow exception gốc.</p>
   </div>
-</div>
 
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Code này print gì?</div>
+    <pre><code class="language-java">public static String mystery() {
+    try {
+        throw new RuntimeException("from try");
+    } catch (Exception e) {
+        throw new RuntimeException("from catch");
+    } finally {
+        return "from finally";  // có chạy không?
+    }
+}
+public static void main(String[] args) {
+    System.out.println(mystery());
+}</code></pre>
+    <div class="pause-q">Predict output trước khi đọc đáp án.</div>
+  </div>
+  <div class="callout success">
+    <div class="ctitle">✅ Đáp án</div>
+    <p>Output: <code>"from finally"</code>. Cả 2 exception bị nuốt mất. Đây là tại sao KHÔNG return trong finally — exception bubble up bị mất silently, debugging gần như không thể.</p>
+  </div>
+</section>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Junior → Middle calibration</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Level</th><th>Hiểu biết</th><th>Hành vi thấy được</th><th>Gap còn lại</th></tr></thead><tbody><tr><td>Beginner</td><td>Biết syntax/API</td><td>Code chạy với ví dụ mẫu</td><td>Không giải thích được failure mode</td></tr>
-<tr><td>Junior solid</td><td>Biết mental model</td><td>Chọn đúng pattern cho case thường</td><td>Còn chậm khi gặp edge case</td></tr>
-<tr><td>Middle-ready</td><td>Biết trade-off</td><td>Review được code người khác</td><td>Cần thêm production experience</td></tr>
-<tr><td>Mentor-ready</td><td>Dạy được người khác</td><td>Có runbook, exercises, checklist</td><td>Phải cập nhật theo tool/version mới</td></tr></tbody></table>
+<section id="custom-exception">
+  <h2>4. Custom Exception cho E-commerce Domain <span class="phase-tag">CORE ★</span></h2>
+  <p>Domain example: <strong>e-commerce order checkout</strong>. Các exception cần distinguish ở client + server.</p>
+
+  <h3>Base class + concrete</h3>
+  <pre><code class="language-java">// Base class cho mọi domain exception
+public abstract class OrderException extends RuntimeException {
+    private final String errorCode;
+
+    protected OrderException(String errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    protected OrderException(String errorCode, String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+    }
+
+    public String getErrorCode() { return errorCode; }
+}
+
+// Concrete exception cho từng case
+public class OrderNotFoundException extends OrderException {
+    public OrderNotFoundException(String orderId) {
+        super("ORDER_NOT_FOUND", "Order not found: " + orderId);
+    }
+}
+
+public class InsufficientInventoryException extends OrderException {
+    private final String productId;
+    private final int requested;
+    private final int available;
+
+    public InsufficientInventoryException(String productId, int requested, int available) {
+        super("INSUFFICIENT_INVENTORY",
+            String.format("Product %s: requested %d, available %d", productId, requested, available));
+        this.productId = productId;
+        this.requested = requested;
+        this.available = available;
+    }
+
+    public String getProductId() { return productId; }
+    public int getRequested() { return requested; }
+    public int getAvailable() { return available; }
+}
+
+public class PaymentDeclinedException extends OrderException {
+    public PaymentDeclinedException(String orderId, String reason) {
+        super("PAYMENT_DECLINED",
+            "Payment declined for order " + orderId + ": " + reason);
+    }
+}</code></pre>
+
+  <h3>5 quy tắc viết custom exception</h3>
+  <ol>
+    <li><strong>Extend RuntimeException</strong> trừ khi caller thật sự cần handle (recovery)</li>
+    <li><strong>Có errorCode</strong> để client/log machine-readable (UI mapping, alert rule)</li>
+    <li><strong>Constructor giữ cause</strong>: <code>super(message, cause)</code> — KHÔNG nuốt mất cause</li>
+    <li><strong>Message có context</strong>: ID, value, expected vs actual — debug ngay từ log</li>
+    <li><strong>Field bổ sung</strong> nếu caller cần biết detail (như <code>requested</code>, <code>available</code> trên đây)</li>
+  </ol>
+
+  <h3>Spring @ControllerAdvice — Map exception → HTTP</h3>
+  <pre><code class="language-java">@RestControllerAdvice
+public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleNotFound(OrderNotFoundException e) {
+        log.warn("Order not found: {}", e.getMessage());  // WARN — expected
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientInventoryException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleInsufficient(InsufficientInventoryException e) {
+        log.warn("Insufficient inventory: product={}, requested={}, available={}",
+            e.getProductId(), e.getRequested(), e.getAvailable());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse(e.getErrorCode(), e.getMessage(),
+                Map.of("productId", e.getProductId(),
+                       "requested", e.getRequested(),
+                       "available", e.getAvailable())));
+    }
+
+    @ExceptionHandler(PaymentDeclinedException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handlePayment(PaymentDeclinedException e) {
+        log.warn("Payment declined: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+            .body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
+    }
+
+    // Catch-all cuối cùng — log ERROR vì unexpected
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleUnexpected(Exception e) {
+        log.error("Unexpected error", e);  // full stack trace
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ErrorResponse("INTERNAL_ERROR", "Internal server error"));
+        // ⚠️ KHÔNG leak stack trace vào response — security risk + privacy
+    }
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Tại sao log level khác nhau cho từng exception?</div>
+    <ul>
+      <li><strong>WARN</strong> cho expected business exception (NotFound, InsufficientInventory, PaymentDeclined) — đây là "user input không hợp lệ", không phải bug của ta</li>
+      <li><strong>ERROR</strong> cho unexpected (NPE, generic Exception) — đây là "code của ta có bug" hoặc "downstream chết", cần on-call</li>
+    </ul>
+    <p>Nếu log mọi exception là ERROR → on-call bị spam, bỏ qua alert thật. Đây là "alert fatigue" — failure mode #1 của observability.</p>
+  </div>
+</section>
+
+<section id="exception-antipatterns">
+  <h2>5. 7 Anti-Patterns Exception <span class="phase-tag">CORE ★</span></h2>
+  <p>Junior nhìn từng cái nhận ra "tôi từng viết như vậy". Mỗi anti-pattern có symptom production cụ thể.</p>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #1: Swallow exception (im lặng)</div>
+    <pre><code class="language-java">// ❌
+try { riskyCall(); } catch (Exception e) { /* empty */ }
+
+// ✅
+try { riskyCall(); } catch (Exception e) {
+    log.error("Risky call failed", e);
+    throw new ServiceException("Risky operation failed", e);
+}</code></pre>
+    <p><strong>Symptom production:</strong> User báo "checkout không tạo order" nhưng không có error log nào. Reproduce trên staging cũng không thấy. Vì exception bị nuốt silently.</p>
+    <p><strong>Cách detect:</strong> code review tìm pattern <code>catch (Exception e) { }</code> — KHÔNG có log + KHÔNG throw = swallow.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #2: Mất cause khi rethrow</div>
+    <pre><code class="language-java">// ❌ Mất stack trace gốc
+catch (IOException e) {
+    throw new RuntimeException(e.getMessage());  // ← chỉ lấy message
+}
+
+// ✅ Giữ cause
+catch (IOException e) {
+    throw new RuntimeException("Failed to read file: " + path, e);  // ← truyền e
+}</code></pre>
+    <p><strong>Symptom:</strong> Stack trace trong log chỉ thấy line trong service, không thấy IOException gốc. Debug như "tại sao service fail" mà không biết "vì sao IO fail".</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #3: Catch quá rộng</div>
+    <pre><code class="language-java">// ❌ Catch Exception bắt cả NPE bug logic
+try {
+    user.getProfile().getAddress().getCity();  // NPE chỗ nào?
+} catch (Exception e) {
+    return "Unknown";  // Bug về NPE bị che mất
+}
+
+// ✅ Catch specific
+try {
+    apiClient.fetch(orderId);
+} catch (TimeoutException e) {
+    log.warn("API timeout for order {}, returning cached value", orderId);
+    return cache.get(orderId);
+}</code></pre>
+    <p><strong>Symptom:</strong> Bug logic (như NPE do quên null check) bị treat như "external error", user nhận response sai dữ liệu, không có alert.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #4: e.printStackTrace()</div>
+    <pre><code class="language-java">// ❌ In ra System.err — không vào log file production
+catch (Exception e) {
+    e.printStackTrace();
+}
+
+// ✅ Dùng logger
+catch (Exception e) {
+    log.error("Operation failed: orderId={}", orderId, e);
+}</code></pre>
+    <p><strong>Symptom:</strong> Như câu chuyện #3 ở Section 1 — Docker redirect stderr → /dev/null → log mất hoàn toàn.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #5: throws Exception (quá generic)</div>
+    <pre><code class="language-java">// ❌ Lazy
+public void processOrder() throws Exception { }
+// Caller không biết exception nào có thể xảy ra
+
+// ✅ Specific hoặc unchecked
+public void processOrder() throws OrderProcessingException, ValidationException { }
+// hoặc
+public void processOrder() { /* throws unchecked, document trong Javadoc */ }</code></pre>
+    <p><strong>Symptom:</strong> Caller buộc catch <code>Exception</code> theo style cascade → tất cả callsite catch generic → mất signal về exception nào quan trọng.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #6: Catch rồi rethrow trống rỗng</div>
+    <pre><code class="language-java">// ❌ Rethrow không thêm context
+catch (SQLException e) {
+    throw new RuntimeException(e);
+}
+
+// ✅ Thêm context: ID, operation, what user was doing
+catch (SQLException e) {
+    throw new DatabaseException(
+        "Failed to update inventory for product " + productId +
+        " during checkout of order " + orderId, e);
+}</code></pre>
+    <p><strong>Symptom:</strong> Log có stack trace nhưng phải đọc từng line code mới biết context. Senior debug 30 phút thay vì 30 giây.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #7: Exception cho control flow</div>
+    <pre><code class="language-java">// ❌ Dùng exception thay vì if/else
+public boolean userExists(String id) {
+    try {
+        userRepo.findById(id).get();  // throws NoSuchElementException
+        return true;
+    } catch (NoSuchElementException e) {
+        return false;
+    }
+}
+// Exception là expensive (stack trace cost ~1-10μs) — KHÔNG cho luồng bình thường
+
+// ✅ Optional / boolean
+public boolean userExists(String id) {
+    return userRepo.findById(id).isPresent();
+}</code></pre>
+    <p><strong>Symptom:</strong> Performance test thấy method nhanh khi 100% exist, chậm 100× khi 50% not-exist. JFR profile show <code>fillInStackTrace</code> chiếm CPU. Fix bằng cách thay exception bằng Optional.</p>
+  </div>
+</section>
+
+<section id="log-levels">
+  <h2>6. 5 Log Levels <span class="phase-tag">CORE ★</span></h2>
+  <table>
+    <thead><tr><th>Level</th><th>Khi nào dùng</th><th>Production có log không?</th><th>Volume ước tính</th></tr></thead>
+    <tbody>
+      <tr><td><code>ERROR</code></td><td>Exception không expected, on-call phải xử lý</td><td>✅ Luôn</td><td>&lt;0.1% requests</td></tr>
+      <tr><td><code>WARN</code></td><td>Bất thường nhưng recovered: retry, fallback, deprecated, business validation fail</td><td>✅ Luôn</td><td>&lt;5% requests</td></tr>
+      <tr><td><code>INFO</code></td><td>Business event quan trọng: order created, user logged in, payment processed</td><td>✅ Luôn</td><td>1 dòng/request typical</td></tr>
+      <tr><td><code>DEBUG</code></td><td>Chi tiết kỹ thuật, chỉ bật khi debug ad-hoc</td><td>❌ Không (hoặc tạm bật)</td><td>5-20 dòng/request khi bật</td></tr>
+      <tr><td><code>TRACE</code></td><td>Per-step detail, gần như không dùng</td><td>❌ Không</td><td>hàng trăm dòng/request</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Junior anti-pattern: log mọi thứ là INFO</div>
+    <p>Junior thường <code>log.info("Entering method X")</code>, <code>log.info("got data Y")</code>, <code>log.info("returning")</code>. Sau 1 ngày: log file 50GB, không filter được, ELK index full.</p>
+    <p><strong>Rule of thumb:</strong> 1 request = 1-3 INFO log (start, key milestone, end). Mọi chi tiết khác là DEBUG.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Đặt log level cho từng tình huống</div>
+    <div class="pause-q">Bạn sẽ dùng level nào (ERROR/WARN/INFO/DEBUG) cho mỗi case?</div>
+    <ol>
+      <li>User submit form với email sai format</li>
+      <li>Order tạo thành công</li>
+      <li>Payment gateway timeout, retry lần 2 thành công</li>
+      <li>Database connection pool exhausted</li>
+      <li>Stripe API trả 500 sau 3 lần retry</li>
+      <li>Cache miss cho product detail</li>
+      <li>JWT token expired (user phải re-login)</li>
+    </ol>
+    <div class="pause-hint">Tip: hỏi "on-call có cần thức dậy lúc 3h sáng vì cái này không?" nếu có → ERROR.</div>
   </div>
 
   <div class="callout success">
-    <div class="ctitle">✅ Definition of done</div>
-    <p>Bạn hoàn thành topic này khi có thể: viết code đúng, phá code bằng edge case, sửa code, giải thích mechanism, và review code người khác mà không cần nhìn lại tài liệu.</p>
+    <div class="ctitle">✅ Đáp án</div>
+    <ol>
+      <li>WARN hoặc DEBUG (validation fail là expected user behavior, không phải bug)</li>
+      <li>INFO (business event quan trọng)</li>
+      <li>WARN cho lần fail đầu, INFO cho lần retry thành công</li>
+      <li>ERROR (production issue cần on-call)</li>
+      <li>ERROR (downstream chết sau retry — escalate)</li>
+      <li>DEBUG (cache miss là bình thường, chỉ log để debug cache hit rate)</li>
+      <li>INFO hoặc WARN (expected behavior, security audit có thể cần)</li>
+    </ol>
   </div>
 </section>
 
+<section id="slf4j-logback">
+  <h2>7. SLF4J + Logback Setup <span class="phase-tag">SUPPLEMENTARY</span></h2>
 
+  <h3>Dependency (Spring Boot đã có sẵn)</h3>
+  <pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;!-- starter-web đã include logback-classic + slf4j-api --&gt;</code></pre>
 
-<section id="practice-bank">
-  <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Exception &amp; Logging thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
-<tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
-<tr><td>3</td><td>Fix</td><td>Sửa bad code theo good pattern</td><td>Commit diff phải nhỏ và giải thích được.</td></tr>
-<tr><td>4</td><td>Break</td><td>Tạo input làm solution fail</td><td>Ít nhất một case null/empty hoặc concurrent nếu phù hợp.</td></tr>
-<tr><td>5</td><td>Scale</td><td>Tăng data size 100 lần</td><td>Ghi latency/memory hoặc mô tả behavior.</td></tr>
-<tr><td>6</td><td>Explain</td><td>Dạy lại cho một bạn mới</td><td>Bạn kia phải hỏi lại ít hơn 3 lần.</td></tr>
-<tr><td>7</td><td>Review</td><td>Tìm anti-pattern tương tự trong code cũ</td><td>Có link file/dòng hoặc snippet.</td></tr>
-<tr><td>8</td><td>Rewrite</td><td>Viết lại README cho người đi sau</td><td>Có command, expected output, rollback.</td></tr>
-<tr><td>9</td><td>Compare</td><td>So sánh 2 alternative</td><td>Nói được khi nào dùng A, khi nào dùng B.</td></tr>
-<tr><td>10</td><td>Verify</td><td>Mở official docs kiểm tra một statement</td><td>Ghi lại URL và câu bạn verify.</td></tr>
-<tr><td>11</td><td>Observe</td><td>Thêm log/test/metric nhỏ để nhìn thấy failure</td><td>Không làm lộ secret hoặc data nhạy cảm.</td></tr>
-<tr><td>12</td><td>Refactor</td><td>Giảm coupling hoặc tăng boundary</td><td>Behavior giữ nguyên qua test.</td></tr>
-<tr><td>13</td><td>Recover</td><td>Viết bước recovery khi lỡ làm sai</td><td>Có precheck trước khi chạy lệnh nguy hiểm.</td></tr>
-<tr><td>14</td><td>Pair</td><td>Nhờ người khác review lời giải</td><td>Ghi lại 3 feedback.</td></tr>
-<tr><td>15</td><td>Mock</td><td>Trả lời 5 câu drill không nhìn tài liệu</td><td>Mỗi câu dưới 2 phút, có ví dụ.</td></tr>
-<tr><td>16</td><td>Teach</td><td>Tạo 3 câu hỏi cho junior khác</td><td>Mỗi câu có expected answer.</td></tr>
-<tr><td>17</td><td>Document</td><td>Viết checklist PR cho topic này</td><td>Checklist dùng được ngay trong team.</td></tr>
-<tr><td>18</td><td>Automate</td><td>Tự động hóa một kiểm tra nhỏ</td><td>Script/test chạy lại được.</td></tr>
-<tr><td>19</td><td>Simplify</td><td>Xóa phần code/thao tác thừa</td><td>Giải thích vì sao đơn giản hơn vẫn đúng.</td></tr>
-<tr><td>20</td><td>Retrospective</td><td>Viết 5 dòng: mình hiểu sai gì ban đầu</td><td>Có lesson cụ thể.</td></tr></tbody></table>
+  <h3>Cú pháp SLF4J</h3>
+  <pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Service
+public class OrderService {
+    // private static final — convention chuẩn
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+    public Order createOrder(CreateOrderRequest req) {
+        // Parameterized — KHÔNG concat string
+        log.info("Order creation initiated: customerId={}, items={}, total={}",
+            req.getCustomerId(), req.getItems().size(), req.getTotal());
+
+        try {
+            Order order = doCreate(req);
+            log.info("Order created: orderId={}, total={}", order.getId(), order.getTotal());
+            return order;
+        } catch (InsufficientInventoryException e) {
+            log.warn("Order failed (inventory): customerId={}, product={}",
+                req.getCustomerId(), e.getProductId());
+            throw e;
+        } catch (Exception e) {
+            log.error("Order failed unexpectedly: customerId={}", req.getCustomerId(), e);
+            // ↑ Truyền `e` ở cuối → SLF4J log full stack trace
+            throw e;
+        }
+    }
+}</code></pre>
+
+  <h3>Quy tắc cú pháp</h3>
+  <pre><code class="language-java">// ❌ String concat — luôn build string ngay cả khi DEBUG OFF (lãng phí)
+log.debug("User: " + user.getName() + ", id: " + user.getId());
+
+// ✅ Parameterized — chỉ build string nếu DEBUG ON
+log.debug("User: {}, id: {}", user.getName(), user.getId());
+
+// ✅ Exception ở argument cuối — SLF4J biết là throwable, log stack trace
+log.error("Failed to process order: {}", orderId, exception);
+
+// ❌ Đừng put exception vào placeholder
+log.error("Failed: {}", exception);  // chỉ in toString, MẤT stack trace</code></pre>
+
+  <h3>Lombok @Slf4j shortcut</h3>
+  <pre><code class="language-java">@Slf4j  // Lombok generate `private static final Logger log` tự động
+@Service
+public class OrderService {
+    public void createOrder() {
+        log.info("Working...");
+    }
+}</code></pre>
+
+  <h3>logback-spring.xml — config production</h3>
+  <pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;configuration&gt;
+    &lt;!-- Console cho dev --&gt;
+    &lt;appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender"&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- File với rolling daily --&gt;
+    &lt;appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender"&gt;
+        &lt;file&gt;logs/app.log&lt;/file&gt;
+        &lt;rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"&gt;
+            &lt;fileNamePattern&gt;logs/app.%d{yyyy-MM-dd}.%i.log.gz&lt;/fileNamePattern&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{customerId:-}] %logger{36} - %msg%n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;springProfile name="dev"&gt;
+        &lt;root level="INFO"&gt;
+            &lt;appender-ref ref="CONSOLE"/&gt;
+        &lt;/root&gt;
+        &lt;logger name="com.shop" level="DEBUG"/&gt;
+    &lt;/springProfile&gt;
+
+    &lt;springProfile name="prod"&gt;
+        &lt;root level="INFO"&gt;
+            &lt;appender-ref ref="FILE"/&gt;
+        &lt;/root&gt;
+        &lt;logger name="com.shop" level="INFO"/&gt;
+        &lt;logger name="org.hibernate.SQL" level="WARN"/&gt;
+    &lt;/springProfile&gt;
+&lt;/configuration&gt;</code></pre>
+</section>
+
+<section id="mdc">
+  <h2>8. MDC — Mapped Diagnostic Context <span class="phase-tag">CORE ★</span></h2>
+  <p class="lead">Section quan trọng nhất của Phần B. MDC là cách add context (traceId, customerId) vào <strong>mọi log</strong> trong cùng request mà không phải truyền tham số xuống mọi method.</p>
+
+  <h3>Vì sao cần MDC?</h3>
+  <p>Production debug = ssh vào log file (hoặc Kibana). Mỗi giây có hàng nghìn request, log interleave nhau. Câu hỏi: "log nào thuộc request của user A?"</p>
+  <p>Không MDC → impossible. Có MDC → search <code>traceId:abc123</code> ra hết log của request đó, kể cả qua nhiều service.</p>
+
+  <h3>Implementation — Servlet Filter</h3>
+  <pre><code class="language-java">@Component
+public class RequestLoggingFilter extends OncePerRequestFilter {
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
+
+        String traceId = req.getHeader("X-Trace-Id");
+        if (traceId == null || traceId.isEmpty()) {
+            traceId = UUID.randomUUID().toString();
+        }
+        String customerId = extractCustomerId(req);  // từ JWT/session
+
+        try {
+            MDC.put("traceId", traceId);
+            if (customerId != null) MDC.put("customerId", customerId);
+
+            res.setHeader("X-Trace-Id", traceId);  // echo back để client biết
+            chain.doFilter(req, res);
+
+        } finally {
+            MDC.clear();  // ← BẮT BUỘC clear để không leak sang request khác
+        }
+    }
+}</code></pre>
+
+  <h3>Ở service: KHÔNG cần truyền traceId — log tự có</h3>
+  <pre><code class="language-java">@Service
+public class CheckoutService {
+    public void checkout(CheckoutRequest req) {
+        log.info("Checkout initiated");  // Log sẽ tự có [traceId=abc123] [customerId=USR_5523]
+        paymentService.charge(...);       // PaymentService log cũng có cùng traceId
+        inventoryService.reserve(...);     // Inventory log cũng có
+    }
+}</code></pre>
+
+  <h3>Output log</h3>
+  <pre><code class="language-text">2026-05-24 03:00:12.453 [http-nio-8080-exec-1] INFO  [traceId=abc123] [customerId=USR_5523] c.s.CheckoutService - Checkout initiated
+2026-05-24 03:00:12.487 [http-nio-8080-exec-1] INFO  [traceId=abc123] [customerId=USR_5523] c.s.PaymentService - Charging $250 via Stripe
+2026-05-24 03:00:12.523 [http-nio-8080-exec-1] WARN  [traceId=abc123] [customerId=USR_5523] c.s.InventoryService - Stock low for SKU-001: 2 left</code></pre>
+  <p>→ Tất cả log của 1 request có cùng <code>traceId=abc123</code>. Kibana query: <code>traceId:abc123</code> ra hết trace.</p>
+
+  <h3>🚨 Bẫy MDC + thread pool</h3>
+  <div class="callout danger">
+    <div class="ctitle">MDC dùng ThreadLocal — KHÔNG pass tự động qua thread pool</div>
+    <pre><code class="language-java">// ❌ Async task không có MDC của parent thread
+@Service
+public class NotificationService {
+    @Async  // chạy trên thread pool khác
+    public void sendOrderConfirmation(String orderId) {
+        log.info("Sending email for order {}", orderId);
+        // ↑ traceId = '-' (không có!) vì thread pool không inherit MDC
+    }
+}
+
+// ✅ Copy MDC trước khi submit
+public void sendAsync(String orderId) {
+    Map&lt;String, String&gt; ctx = MDC.getCopyOfContextMap();
+    executor.submit(() -&gt; {
+        if (ctx != null) MDC.setContextMap(ctx);
+        try {
+            log.info("Sending email for order {}", orderId);
+        } finally {
+            MDC.clear();
+        }
+    });
+}</code></pre>
+    <p><strong>Spring Cloud Sleuth / Micrometer Tracing</strong> tự động hóa việc này. Nhưng manual code phải nhớ.</p>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Mistake Catalog — 12 lỗi phải tự bắt trước khi senior bắt</h3>
-  <p>Những lỗi này không riêng topic nào; chúng là pattern khiến junior mất thời gian mỗi tuần.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>Lỗi</th><th>Hậu quả</th><th>Thói quen thay thế</th></tr></thead><tbody><tr><td>Không đọc lỗi đầy đủ</td><td>Fix sai dòng đầu tiên nhìn thấy</td><td>Đọc từ root cause/first failing command</td></tr>
-<tr><td>Không ghi lại command đã chạy</td><td>Không reproduce được</td><td>Copy transcript vào note/README</td></tr>
-<tr><td>Không phân biệt symptom và root cause</td><td>Chữa tạm, lỗi quay lại</td><td>Viết hypothesis trước fix</td></tr>
-<tr><td>Không chạy test sau conflict/refactor</td><td>Merge xong mới vỡ</td><td>Run test liên quan trước push</td></tr>
-<tr><td>Dùng dữ liệu quá nhỏ</td><td>Không thấy performance issue</td><td>Tạo dataset đại diện hơn</td></tr>
-<tr><td>Không nghĩ đến người vận hành</td><td>Code khó debug</td><td>Thêm log/runbook/expected output</td></tr>
-<tr><td>Dựa vào IDE hoàn toàn</td><td>Ra server là bí</td><td>Biết command-line equivalent</td></tr>
-<tr><td>Không hỏi trade-off</td><td>Pattern bị dùng máy móc</td><td>Luôn có section khi nào không dùng</td></tr>
-<tr><td>Không kiểm security</td><td>Secret/PII lọt vào log/repo</td><td>Review data nhạy cảm trước commit/log</td></tr>
-<tr><td>Không rollback được</td><td>Sửa lỗi thành incident lớn</td><td>Chuẩn bị restore/revert path</td></tr>
-<tr><td>Không học từ lỗi cũ</td><td>Lặp lại lỗi</td><td>Biến incident thành checklist</td></tr>
-<tr><td>Không dạy lại</td><td>Hiểu mơ hồ</td><td>Feynman hoặc mentor note</td></tr></tbody></table>
-  </div>
-
-  <h3><span class="k-tag core">CORE</span> Rubric tự chấm</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Trục</th><th>Câu hỏi</th><th>Evidence</th></tr></thead><tbody><tr><td>Correctness</td><td>Có đúng với input bình thường và edge case không?</td><td>Test pass, invariant rõ</td></tr>
-<tr><td>Clarity</td><td>Người khác đọc có hiểu intent không?</td><td>Tên tốt, README/runbook đủ</td></tr>
-<tr><td>Safety</td><td>Sai thì có làm mất dữ liệu/secret/code không?</td><td>Rollback, mask, backup, guard</td></tr>
-<tr><td>Scalability</td><td>Data lớn hoặc repo lớn có làm vỡ không?</td><td>Big-O/metric/workload đại diện</td></tr>
-<tr><td>Operability</td><td>Production/debug có đủ evidence không?</td><td>Log, command, trace, status</td></tr>
-<tr><td>Teachability</td><td>Bạn có dạy lại được không?</td><td>Feynman + exercise</td></tr></tbody></table>
-  </div>
-
-  <div class="callout why">
-    <div class="ctitle">🎯 Tại sao cần Practice Bank?</div>
-    <p>Junior hay học bằng cảm giác quen mắt. Practice Bank buộc bạn tạo evidence. Khi đi phỏng vấn hoặc review PR, evidence làm câu trả lời chắc hơn nhiều so với “em nghĩ vậy”.</p>
+  <h3>🧪 Lab BẮT BUỘC — Setup MDC trên Spring Boot</h3>
+  <div class="callout warn">
+    <div class="ctitle">Lab #1 — MDC end-to-end</div>
+    <ol>
+      <li>Spring Boot project mới (start.spring.io: web + lombok)</li>
+      <li>Implement <code>RequestLoggingFilter</code> như trên</li>
+      <li>Update <code>logback-spring.xml</code> pattern include <code>%X{traceId:-}</code></li>
+      <li>Tạo <code>OrderController</code> + <code>OrderService</code> với vài log</li>
+      <li>Test:
+        <ul>
+          <li>Gọi <code>curl localhost:8080/orders</code> 3 lần đồng thời (dùng <code>&amp;</code> trong bash)</li>
+          <li>Verify mỗi response có header <code>X-Trace-Id</code> riêng</li>
+          <li>Verify log file có 3 nhóm log với 3 traceId khác nhau</li>
+        </ul>
+      </li>
+      <li>Bonus: thêm <code>@Async</code> task, verify MDC bị mất, fix bằng cách copy contextMap</li>
+    </ol>
+    <p><strong>Exit criteria:</strong> grep log file theo 1 traceId → ra hết flow của 1 request, không lẫn request khác.</p>
   </div>
 </section>
 
+<section id="log-antipatterns">
+  <h2>9. 6 Anti-Patterns Logging <span class="phase-tag">CORE ★</span></h2>
 
-<section id="build-projects">
-  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Exception &amp; Logging Kata (Beginner)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
-    <p>Requirements:</p>
-    <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Một junior khác làm theo được mà không cần hỏi thêm.</div>
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #1: Log password / PII</div>
+    <pre><code class="language-java">// ❌ DỪNG NGAY!
+log.info("Login attempt: username={}, password={}", username, password);
+log.debug("User data: {}", user);  // user.toString() có thể chứa password, SSN, credit card
+
+// ✅
+log.info("Login attempt: username={}", username);
+log.debug("User data: id={}, email={}", user.getId(), maskEmail(user.getEmail()));</code></pre>
+    <p><strong>PII NEVER log list:</strong></p>
+    <ul>
+      <li>Password, PIN, OTP, security question answer</li>
+      <li>Full credit card number (chỉ last 4)</li>
+      <li>SSN / CMND / CCCD / passport đầy đủ</li>
+      <li>Full address (chỉ city/country)</li>
+      <li>Authentication token (JWT, session, API key)</li>
+      <li>Health data, mental health, religion, ethnicity</li>
+    </ul>
+    <p><strong>Hậu quả nếu vi phạm:</strong> GDPR €20M hoặc 4% revenue, PCI-DSS fine, audit fail, mất khách hàng enterprise.</p>
   </div>
 
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #2: Log trong loop</div>
+    <pre><code class="language-java">// ❌ Loop 1M items, mỗi item 1 log → log file 1M dòng
+for (Order o : pendingOrders) {
+    log.info("Processing order: {}", o.getId());
+    process(o);
+}
 
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #2 — Production Scenario Lab (Intermediate)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Mô phỏng một incident nhỏ và viết runbook xử lý.</div>
-    <p>Requirements:</p>
-    <ul><li>Có log/output trước và sau.</li><li>Có root cause.</li><li>Có rollback hoặc recovery step.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Bạn giải thích được failure timeline trong 3 phút.</div>
+// ✅ Log batch, hoặc DEBUG
+log.info("Processing {} pending orders", pendingOrders.size());
+for (Order o : pendingOrders) {
+    log.debug("Processing order: {}", o.getId());  // DEBUG chỉ bật khi cần
+    process(o);
+}
+log.info("Processed {} orders successfully", pendingOrders.size());</code></pre>
+    <p><strong>Symptom:</strong> ELK index 100GB/ngày, query Kibana timeout, log retention chỉ giữ 1 ngày thay vì 30.</p>
   </div>
 
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #3 — Mentor Pack (Advanced)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Chuẩn bị bài hướng dẫn 30 phút cho junior khác.</div>
-    <p>Requirements:</p>
-    <ul><li>5 misconceptions.</li><li>5 exercises.</li><li>Checklist review.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Người học làm đúng 80% bài tập sau buổi hướng dẫn.</div>
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #3: Log exception nhiều lần</div>
+    <pre><code class="language-java">// ❌ Log ở mọi layer
+public class Repository {
+    public Order find(String id) {
+        try { /* */ } catch (SQLException e) {
+            log.error("DB error", e);   // log lần 1
+            throw new DatabaseException(e);
+        }
+    }
+}
+public class Service {
+    public Order get(String id) {
+        try {
+            return repo.find(id);
+        } catch (DatabaseException e) {
+            log.error("Service failed", e);  // log lần 2
+            throw e;
+        }
+    }
+}
+public class Controller {
+    public Order get(String id) {
+        try {
+            return service.get(id);
+        } catch (Exception e) {
+            log.error("Controller error", e);  // log lần 3
+            throw e;
+        }
+    }
+}
+// → 1 exception, 3 stack trace trong log → noise + ELK index bloat</code></pre>
+    <p><strong>Quy tắc:</strong> Log exception <strong>1 lần</strong> ở layer cao nhất bắt nó (thường là <code>@ControllerAdvice</code>). Layer dưới chỉ throw, không log.</p>
   </div>
 
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #4: log.error() khi không phải error</div>
+    <pre><code class="language-java">// ❌ Validation fail là expected, không phải error
+log.error("Invalid email: {}", email);
+
+// ✅ WARN hoặc INFO
+log.warn("Invalid email submitted: {}", email);</code></pre>
+    <p><strong>Symptom:</strong> "Alert fatigue" — Slack channel #alerts kêu 100 lần/giờ, on-call bỏ qua, đến khi có real ERROR cũng không ai nhìn.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #5: System.out.println / printStackTrace</div>
+    <pre><code class="language-java">// ❌ Junior thường viết
+System.out.println("DEBUG: order = " + order);
+e.printStackTrace();
+
+// ✅ Luôn dùng logger
+log.debug("Order: {}", order);
+log.error("Failed", e);</code></pre>
+    <p>Như câu chuyện #3 ở Section 1 — Docker stderr → /dev/null, mất log hoàn toàn.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ Anti-pattern #6: Log Exception thiếu stack trace</div>
+    <pre><code class="language-java">// ❌ Chỉ log message — mất stack trace
+catch (Exception e) {
+    log.error("Failed: " + e.getMessage());
+}
+
+// ✅ Truyền exception, SLF4J xử lý
+catch (Exception e) {
+    log.error("Failed processing order {}", orderId, e);  // exception ở cuối, không placeholder
+}</code></pre>
+    <p><strong>Symptom:</strong> Log có "Failed: null" — vì <code>e.getMessage()</code> return null cho 1 số exception type (như NPE). Không có stack trace → không biết bug ở đâu.</p>
+  </div>
 </section>
 
-<section id="drill-bank">
-  <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
-  <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Exception &amp; Logging quan trọng với junior backend?</h3>
-  <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
-  <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
+<section id="structured-logging">
+  <h2>10. Structured Logging (JSON) <span class="phase-tag">ADVANCED</span></h2>
+  <p>JSON log thay vì plain text → ELK / Splunk / CloudWatch / Datadog parse được dễ dàng, query filter mạnh.</p>
 
+  <h3>Setup Logstash encoder</h3>
+  <pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;net.logstash.logback&lt;/groupId&gt;
+    &lt;artifactId&gt;logstash-logback-encoder&lt;/artifactId&gt;
+    &lt;version&gt;7.4&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
 
-  <h3><span class="k-tag core">CORE</span> Q2. Bạn debug khi không hiểu lỗi bắt đầu từ đâu thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Xác định state hiện tại, input, expected output, command/log gần nhất, rồi thu hẹp từng bước. Không sửa mù khi chưa có bằng chứng.</p>
-  <p><strong>Signal</strong>: Có method điều tra.</p>
+  <pre><code class="language-xml">&lt;appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender"&gt;
+    &lt;encoder class="net.logstash.logback.encoder.LogstashEncoder"&gt;
+        &lt;includeMdcKeyName&gt;traceId&lt;/includeMdcKeyName&gt;
+        &lt;includeMdcKeyName&gt;customerId&lt;/includeMdcKeyName&gt;
+    &lt;/encoder&gt;
+&lt;/appender&gt;</code></pre>
 
+  <h3>Output JSON</h3>
+  <pre><code class="language-text">{
+  "@timestamp": "2026-05-24T03:00:12.453Z",
+  "level": "ERROR",
+  "logger_name": "com.shop.OrderService",
+  "thread_name": "http-nio-8080-exec-1",
+  "message": "Order create failed",
+  "traceId": "abc123",
+  "customerId": "USR_5523",
+  "stack_trace": "com.shop.OrderException: ..."
+}</code></pre>
+  <p>→ Kibana query: <code>level:ERROR AND traceId:abc123</code>. Datadog: <code>service:orders status:error @customerId:USR_5523</code>.</p>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q3. Khi nào nên viết runbook?</h3>
-  <p><strong>Answer mẫu</strong>: Khi workflow có nhiều bước, có thể fail, hoặc người khác cần lặp lại an toàn. Runbook tốt có precheck, command, expected output và rollback.</p>
-  <p><strong>Signal</strong>: Có tư duy vận hành.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q4. Dấu hiệu bạn thật sự hiểu một foundation topic?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn giải thích được cơ chế, dự đoán edge case, viết test phá happy path và dạy lại người khác.</p>
-  <p><strong>Signal</strong>: Không chỉ thuộc syntax.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q5. Nếu code chạy đúng ở local, vì sao senior vẫn có thể reject?</h3>
-  <p><strong>Answer mẫu</strong>: Vì local happy path chỉ chứng minh một input nhỏ chạy được. Senior review failure mode: input bẩn, data lớn, concurrency, rollback, observability, security và maintainability.</p>
-  <p><strong>Signal</strong>: Bạn hiểu code review không phải bắt bẻ style.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q6. Một câu trả lời junior tốt khác gì câu trả lời thuộc lòng?</h3>
-  <p><strong>Answer mẫu</strong>: Nó có ví dụ cụ thể, trade-off, và nói được khi nào cách đó sai. Thuộc lòng thường chỉ có định nghĩa.</p>
-  <p><strong>Signal</strong>: Có thể tự tạo ví dụ mới.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Bạn sẽ viết checklist học topic này thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Chia thành concept, code example, edge case, exercise, Feynman explanation và source verification.</p>
-  <p><strong>Signal</strong>: Có cách học có thể lặp lại.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q8. Khi gặp output lạ, bước đầu tiên là gì?</h3>
-  <p><strong>Answer mẫu</strong>: Đóng băng hiện trạng: input, command, log, version, branch, environment. Sau đó thu hẹp bằng reproduction nhỏ.</p>
-  <p><strong>Signal</strong>: Không sửa mù.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Làm sao biết mình đã hiểu thật?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn có thể phá code, sửa code, giải thích mechanism, và dạy người khác tránh lỗi tương tự.</p>
-  <p><strong>Signal</strong>: Hiểu thật gắn với hành động.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q10. Nếu phải mentor junior khác, bạn bắt đầu từ đâu?</h3>
-  <p><strong>Answer mẫu</strong>: Bắt đầu từ lỗi thật họ vừa gặp, vẽ mental model, sửa một ví dụ nhỏ, rồi cho họ tự làm biến thể.</p>
-  <p><strong>Signal</strong>: Biết dạy bằng feedback loop.</p>
-
+  <h3>Khi nào KHÔNG cần JSON log</h3>
+  <div class="callout warn">
+    <ul>
+      <li><strong>Dev local</strong>: human-readable text dễ đọc hơn JSON. Dùng profile dev với pattern thường, prod với JSON</li>
+      <li><strong>App không có ELK/Datadog</strong>: nếu chỉ <code>tail -f</code>, JSON tệ hơn plain text</li>
+      <li><strong>Service rất nhỏ với 1 instance</strong>: overhead JSON không đáng</li>
+    </ul>
+  </div>
 </section>
 
-<section id="self-test">
-  <h2>Self-Test Scenarios <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đọc bối cảnh, tự viết đáp án, rồi mới xem gợi ý. Đây là phần chống đọc hiểu giả mạnh nhất.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Scenario 1 — Local pass, production fail</h3>
-  <p><strong>Bối cảnh</strong>: Feature chạy được trên máy cá nhân nhưng fail khi data lớn hoặc nhiều người dùng.</p>
-  <p><strong>Tự trả lời</strong>: Bạn cần thêm bằng chứng gì?</p>
-  <p><strong>Gợi ý</strong>: So sánh input, environment, concurrency, data size và logs.</p>
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
 
+  <h3>Exception Handling</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize (Junior)</h3>
+      <p>Biết try-catch syntax. Phân biệt checked/unchecked. Dùng <code>e.printStackTrace()</code> khi debug. Tạo exception bằng <code>throw new RuntimeException("error")</code>.</p>
+      <p><em>Symptom:</em> code có pattern <code>catch (Exception e) { e.printStackTrace(); }</code>, không có <code>@ControllerAdvice</code>.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain (Mid)</h3>
+      <p>Giải thích 7 anti-patterns + refactor. Hiểu fail-fast principle. Tạo custom exception hierarchy với errorCode + cause. Dùng try-with-resources. Hiểu vì sao Spring wrap SQLException → DataAccessException.</p>
+      <p><em>Symptom:</em> code review từ chối PR có <code>catch (Exception)</code> không có context.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply (Senior)</h3>
+      <p>Design exception strategy cho service: domain exception layer thấp, wrap thành business exception layer cao, <code>@ControllerAdvice</code> map → HTTP. Biết exception boundary. Custom exception có error catalog cho client + alert rule.</p>
+      <p><em>Symptom:</em> service có error catalog doc (mỗi error code có description + recovery action + alert level), code recovery test bao phủ.</p>
+    </div>
+  </div>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Junior panic khi gặp lỗi lạ</h3>
-  <p><strong>Bối cảnh</strong>: Console có stack trace/command output dài.</p>
-  <p><strong>Tự trả lời</strong>: Bạn dạy bạn đó đọc từ đâu?</p>
-  <p><strong>Gợi ý</strong>: Tìm first cause, command gần nhất, state trước/sau, rồi reproduce nhỏ.</p>
+  <h3>Logging</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Biết SLF4J + log levels. Đôi khi log password / dùng System.out. Log nhiều INFO. Không biết MDC.</p>
+      <p><em>Symptom:</em> log của 1 request không track được, debug ssh vào server đọc thủ công.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Phân biệt được 5 log levels theo case. Dùng parameterized log. Implement MDC filter. Biết PII never-log list. Hiểu structured logging giúp gì.</p>
+      <p><em>Symptom:</em> code có <code>%X{traceId}</code> trong pattern, có MDC filter, log level đúng theo nature event.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Build observability stack: structured JSON log + traceId xuyên service + alert rule trên Kibana/Datadog. Debug production 3h sáng &lt;15 phút dùng traceId. Capacity plan log storage. Recipe debug 5 scenario là phản xạ.</p>
+      <p><em>Symptom:</em> production incident có timeline đầy đủ từ trace, post-mortem có "log/metric đã có đủ để diagnose trong X phút".</p>
+    </div>
+  </div>
 
+  <h3>MDC + Distributed Tracing</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Biết tên MDC. Chưa setup. Debug bằng grep service name + timestamp.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Hiểu MDC = ThreadLocal context. Setup filter cho traceId, customerId. Biết bẫy MDC + thread pool. Pass traceId qua HTTP header giữa service.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Distributed tracing với OpenTelemetry / Sleuth. TraceId propagate qua Kafka, async task. Sampling strategy. Pair với Jaeger/Tempo để visualize span tree.</p>
+    </div>
+  </div>
+</section>
 
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Review PR foundation</h3>
-  <p><strong>Bối cảnh</strong>: Code chạy nhưng thiếu guard/rollback/log.</p>
-  <p><strong>Tự trả lời</strong>: Comment thế nào để người viết học được?</p>
-  <p><strong>Gợi ý</strong>: Nêu failure mode cụ thể, hậu quả và hướng sửa nhỏ.</p>
+<section id="symptom-debug">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
 
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "Order create thành công nhưng customer không thấy"</div>
+    <p><strong>Symptom:</strong> Customer report tạo order xong không thấy trong "My Orders". App log show <code>"Order created: orderId=ORD_123"</code> nhưng DB không có row.</p>
+    <p><strong>Debug:</strong></p>
+    <ol>
+      <li>Tìm log của request đó bằng traceId hoặc customerId+timestamp</li>
+      <li>Đọc kỹ stack trace: có exception nào sau "Order created" không? (có thể bị catch silently ở layer sau)</li>
+      <li>Check @Transactional: log "Order created" trong transaction → nếu sau đó throw exception thì rollback, DB không có data nhưng log đã ghi</li>
+      <li>Tool: enable Hibernate SQL log <code>org.hibernate.SQL=DEBUG</code> + <code>org.hibernate.type.descriptor.sql=TRACE</code> để xem actual INSERT có chạy không</li>
+    </ol>
+    <p><strong>Root cause typical:</strong> log INFO inside transaction trước khi commit. Sau đó downstream call fail, transaction rollback. Fix: log INFO ở @TransactionalEventListener(AFTER_COMMIT), không phải giữa transaction.</p>
+  </div>
 
-  <h3><span class="k-tag core">CORE</span> Scenario 4 — Code review bị hỏi &#x27;vì sao?&#x27;</h3>
-  <p><strong>Bối cảnh</strong>: Bạn chọn một cách implement nhưng chỉ trả lời được &#x27;em thấy người ta hay làm vậy&#x27;.</p>
-  <p><strong>Tự trả lời</strong>: Làm sao nâng câu trả lời?</p>
-  <p><strong>Gợi ý</strong>: Nói problem, constraint, trade-off, alternative và lý do chọn. Nếu chưa nói được, bạn mới copy pattern.</p>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "Error rate spike nhưng không log nào"</div>
+    <p><strong>Symptom:</strong> Datadog/Grafana báo error rate 12% nhưng grep ELK không thấy ERROR log nào.</p>
+    <p><strong>Checklist:</strong></p>
+    <ol>
+      <li>Có <code>catch (Exception) { /* empty */ }</code> ở đâu không? Code review pull request gần đây</li>
+      <li>Có <code>e.printStackTrace()</code> không? Container stderr → /dev/null</li>
+      <li>Có exception throw từ <code>@Async</code> task không? Default Spring sẽ log warning vào stdout nhưng nếu disabled thì mất</li>
+      <li>Có async event listener throw exception? Spring 5+ default swallow nếu không có error handler</li>
+      <li>Error rate count từ đâu (5xx HTTP, hay custom metric)? Mismatch có thể là metric đếm sai</li>
+    </ol>
+  </div>
 
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "Log mất traceId, không trace được request"</div>
+    <p><strong>Symptom:</strong> Log của 1 request scattered, không group được bằng traceId vì có log <code>[traceId=-]</code>.</p>
+    <p><strong>3 nguyên nhân:</strong></p>
+    <ol>
+      <li><strong>MDC chưa setup ở filter</strong> — log trước khi filter chạy không có traceId. Check filter order: traceId filter phải chạy đầu tiên</li>
+      <li><strong>Async task không inherit MDC</strong> — fix bằng <code>MDC.getCopyOfContextMap()</code> trước submit</li>
+      <li><strong>Scheduled task không có traceId</strong> — task không phải request, không có context. Fix: generate traceId mới ở start task</li>
+    </ol>
+  </div>
 
-  <h3><span class="k-tag core">CORE</span> Scenario 5 — Unit test pass nhưng integration fail</h3>
-  <p><strong>Bối cảnh</strong>: Test nhỏ mock hết dependency, lên môi trường thật fail vì data/permission/path khác.</p>
-  <p><strong>Tự trả lời</strong>: Thiếu loại kiểm chứng nào?</p>
-  <p><strong>Gợi ý</strong>: Cần test gần reality hơn: integration, contract, command transcript, hoặc environment checklist.</p>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "Log file phình 100GB/ngày"</div>
+    <p><strong>Symptom:</strong> ELK index full, log retention chỉ giữ 1 ngày thay vì 30. Cost storage tăng 10×.</p>
+    <p><strong>Debug:</strong></p>
+    <ol>
+      <li>Top 10 loggers by volume: <code>grep -c "logger_name" log.json | sort | uniq -c | sort -rn | head</code></li>
+      <li>Loop logging? Tìm logger nào log &gt; 1000 lines/giây — thường là batch job log INFO mỗi item</li>
+      <li>Library noise? <code>org.hibernate.SQL</code>, <code>org.springframework.web</code> có thể spam DEBUG. Set <code>WARN</code></li>
+      <li>Stack trace duplicate? Nếu cùng exception log nhiều layer → fix anti-pattern #3</li>
+    </ol>
+  </div>
 
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #5 — "Production crash không có log lúc crash"</div>
+    <p><strong>Symptom:</strong> App crash lúc 3h sáng. Log file dừng lại lúc 02:59:58. Không có ERROR/FATAL trước khi crash.</p>
+    <p><strong>3 case:</strong></p>
+    <ol>
+      <li><strong>OOM kill (OS hoặc K8s)</strong> — JVM không kịp flush log. Check dmesg / kubectl describe pod → "OOMKilled"</li>
+      <li><strong>JVM crash native</strong> — sẽ có <code>hs_err_pidXXX.log</code> trong working dir. Native memory leak, JIT bug</li>
+      <li><strong>kill -9 from parent</strong> — supervisor (systemd, Docker) bị health check fail → SIGKILL. App không có chance log</li>
+    </ol>
+    <p><strong>Pattern phòng ngừa:</strong> Async appender với <code>queueSize=512</code> + flush on shutdown. Heap dump on OOM. Health check endpoint không phụ thuộc DB.</p>
+  </div>
+</section>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bug chỉ xảy ra khi chạy song song</h3>
-  <p><strong>Bối cảnh</strong>: Hai request hoặc hai dev thao tác cùng resource làm state lệch.</p>
-  <p><strong>Tự trả lời</strong>: Bạn sẽ tìm race thế nào?</p>
-  <p><strong>Gợi ý</strong>: Tìm shared mutable state, check-then-act, non-atomic operation, lock/transaction boundary.</p>
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
 
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #1 — Refactor bad exception code (Easy, 1h)</div>
+    <pre><code class="language-java">// Refactor code này:
+public class ProductService {
+    public Product findProduct(String id) {
+        try {
+            Product p = repo.findById(id);
+            if (p == null) {
+                System.out.println("Product not found");
+                return null;
+            }
+            return p;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Log không đủ debug</h3>
-  <p><strong>Bối cảnh</strong>: Production chỉ có dòng &#x27;failed&#x27; mà không có id, input, stack trace.</p>
-  <p><strong>Tự trả lời</strong>: Log tối thiểu cần gì?</p>
-  <p><strong>Gợi ý</strong>: Event name, correlation id, business id, outcome, duration, exception cause, không chứa secret.</p>
+    public void updatePrice(String id, BigDecimal price) {
+        try {
+            Product p = findProduct(id);
+            p.setPrice(price);
+            repo.save(p);
+        } catch (Exception e) {
+            // silent
+        }
+    }
+}</code></pre>
+    <p><strong>Requirements:</strong></p>
+    <ul>
+      <li>Throw <code>ProductNotFoundException</code> khi không tìm thấy</li>
+      <li>Log đúng level + có context (id, operation)</li>
+      <li>Dùng <code>Optional</code> hoặc throw, không return null</li>
+      <li><code>@RestControllerAdvice</code> map exception → HTTP 404</li>
+      <li>Validate price &gt; 0 — throw <code>IllegalArgumentException</code></li>
+      <li>Test cover happy path + 3 error case</li>
+    </ul>
+  </div>
 
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #2 — Setup MDC end-to-end (Medium, 2h)</div>
+    <p>Spring Boot project, implement:</p>
+    <ul>
+      <li>Filter add <code>traceId</code> + <code>customerId</code> vào MDC mỗi request</li>
+      <li>Log pattern hiển thị 2 field này</li>
+      <li>Echo <code>X-Trace-Id</code> ra response header</li>
+      <li>Test: gửi 5 request đồng thời với <code>ab -n 5 -c 5</code>, verify mỗi request có traceId riêng</li>
+      <li>Bonus: Service A gọi Service B qua RestTemplate — forward <code>X-Trace-Id</code>, verify log 2 service có cùng traceId</li>
+      <li>Bonus 2: <code>@Async</code> task, verify MDC bị mất, fix bằng <code>TaskDecorator</code></li>
+    </ul>
+    <p><strong>Exit criteria:</strong> Kibana query <code>traceId:&lt;một-id&gt;</code> ra hết flow của 1 request, kể cả qua async task.</p>
+  </div>
 
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Tự viết runbook cho lỗi đã gặp</h3>
-  <p><strong>Bối cảnh</strong>: Bạn vừa được senior cứu một lỗi trong 5 phút.</p>
-  <p><strong>Tự trả lời</strong>: Biến nó thành tài sản học thế nào?</p>
-  <p><strong>Gợi ý</strong>: Ghi symptom, command, expected output, root cause, fix, rollback và prevention checklist.</p>
-
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #3 — E-commerce Exception Hierarchy (Hard, 3h)</div>
+    <p>Cho e-commerce app, design:</p>
+    <ul>
+      <li>Base <code>OrderException</code> với <code>errorCode</code></li>
+      <li>5 concrete: <code>OrderNotFoundException</code>, <code>InsufficientInventoryException</code>, <code>PaymentDeclinedException</code>, <code>DuplicateOrderException</code>, <code>RateLimitExceededException</code></li>
+      <li><code>@RestControllerAdvice</code> map mỗi exception → HTTP code đúng (404, 409, 402, 409, 429)</li>
+      <li>Log strategy: WARN cho expected (4 cái), ERROR cho unexpected</li>
+      <li>ErrorResponse format chuẩn: <code>{ errorCode, message, details, traceId }</code></li>
+      <li>Test cover từng case + verify HTTP status + body</li>
+      <li>Bonus: Tạo error catalog markdown (mỗi error code có description + recovery)</li>
+    </ul>
+  </div>
 </section>
 
 <section id="interview">
-  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Exception &amp; Logging: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
-  <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
-  <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Tier 1 — Surface (Junior screening)</h3>
+
+  <div class="tier-card t1">
+    <h3>Q: Checked vs Unchecked exception?</h3>
+    <p><strong>Trả lời mẫu:</strong> "Checked extends Exception (trừ RuntimeException) — compiler force handle hoặc throws. Ví dụ IOException, SQLException. Unchecked extends RuntimeException — không bắt buộc handle, dùng cho bug logic hoặc business exception. Ví dụ NPE, IllegalArgument.</p>
+    <p>Modern Java + Spring xu hướng unchecked vì checked clutter signature, caller thường wrap thành RuntimeException dù sao. Spring wrap SQLException → DataAccessException unchecked."</p>
+  </div>
+
+  <div class="tier-card t1">
+    <h3>Q: try-with-resources hoạt động thế nào?</h3>
+    <p><strong>Trả lời mẫu:</strong> "Java 7+ feature. Resource trong <code>try(...)</code> phải implement AutoCloseable. JVM tự gọi <code>close()</code> ở finally implicit, kể cả có exception. Multi-resource close theo thứ tự ngược lại.</p>
+    <p>Lợi: ngắn gọn hơn try-finally truyền thống, không quên close, không null check, không nested try-catch cho close()."</p>
+  </div>
+
+  <h3>Tier 2 — Deep Dive (Mid level)</h3>
+
+  <div class="tier-card t2">
+    <h3>Q: Tại sao log parameterized thay vì string concat?</h3>
+    <p><strong>Trả lời mẫu:</strong> "2 lý do:</p>
+    <p>1. <strong>Performance</strong>: <code>log.debug("User " + user)</code> luôn build string, kể cả khi DEBUG OFF. <code>log.debug("User {}", user)</code> chỉ build khi DEBUG ON. Hot path log nhiều → khác biệt rõ ràng.</p>
+    <p>2. <strong>Consistency</strong>: SLF4J chuẩn hóa format, parser ELK dễ hiểu placeholder.</p>
+    <p>Edge case: nếu argument có <code>toString()</code> đắt (object lớn), kể cả parameterized cũng tốn — phải <code>if (log.isDebugEnabled())</code> guard."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Q: MDC là gì? Tại sao quan trọng cho microservices?</h3>
+    <p><strong>Trả lời mẫu:</strong> "MDC là ThreadLocal map gắn key-value vào mọi log trong thread hiện tại. Trong microservices, traceId truyền qua header HTTP, mỗi service đặt traceId vào MDC → log của tất cả service trong 1 request có cùng traceId → distributed tracing.</p>
+    <p>Pitfall: thread pool / async — MDC không tự pass. Phải copy contextMap trước submit task. Spring Cloud Sleuth + Brave / OpenTelemetry tự động hóa, nhưng manual code phải nhớ."</p>
+  </div>
+
+  <h3>Tier 3 — Architecture (Senior)</h3>
+
+  <div class="tier-card t3">
+    <h3>Q: Design exception handling strategy cho e-commerce microservices.</h3>
+    <p><strong>Trả lời mẫu:</strong> "Layer-by-layer:</p>
+    <p><strong>Domain layer</strong>: throw business exception (InsufficientInventory, PaymentDeclined) — extends RuntimeException + có errorCode.</p>
+    <p><strong>Repository layer</strong>: catch SQLException → wrap thành DatabaseException (Spring DataAccessException nếu JPA). Không expose JDBC chi tiết.</p>
+    <p><strong>Service layer</strong>: business logic, throw domain exception. Không catch trừ khi handle có ý nghĩa (retry, fallback).</p>
+    <p><strong>Controller layer</strong>: @ControllerAdvice convert exception → ResponseEntity. ErrorResponse có errorCode + message + details + traceId. KHÔNG leak stack trace.</p>
+    <p><strong>Cross-cutting</strong>:</p>
+    <ul>
+      <li>All log có traceId qua MDC</li>
+      <li>Sentry/Rollbar capture stack trace cho ERROR</li>
+      <li>Metric counter cho mỗi error type (Prometheus)</li>
+      <li>Alert trên error rate &gt; threshold (PagerDuty)</li>
+    </ul>
+    <p>Có error catalog doc cho team — mỗi error code có description + recovery action + alert level."</p>
+  </div>
 </section>
 
-<section id="feynman-end">
-  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
-  <div class="feynman">
-    <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Exception &amp; Logging cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
-    <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
-  </div>
-  <div class="verify-source">
-    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
-    <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://www.slf4j.org/manual.html">SLF4J Manual</a></li>
-<li><a href="https://logback.qos.ch/manual/">Logback Manual</a></li>
-<li><a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html">Spring Exception Handling</a></li></ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu giải thích cho người chưa biết</h2>
+  <p>Trả lời thành tiếng &lt; 60s mỗi câu. Bí 1 câu = quay lại section tương ứng.</p>
+
+  <ol>
+    <li><strong>Tại sao <code>catch (Exception e) { }</code> là anti-pattern?</strong> Người nghe chưa biết Java exception là gì.</li>
+    <li><strong>Vì sao SLF4J <code>log.info("user={}", user)</code> tốt hơn <code>log.info("user=" + user)</code>?</strong></li>
+    <li><strong>MDC dùng để làm gì? Cho ví dụ cụ thể giúp debug production.</strong></li>
+    <li><strong>Liệt kê 5 loại PII NEVER được log. Tại sao?</strong></li>
+    <li><strong>Khi nào log ERROR vs WARN vs INFO? Cho 3 ví dụ cụ thể.</strong></li>
+  </ol>
+
+  <div class="callout success">
+    <div class="ctitle">✅ Acceptance criteria</div>
+    <p>Pass 5/5 trong 5 phút = ready dùng production. Pass &lt; 4/5 → quay lại section yếu.</p>
   </div>
 </section>
 
-<footer>
-  <div>📁 #49 Exception &amp; Logging · Junior Foundation</div>
-  <div>Tiếp theo: #50 next junior topic</div>
-</footer>
-</div>
-</main>
+<section id="checklist">
+  <h2>✅ Checklist Thành Thạo</h2>
+  <ul>
+    <li>☐ Phân biệt được Error / Checked / Unchecked, biết khi nào dùng cái nào</li>
+    <li>☐ Convert mọi try-catch-finally cho resource sang try-with-resources</li>
+    <li>☐ Viết được hierarchy domain exception với errorCode + cause</li>
+    <li>☐ Liệt kê 7 anti-patterns exception + refactor mỗi cái</li>
+    <li>☐ Setup logback-spring.xml với CONSOLE + FILE + JSON appender</li>
+    <li>☐ Implement MDC filter, verify log có traceId xuyên suốt</li>
+    <li>☐ Liệt kê 5+ loại PII NEVER log</li>
+    <li>☐ Implement <code>@RestControllerAdvice</code> map exception → HTTP response chuẩn</li>
+    <li>☐ Hoàn thành 3 exercises BẮT BUỘC</li>
+    <li>☐ Pass Feynman test 5/5</li>
+  </ul>
+
+  <h3>📚 Tự học tiếp</h3>
+  <ul>
+    <li><strong>Effective Java</strong> (Joshua Bloch) — Items 69-77 chương Exceptions</li>
+    <li><strong>Spring Boot Logging docs</strong>: <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging">features.logging</a></li>
+    <li><strong>12-Factor App</strong>, Factor 11 (Logs): <a href="https://12factor.net/logs">12factor.net/logs</a></li>
+    <li><strong>OpenTelemetry Java</strong>: <a href="https://opentelemetry.io/docs/instrumentation/java/">opentelemetry.io/docs/instrumentation/java</a> — distributed tracing chuẩn</li>
+  </ul>
+
+  <h3>🛠️ Tools production</h3>
+  <ul>
+    <li><strong>ELK stack</strong> (Elasticsearch + Logstash + Kibana) — local docker-compose để học</li>
+    <li><strong>Sentry / Rollbar</strong> — error tracking + grouping + alert</li>
+    <li><strong>Datadog / New Relic</strong> — APM commercial</li>
+    <li><strong>Jaeger / Tempo</strong> — distributed tracing visualization</li>
+    <li><strong>Spring Cloud Sleuth</strong> hoặc Micrometer Tracing — Spring integration</li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="50-git-daily-workflow.html">#50 Git Daily Workflow</a> — next file trong Junior Foundation pack</li>
+      <li><a href="34-audit-logging.html">#34 Audit Logging</a> — production-grade log cho compliance</li>
+      <li><a href="22-resilience-patterns.html">#22 Resilience Patterns</a> — exception trong context retry/fallback</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng chuyển #50:</strong> 3 exercises xong + Feynman 5/5 + Đã setup MDC trong project thật (work hoặc side).</p>
+  </div>
+</section>
+
+    </div>
+  </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-xml-doc.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

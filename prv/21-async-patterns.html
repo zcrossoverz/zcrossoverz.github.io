@@ -570,6 +570,73 @@ void sendDailyDigest() {
   </div>
 </section>
 
+<section id="three-level-async">
+<h2>7b. 3 Cấp Độ Mastery Cho Async <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Async dễ implement sai vì test happy path luôn pass. Bug chỉ lộ khi crash, retry, hoặc lệch DB. 3 trục dưới phân biệt rõ junior/mid/senior.</p>
+
+<div class="callout why">
+<div class="ctitle">🎯 L1 / L2 / L3 cho 3 chủ đề CORE</div>
+</div>
+
+<h3>Async Boundary — Khi nào async vs sync</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "async = không block". Dùng <code>@Async</code> hoặc <code>CompletableFuture</code> mỗi khi nghe "chậm thì async". Không phân biệt user-facing latency vs background work.</p>
+    <p><em>Symptom:</em> mọi method dài hơn 100ms đều thêm <code>@Async</code>, không nghĩ về durability hay retry.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Phân biệt 3 loại work: user-blocking (sync), user-deferred (async + ack ngay), background (queue). Biết <code>@Async</code> mất khi JVM restart, message queue thì không. Hiểu happy path async dễ, failure path khó.</p>
+    <p><em>Symptom:</em> trong design, nói "thanh toán phải sync vì user cần ack, gửi email confirm thì async qua queue".</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Quyết định async boundary dựa trên 3 câu hỏi: (1) user có cần kết quả ngay không? (2) work có durability requirement không? (3) failure cần retry hay accept loss? Map ra <code>@Async</code> / Job Queue / Message Queue / Outbox tương ứng. Recipe ở Section 7 là phản xạ.</p>
+    <p><em>Symptom:</em> design doc có "async decision matrix" liệt kê từng workflow + chọn primitive nào + tại sao.</p>
+  </div>
+</div>
+
+<h3>Outbox Pattern — Dual-write & Atomicity</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "outbox để publish event đáng tin cậy". Đôi khi nhầm outbox với DLQ.</p>
+    <p><em>Symptom:</em> code có <code>orderRepo.save(); kafkaTemplate.send();</code> trong cùng method, nghĩ là đủ.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Hiểu dual-write problem: 2 system không thể commit atomically. Outbox = ghi event vào table cùng transaction với business data, relay đọc table và publish. Biết CDC (Debezium) là alternative không cần relay code.</p>
+    <p><em>Symptom:</em> code review từ chối <code>publish() trong @Transactional</code> mà chưa có outbox hoặc <code>@TransactionalEventListener</code>.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Build outbox với (event_id UUID, payload JSONB, created_at, processed_at, version). Relay là separate process có advisory lock để không double-publish khi multi-instance. Idempotency consumer-side dùng event_id. Cleanup processed rows. Recipe debug "tiền mất hàng không" là phản xạ.</p>
+    <p><em>Symptom:</em> production có metric "outbox_pending_count" + alert khi &gt; 100 và stagnant 5 phút.</p>
+  </div>
+</div>
+
+<h3>Retry, Backoff & Dead Letter</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết "retry khi fail". Implement retry bằng <code>for(int i=0; i&lt;3; i++) try{...}</code>. Không có backoff, không có DLQ.</p>
+    <p><em>Symptom:</em> consumer retry 3 lần liên tiếp trong 50ms, vẫn fail, message bị skip silently.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Hiểu exponential backoff + jitter. Phân biệt retryable vs non-retryable error (4xx vs 5xx). Biết DLQ để không mất message. Biết retry budget để không spam downstream.</p>
+    <p><em>Symptom:</em> code retry có backoff (Spring Retry, Resilience4j) + decision logic "có nên retry hay đẩy DLQ".</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Build retry strategy: short retry inline (3 lần, exponential), nếu vẫn fail thì publish retry topic với delay tăng dần (5min, 1h, 24h), cuối cùng DLQ. DLQ có alert + replay tool + ownership. Recipe debug "DLQ tăng" là phản xạ. Biết khi nào KHÔNG retry (idempotent guarantee chưa có, hoặc gây cascading failure).</p>
+    <p><em>Symptom:</em> service có "retry stages dashboard" show count theo từng stage + DLQ owner + last replay timestamp.</p>
+  </div>
+</div>
+
+</section>
+
 <section id="antipatterns">
   <h2>Anti-Patterns — Async làm hệ thống tệ hơn <span class="k-tag core">CORE</span></h2>
   <div class="table-wrap">

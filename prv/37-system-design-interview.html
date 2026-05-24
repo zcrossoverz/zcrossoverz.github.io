@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#37 — System Design Interview Framework (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm K · Interview Skills</span>
+    <span class="sep">›</span>
+    <span class="current">#37 System Design Interview</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap framework 5-step</a>
+      <a href="#real-problem">1. 45 phút phỏng vấn</a>
+      <a href="#why-framework">2. Vì sao cần framework</a>
+      <div class="toc-section">5-step framework</div>
+      <a href="#step-clarify">3. Step 1 — Clarify (5 phút)</a>
+      <a href="#step-estimate">4. Step 2 — Estimate (5 phút)</a>
+      <a href="#step-hld">5. Step 3 — High-Level Design (10 phút)</a>
+      <a href="#step-deepdive">6. Step 4 — Deep Dive (15 phút)</a>
+      <a href="#step-tradeoff">7. Step 5 — Trade-offs &amp; Wrap (5 phút)</a>
+      <div class="toc-section">Worked example</div>
+      <a href="#example-url">8. URL shortener end-to-end</a>
+      <div class="toc-section">Common patterns</div>
+      <a href="#patterns">9. 6 patterns hay dùng</a>
+      <div class="toc-section">Interview behaviors</div>
+      <a href="#behaviors">10. 5 anti + 5 winning behaviors</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm K · Interview Skill · File chống hiểu giả</div>
+  <h1>System Design Interview — Framework 5 bước, không thuộc design "hoành tráng"</h1>
+  <p class="lead">
+    System design interview KHÔNG đánh giá "thiết kế đẹp" — đánh giá <em>process</em>. Đa số candidate fail không phải vì design sai, mà vì: jump-to-design không clarify, vẽ box vô lý không estimate trước, deep dive sai chỗ, hết giờ vẫn ở high-level. File này dạy <strong>process</strong> qua framework UMPIRE-tương-đương cho system design: <em>Clarify → Estimate → HLD → Deep Dive → Trade-off</em>. Phân biệt với cả đống file "10 system design examples" trên blog — file đó cho bạn <em>biết bài</em>, file này cho bạn <em>biết approach</em>.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Reflex 5-step framework + Estimate trong 5 phút + Handle deep-dive probe</div>
+    <div><strong>📅 Thời lượng</strong><br>2 tuần đọc + 3 mock thật sự</div>
+    <div><strong>📚 Prereq</strong><br>Hiểu cơ bản #13 Distributed Tx, #14 Redis, #20 Kafka, #19 API Design, #33 Idempotency</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔴 Make-or-break cho Senior interview</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — System Design dễ hiểu nhầm cấp 3</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao System Design đặc biệt dễ tạo hiểu giả:</strong>
+    <ul>
+      <li><strong>Đọc blog "design X" cảm thấy hiểu</strong> — Tutorial design hệ thống nhìn rõ ràng, ai đọc cũng gật gù. Nhưng vào interview với bài lạ → không biết bắt đầu từ đâu vì <em>chỉ recognize pattern</em>, không apply được.</li>
+      <li><strong>Tutorials dạy "đáp án"</strong> — Bạn nhớ "Twitter dùng fan-out write" nhưng không biết <em>vì sao</em> hay <em>khi nào</em>. Interviewer hỏi variant → bí.</li>
+      <li><strong>Capacity estimation không thực hành</strong> — Đọc "10K TPS = 3 shard" mà chưa tự tính. Interview phải tính nhẩm trên whiteboard.</li>
+      <li><strong>Vocabulary tốn nhiều bandwidth não</strong> — "CAP theorem", "consistency model", "fan-out" — nhớ tên ≠ biết apply.</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ — bạn đang ở đâu?</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td>L1 — Biết tutorial</td><td>Đọc qua "design Twitter", "design Uber", "design URL shortener".</td><td>Vẽ được architecture trong 60s cho 1 trong 3 bài trên?</td></tr>
+      <tr><td>L2 — Biết process</td><td>Reflex 5-step framework. Capacity estimate trong 5 phút.</td><td>Cho bài <em>lạ</em>: design ticket booking — đi đúng 5 bước trong 35 phút không vướng.</td></tr>
+      <tr><td>L3 — Senior signal</td><td>Đã mock ≥ 5 lần với người thật, nhận feedback. Adapt theo signal interviewer.</td><td>Handle được follow-up "scale 10×" + "what if X fails" mượt mà.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <strong>Mục tiêu file này:</strong> L1 → L2 qua đọc + Pause/Predict. L2 → L3 qua mock thật (file chỉ ra cách, không thay được mock).
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li><strong>Mỗi step (3-7) phải tự practice 1 lần.</strong> Đọc Step 1 (Clarify) → mở giấy → tự viết clarifying questions cho 1 bài bất kỳ (vd "design chat app"). Không tự làm = chưa internalize.</li>
+    <li><strong>Estimate (Step 2) phải tay tính trên giấy.</strong> Đọc bảng latency hierarchy + capacity formula → tự tính cho 1 ví dụ. Tay không gõ = não không nhớ con số.</li>
+    <li><strong>Section 8 (URL shortener) phải làm trước khi đọc đáp án.</strong> Đóng file ở Section 7, mở giấy, tự design URL shortener trong 35 phút. Mở lại, so sánh.</li>
+    <li><strong>Section "5 anti-behaviors" mở lại sau mỗi mock.</strong> Sau khi mock với peer, check xem dính bao nhiêu anti-behavior. Đây là feedback loop chính.</li>
+    <li><strong>3 labs cuối file bắt buộc.</strong> 3 mock thật, 1 lab capacity estimation. Skip = ở L1.</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap framework 5-step (45-phút phỏng vấn chuẩn)</h2>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">S1</span><div><strong>Clarify</strong> · 5 min · CORE · Functional + Non-functional + Constraints, write down assumptions</div></div>
+    <div class="roadmap-item core"><span class="num">S2</span><div><strong>Estimate</strong> · 5 min · HIGH-SIGNAL · QPS, storage, bandwidth, cache size — math nhẩm</div></div>
+    <div class="roadmap-item core"><span class="num">S3</span><div><strong>High-Level Design</strong> · 10 min · CORE · Box + arrow + data flow, không deep dive</div></div>
+    <div class="roadmap-item core"><span class="num">S4</span><div><strong>Deep Dive</strong> · 15 min · HIGH-SIGNAL · 1 hardest problem — interviewer pick, không phải bạn</div></div>
+    <div class="roadmap-item core"><span class="num">S5</span><div><strong>Trade-offs &amp; Wrap</strong> · 5 min · CORE · Bottleneck, scale 10×, cuts</div></div>
+    <div class="roadmap-item supp"><span class="num">+5</span><div><strong>Buffer</strong> · 5 min · Follow-up Q&amp;A, clarification, missed scenarios</div></div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Quy tắc cứng:</strong> KHÔNG skip step. Junior hay skip Step 1 (jump-to-design) → interviewer ghi "doesn't clarify". Hay skip Step 2 (no estimate) → "doesn't quantify". Hay quên Step 5 (no trade-off) → "doesn't think about alternatives". Mỗi step có signal riêng, mất 1 = giảm 1 grade.
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. 45 phút phỏng vấn — bài tương đương <span class="k-tag core">CORE</span></h2>
+
+  <p>Bạn vào phòng phỏng vấn senior backend tại 1 tech company. Sau intro 5 phút, interviewer mở vấn đề:</p>
+
+  <pre><code class="language-text">"Design a URL shortener like bit.ly. Should support:
+ - Shorten long URL → short URL (e.g., bit.ly/Xy7Q)
+ - 100M new URLs per month
+ - Read-heavy: 100:1 read-to-write ratio
+ - Click analytics (count clicks per short URL)
+ - Custom alias (user can choose alias if available)
+ - 99.9% uptime
+ You have 45 minutes. Where do you start?"</code></pre>
+
+  <h3>4 câu hỏi buộc tư duy</h3>
+  <ol>
+    <li>Trong 5 phút đầu, bạn nói gì? Vẽ gì? Hỏi gì?</li>
+    <li>Capacity estimation: 100M URL/tháng = bao nhiêu QPS? Storage 5 năm bao nhiêu? Cache size?</li>
+    <li>Generating short URL: dùng auto-increment ID + base62 encode hay hash MD5 + take first 7 chars? Trade-off?</li>
+    <li>Read-heavy → cần cache. Cache miss strategy thế nào? TTL bao lâu?</li>
+  </ol>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict — Trước đọc Section 2</h4>
+    <p>Viết ra giấy <strong>3 clarifying questions</strong> bạn sẽ hỏi interviewer. Sau đó so sánh với câu trả lời ở Section 3 (Step 1 — Clarify).</p>
+    <p><em>Đa số candidate L1 viết được 1-2 câu rồi bí. L2 sẽ có ≥ 3 câu cho mỗi trục (Functional / Non-functional / Constraints).</em></p>
+  </div>
+</section>
+
+<section id="why-framework">
+  <h2>2. Vì sao cần framework? <span class="k-tag core">CORE</span></h2>
+
+  <p>Có 3 loại failure mode phổ biến mà framework giúp bạn tránh:</p>
+
+  <h3>Failure mode 1: Jump-to-Design</h3>
+  <div class="misconception">
+    <h4>❌ Candidate điển hình</h4>
+    <pre><code class="language-text">Interviewer: "Design URL shortener"
+Candidate: [bắt đầu vẽ ngay]
+  "OK, có web server, có database lưu mapping..."
+  [vẽ box load balancer, web server, DB]
+
+Sau 10 phút vẽ, interviewer ngắt:
+  "Hold on. Bạn assume capacity gì?
+   Read-heavy hay write-heavy?
+   Latency requirement?"
+
+Candidate: [bí, design phải scrap, làm lại]</code></pre>
+    <p><strong>Symptom:</strong> Hết 15 phút mà chỉ có high-level vague. Còn 30 phút cho deep-dive + trade-off = không đủ.</p>
+  </div>
+
+  <h3>Failure mode 2: Capacity estimation đoán mò</h3>
+  <div class="misconception">
+    <h4>❌ Candidate điển hình</h4>
+    <pre><code class="language-text">Interviewer: "100M URL/tháng, calculate storage cho 5 năm."
+Candidate: "Khoảng... vài GB? 10 GB?"
+Interviewer: "Show math."
+Candidate: [im lặng]
+
+Đáp án đúng: 100M × 60 tháng × ~500 bytes/URL = ~3 TB
+(Off by 2 orders of magnitude)</code></pre>
+    <p><strong>Symptom:</strong> "doesn't quantify" feedback. Senior signal mất.</p>
+  </div>
+
+  <h3>Failure mode 3: Deep dive sai chỗ</h3>
+  <div class="misconception">
+    <h4>❌ Candidate điển hình</h4>
+    <p>Interviewer hỏi probe "Walk me through how you handle X" — candidate deep dive vào <em>chỗ candidate quen</em>, không phải chỗ interviewer muốn. Interviewer ngắt 3 lần, candidate vẫn deep dive sai.</p>
+    <p><strong>Symptom:</strong> "doesn't listen", "fixed mindset on one approach". Lost senior signal.</p>
+  </div>
+
+  <h3>Framework giải quyết 3 failure mode này</h3>
+  <table>
+    <thead><tr><th>Step</th><th>Phòng failure</th></tr></thead>
+    <tbody>
+      <tr><td>S1 — Clarify</td><td>Buộc 5 phút clarify TRƯỚC design → không jump-to-design</td></tr>
+      <tr><td>S2 — Estimate</td><td>Math nhẩm có template → không đoán mò</td></tr>
+      <tr><td>S3 — HLD</td><td>High level trước, deep dive sau → giữ thứ tự đúng</td></tr>
+      <tr><td>S4 — Deep Dive</td><td>Interviewer pick chỗ deep dive → bạn không tự chọn nhầm</td></tr>
+      <tr><td>S5 — Trade-off</td><td>Buộc 5 phút wrap → không quên trade-off → senior signal</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout success">
+    <strong>Insight:</strong> Framework KHÔNG phải "rule cứng". Interviewer giỏi sẽ check xem bạn có loop lại Step 1 nếu phát hiện hiểu nhầm ở Step 4. Đây là dấu hiệu thinking thật, không phải đọc thuộc framework.
+  </div>
+</section>
+
+<section id="step-clarify">
+  <h2>3. Step 1 — Clarify (5 phút) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> 5 phút clarify TRƯỚC khi vẽ gì. Mọi câu hỏi đi vào 1 trong 3 trục: Functional / Non-functional / Constraints. Viết assumptions ra giấy, đọc lại cho interviewer confirm.
+  </div>
+
+  <h3>3 trục clarifying</h3>
+
+  <h4>① Functional Requirements (features cần)</h4>
+  <pre><code class="language-text">Cho URL shortener — bạn sẽ hỏi:
+
+? Core feature là gì? — shorten URL + redirect là minimum
+? User account cần không? — anonymous OK hay phải đăng ký?
+? Custom alias (user chọn short URL) — phase 1 hay phase 2?
+? Click analytics (count, geo, device) — chi tiết bao nhiêu?
+? Expiration: short URL có expire không? TTL bao lâu?
+? Bulk shortening API cho dev — có cần không?
+? Branded domain (myco.link/Xy7Q) — multi-tenant?
+? Mobile deep link — có cần handle không?</code></pre>
+
+  <h4>② Non-functional Requirements (scale, latency, consistency)</h4>
+  <pre><code class="language-text">? Scale — bao nhiêu URL/tháng? Read:Write ratio?
+  (Interview thường: 100M/tháng, 100:1 read:write)
+? Latency — read URL phải &lt; bao nhiêu ms?
+  (Industry: redirect &lt; 100ms total)
+? Uptime — 99.9% (~8.76h/year) hay 99.99% (~52min/year)?
+? Consistency — eventually OK hay phải strong cho click count?
+? Geo — single region hay multi-region?</code></pre>
+
+  <h4>③ Constraints (tech, team, regulatory)</h4>
+  <pre><code class="language-text">? Tech stack — có preference không?
+? Cloud — AWS/GCP/Azure?
+? Team size — 2 dev hay 20 dev?
+? Budget — startup tight hay scaleup ample?
+? Compliance — GDPR data residency?</code></pre>
+
+  <h3>Quy tắc 3 clarifying questions per trục</h3>
+  <p>Đa số candidate thuộc 2 thái cực: hỏi 0-1 câu (jump to design) hoặc hỏi 10+ câu (interviewer ngán). Sweet spot: <strong>2-3 câu mỗi trục, total 6-9 câu trong 5 phút</strong>.</p>
+
+  <div class="callout info">
+    <strong>Mẫu chuẩn — đáp án cho Section 1 (URL shortener):</strong><br>
+    "Tôi sẽ assume sau khi clarify:<br>
+    • <em>Functional:</em> shorten + redirect là core. Custom alias phase 1. Click count đơn giản, không cần geo/device detail phase 1.<br>
+    • <em>Non-functional:</em> 100M URL/tháng, 100:1 read:write → 10B reads/tháng. Redirect P99 &lt; 100ms. Uptime 99.9%. Eventually consistent click count OK.<br>
+    • <em>Constraints:</em> AWS, team ~5 dev, budget moderate. Multi-region phase 2.<br>
+    Tôi sẽ design theo assumptions này. Bạn confirm OK không?"
+  </div>
+</section>
+
+<section id="step-estimate">
+  <h2>4. Step 2 — Estimate (5 phút) <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> Math nhẩm trên whiteboard, show work. Interviewer đánh giá <em>phương pháp</em>, không phải con số chính xác. ±50% acceptable.
+  </div>
+
+  <h3>Latency hierarchy — memorize</h3>
+  <p>"Numbers Every Programmer Should Know" (Jeff Dean / Peter Norvig):</p>
+
+  <pre><code class="language-text">L1 cache reference                    0.5 ns
+Branch mispredict                     5 ns
+L2 cache reference                    7 ns
+Mutex lock/unlock                     100 ns
+Main memory reference                 100 ns
+Compress 1KB with snappy              10 μs
+Send 1KB over 1 Gbps network          10 μs
+Read 4KB random from SSD              100 μs
+Read 1MB sequential from memory       250 μs
+Round trip within datacenter          500 μs
+Read 1MB sequential from SSD          1 ms
+Disk seek                             10 ms
+Read 1MB sequential from disk         20 ms
+Round trip cross-continent            150 ms
+
+Key takeaway: Network 150× chậm memory. Disk 100× chậm SSD.</code></pre>
+
+  <h3>Capacity formula template</h3>
+  <pre><code class="language-text">// 1. QPS
+Average QPS = Daily writes / 86,400 sec
+Peak QPS = Average × 3-5 (use interviewer's peak)
+
+// 2. Storage
+Annual = records/day × avg_size × 365
+With retention N năm × N
+
+// 3. Bandwidth
+Bandwidth = QPS × (avg_req_size + avg_resp_size)
+
+// 4. Cache (Pareto 80/20)
+Cache size = hot_set_size × avg_object_size
+Hot set = 20% of total
+
+// 5. DB Connections
+Connections = (Peak QPS × query_complexity_ms) / 1000
+App servers = total_connections / 20 (typical pool)</code></pre>
+
+  <h3>Estimate cho URL shortener — show work</h3>
+  <pre><code class="language-text">Given: 100M URL/tháng, 100:1 read:write, retention 5 năm
+
+QPS:
+  Writes = 100M / (30 × 86,400) = ~40 writes/sec
+  Reads  = 100M × 100 / (30 × 86,400) = ~4,000 reads/sec
+  Peak (×3) = 120 writes/sec, 12,000 reads/sec
+
+Storage (5 năm):
+  Total URLs = 100M × 60 tháng = 6B URLs
+  Per record: short_code (7B) + long_url (~500B) + metadata (~100B) ≈ 600B
+  Total = 6B × 600B = 3.6 TB
+
+  Click events (if log raw): 100M × 60 × 100 (read ratio) = 600B events
+  Per event ~50B → 30 TB
+  → KHÔNG log raw, dùng aggregation: count column update mỗi click
+
+Bandwidth:
+  Read: 12K req/sec × (50B req + 300B redirect response) = ~4 MB/sec
+  Write: 120 req/sec × (500B + 100B) = ~70 KB/sec
+  → Nhỏ, không bottleneck
+
+Cache (80/20):
+  Top 20% URLs = 1.2B URLs hot
+  Hmm, 1.2B × 600B = 720 GB → too big cho Redis
+  → Cache top 10M URLs (recent + popular)
+  10M × 600B = 6 GB → fit single Redis instance, 12 GB cho HA replica
+
+DB Connections:
+  Peak 12K read/sec, mỗi query ~5ms (with index)
+  Connections needed = 12K × 5/1000 = 60
+  With 20/pool = 3 app servers minimum
+  HA buffer: 5-7 servers
+
+Bottleneck: Cache eviction strategy (LRU) + DB read pattern</code></pre>
+
+  <div class="callout warn">
+    <strong>Lưu ý interview reality:</strong> KHÔNG cần memorize công thức. Cần memorize: ① latency hierarchy (rough), ② 86400 = sec/day, ③ Pareto 80/20, ④ peak ≈ 3-5× average. Còn lại derive on-the-fly.
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Practice</h4>
+    <p>Đóng tab. Tự tính cho 1 bài khác: <em>"Design Twitter timeline. 200M DAU, mỗi user follow ~200 người, đọc timeline 5 lần/ngày."</em> Tính:</p>
+    <ol>
+      <li>Read QPS (timeline view).</li>
+      <li>Storage cho 10 năm tweets (assume 100B/tweet, 1M tweets/day).</li>
+      <li>Cache size cho 1% hot users (active recently).</li>
+    </ol>
+    <p>Đáp án ở Section 8.</p>
+  </div>
+</section>
+
+<section id="step-hld">
+  <h2>5. Step 3 — High-Level Design (10 phút) <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> Vẽ BOX + ARROW + DATA FLOW. KHÔNG deep dive code, KHÔNG vào schema chi tiết. Lý do: high-level đầu tiên cho interviewer redirect dễ; nếu wrong direction, không tốn 20 phút deep dive lạc.
+  </div>
+
+  <h3>Components điển hình cho mọi system design</h3>
+  <table>
+    <thead><tr><th>Component</th><th>Vai trò</th><th>Khi nào dùng</th></tr></thead>
+    <tbody>
+      <tr><td>Client</td><td>Browser, mobile, IoT</td><td>Luôn có</td></tr>
+      <tr><td>CDN</td><td>Edge caching static assets</td><td>High read traffic, geo-distributed</td></tr>
+      <tr><td>Load Balancer</td><td>Distribute traffic</td><td>&gt; 1 app server</td></tr>
+      <tr><td>API Gateway</td><td>Auth, rate limit, routing</td><td>Microservices, multi-client</td></tr>
+      <tr><td>Application Servers</td><td>Business logic, stateless</td><td>Luôn có</td></tr>
+      <tr><td>Cache (Redis/Memcached)</td><td>Hot data, low-latency reads</td><td>Read-heavy, repeated queries</td></tr>
+      <tr><td>Database (Primary)</td><td>Source of truth</td><td>Luôn có</td></tr>
+      <tr><td>DB Replica (Read)</td><td>Scale read</td><td>Read &gt;&gt; Write</td></tr>
+      <tr><td>Message Queue (Kafka, SQS)</td><td>Async processing, decouple</td><td>Eventual consistency OK</td></tr>
+      <tr><td>Object Storage (S3)</td><td>Files, blobs, immutable</td><td>Images, video, backup</td></tr>
+      <tr><td>Search Index (Elasticsearch)</td><td>Full-text search, ranking</td><td>Search feature</td></tr>
+      <tr><td>Worker / Job Queue</td><td>Background processing</td><td>Email, transcode, batch</td></tr>
+    </tbody>
+  </table>
+
+  <h3>HLD cho URL shortener</h3>
+  <pre><code class="language-text">                       ┌──────────┐
+                       │  Client  │
+                       └─────┬────┘
+                             │ HTTPS
+                             ▼
+                     ┌───────────────┐
+                     │ Load Balancer │ (AWS ALB)
+                     └───────┬───────┘
+                             │
+              ┌──────────────┼──────────────┐
+              ▼              ▼              ▼
+        ┌─────────┐    ┌─────────┐    ┌─────────┐
+        │ App     │    │ App     │    │ App     │
+        │ Server  │    │ Server  │    │ Server  │  (Stateless, scale-out)
+        │ 1       │    │ 2       │    │ N       │
+        └────┬────┘    └────┬────┘    └────┬────┘
+             │              │              │
+             └──────────────┼──────────────┘
+                            │
+                ┌───────────┴───────────┐
+                │                       │
+                ▼                       ▼
+        ┌──────────────┐        ┌──────────────┐
+        │ Redis Cache  │        │  PostgreSQL  │
+        │ (hot URLs    │◄──────►│  (Source of  │
+        │  + click ctr)│        │  truth)      │
+        └──────────────┘        └──────┬───────┘
+                                       │
+                                ┌──────┴───────┐
+                                ▼              ▼
+                          ┌──────────┐   ┌──────────┐
+                          │ Replica  │   │ Replica  │ (analytics queries)
+                          └──────────┘   └──────────┘
+
+                       Click events (async)
+                          │
+                          ▼
+                    ┌────────────┐
+                    │   Kafka    │
+                    │ click_events│
+                    └─────┬──────┘
+                          │
+                          ▼
+                   ┌──────────────┐
+                   │ Click Counter│
+                   │   Consumer   │ (batch update click_count)
+                   └──────────────┘</code></pre>
+
+  <h3>Data model — chỉ key entity, không full schema</h3>
+  <pre><code class="language-text">url_mapping
+  short_code     VARCHAR(8) PK   -- e.g., "Xy7Q9aB"
+  long_url       TEXT NOT NULL
+  user_id        VARCHAR(36)     -- nullable (anonymous)
+  custom_alias   BOOLEAN
+  created_at     TIMESTAMP
+  expires_at     TIMESTAMP NULL  -- optional
+  click_count    BIGINT DEFAULT 0  -- updated batched
+
+  INDEX (user_id, created_at)
+  INDEX (expires_at) WHERE expires_at IS NOT NULL
+
+click_event   -- raw events, partition by date
+  id           UUID
+  short_code   VARCHAR(8)
+  clicked_at   TIMESTAMP
+  ip_address   INET
+  user_agent   TEXT
+  referrer     TEXT</code></pre>
+
+  <h3>API endpoints — chỉ 3-4 chính</h3>
+  <pre><code class="language-text">POST /api/v1/shorten
+  body: { long_url: "...", custom_alias?: "...", expires_in_days?: 30 }
+  resp: { short_url: "bit.ly/Xy7Q9aB", expires_at?: "..." }
+
+GET /:short_code
+  → 301/302 redirect to long_url
+  → publish click event to Kafka (fire-and-forget)
+
+GET /api/v1/stats/:short_code
+  resp: { short_code, long_url, click_count, created_at }
+
+DELETE /api/v1/urls/:short_code   (require auth)</code></pre>
+
+  <div class="callout info">
+    <strong>Lưu ý "vẽ vừa đủ":</strong> KHÔNG vẽ retry logic, circuit breaker, monitoring ở HLD. KHÔNG schema chi tiết với constraint/trigger. Để dành cho Step 4. HLD là 10 phút — chỉ box, arrow, key data model, API contract chính.
+  </div>
+</section>
+
+<section id="step-deepdive">
+  <h2>6. Step 4 — Deep Dive (15 phút) <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Quy tắc:</strong> Interviewer PICK chỗ deep dive — không phải bạn. Nếu interviewer im, hỏi: <em>"Bạn muốn tôi đi sâu component nào? Short code generation, cache strategy, hay click counter?"</em>
+  </div>
+
+  <h3>4 chỗ deep dive thường gặp cho URL shortener</h3>
+
+  <h4>Deep dive 1: Short code generation</h4>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Approach 1: MD5 hash + take 7 chars</h4>
+      <pre><code class="language-text">short_code = MD5(long_url)[0:7]
+
+Vấn đề:
+- Collision rate cao (birthday paradox
+  với 7 char base62 → 3.5 tỉ space)
+- Same URL → same short code (đôi khi
+  muốn khác, đôi khi không — không control)
+- Custom alias conflict logic phức tạp
+- Không retry logic được vì hash deterministic</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Approach 2: Counter + Base62 encode</h4>
+      <pre><code class="language-text">id = ZooKeeper.nextSequence()  // distributed counter
+short_code = base62(id)
+
+Pros:
+- Unique guaranteed (counter monotonic)
+- Sequential ID → predict được capacity
+- Custom alias check riêng dễ
+- Có thể partition counter cho scale
+
+Cons:
+- Counter có thể bottleneck → batch allocate
+  (mỗi app server lấy 1000 IDs một lần)</code></pre>
+    </div>
+  </div>
+
+  <p>Approach 3 (hybrid): Counter + random salt — get best of both.</p>
+
+  <h4>Deep dive 2: Cache strategy</h4>
+  <pre><code class="language-text">Read path:
+  GET /Xy7Q9aB
+    → Check Redis: GET url:Xy7Q9aB
+    → HIT: return long_url, async publish click event
+    → MISS: query Postgres, populate cache với TTL 24h, return
+
+Cache eviction: LRU (Redis default)
+Cache size: 6 GB (top 10M URLs)
+Cache hit rate target: &gt; 95% (vì hot URLs chiếm hầu hết traffic)
+
+Cache invalidation:
+  DELETE /Xy7Q9aB → DELETE url:Xy7Q9aB từ Redis, soft-delete trong DB
+  Update long_url (hiếm) → DEL cache, update DB
+
+Cache stampede problem:
+  Top URL có TTL 24h, expire → 1000s concurrent requests miss cache → DB hammered
+  Solution:
+  - Probabilistic early expiry (refresh before actual expiry)
+  - Lock + double-check pattern
+  - Cache-aside với async refresh</code></pre>
+
+  <h4>Deep dive 3: Click counter (high write rate)</h4>
+  <pre><code class="language-text">Problem: 12K reads/sec → 12K click_count++ writes/sec
+         Direct DB UPDATE → row lock contention → slow
+
+Solution: Async aggregation
+  1. App server publish click event to Kafka (fire-and-forget)
+  2. Consumer batch reads events, aggregate trong 1-min window
+  3. Single UPDATE per (short_code, time_bucket) commit
+
+Trade-off: Click count lag 1-2 phút (eventual)
+  → User analytics dashboard có disclaimer "near real-time"
+
+Alternative: Redis INCR (atomic, fast)
+  redis.INCR("clicks:Xy7Q9aB")
+  Periodic flush từ Redis → Postgres (every 5 min)
+  Risk: Redis crash mất 5 phút data
+  Mitigation: Redis AOF persistence + replication</code></pre>
+
+  <h4>Deep dive 4: Sharding chiến lược (scale 10×)</h4>
+  <pre><code class="language-text">Initial: single Postgres handles 12K reads/sec dễ
+Scale 10×: 120K reads/sec → cần shard
+
+Sharding key options:
+  A) Hash(short_code) → uniform distribution
+     - Range query khó (list URLs của user)
+     - Resharding khó (rehash toàn bộ)
+
+  B) Range by short_code prefix
+     - Hot spot nếu URL mới luôn đến cuối range
+     - Range query OK
+
+  C) Hash(user_id) → URLs cùng user 1 shard
+     - Anonymous URLs (user_id null) → 1 shard, hot spot
+     - List user URLs nhanh
+
+Khuyến nghị: A) Hash(short_code) với consistent hashing
+  → Resharding dễ hơn naive hash
+  → User-level queries: cache trong Redis sorted set
+  → Cross-shard query: rare (analytics) → batch job</code></pre>
+
+  <h3>Khi không sure, narrate</h3>
+  <div class="callout success">
+    Khi không sure, narrate quá trình suy nghĩ. Interviewer rất thích thấy: <em>"Tôi đang nghĩ về 2 option. Option A pros... cons... Option B... Tôi nghiêng về A vì..."</em> — đây là senior signal mạnh hơn "biết đáp án".
+  </div>
+</section>
+
+<section id="step-tradeoff">
+  <h2>7. Step 5 — Trade-offs &amp; Wrap (5 phút) <span class="k-tag core">CORE</span></h2>
+
+  <p>5 phút cuối là chỗ ghi điểm senior. 3 việc bắt buộc:</p>
+
+  <h3>① Bottleneck identification</h3>
+  <pre><code class="language-text">"Bottleneck trong design hiện tại:
+ 1. Counter sequence — single point cho ID generation.
+    Mitigation: distributed counter (ZooKeeper) hoặc batch allocate.
+
+ 2. Cache hit rate phải ≥ 95% — nếu drop → DB overloaded.
+    Mitigation: warm cache, monitor hit rate, alert.
+
+ 3. Single region — geo-distant users high latency.
+    Mitigation: multi-region với edge POPs (CloudFront caching)."</code></pre>
+
+  <h3>② Scale 10× scenario</h3>
+  <pre><code class="language-text">"Nếu scale 10× (1B URL/tháng, 120K read/sec):
+ - App servers: stateless, scale horizontal. Add 50+ instances.
+ - DB: shard Postgres bằng hash(short_code). 10 shards.
+ - Cache: Redis cluster mode, 60 GB.
+ - Kafka: tăng partitions (currently 10 → 100), brokers (3 → 9).
+ - CDN: aggressive edge caching cho top 1M URLs.
+ - Counter: distributed via Snowflake-like (Twitter pattern)."</code></pre>
+
+  <h3>③ Corners cut + future enhancement</h3>
+  <pre><code class="language-text">"Để ship phase 1 trong 6 tuần, tôi cut:
+ - Custom domain (myco.link) → phase 2
+ - Detailed analytics (geo, device, time series) → phase 2
+ - URL preview thumbnail → phase 3
+ - Spam URL detection → phase 2 (sau khi có user feedback)
+ - Admin dashboard → phase 2
+
+ Nếu có thêm 2 sprint, ưu tiên:
+ 1. Spam detection (Google Safe Browsing API integrate)
+ 2. Detailed analytics
+ 3. Custom domain"</code></pre>
+
+  <div class="callout info">
+    <strong>Senior signal:</strong> Việc <em>tự nêu</em> trade-off + roadmap mà interviewer chưa hỏi = "thinks like a PM/architect". Đây là điểm cộng senior level. Junior chờ hỏi mới trả lời.
+  </div>
+</section>
+
+<section id="example-url">
+  <h2>8. URL Shortener — end-to-end walkthrough <span class="k-tag core">CORE</span></h2>
+
+  <p>Tổng hợp lại 5 step. Đây là <em>script</em> bạn nên reproduce được trong 35 phút trên whiteboard. Practice ≥ 3 lần với timer.</p>
+
+  <h3>Phút 0-5: CLARIFY</h3>
+  <pre><code class="language-text">Tôi: "Để clarify trước khi design:
+  - Core feature: shorten + redirect. Custom alias phase 1?
+  - Click analytics — count đơn giản hay detailed (geo, device)?
+  - Scale: bạn nói 100M URL/tháng. Read:write ratio?
+  - Latency: redirect phải &lt; 100ms?
+  - Uptime: 99.9% hay 99.99%?
+  - Multi-region phase 1 hay phase 2?"
+
+Interviewer: "Anonymous OK. Click count đơn giản phase 1.
+              100M URL/tháng, 100:1 read:write. P99 &lt; 100ms.
+              99.9% phase 1. Multi-region phase 2."
+
+Tôi viết assumptions ra giấy. Confirm.</code></pre>
+
+  <h3>Phút 5-10: ESTIMATE</h3>
+  <pre><code class="language-text">QPS:
+  Writes = 100M / 30 / 86400 = ~40/sec average, peak ×3 = 120/sec
+  Reads  = 100 × writes = ~4K/sec average, peak = 12K/sec
+
+Storage 5 năm:
+  6B URLs × 600B = ~3.6 TB total
+
+Cache:
+  Pareto: top 20% URLs handle 80% traffic
+  Cache top 10M URLs × 600B = 6 GB
+  Single Redis instance đủ; 2 cho HA
+
+Bandwidth:
+  Read: 12K req/s × 350B = ~4 MB/sec → easy
+
+DB connections:
+  12K read/s × 5ms query = 60 conn → 3-5 app servers</code></pre>
+
+  <h3>Phút 10-20: HLD</h3>
+  <p>Vẽ architecture diagram + key data model + 3-4 API endpoint (Section 5 ở trên).</p>
+
+  <h3>Phút 20-35: DEEP DIVE</h3>
+  <pre><code class="language-text">Interviewer: "Walk me through short code generation."
+
+Tôi:
+  "2 option:
+   A) MD5 hash + truncate — risk collision, deterministic
+   B) Counter + base62 — unique guaranteed, scalable
+
+   Tôi chọn B. Implementation:
+   - Distributed counter (Redis INCR hoặc ZooKeeper sequence)
+   - Batch allocate: app server lấy 1000 IDs/lần → giảm load counter
+   - Base62 encode → 7 char support 62^7 = 3.5 tỉ unique URLs
+   - 100M/tháng × 60 tháng = 6 tỉ → cần 8 chars (62^8 = 218 tỉ)
+
+   Custom alias check riêng: SELECT WHERE short_code = ?
+   Conflict → return 409, user retry với alias khác."
+
+Interviewer: "Cache strategy?"
+
+Tôi: [explain cache-aside + TTL + stampede prevention]
+... (Section 6)</code></pre>
+
+  <h3>Phút 35-40: TRADE-OFF &amp; WRAP</h3>
+  <p>Bottleneck + scale 10× + corners cut (Section 7).</p>
+
+  <h3>Phút 40-45: BUFFER</h3>
+  <p>Q&amp;A. Nếu interviewer hỏi follow-up về 1 chỗ chưa cover (vd security, abuse prevention) → trả lời ngắn gọn.</p>
+
+  <h3>📌 Đáp án Pause &amp; Predict — Twitter timeline estimate</h3>
+  <div class="callout info">
+    <strong>Câu hỏi từ Section 4:</strong> Twitter timeline, 200M DAU, follow ~200, đọc timeline 5 lần/ngày.
+    <pre><code class="language-text">Read QPS:
+  200M × 5 / 86400 = ~12K reads/sec average
+  Peak (×3) = 36K reads/sec
+
+Storage tweets 10 năm:
+  1M tweets/day × 365 × 10 = 3.65B tweets
+  Per tweet ~280 chars + metadata ~200B = 500B
+  Total = 1.8 TB
+
+Cache 1% hot users:
+  200M × 1% = 2M hot users
+  Per user cache: top 800 tweets timeline ≈ 800 × 500B = 400 KB
+  Total cache: 2M × 400 KB = 800 GB
+  → Cần Redis cluster, không single instance</code></pre>
+    Nếu bạn ra ±50% các con số trên = OK. Nếu off 1-2 magnitudes = practice thêm.
+  </div>
+</section>
+
+<section id="patterns">
+  <h2>9. 6 patterns hay dùng trong system design <span class="k-tag supp">SUPP</span></h2>
+
+  <table>
+    <thead><tr><th>Pattern</th><th>Khi nào dùng</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Cache-aside</strong></td>
+        <td>Read-heavy, data tolerates staleness</td>
+        <td>+ Simple, miss path explicit · − Stampede risk khi expire</td>
+      </tr>
+      <tr>
+        <td><strong>Write-through</strong></td>
+        <td>Cache phải up-to-date với DB</td>
+        <td>+ Strong consistency · − Slow writes (write 2 lần)</td>
+      </tr>
+      <tr>
+        <td><strong>Outbox pattern</strong></td>
+        <td>Event publishing + DB change atomic</td>
+        <td>+ At-least-once delivery · − Phải có poller, extra latency</td>
+      </tr>
+      <tr>
+        <td><strong>Idempotency key</strong></td>
+        <td>Retryable writes (payment, order create)</td>
+        <td>+ Dedup safe · − Extra storage cho keys (→ <a href="33-idempotency.html">#33</a>)</td>
+      </tr>
+      <tr>
+        <td><strong>Rate limiting (Token bucket)</strong></td>
+        <td>Prevent abuse, fair sharing</td>
+        <td>+ Burst tolerant · − Memory per user, distributed sync tricky</td>
+      </tr>
+      <tr>
+        <td><strong>CQRS</strong></td>
+        <td>Read pattern khác hẳn write pattern</td>
+        <td>+ Optimize riêng read/write · − Phức tạp, eventual sync</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Khi gặp bài lạ, hỏi mình: <em>"Pattern nào fit problem này?"</em> Reflex 6 pattern này phủ ~70% bài interview.</p>
+</section>
+
+<section id="behaviors">
+  <h2>10. Interview behaviors — 5 anti + 5 winning <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Cùng design có thể "Hire" hoặc "No Hire" tuỳ behavior. 5 anti-pattern phải tự bắt:</p>
+
+  <div class="misconception">
+    <h4>❌ Anti #1: Im lặng (silent thinker)</h4>
+    <p>Tự suy nghĩ 5 phút, vẽ thầm, không narrate. Interviewer không biết bạn nghĩ gì → "no signal".</p>
+    <p><strong>Fix:</strong> Narrate liên tục, kể cả khi chưa chắc: <em>"Tôi đang nghĩ về 2 option..."</em></p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti #2: Jump-to-code (java engineer mode)</h4>
+    <p>Mới 5 phút đã vào code Java cụ thể, class diagram, method signature. Quên estimate, quên trade-off.</p>
+    <p><strong>Fix:</strong> Code chỉ ở Deep Dive nếu interviewer ask. HLD ở box + arrow level.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti #3: Fixed mindset on 1 approach</h4>
+    <p>Interviewer hint <em>"What if we used NoSQL?"</em> — bạn defend Postgres tới cùng. Không listen.</p>
+    <p><strong>Fix:</strong> Explore option interviewer gợi ý, dù bạn không initially chọn. <em>"Hmm, NoSQL có thể work nếu... trade-off là..."</em></p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti #4: Knowledge dump (vocabulary parade)</h4>
+    <p>Nhét đủ buzzword: "CAP theorem", "PACELC", "vector clock", "Paxos" — nhưng không apply.</p>
+    <p><strong>Fix:</strong> Mention pattern chỉ khi relevant. <em>"Đây là eventual consistency vì..."</em> — explain why, không chỉ name-drop.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti #5: Quên time management</h4>
+    <p>Spend 25 phút clarify + estimate. Còn 20 phút cho HLD + Deep Dive + Trade-off. Interviewer pull back.</p>
+    <p><strong>Fix:</strong> Mặc đồng hồ trong đầu: 5/5/10/15/5/5. Check thường xuyên.</p>
+  </div>
+
+  <h3>5 winning behaviors</h3>
+  <div class="callout success">
+    <ol>
+      <li><strong>State assumptions explicitly + confirm.</strong> "Tôi assume X. OK chứ?" — clear contract.</li>
+      <li><strong>Draw before code.</strong> Interviewer redirect dễ ở giai đoạn vẽ. Code muộn = lock-in sớm.</li>
+      <li><strong>Show math, không đoán.</strong> "Let me work this out: 100M / 30 / 86400 = ..."</li>
+      <li><strong>Unprompted trade-off.</strong> "Trade-off của approach này là... Alternative là..."</li>
+      <li><strong>Ask for feedback.</strong> Mỗi 10 phút: <em>"Direction OK chứ? Bạn muốn focus đâu?"</em></li>
+    </ol>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior signal)</h3>
+    <p><strong>Q1: Tại sao cần load balancer + multiple app servers?</strong></p>
+    <p><em>Trả lời:</em> "Single app server có giới hạn: CPU, memory, connection pool. Khi traffic vượt giới hạn → request queue, latency tăng, hoặc crash. Multiple app server scale horizontal — load balancer phân phối traffic đều. Plus: HA — 1 server down, traffic redirect server khác. Stateless app servers là điều kiện để scale horizontal."</p>
+
+    <p><strong>Q2: Cache miss strategy — write-through vs write-back vs cache-aside?</strong></p>
+    <p><em>Trả lời:</em> "Cache-aside: app code đọc cache trước, miss thì query DB + populate cache. Đơn giản, phổ biến nhất. Write-through: ghi vào cache + DB cùng lúc → cache luôn fresh nhưng write chậm. Write-back: ghi cache trước, async flush DB → fast write nhưng risk mất data nếu cache crash. URL shortener dùng cache-aside vì read-heavy + ít update."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (Mid vs Senior)</h3>
+    <p><strong>Q3: Eventual consistency vs Strong consistency — chọn khi nào?</strong></p>
+    <blockquote>
+      "Strong consistency: mọi read thấy write mới nhất. Cần cho payment, inventory (oversell prevention), authentication. Cost: latency cao, throughput thấp (vì coordination).<br><br>
+      Eventual consistency: read có thể stale ngắn hạn, eventually converge. Cho social feed, click count, view count. Throughput cao hơn nhiều.<br><br>
+      URL shortener: click count eventual OK (1-2 phút lag acceptable). Long_url mapping strong OK vì update hiếm. Dùng cache 24h TTL = lag tối đa 24h cho update (rare).<br><br>
+      Trade-off cụ thể: Strong consistency thường yêu cầu single-leader DB hoặc consensus protocol (Raft/Paxos) → bottleneck. Eventual cho phép multi-leader, multi-region, lower latency."
+    </blockquote>
+
+    <p><strong>Q4: Sharding strategy — hash vs range vs directory?</strong></p>
+    <blockquote>
+      "<strong>Hash sharding:</strong> shard = hash(key) % N. Uniform distribution. Cons: range query khó (phải scatter-gather), resharding khó.<br><br>
+      <strong>Range sharding:</strong> shard theo key range (vd userId 1-1M shard 1, 1M-2M shard 2). Pros: range query dễ. Cons: hot spot nếu key skewed (user mới luôn đến shard cuối).<br><br>
+      <strong>Directory sharding:</strong> lookup table mapping key → shard. Flexible, có thể move dữ liệu. Cons: lookup table là bottleneck/SPOF.<br><br>
+      URL shortener: hash sharding với consistent hashing (resharding chỉ move 1/N data thay vì rehash toàn bộ). User-level queries (rare) batch query cross-shard.<br><br>
+      Twitter/Facebook timeline: directory-like — user shard map cached, user data sticky shard."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior signal)</h3>
+
+    <p><strong>Q5: Design rate limiter cho 100M users, 1000 requests/sec/user limit, multi-region active-active.</strong></p>
+    <pre><code class="language-text">Phút 1 — Clarify:
+  - Rate limit type: per-user per-second hay sliding window?
+  - Burst tolerance: 1000 sustained hay burst OK?
+  - Strict cross-region hay region-local OK?
+  - Hard limit (reject) hay soft (throttle/queue)?
+
+Phút 2 — Approach options:
+  A) In-memory token bucket per app server
+     - Fast, no network
+     - Cons: không enforce cross-server limit
+  B) Redis-based distributed counter
+     - Atomic INCR with TTL
+     - Latency ~1ms thêm
+     - Cons: Redis bottleneck cho 100K req/sec
+  C) Approximate counting (Count-Min Sketch)
+     - Lightweight, distributed easy
+     - Cons: approximate, not exact
+
+Phút 3 — Architecture (chọn B + tier):
+  ┌────────┐  ┌────────────────┐
+  │ Client │─►│ Edge gateway   │ (CDN level — drop obvious abuse)
+  └────────┘  └───────┬────────┘
+                      ▼
+              ┌───────────────┐
+              │ App server    │
+              │ + local cache │
+              │ (last second  │
+              │  bucket)      │
+              └───────┬───────┘
+                      ▼
+              ┌───────────────┐
+              │ Redis cluster │ (Lua script atomic)
+              │ rate:userId   │
+              │ TTL 1 sec     │
+              └───────────────┘
+
+Phút 4 — Lua script atomic:
+  local current = redis.call('INCR', KEYS[1])
+  if current == 1 then redis.call('EXPIRE', KEYS[1], 1) end
+  if current &gt; tonumber(ARGV[1]) then return 0 else return 1 end
+
+Phút 5 — Multi-region trade-off:
+  Strict global counter: cross-region latency 150ms → unacceptable
+  Region-local quota (per-region 1000/sec): user có thể abuse cross-region
+    → Mitigation: detect anomaly + post-fact suspend
+  Hybrid: 80% quota local + 20% global pool (CRDT counter)
+
+  Trade-off: latency-vs-fairness. Production thường chọn region-local
+  với detection layer sau.</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 3 mock + 1 lab BẮT BUỘC</h2>
+
+  <div class="callout warn">
+    <strong>Quy tắc cứng:</strong> File này KHÔNG đủ. Phải mock với người thật. 1 mock = 1-2 giờ. Tốt nhất Pramp.com (free peer-to-peer), Interviewing.io (paid với senior). Tối thiểu 3 mock trước interview thật.
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Capacity estimation drill (2 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Reflex math nhẩm trong 5 phút.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Lấy 10 bài design phổ biến: URL shortener, Twitter, Uber, Slack chat, Netflix, Dropbox, Instagram, YouTube, Google Drive, ticket booking.</li>
+      <li>Mỗi bài, tự tính trong 5 phút: QPS (read/write), storage 5 năm, cache size, bandwidth, # servers.</li>
+      <li>Show work trên giấy. KHÔNG calculator.</li>
+      <li>Verify với "System Design Interview" (Alex Xu) hoặc bài blog reference.</li>
+      <li>Sau 10 bài, off bằng nhau ±50% = pass.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Solve 10/10 trong 5 phút mỗi bài. Confidence trong estimate ≥ ±50%.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Mock 1 — URL Shortener with peer (1.5 giờ)</h3>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Pramp.com đăng ký, schedule mock system design.</li>
+      <li>Bạn lấy URL shortener prompt. Peer làm interviewer.</li>
+      <li>Đi đúng 5-step, time-box từng step. Record video nếu được.</li>
+      <li>Sau session, peer give feedback. Bạn give feedback peer.</li>
+      <li>Self-review: dính bao nhiêu anti-behavior? Section 10 list 5 anti — check từng cái.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Cover được 5 step + 1-2 deep dive trong 45 phút. Peer feedback ≥ 7/10.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Mock 2-3 — 2 bài khác (2 × 1.5 giờ)</h3>
+    <p><strong>Bài đề xuất:</strong></p>
+    <ul>
+      <li>Mock 2: Design chat app (Slack/Discord) — focus real-time, presence, message ordering.</li>
+      <li>Mock 3: Design ride-sharing matching (Uber) — focus geospatial query, matching algorithm.</li>
+    </ul>
+    <p><strong>Acceptance:</strong> Cải thiện so với Mock 1. Track metrics: time spent per step, # anti-behaviors caught, # winning behaviors. Trend up qua 3 mock.</p>
+  </div>
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test — Verify hiểu thật</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho candidate khác — không nhìn file</h3>
+    <p>Đóng tab. Trả lời 5 câu, &lt; 30 giây mỗi câu:</p>
+    <ol>
+      <li><strong>"5 step của framework là gì? Time budget mỗi step?"</strong> — Clarify (5'), Estimate (5'), HLD (10'), Deep Dive (15'), Trade-off (5'), Buffer (5'). Tổng 45 phút.</li>
+      <li><strong>"Vì sao phải clarify trước khi design?"</strong> — Tránh jump-to-design lạc hướng. Interviewer có specific scenario trong đầu. Skip clarify = design giả thuyết, có thể wrong. 5 phút clarify tiết kiệm 15 phút sửa.</li>
+      <li><strong>"3 con số nhẩm cần thuộc cho estimate?"</strong> — 86400 (sec/day). Pareto 80/20. Peak ≈ 3-5× average. Latency hierarchy rough (memory 100ns, network DC 500μs, disk 10ms).</li>
+      <li><strong>"Cache-aside vs write-through khác gì?"</strong> — Cache-aside: app đọc cache, miss query DB + populate. Write-through: ghi cache + DB cùng lúc. Cache-aside đơn giản hơn, write-through ensure cache fresh nhưng slow write. Read-heavy thường cache-aside.</li>
+      <li><strong>"Eventual vs Strong consistency — ví dụ chọn cho mỗi?"</strong> — Strong: payment, inventory, auth (correctness critical). Eventual: social feed, click count, view count (throughput critical, lag OK).</li>
+    </ol>
+    <p>Bí 1 câu = hiểu giả. Quay lại section tương ứng.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources</h3>
+    <ul>
+      <li><strong>System Design Interview Vol 1 &amp; 2</strong> (Alex Xu, 2020-2022) — ISBN 979-8664653403 + 978-1736049129. Bible cho prep, 30+ bài walkthrough.</li>
+      <li><strong>Designing Data-Intensive Applications</strong> (Martin Kleppmann, 2017) — ISBN 978-1449373320. Foundation. Phải đọc Chapter 1-3, 5-7, 9.</li>
+      <li><strong>Grokking the System Design Interview</strong> (DesignGurus.org) — paid course, 30+ designs, pattern-based.</li>
+      <li><strong>Numbers Every Programmer Should Know</strong> (Jeff Dean, Peter Norvig) — gist tại <a href="https://gist.github.com/jboner/2841832">gist.github.com/jboner/2841832</a>.</li>
+      <li><strong>High Scalability</strong> — <a href="http://highscalability.com">highscalability.com</a>. Real architecture case studies (Netflix, Twitter, Stack Overflow).</li>
+      <li><strong>Engineering blogs</strong>: Uber, Netflix, Meta, Discord, Stripe, Cloudflare — real design lessons.</li>
+      <li><strong>Pramp.com</strong> — free peer-to-peer mock interviews. Bắt buộc dùng.</li>
+      <li><strong>ByteByteGo YouTube</strong> — Alex Xu's channel. Visual explainer 5-10 phút cho từng pattern.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 2 tuần master Framework</h3>
+    <pre><code class="language-text">Tuần 1 — Mental model + Estimation
+  Ngày 1:  Section 1-2 (Bài toán + Vì sao framework). Write Pause &amp; Predict.
+  Ngày 2:  Section 3-4 (Clarify + Estimate). Lab 1 (10 bài estimate).
+  Ngày 3:  Section 5 (HLD). Tự vẽ HLD cho 5 bài khác URL shortener.
+  Ngày 4:  Section 6 (Deep Dive). Read Alex Xu Vol 1, 2 chapters.
+  Ngày 5:  Section 7-8 (Trade-off + URL shortener end-to-end). Tự practice timer 35 phút.
+  Ngày 6:  Section 9 (Patterns) + #33 Idempotency review song song.
+  Ngày 7:  Section 10 (Behaviors). Mock 1 với peer trên Pramp.
+
+Tuần 2 — Mock + iteration
+  Ngày 8:  Self-review Mock 1, identify 3 anti-behaviors dính nhất.
+  Ngày 9:  Mock 2 (chat app). Focus tránh 3 anti từ Mock 1.
+  Ngày 10: Self-review Mock 2.
+  Ngày 11: Mock 3 (ride-sharing). Final practice.
+  Ngày 12-13: Read 2-3 engineering blogs (Uber, Netflix), update mental model.
+  Ngày 14: Feynman test. Ready cho interview thật.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="45-faang-system-design.html">#45 FAANG System Design</a> — 4S framework + 5 designs kinh điển full walkthrough (sau khi master file này).</li>
+      <li><a href="33-idempotency.html">#33 Idempotency</a> — pattern dùng trong deep dive.</li>
+      <li><a href="13-distributed-transaction.html">#13 Distributed Transaction</a> — Outbox pattern, Saga.</li>
+      <li><a href="14-redis.html">#14 Redis</a> — Cache strategy, rate limiting.</li>
+      <li><a href="19-api-design.html">#19 API Design</a> — REST design trong system design.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng interview thật:</strong> 3 mock xong với peer feedback ≥ 8/10 · Lab 1 estimate 10/10 · Feynman 5/5 mượt · Cover được 5 step trong 45 phút không skip.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

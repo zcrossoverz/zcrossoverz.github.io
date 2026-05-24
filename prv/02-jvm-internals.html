@@ -831,6 +831,106 @@ jmap -histo:live &lt;pid&gt; | head</code></pre>
 <p>Bài lab này giúp bạn nhìn thấy Old Gen tăng, Full GC bất lực và histogram có nhiều <code>byte[]</code>. Sau đó mở heap dump bằng MAT để xem static list giữ toàn bộ byte array.</p>
 </section>
 
+<section id="when-not-tune">
+<h2>8b. Khi nào KHÔNG cần tune GC — Counter-examples <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">JVM tuning là một trong những vùng bị "premature optimization" nhiều nhất. Đa số case không cần tune — chỉ cần đo. Đây là các tình huống <strong>SKIP tuning</strong> và lý do.</p>
+
+<div class="callout warn">
+<div class="ctitle">❌ KHÔNG tune GC khi…</div>
+<ul>
+<li><strong>Chưa có baseline metric</strong> — chưa biết p50/p99 latency hiện tại là bao nhiêu, GC pause thực tế bao lâu, throughput target là gì. Tune mò = đập production. Đo trước, tune sau</li>
+<li><strong>App có lỗi memory leak chưa fix</strong> — tune GC chỉ trì hoãn OOM, không sửa được leak. Fix leak (heap dump → MAT) trước, GC sau</li>
+<li><strong>App có blocking I/O hoặc DB query chậm là bottleneck</strong> — JFR sẽ show CPU đang chờ DB, không phải GC. Tune connection pool và query, không tune GC</li>
+<li><strong>App dưới 1000 req/s và heap &lt; 4GB</strong> — default G1GC trên JDK 17+ đã tối ưu rất tốt. Tune marginal benefit, rủi ro break cao</li>
+<li><strong>Không có khả năng A/B test</strong> — không có canary deployment để so sánh trước/sau tune → không thể biết flag thay đổi có thực sự improve không</li>
+<li><strong>Khi sắp upgrade JVM version</strong> — flags JDK 8 đa số đã obsolete trong JDK 17/21. Upgrade trước, tune sau với flags mới</li>
+</ul>
+<p><strong>Symptom của over-tune:</strong> JVM args có 15+ flag, không ai trong team explain được tại sao có flag X. CI/CD pipeline có 3 set flags khác nhau cho 3 service tương tự nhau, không lý do.</p>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ KHÔNG dùng heap dump khi…</div>
+<ul>
+<li><strong>Production heap &gt; 32GB và downtime không chấp nhận</strong> — heap dump pauses JVM 5-30 phút trên heap lớn. Dùng <code>jcmd GC.class_histogram</code> hoặc JFR thay thế cho diagnostic ban đầu</li>
+<li><strong>Chưa scoped vấn đề</strong> — heap dump không phải first tool. Bắt đầu bằng <code>jstat -gc</code> để biết có thực sự là memory issue không, hay là CPU/IO/lock</li>
+<li><strong>Không có MAT/JOL local</strong> — heap dump 8GB cần MAT chạy với -Xmx16GB, máy laptop nhiều khi đứng. Plan tool stack trước khi capture</li>
+</ul>
+</div>
+
+<div class="callout warn">
+<div class="ctitle">❌ KHÔNG đổi GC algorithm khi…</div>
+<ul>
+<li><strong>Chỉ dựa trên benchmark blog</strong> — workload bạn không phải workload trong blog. ZGC tốt cho low pause, không tự động tốt cho throughput-heavy batch</li>
+<li><strong>Heap nhỏ (&lt; 2GB)</strong> — ZGC overhead không đáng. G1GC hoặc ParallelGC OK</li>
+<li><strong>Không monitor được</strong> — đổi GC mà không có dashboard GC log thì không biết tốt hay tệ</li>
+</ul>
+</div>
+
+<h2>8c. 3 Cấp Độ Mastery cho JVM Tuning <span class="phase-tag">CORE ★</span></h2>
+
+<div class="callout why">
+<div class="ctitle">🎯 L1 / L2 / L3 cho 3 chủ đề CORE</div>
+</div>
+
+<h3>GC Tuning</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (biết tên)</h3>
+    <p>Biết tên G1GC/ZGC/Parallel. Biết "GC pause = bad". Khi gặp latency spike thường suggest "tăng heap" hoặc "đổi sang ZGC".</p>
+    <p><em>Symptom:</em> commit JVM flags vào repo mà không kèm metric trước/sau.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (giải thích)</h3>
+    <p>Hiểu generational hypothesis (young die quick), phân biệt minor/major/full GC. Đọc được GC log: nhận ra Full GC frequency, allocation rate, promotion rate. Biết JFR enable thế nào.</p>
+    <p><em>Symptom:</em> khi nghe "latency spike mỗi 3h", hỏi "GC log lúc spike thế nào? Allocation rate có tăng không?"</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (phản xạ)</h3>
+    <p>Tune theo evidence: đo baseline, đổi 1 flag, đo lại, A/B canary. Biết khi nào KHÔNG tune (6 case ở trên). Build flame graph từ JFR và đọc được "GC chiếm 12% CPU, không phải bottleneck thật".</p>
+    <p><em>Symptom:</em> PR JVM flag change có biểu đồ before/after + giải thích tại sao chọn flag đó.</p>
+  </div>
+</div>
+
+<h3>Heap Dump & Memory Leak</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết khái niệm heap dump, nghe nói về MAT. Khi OOM, default action là "tăng -Xmx". Không biết phân biệt leak vs high allocation.</p>
+    <p><em>Symptom:</em> service OOM lần 2 sau 1 tuần dù đã tăng heap, không biết tại sao.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Capture heap dump bằng <code>jcmd GC.heap_dump</code>, mở bằng MAT. Tìm dominator tree, biết "static collection giữ object" là leak pattern phổ biến. Phân biệt soft/weak/strong reference.</p>
+    <p><em>Symptom:</em> khi OOM, dump → MAT → xác định class nào chiếm heap → quay về code tìm reference giữ chặt.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Build automation capture heap dump khi OOM (<code>-XX:+HeapDumpOnOutOfMemoryError</code>), upload S3, alert. Biết classloader leak khi hot reload. Reproduce leak trong dev bằng JFR allocation tracking. Recipe debug ở trên là phản xạ.</p>
+    <p><em>Symptom:</em> service có dashboard heap growth rate, alert khi growth &gt; 100MB/h trong 4h liên tiếp.</p>
+  </div>
+</div>
+
+<h3>JFR & Profiling</h3>
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize</h3>
+    <p>Biết JFR và async-profiler là tool profiling. Đôi khi chụp flame graph nhưng không biết đọc.</p>
+    <p><em>Symptom:</em> share flame graph trong slack mà không kết luận được gì.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain</h3>
+    <p>Đọc flame graph: hiểu width = time, stack từ dưới lên. Phân biệt CPU profile vs allocation profile. Capture JFR khi spike: <code>jcmd start name=spike duration=120s filename=spike.jfr</code>.</p>
+    <p><em>Symptom:</em> sau khi profile, nói được "60% CPU đang trong JSON parsing, optimize chỗ này impact lớn nhất".</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply</h3>
+    <p>Always-on JFR ở production với rolling buffer (low overhead). Build alert: khi p99 spike, auto capture JFR + heap histogram. Compare flame graph trước/sau release để catch regression.</p>
+    <p><em>Symptom:</em> sau bug report production, có evidence (JFR + GC log + thread dump) trong 5 phút thay vì "thử reproduce trên local".</p>
+  </div>
+</div>
+
+</section>
+
 <section id="interview">
 <h2>9. Interview Framework</h2>
 <div class="tier t1">

@@ -915,6 +915,88 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY shop_daily_revenue;
 <p>4-JOIN query trên 500M rows table = 2 phút. Fix: materialized view denormalized cho reporting.</p>
 </section>
 
+<section id="symptom-debug">
+<h2>9b. Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Bug schema design thường không lộ ngay — chúng xuất hiện khi data scale, traffic skew, hoặc team mới join read replica. Đây là cách nhận diện.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — User report "đơn hàng vừa tạo bỗng biến mất"</div>
+<p><strong>Symptom:</strong> User tạo order, redirect sang trang "Đơn của tôi" trong 200ms → không thấy order. F5 sau 2 giây thấy. Reproduce không ổn định, 5-10% requests.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li><code>pg_stat_replication.replay_lag</code> (Postgres) hoặc MySQL <code>SHOW SLAVE STATUS \G</code> — xem <code>Seconds_Behind_Master</code></li>
+<li>App log: routing datasource log để biết request đi master hay replica</li>
+<li>APM trace: span của write request và read request có overlap thời gian không</li>
+</ul>
+<p><strong>Root cause:</strong> Read-after-write trên read replica. Write commit master xong, app redirect → next read đi replica nhưng replication lag 500ms-2s nên data chưa có.</p>
+<p><strong>3 cách fix theo trade-off:</strong></p>
+<ol>
+<li><strong>Sticky session theo write window</strong> — sau write, force read về master trong N giây. Code đơn giản, nhưng master load tăng</li>
+<li><strong>Causal consistency token</strong> — write trả về LSN/GTID, read truyền token kèm. Replica đợi đến LSN đó mới serve. Chuẩn nhất nhưng phức tạp</li>
+<li><strong>Read-your-own-writes cookie</strong> — set cookie timestamp khi write, read kiểm cookie và chọn master nếu vừa write trong 5s. Compromise tốt cho web</li>
+</ol>
+<p><strong>Anti-fix:</strong> KHÔNG tăng pool replica để "lag giảm" — lag không liên quan pool, liên quan WAL apply speed và network.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — Partition table chậm thay vì nhanh sau khi partition</div>
+<p><strong>Symptom:</strong> Team partition <code>orders</code> theo <code>created_at</code> (range monthly), expect query nhanh hơn. Thực tế chậm hơn 30%.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li><code>EXPLAIN ANALYZE</code> query — đếm số partition planner phải scan (line <code>Subplans Removed</code> hoặc list partition trong plan)</li>
+<li><code>pg_stat_user_tables</code> trên parent table và từng partition — xem table nào bị scan</li>
+</ul>
+<p><strong>3 nguyên nhân:</strong></p>
+<ol>
+<li><strong>Query không có partition key trong WHERE</strong>: <code>WHERE customer_id = ?</code> không có <code>created_at</code> → planner phải scan TẤT CẢ partition. Sửa: thêm <code>AND created_at &gt;= NOW() - INTERVAL '30 days'</code></li>
+<li><strong>Function trên partition key</strong>: <code>WHERE EXTRACT(month FROM created_at) = 5</code> defeats partition pruning. Sửa: <code>WHERE created_at &gt;= '2026-05-01' AND created_at &lt; '2026-06-01'</code></li>
+<li><strong>Quá nhiều partition</strong>: 5 năm × 12 tháng = 60 partition. Planner overhead lookup metadata &gt; benefit. Fix: archive partition cũ vào cold storage</li>
+</ol>
+<p><strong>Debug command:</strong> <code>SET enable_partition_pruning = on; EXPLAIN (ANALYZE, BUFFERS) ...</code> — nếu thấy "Subplans Removed: 0" tức là không prune được partition nào.</p>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — Hot shard / hot partition khi traffic tăng</div>
+<p><strong>Symptom:</strong> Sharded 8 nodes by <code>user_id</code>. Tổng traffic chia đều theo lý thuyết. Thực tế 1 shard CPU 95%, 7 shard kia 20%.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Per-shard CPU, QPS, query latency — vẽ heatmap</li>
+<li>Top query per shard: <code>pg_stat_statements</code> filter theo shard</li>
+<li>Hot key analysis: <code>SELECT user_id, COUNT(*) FROM orders GROUP BY user_id ORDER BY 2 DESC LIMIT 10</code></li>
+</ul>
+<p><strong>Nguyên nhân (theo độ phổ biến):</strong></p>
+<ol>
+<li><strong>Power user / VIP account</strong> — 1 user chiếm 30% requests (admin tool, bot, enterprise customer). Fix: dedicated shard cho VIP, hoặc sub-shard theo (user_id, region)</li>
+<li><strong>Sequential ID</strong> nếu shard theo modulo của auto-increment → mọi insert mới đi cùng shard. Fix: shard by hash(uuid) hoặc reshard với consistent hashing</li>
+<li><strong>Time-based hot</strong> nếu data mới được query nhiều — shard theo (user_id, time bucket) thay vì pure user_id</li>
+</ol>
+<p><strong>Anti-fix:</strong> KHÔNG add cache trước khi xác định hot key — nếu cache cùng key bị hot, cache stampede sẽ amplify problem.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho schema design</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Biết 1NF/2NF/3NF, biết "denormalize cho performance", biết khái niệm sharding/partitioning. Khi gặp slow query, thường suggest "thêm read replica".</p>
+    <p><em>Symptom của L1: gợi ý sharding khi vấn đề thực ra là missing index.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Biết trade-off giữa normalization vs denormalization, hiểu read replica lag, biết partition pruning yêu cầu gì. Khi đề xuất shard, biết hỏi "shard key gì? hot key thế nào?".</p>
+    <p><em>Symptom của L2: đặt câu hỏi về access pattern trước khi chọn schema.</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Đo replication lag percentile, biết khi nào nên/không nên shard (rule of thumb: dưới 500GB chưa cần shard), thiết kế causal consistency cho read-after-write. Recipe debug ở trên là phản xạ.</p>
+    <p><em>Symptom của L3: pull request schema migration có rollback plan + data backfill strategy.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="build-projects">
 <h2>10. Build Projects</h2>
 

@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#44 — FAANG Coding Playbook (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm M · FAANG Track</span>
+    <span class="sep">›</span>
+    <span class="current">#44 FAANG Coding Playbook</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 7 modules</a>
+      <a href="#why">1. Vì sao solve 200 LC vẫn fail</a>
+      <a href="#loop-structure">2. Cấu trúc loop interview</a>
+      <div class="toc-section">Rubric &amp; signals</div>
+      <a href="#rubric">3. Rubric 5 trục interviewer</a>
+      <a href="#feedback-form">4. Feedback form mẫu</a>
+      <a href="#per-company">5. Khác biệt per company</a>
+      <a href="#level-bar">6. L4 vs L5 vs L6 bar</a>
+      <div class="toc-section">Walkthrough thật</div>
+      <a href="#walkthrough">7. Mock 45 phút end-to-end</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#rules">8. 7 rules during interview</a>
+      <a href="#failure-modes">9. 5 failure modes &amp; fix</a>
+      <a href="#mock-protocol">10. Mock protocol 4 tuần</a>
+      <a href="#checklists">11. Pre-loop checklists</a>
+      <a href="#after-reject">12. After-reject recovery</a>
+      <div class="toc-section">Kết</div>
+      <a href="#interview">🎯 3-tier rubric</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm M · FAANG Track · File chống hiểu giả</div>
+  <h1>FAANG Coding Playbook — Pass round dù solve ít LC, fail dù solve nhiều</h1>
+  <p class="lead">
+    Bạn solve 200 LeetCode, pattern recognition trong 60 giây, code clean — vẫn fail FAANG onsite. Lý do: coding round KHÔNG phải cuộc thi giải bài. Là <strong>đánh giá đa chiều</strong> theo rubric 5 trục mà interviewer ghi vào feedback form. Junior chỉ tối ưu trục 1 (Problem Solving) → fail. Senior tối ưu cả 5. File này show <em>rubric thật</em>, <em>feedback form thật</em>, <em>walkthrough 45-phút mock đầy đủ</em> — không phải tips chung chung.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Hiểu rubric 5 trục + Walk-through 1 mock + Strategic loop choice</div>
+    <div><strong>📅 Thời lượng</strong><br>Tháng 4 trong 6-month roadmap · ~80 LC Medium đã solve trước</div>
+    <div><strong>📚 Prereq</strong><br><a href="42-leetcode-patterns-mastery.html">#42 Patterns</a> + <a href="43-algorithm-mental-model.html">#43 UMPIRE</a> đã master</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔥 Critical — kỹ năng tách bạn khỏi 200-LC-fail crowd</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — đặc trưng FAANG prep</h2>
+
+  <div class="callout warn">
+    <strong>Vì sao FAANG coding round dễ hiểu giả:</strong>
+    <ul>
+      <li><strong>"Solve được = pass" là sai.</strong> Solve optimal nhưng silent + không test = "no signal" = no hire.</li>
+      <li><strong>Rubric không public.</strong> Đa số dev không biết 5 trục đánh giá → tối ưu sai chỗ.</li>
+      <li><strong>YouTube mock không show feedback form.</strong> Bạn thấy mock "perfect" nhưng không biết interviewer ghi gì.</li>
+      <li><strong>Blog "tips" generic.</strong> "Communicate clearly" không actionable. Cần concrete: "im &lt; 30s, narrate mỗi 30-60s, edge case 5-7 tự liệt kê".</li>
+    </ul>
+  </div>
+
+  <h3>3 cấp độ</h3>
+  <table>
+    <thead><tr><th>Cấp</th><th>Dấu hiệu</th><th>Self-test</th></tr></thead>
+    <tbody>
+      <tr><td>L1 — Solve LC</td><td>Pattern recognition + code optimal trong 30 phút.</td><td>Solve random Medium 20-25 phút.</td></tr>
+      <tr><td>L2 — Hiểu rubric</td><td>Biết 5 trục, tự score được sau mỗi mock.</td><td>Sau 1 mock, fill được feedback form như interviewer.</td></tr>
+      <tr><td>L3 — Strong Hire</td><td>Mock 8+ với feedback "Strong Hire" từ ≥ 50% peer.</td><td>Apply company tier 2, được offer.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc</h3>
+  <ol>
+    <li><strong>Section 3 (Rubric) đọc kỹ nhất.</strong> Đây là kim chỉ nam — tối ưu sai trục = waste time. Phải nhớ thuộc 5 trục + tỷ trọng.</li>
+    <li><strong>Section 7 (Walkthrough) đọc 3 lần.</strong> Đây là template. Trace từng phút, hiểu vì sao candidate nói gì lúc nào.</li>
+    <li><strong>Sau mỗi mock, mở Section 4 (Feedback form) tự fill.</strong> Self-assess. Đối chiếu với peer feedback.</li>
+    <li><strong>Section 9 (Failure modes) đọc trước mỗi mock.</strong> Refresh để không dính lại.</li>
+    <li><strong>Section 10 (Mock protocol) bắt buộc làm.</strong> 8 mock là sàn. Bỏ mock = file này vô dụng.</li>
+  </ol>
+</div>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap 7 modules</h2>
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>Loop structure</strong> · CORE · Phone → Onsite → Hiring committee, variant per company</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>Rubric 5 trục</strong> · HIGH-SIGNAL · Problem solving / Coding / Communication / Verification / Knowledge depth</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>Feedback form</strong> · CORE · Hiểu interviewer ghi gì → biết cần ghi điểm chỗ nào</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>Walkthrough mock</strong> · CORE · 45-phút LC 53 mock đầy đủ với narration thật</div></div>
+    <div class="roadmap-item core"><span class="num">M5</span><div><strong>7 rules</strong> · HIGH-SIGNAL · Speak before code, when stuck talk, acknowledge hints</div></div>
+    <div class="roadmap-item core"><span class="num">M6</span><div><strong>Mock protocol</strong> · CORE · 8 mock trong 4 tuần, Pramp + paid + peer + self-record</div></div>
+    <div class="roadmap-item supp"><span class="num">M7</span><div><strong>Strategy</strong> · SUPP · Order company (practice → stretch → dream), recovery plan</div></div>
+  </div>
+</section>
+
+<section id="why">
+  <h2>1. Vì sao solve 200 LC vẫn fail? <span class="k-tag core">CORE</span></h2>
+
+  <p>Hiện tượng phổ biến: candidate VN solve 200-500 LC, recognize pattern nhanh, code clean trong 25 phút — vẫn No Hire FAANG. Lý do căn bản:</p>
+
+  <div class="callout warn">
+    <strong>Coding round KHÔNG phải cuộc thi giải bài.</strong> Là <em>đánh giá đa chiều</em> mà interviewer điền vào feedback form theo rubric cụ thể. Nếu bạn không biết rubric, bạn không biết tối ưu cái gì.
+  </div>
+
+  <h3>4 hiểu lầm gốc</h3>
+  <ol>
+    <li><strong>"Solve optimal = pass."</strong> Sai. Bạn có thể solve optimal mà silent (no signal) hoặc không test (no verification) → vẫn fail.</li>
+    <li><strong>"Pattern recognition là tất cả."</strong> Sai. Recognition là 25% (trục 1). Còn 75% rubric khác.</li>
+    <li><strong>"Code đẹp là plus."</strong> Code đẹp là <em>bắt buộc</em> (trục 2 — 25%). Không có là minus, có là baseline.</li>
+    <li><strong>"FAANG interview như LeetCode contest."</strong> Sai. LeetCode contest đo speed solo. FAANG đo collaboration + communication + judgment.</li>
+  </ol>
+
+  <h3>Mục tiêu file này</h3>
+  <p>Show bạn <em>chính xác</em> rubric, feedback form, walkthrough. Sau khi đọc:</p>
+  <ul>
+    <li>Biết 5 trục đánh giá + tỷ trọng</li>
+    <li>Tự fill feedback form sau mỗi mock</li>
+    <li>Có script 45-phút để adapt</li>
+    <li>Biết khác biệt Google vs Meta vs Amazon</li>
+    <li>Có recovery plan nếu reject</li>
+  </ul>
+</section>
+
+<section id="loop-structure">
+  <h2>2. Cấu trúc loop interview <span class="k-tag core">CORE</span></h2>
+
+  <h3>Loop chuẩn cho L4 / E4 / SDE2 (senior entry)</h3>
+  <pre><code class="language-text">                       FULL LOOP
+┌──────────────────────────────────────────────┐
+│  PHONE SCREEN  (1 round, 45 min)             │
+│  - 1 LeetCode Medium                          │
+│  - Code share screen (Google Doc / CoderPad)  │
+│  - Hiring manager hoặc engineer ngẫu nhiên    │
+│                                               │
+│  → Pass → Onsite                              │
+└───────────────────┬──────────────────────────┘
+                    ↓
+┌──────────────────────────────────────────────┐
+│  ONSITE / VIRTUAL ONSITE  (4-5 rounds)       │
+│  - Coding 1: 1 Medium hoặc 2 Easy-Medium     │
+│  - Coding 2: 1 Medium-Hard                    │
+│  - System Design: 1 round                     │
+│  - Behavioral: 1 round (Bar Raiser-style)     │
+│  - Domain/Lunch (optional, không scored)      │
+└───────────────────┬──────────────────────────┘
+                    ↓
+┌──────────────────────────────────────────────┐
+│  HIRING COMMITTEE / DEBRIEF                  │
+│  - All interviewer ghi feedback              │
+│  - Hire / No-Hire / Strong Hire decision     │
+│  - Cần đủ "strong signal" để pass            │
+└──────────────────────────────────────────────┘</code></pre>
+
+  <h3>Variant theo công ty</h3>
+  <table>
+    <thead><tr><th>Công ty</th><th>Loop</th><th>Đặc thù</th></tr></thead>
+    <tbody>
+      <tr><td>Google</td><td>Phone screen + 4-5 onsite</td><td>Hiring committee quyết định, Googleyness round, code phải clean</td></tr>
+      <tr><td>Meta</td><td>1-2 phone + 4-5 onsite</td><td>"Drive results", coding có OOP design, behavioral sharp</td></tr>
+      <tr><td>Amazon</td><td>OA + phone + 5-6 onsite</td><td><strong>16 LP</strong> xuyên suốt mọi round, Bar Raiser quyết định</td></tr>
+      <tr><td>Apple</td><td>Phone + 4-6 onsite</td><td>Domain-specific, ít LC hơn, đào sâu past tech experience</td></tr>
+      <tr><td>Netflix</td><td>Phone + 5-7 onsite</td><td>Culture-fit gắt, "Keeper test", chỉ senior+</td></tr>
+      <tr><td>Microsoft</td><td>4 onsite</td><td>Coding + system design balanced, ít behavioral hơn</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Bar nâng cao (L5/E5/SDE3)</h3>
+  <ul>
+    <li>Coding rounds vẫn có nhưng <strong>tỷ lệ Hard cao hơn</strong></li>
+    <li>2 system design rounds (1 HLD + 1 LLD/code design)</li>
+    <li>Behavioral với Bar Raiser push-back gắt</li>
+    <li>Đôi khi có Leadership/Mentoring round</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Insight:</strong> Junior 3 năm thường được advise apply L4 thay vì L5+ trực tiếp. Lý do: L4 bar tập trung coding + system design cơ bản, dễ pass hơn. L5+ đòi hỏi leadership signal mà 3 năm khó có. Lên L5 trong 2-3 năm trong công ty là path bình thường.
+  </div>
+</section>
+
+<section id="rubric">
+  <h2>3. Rubric 5 trục — Đây là kim chỉ nam <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Đây là section quan trọng nhất file.</strong> Đọc kỹ. Nếu chỉ nhớ 1 thứ từ file này, nhớ 5 trục + tỷ trọng. Mọi anti-pattern, mọi rule đều derive từ rubric.
+  </div>
+
+  <h3>Trục 1 — Problem Solving (25%)</h3>
+  <pre><code class="language-text">Interviewer đánh giá:
+  - Có recognize pattern không?
+  - Brute force trước → BUD analysis → optimal?
+  - Self-driven exploration hay phải hint nhiều?
+
+Junior fail vì:
+  Code thẳng optimal, không show thinking process.
+  Khi hỏi "vì sao chọn approach này?" → lúng túng.
+
+Strong signal:
+  "Khi gặp bài chưa từng gặp, brute force trước, complexity,
+   BUD analysis tự nhận ra duplicated work, derive optimal
+   mà không cần hint."</code></pre>
+
+  <h3>Trục 2 — Coding (25%)</h3>
+  <pre><code class="language-text">Interviewer đánh giá:
+  - Code có clean không (variable names, structure)?
+  - Code chạy đúng trong thời gian?
+  - Off-by-one, edge cases handle đúng?
+
+Junior fail vì:
+  Dùng `i, j, x, temp` chung chung, indent lung tung,
+  không có guard clause cho null/empty.
+
+Strong signal:
+  "Code đọc như đọc văn — biến tên describe purpose,
+   helper function khi cần, không over-engineer,
+   edge case guard ở đầu."</code></pre>
+
+  <h3>Trục 3 — Communication (25%)</h3>
+  <pre><code class="language-text">Interviewer đánh giá:
+  - Có narrate liên tục không?
+  - Có ask clarifying question không?
+  - Có handle hint từ interviewer không?
+
+Junior fail vì:
+  Im lặng 5-10 phút khi code, không cập nhật interviewer.
+
+Strong signal:
+  "Mỗi 30-60 giây có 1 update verbal. Hint từ interviewer
+   được absorb và integrate ngay. Tôi cảm thấy như đang
+   pair programming với senior dev."</code></pre>
+
+  <h3>Trục 4 — Verification (15%)</h3>
+  <pre><code class="language-text">Interviewer đánh giá:
+  - Có tự test code với example?
+  - Có liệt kê edge cases?
+  - Có tự tìm bug trước khi interviewer chỉ ra?
+
+Junior fail vì:
+  Code xong nói "done", không trace.
+
+Strong signal:
+  "Tự trace code với example đã vẽ. Liệt kê 5-7 edge cases
+   đầu mình. Tự tìm bug 'integer overflow ở dòng 12'
+   trước khi tôi hỏi."</code></pre>
+
+  <h3>Trục 5 — Knowledge Depth (10%)</h3>
+  <pre><code class="language-text">Interviewer đánh giá:
+  - Có hiểu data structure internals?
+  - Có biết alternatives + trade-offs?
+  - Có suggest follow-up optimization?
+
+Junior fail vì:
+  Dùng HashMap mà không giải thích được Java 8 tree fallback,
+  không biết khi nào dùng TreeMap.
+
+Strong signal:
+  "Khi tôi hỏi 'why HashMap?', candidate trả lời được
+   Java 8 internals, alternatives như TreeMap/LinkedHashMap,
+   và trade-offs cụ thể."</code></pre>
+
+  <div class="callout success">
+    <strong>Tổng kết tỷ trọng:</strong>
+    <ul>
+      <li>Problem Solving + Coding + Communication = 75% (3 trục chủ chốt)</li>
+      <li>Verification (15%) tách candidate "OK" khỏi "Strong"</li>
+      <li>Knowledge Depth (10%) tách "Hire" khỏi "Strong Hire"</li>
+    </ul>
+    Tối ưu: dành 75% effort cho 3 trục đầu, 25% cho 2 trục sau.
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước đọc Section 4 (feedback form): viết ra giấy <strong>3 mock gần nhất của bạn</strong> (hoặc 3 LC bạn solve gần nhất nếu chưa mock). Tự score 5 trục mỗi cái — 1-5. Trục nào weakest? Đó là focus 2 tuần tới.</p>
+  </div>
+</section>
+
+<section id="feedback-form">
+  <h2>4. Feedback form mẫu — cái interviewer thật sự điền <span class="k-tag core">CORE</span></h2>
+
+  <p>Đây là cấu trúc form thật, simplified. Mỗi round interviewer điền 5-15 phút sau session, hiring committee đọc.</p>
+
+  <pre><code class="language-text">┌─────────────────────────────────────────────────────────┐
+│ CANDIDATE: [Name]   |  ROUND: Coding 1  |  DATE: ...   │
+├─────────────────────────────────────────────────────────┤
+│ PROBLEM ASKED:                                          │
+│   [Problem statement]                                   │
+│                                                         │
+│ APPROACH:                                               │
+│   ☐ Self-derived optimal                                │
+│   ☐ Optimal after 1-2 hints                             │
+│   ☐ Brute force only                                    │
+│   ☐ Couldn't solve                                      │
+│                                                         │
+│ COMMUNICATION (1-5):                                    │
+│   ☐ Strong signal — narrated continuously               │
+│   ☐ Adequate — needed prompts                           │
+│   ☐ Weak — long silences                                │
+│                                                         │
+│ CODE QUALITY (1-5):                                     │
+│   Variable names, structure, idioms                     │
+│                                                         │
+│ TESTING:                                                │
+│   ☐ Self-tested with example + edge cases               │
+│   ☐ Self-tested but missed edge case                    │
+│   ☐ Did not test                                        │
+│                                                         │
+│ COMPLEXITY ANALYSIS:                                    │
+│   ☐ Self-derived correctly                              │
+│   ☐ Said when prompted                                  │
+│   ☐ Wrong analysis                                      │
+│                                                         │
+│ FOLLOW-UP HANDLED:                                      │
+│   ☐ Engaged + suggested alternative approach            │
+│   ☐ Stuck                                               │
+│                                                         │
+│ OVERALL RECOMMENDATION:                                 │
+│   ☐ STRONG HIRE                                         │
+│   ☐ HIRE                                                │
+│   ☐ NO HIRE                                             │
+│   ☐ STRONG NO HIRE                                      │
+│                                                         │
+│ NOTES (free text — hiring committee đọc):               │
+│   ___________________________________________________   │
+└─────────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>Cách đọc form ngược</h3>
+  <p>Mục tiêu của candidate là <em>tối đa hóa</em> số check ở:</p>
+  <ul>
+    <li>"Self-derived optimal" (không phải "after hints")</li>
+    <li>"Strong signal — narrated continuously"</li>
+    <li>"Self-tested with example + edge cases"</li>
+    <li>"Engaged + suggested alternative"</li>
+    <li>"STRONG HIRE"</li>
+  </ul>
+
+  <div class="callout info">
+    <strong>Insight về "NOTES" field:</strong> Đây là phần hiring committee đọc kỹ nhất. Check-box là baseline; notes là "signal description". Strong note: <em>"Recognized DP/Kadane's quickly, derived optimal from brute force using BUD reasoning."</em> — concrete, specific. Weak note: <em>"Candidate seemed nervous, solved the problem."</em> — vague, no signal.<br><br>
+    Cách candidate giúp interviewer ghi note mạnh: <em>say things that are quotable</em>. Khi nói "Tôi sẽ apply BUD analysis" + "Optimal là Kadane's vì..." → interviewer dễ quote → note mạnh.
+  </div>
+</section>
+
+<section id="per-company">
+  <h2>5. Khác biệt per company <span class="k-tag core">CORE</span></h2>
+
+  <h3>Google</h3>
+  <pre><code class="language-text">Loves: Graph problems, advanced DP, system design integration
+Style: Theoretical depth, algorithmic correctness
+Phone: Typically 1 Medium clean
+Onsite: 1 Hard hoặc 2 Medium-Hard
+
+Google-style problems:
+  - Graph: word ladder, course schedule, network delay
+  - Tree: serialize/deserialize, recover BST
+  - DP: edit distance, regex matching
+  - System: Google search, Maps, Photos
+
+Code style: emphasize clean, idiomatic, không over-engineer.
+Hiring committee xem code → muốn đọc dễ.</code></pre>
+
+  <h3>Meta (Facebook)</h3>
+  <pre><code class="language-text">Loves: Practical / product-oriented, OOP design, behavioral sharp
+Style: Ship-fast culture, drive results
+Phone: 1-2 Medium trong 45 min
+Onsite: Coding có design component, 1 round = OOP design
+
+Meta-style problems:
+  - Design: parking lot, file system, news feed ranking
+  - Algorithm: random pick với weight, LRU cache
+  - 2 problems / 45 min — SPEED counts
+
+Tip: Meta thường hỏi 2 bài trong 1 round 45-min.
+Đừng over-optimize bài 1, cần kiểm soát time để cover bài 2.</code></pre>
+
+  <h3>Amazon</h3>
+  <pre><code class="language-text">Loves: 16 Leadership Principles xuyên suốt, scalability questions
+Style: Customer obsession, ownership, dive deep
+Phone: 1 Medium + LP behavioral
+Onsite: Every round có LP question (không phải chỉ behavioral round)
+
+Amazon-style problems:
+  - Scaling: K-th largest in stream, top K frequent
+  - Concurrency: producer-consumer, lock-free queue
+  - System: Amazon orders, S3, DynamoDB
+
+Đặc thù: Bar Raiser veto power.
+Bar Raiser là interviewer "outside" của team — phán quyết hire/no-hire.</code></pre>
+
+  <h3>Apple</h3>
+  <pre><code class="language-text">Loves: Real product feel, deep tech experience
+Style: Domain expertise valued, less LeetCode grind
+Phone: Depends on team
+Onsite: More about your past projects + 1-2 Medium coding
+
+Apple ít chuẩn hoá hơn — mỗi team có style riêng.
+Past project deep dive thường lâu hơn coding.</code></pre>
+
+  <h3>Netflix</h3>
+  <pre><code class="language-text">Loves: Ownership, judgment, "Keeper test"
+Style: Senior+ only, no junior
+Phone: Less coding, more judgment / system design
+Onsite: 5-7 rounds, behavioral very heavy
+
+Netflix interview rất khác — không grind LC nhiều.
+Họ test: "You make $500K/year decisions. Are you that level?"</code></pre>
+
+  <h3>Microsoft</h3>
+  <pre><code class="language-text">Style: Balanced coding + system design, less leadership-heavy
+Phone: 1 Medium
+Onsite: 4 rounds — 2 coding + 1 system + 1 manager round
+
+Microsoft thường dễ hơn FAANG ở bar communication.
+Coding bar tương đương Google L4.</code></pre>
+</section>
+
+<section id="level-bar">
+  <h2>6. L4 vs L5 vs L6 bar <span class="k-tag supp">SUPP</span></h2>
+
+  <h3>L4 (SDE2 / E4 / SWE3) — "senior contributor" entry</h3>
+  <ul>
+    <li><strong>Coding bar:</strong> Solve Medium trong 25-30 phút, Hard với 1-2 hints. Clean code, edge cases mostly correct. Complexity self-derived.</li>
+    <li><strong>System design bar:</strong> HLD cho known problem (URL shortener, simple chat). Identify bottlenecks. Suggest 1-2 trade-offs.</li>
+    <li><strong>Behavioral:</strong> Concrete examples of ownership trong 6-12 tháng project. Conflict resolution peer level.</li>
+  </ul>
+
+  <h3>L5 (Senior / E5 / SWE4) — "tech lead"</h3>
+  <ul>
+    <li><strong>Coding bar:</strong> Solve Hard trong 30 phút cleanly. Handle 2-3 follow-ups deeply. Spot edge cases preemptively.</li>
+    <li><strong>System design bar:</strong> HLD + LLD cho new problem. Multiple trade-off levels (consistency vs availability). Capacity estimation rigorous.</li>
+    <li><strong>Behavioral:</strong> Lead 2+ engineers, mentor juniors. Cross-team negotiation. Strategic decision making.</li>
+  </ul>
+
+  <h3>L6 (Staff / E6 / SWE5) — "principal contributor"</h3>
+  <ul>
+    <li><strong>Coding bar:</strong> Ít emphasis (vẫn solid). Design new approach cho novel problem.</li>
+    <li><strong>System design bar:</strong> Design entire system across teams. Org-level trade-offs. Migrations, evolutions.</li>
+    <li><strong>Behavioral:</strong> Lead 5-10 engineers, multi-team initiatives. Set technical direction cho org. Hire và grow team.</li>
+  </ul>
+
+  <div class="callout warn">
+    <strong>Strategic note:</strong> Junior 3 năm KHÔNG nên target L5+ trực tiếp. Lý do: L5+ đòi hỏi leadership signal (lead engineers, drive org decisions) — 3 năm khó có substantive evidence. Apply L4, promote lên L5 trong 2-3 năm. Salary L4 FAANG đã ~$200K+ total comp — đủ tốt.
+  </div>
+</section>
+
+<section id="walkthrough">
+  <h2>7. Mock 45 phút end-to-end — Walkthrough thật <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Setup: Phone screen Google L4. Interviewer = senior engineer 6 năm. Tool = Google Doc share screen. Bài: <strong>LC 53 Maximum Subarray</strong>.</p>
+
+  <h3>Phút 0:00-2:00 — Intro</h3>
+  <pre><code class="language-text">Interviewer (Sarah): "Hi, I'm Sarah, software engineer at Google for 6 years.
+                       Today we'll do 1 coding problem in 45 minutes.
+                       Tell me about yourself briefly, then we'll start."
+
+Candidate: "Hi Sarah, I'm Nhan. 3 years backend Java, working in e-commerce
+            building order/payment platforms. Looking forward to today."</code></pre>
+  <p>Đừng dài dòng. 30-60 giây enough. Quá dài = mất thời gian cho bài.</p>
+
+  <h3>Phút 2:00-3:00 — Đề bài</h3>
+  <pre><code class="language-text">Interviewer: "Given a list of integers, find the contiguous subarray with
+              the largest sum. Return that sum.
+              Example: [-2,1,-3,4,-1,2,1,-5,4] should return 6 (subarray [4,-1,2,1])."</code></pre>
+
+  <h3>Phút 3:00-5:00 — Understand + Match</h3>
+  <pre><code class="language-text">Candidate: "Just to confirm — I need to find the contiguous subarray
+            (not subsequence) with maximum sum. Return only the sum,
+            not the indices? Can the array be empty? Can elements be negative?"
+
+Interviewer: "Yes contiguous. Return sum only. Array is non-empty. Elements
+              can be negative or zero."
+
+Candidate: "Got it. Let me also check edge cases:
+            - All negative: e.g., [-3,-1,-2] → return -1 (best single element)
+            - Single element: [-5] → return -5
+            - All positive: [1,2,3] → return 6 (whole array)
+
+            And constraint on length? 10^5? Need O(n) or O(n log n)?"
+
+Interviewer: "Length up to 10^5. Aim for efficient."
+
+Candidate: "OK. This problem has the signal of either DP or sliding window —
+            'maximum subarray sum'. Let me think both."</code></pre>
+
+  <p><strong>What just happened:</strong> Pattern recognition signal sent. Edge case 3 cái nêu trước. Constraint hỏi → biết complexity target. 2 phút này worth its weight in gold.</p>
+
+  <h3>Phút 5:00-10:00 — Plan (brute → optimal)</h3>
+  <pre><code class="language-text">Candidate: "Brute force: 2 nested loops, compute sum of every (i, j) pair,
+            track max. O(n²) time, O(1) space. Works but won't scale to 10^5
+            (10^10 operations).
+
+            BUD analysis:
+            - Bottleneck: nested loop
+            - Duplicated work: computing sum from scratch each pair.
+              Could use prefix sum to compute (i,j) sum in O(1).
+              That gives O(n²) still but cleaner.
+
+            But there's a smarter pattern. Kadane's algorithm:
+            - Maintain currentSum = best sum ending at index i
+            - Either: extend previous (currentSum + nums[i])
+                      or: start fresh from nums[i]
+            - currentSum = max(nums[i], currentSum + nums[i])
+            - Track maxSoFar
+
+            O(n) time, O(1) space. Optimal."
+
+Interviewer: "Sounds good. Code it up."</code></pre>
+
+  <p><strong>Senior signal:</strong> Brute force first → BUD → derive optimal. Show thinking, không jump to optimal. Interviewer note "self-derived, didn't memorize".</p>
+
+  <h3>Phút 10:00-25:00 — Implement (narrate liên tục)</h3>
+  <pre><code class="language-java">public int maxSubArray(int[] nums) {
+    if (nums == null || nums.length == 0) {
+        throw new IllegalArgumentException("Array must be non-empty");
+    }
+
+    int currentSum = nums[0];
+    int maxSoFar = nums[0];
+
+    for (int i = 1; i &lt; nums.length; i++) {
+        // Extend or restart
+        currentSum = Math.max(nums[i], currentSum + nums[i]);
+        maxSoFar = Math.max(maxSoFar, currentSum);
+    }
+
+    return maxSoFar;
+}</code></pre>
+
+  <p><strong>Narration suốt khi code (quotable cho interviewer):</strong></p>
+  <pre><code class="language-text">"I'll guard the edge case empty array first..."
+"Initialize currentSum and maxSoFar with nums[0] — handles single element..."
+"Loop from i=1..."
+"At each step, either extend by adding nums[i] to currentSum, or restart
+ with just nums[i] — whichever is larger..."
+"Update maxSoFar with the running max..."
+"Return maxSoFar."</code></pre>
+
+  <h3>Phút 25:00-32:00 — Review + Test</h3>
+  <pre><code class="language-text">Candidate: "Let me trace with the example:
+   nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+
+   i=0: currentSum=-2, maxSoFar=-2
+   i=1 (1):  currentSum=max(1, -2+1=-1)=1; maxSoFar=max(-2,1)=1
+   i=2 (-3): currentSum=max(-3, 1-3=-2)=-2; maxSoFar=1
+   i=3 (4):  currentSum=max(4, -2+4=2)=4; maxSoFar=4
+   i=4 (-1): currentSum=max(-1, 4-1=3)=3; maxSoFar=4
+   i=5 (2):  currentSum=max(2, 3+2=5)=5; maxSoFar=5
+   i=6 (1):  currentSum=max(1, 5+1=6)=6; maxSoFar=6  ← target answer ✓
+   i=7 (-5): currentSum=max(-5, 6-5=1)=1; maxSoFar=6
+   i=8 (4):  currentSum=max(4, 1+4=5)=5; maxSoFar=6
+
+   Return 6. Correct!"
+
+Candidate: "Edge cases:
+   - All negative [-3,-1,-2]:
+     i=0: cur=-3, max=-3
+     i=1: cur=max(-1,-3-1=-4)=-1; max=-1
+     i=2: cur=max(-2,-1-2=-3)=-2; max=-1 ✓
+
+   - Single [-5]: returns -5 from initialization ✓
+
+   - All positive [1,2,3]: cur grows to 6, max=6 ✓
+
+   I think it handles all cases."</code></pre>
+
+  <h3>Phút 32:00-35:00 — Complexity + Follow-up</h3>
+  <pre><code class="language-text">Candidate: "Time: O(n), single pass.
+            Space: O(1), only 2 variables.
+            This is optimal — we have to look at each element at least once."
+
+Interviewer: "Nice. Follow-up: what if we needed to return the actual
+              subarray, not just the sum?"
+
+Candidate: "We track start and end indices. When currentSum 'restarts'
+            (i.e., nums[i] &gt; currentSum + nums[i]), update tempStart = i.
+            When maxSoFar updates, lock start = tempStart, end = i.
+            [code modification]
+            Same O(n) complexity, just 2 extra variables."
+
+Interviewer: "Last follow-up: what if input is too large to fit in memory,
+              streaming through? Can you do this online?"
+
+Candidate: "Yes! Kadane's is naturally online — we only need O(1) state.
+            Process each element as it arrives, update currentSum and maxSoFar.
+            No need to store array. This is one of the elegances of Kadane's."</code></pre>
+
+  <h3>Phút 35:00-45:00 — Reverse Q&amp;A</h3>
+  <pre><code class="language-text">Interviewer: "Any questions for me?"
+
+Candidate:
+  1. "What does a typical day look like for an engineer on your team?"
+  2. "What's the most challenging technical problem your team is working on?"
+  3. "How does Google evaluate engineering excellence — what makes someone L5?"</code></pre>
+
+  <h3>Feedback form Sarah điền</h3>
+  <pre><code class="language-text">Approach:        ☑ Self-derived optimal (brute force → BUD → Kadane's)
+Communication:   ☑ Strong signal — narrated continuously
+Code quality:    5/5 — clean, good var names, edge guard
+Testing:         ☑ Self-tested with example + edge cases
+Complexity:      ☑ Self-derived correctly
+Follow-up:       ☑ Engaged + handled both follow-ups well
+
+NOTES:
+"Strong candidate. Recognized DP/Kadane's quickly, derived optimal from brute
+force using BUD reasoning. Code clean and self-tested. Handled streaming
+follow-up confidently. Recommend STRONG HIRE for L4. Could see L5 potential
+with 1-2 more years."
+
+OVERALL: ☑ STRONG HIRE</code></pre>
+
+  <div class="callout success">
+    <strong>Đây là target.</strong> Đọc lại nhiều lần. Note cách candidate:
+    <ul>
+      <li>Phút 3-5: Clarify đầy đủ + nêu 3 edge case + hỏi constraint</li>
+      <li>Phút 5-10: Brute → BUD → optimal, KHÔNG jump-to-optimal</li>
+      <li>Phút 10-25: Narrate mỗi step, quotable cho interviewer</li>
+      <li>Phút 25-32: Self-trace với example + 3 edge cases</li>
+      <li>Phút 32-35: Complexity tự derive + handle 2 follow-up</li>
+      <li>Phút 35-45: 3 reverse Q chuẩn bị sẵn</li>
+    </ul>
+  </div>
+</section>
+
+<section id="rules">
+  <h2>8. 7 rules during interview <span class="k-tag core">CORE</span></h2>
+
+  <div class="build-exercise">
+    <h3>Rule 1 — First 3 minutes is gold</h3>
+    <p>Đừng vội code. Clarify, vẽ example, identify pattern. Bước này quyết định 50% kết quả. Skip = jump-to-design lạc hướng.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 2 — Speak before code</h3>
+    <p>Mỗi action có narration:</p>
+    <ul>
+      <li>"Tôi sẽ thử brute force trước..."</li>
+      <li>"Đây là dòng tôi cần handle null..."</li>
+      <li>"Tôi đang nghĩ pattern sliding window phù hợp vì..."</li>
+    </ul>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 3 — When stuck, talk it out</h3>
+    <p>Im lặng = no signal. Khi bí:</p>
+    <pre><code class="language-text">"Hmm, tôi đang nghĩ giữa 2 hướng A và B. A có vẻ work nhưng O(n²),
+ B chưa rõ. Để tôi try B thêm xíu... [explore]"</code></pre>
+    <p>Show thinking. Interviewer có thể hint dựa trên direction bạn đang đi. Silent = không có data để hint.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 4 — Acknowledge hints gracefully</h3>
+    <div class="compare">
+      <div class="compare-col bad">
+        <h4>❌ Defeated</h4>
+        <pre><code class="language-text">"Oh, đúng rồi, sao tôi
+ không nghĩ ra..."
+
+(Self-deprecation signal weak)</code></pre>
+      </div>
+      <div class="compare-col good">
+        <h4>✅ Engaged</h4>
+        <pre><code class="language-text">"Good direction! Let me
+ think about that... yes,
+ that simplifies the
+ left pointer logic..."
+
+(Absorb + integrate)</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 5 — Code as if for production</h3>
+    <ul>
+      <li>Variable names: <code>seenIndices</code> không <code>m</code></li>
+      <li>Indentation consistent</li>
+      <li>Helper function nếu logic &gt; 15 lines</li>
+      <li>Edge case guard ở đầu (null, empty)</li>
+    </ul>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 6 — Self-test BEFORE interviewer asks</h3>
+    <p>Code xong, <em>immediately</em> trace với example. Đợi interviewer hỏi "did you test?" → đã mất signal Verification.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>Rule 7 — Always have follow-up answer ready</h3>
+    <p>Mọi optimal solution có "what if" — chuẩn bị mental list:</p>
+    <pre><code class="language-text">- "What if input streamed?"      → online algorithm
+- "What if duplicates?"           → handle accordingly
+- "What if sorted?"               → can we use BS / two pointers?
+- "What if multi-thread?"         → concurrent data structure
+- "What if input không fit memory?" → external sort, streaming</code></pre>
+  </div>
+</section>
+
+<section id="failure-modes">
+  <h2>9. 5 failure modes &amp; fix <span class="k-tag core">CORE</span></h2>
+
+  <div class="misconception">
+    <h4>❌ Mode 1: "Optimal-first syndrome"</h4>
+    <p>Code thẳng optimal, không brute force. Khi hỏi "why this?", lúng túng.</p>
+    <p><strong>Fix:</strong> Practice bao giờ cũng start brute force. Note ra "Brute first" làm khẩu hiệu.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Mode 2: "Silent debugger"</h4>
+    <p>Khi bug, mặt căng thẳng, sửa code im lặng 5 phút.</p>
+    <p><strong>Fix:</strong> "Let me trace this carefully... at line 12 I see issue..." Narrate debug process.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Mode 3: "We did" instead of "I did"</h4>
+    <p>Behavioral kể "we deployed", "team decided" — interviewer không biết bạn làm gì cụ thể.</p>
+    <p><strong>Fix:</strong> "I designed... I implemented... I led..." — own your contribution.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Mode 4: "Over-engineering"</h4>
+    <p>Code 30 dòng cho bài 10 dòng. Add validation, logger, custom exception.</p>
+    <p><strong>Fix:</strong> "In production I'd add X, Y. For interview, focus algorithm." State trade-off clearly.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Mode 5: "No questions for me"</h4>
+    <p>Khi interviewer hỏi reverse Q, "I don't have any". → Signal weak interest, no preparation.</p>
+    <p><strong>Fix:</strong> Chuẩn bị 5 câu cho mọi loop. 3 mức: team/role, technical, career growth.</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Failure mode nguy hiểm nhất?</h4>
+    <p><strong>Mode 2 (Silent debugger)</strong>. Vì: dù solve đúng cuối cùng, 5 phút im lặng = "no signal" cho Communication (25%). Interviewer feedback "lost candidate during debugging, hard to follow". Mất trục lớn nhất.</p>
+  </div>
+</section>
+
+<section id="mock-protocol">
+  <h2>10. Mock protocol — 8 mock trong 4 tuần <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="callout warn">
+    <strong>Bắt buộc:</strong> File này KHÔNG đủ. Phải mock với người thật. 8 mock trong tháng 4 (sau khi đã solve 80+ Medium từ <a href="42-leetcode-patterns-mastery.html">#42</a>) là sàn cho FAANG loop.
+  </div>
+
+  <h3>Schedule 4 tuần</h3>
+  <pre><code class="language-text">Tuần 1: 2 mock từ Pramp (peer-to-peer free)
+        → Focus: communication, narration
+        → Get used to mock format
+
+Tuần 2: 2 mock từ Interviewing.io (paid, with FAANG eng)
+        → Focus: get real signal từ thực FAANG engineer
+        → Quan trọng nhất — phản ánh đúng thực tế
+
+Tuần 3: 1 mock với senior trong network + 1 self-recorded
+        → Focus: handle hint, follow-up
+        → Self-record để review narration
+
+Tuần 4: 2 mock final (peer + paid)
+        → Focus: stamina, full 60-min loop
+        → Combine coding + behavioral</code></pre>
+
+  <h3>Self-record mock — Protocol</h3>
+  <ol>
+    <li>Pick random LC Medium từ company list</li>
+    <li>Set timer 35 phút</li>
+    <li>Mở Voice Memo + screen recording</li>
+    <li>Solve full UMPIRE, NÓI LIÊN TỤC</li>
+    <li>Sau xong, watch lại — count:
+      <ul>
+        <li>Im &gt; 30s lần nào?</li>
+        <li>Edge case bỏ sót?</li>
+        <li>Complexity tự verify đúng?</li>
+      </ul>
+    </li>
+    <li>Score yourself với rubric Section 3</li>
+  </ol>
+
+  <h3>Pramp protocol</h3>
+  <p>2 candidates, mỗi người làm interviewer 30 min + interviewee 30 min. Pick random từ pool. Sau session: feedback exchange theo rubric.</p>
+
+  <div class="callout info">
+    <strong>Tip:</strong> Khi bạn làm <em>interviewer</em>, bạn học nhiều bằng khi làm interviewee. Quan sát candidate khác mắc anti-pattern → nhận ra mình cũng mắc. Đừng skip vai trò interviewer trên Pramp.
+  </div>
+</section>
+
+<section id="checklists">
+  <h2>11. Pre-loop checklists <span class="k-tag core">CORE</span></h2>
+
+  <h3>1 tuần trước loop</h3>
+  <pre><code class="language-text">Ngày -7: Review #43 (UMPIRE), template 18 patterns
+Ngày -6: Solve 1 Hard với UMPIRE đầy đủ, record voice
+Ngày -5: Mock interview Pramp
+Ngày -4: System design 1 bài (URL shortener / chat)
+Ngày -3: Behavioral — review 12 stories
+Ngày -2: Mock interview thứ 2
+Ngày -1: KHÔNG học mới. Review notes, sleep.
+Ngày 0:  Loop. Trust prep.</code></pre>
+
+  <h3>24 giờ trước</h3>
+  <pre><code class="language-text">□ Ngủ đủ 7-8 tiếng
+□ Không grind LeetCode mới (rest)
+□ Review template 5 patterns mạnh nhất của mình
+□ Test setup: zoom/meet, mic, camera, stable internet
+□ Chuẩn bị 3 reverse questions</code></pre>
+
+  <h3>2 giờ trước</h3>
+  <pre><code class="language-text">□ Ăn nhẹ, không cà phê quá nhiều
+□ Solve 1 Easy "warm up" — không dùng IDE để giả lập whiteboard
+□ Đi vệ sinh
+□ Đeo tai nghe có mic, test âm thanh</code></pre>
+
+  <h3>5 phút trước</h3>
+  <pre><code class="language-text">□ Mở tab: Google Doc / CoderPad / interview tool
+□ Notepad sẵn để vẽ
+□ Tắt mọi notification (Discord, Slack, mobile)
+□ Hít thở sâu 30 giây</code></pre>
+</section>
+
+<section id="after-reject">
+  <h2>12. After-reject recovery <span class="k-tag supp">SUPP</span></h2>
+
+  <h3>Recovery process</h3>
+  <pre><code class="language-text">1. Cool-off 1-2 ngày — không học bài mới, đừng hate self
+2. Recall what happened, write down 3-5 issues
+3. Map issues to rubric trục nào (problem solving / communication / ...)
+4. Plan 1-2 tuần focus fix issue đó
+5. Apply lại sau 6-12 tháng (most companies có policy)</code></pre>
+
+  <h3>Cooldown period per company</h3>
+  <ul>
+    <li><strong>Google:</strong> 6-12 months</li>
+    <li><strong>Meta:</strong> 12 months</li>
+    <li><strong>Amazon:</strong> 6 months for same level</li>
+    <li><strong>Apple:</strong> Depends on team</li>
+    <li><strong>Microsoft:</strong> 6-12 months</li>
+  </ul>
+
+  <p>Trong cooldown, apply company khác. Đừng lụi tinh thần. Quan trọng nhất: <strong>map feedback vào rubric</strong> để biết focus fix gì.</p>
+
+  <h3>Strategic order of companies</h3>
+  <pre><code class="language-text">TIER 1 (Practice — apply trước):
+  Smaller tech companies, không phải dream company
+  Mục đích: get loop experience, không sợ fail
+
+TIER 2 (Stretch):
+  FAANG-tier nhưng không phải #1 choice
+  Mục đích: maybe pass, get offer làm leverage cho TIER 3
+
+TIER 3 (Dream — apply cuối):
+  #1 choice
+  Mục đích: đến lúc này đã pass 5-10 loop, ready</code></pre>
+
+  <div class="callout warn">
+    <strong>Đừng apply Google đầu tiên</strong> nếu chưa từng phỏng vấn FAANG. Practice với company khác trước. Cooldown 6-12 tháng nếu bị reject — quá phí dream company shot đầu.
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+
+  <div class="tier-card t1">
+    <h3>Tier 1 — Junior pre-interview check</h3>
+    <p><strong>Q1: 5 trục rubric là gì? Tỷ trọng?</strong></p>
+    <p><em>Trả lời:</em> "Problem Solving 25%, Coding 25%, Communication 25%, Verification 15%, Knowledge Depth 10%. 3 trục đầu = 75% — focus đây. Verification tách 'OK' khỏi 'Strong'. Knowledge Depth tách 'Hire' khỏi 'Strong Hire'."</p>
+
+    <p><strong>Q2: Loop chuẩn cho L4 gồm gì?</strong></p>
+    <p><em>Trả lời:</em> "1 phone screen + 4-5 onsite. Onsite: 2 coding + 1 system design + 1 behavioral + 1 optional. Sau đó hiring committee debrief, vote Hire/No-Hire/Strong Hire."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Mid-level (sau 4 mock)</h3>
+    <p><strong>Q3: Khi bí giữa interview, làm gì?</strong></p>
+    <blockquote>
+      "KHÔNG im lặng — silent = no signal cho Communication (25%). Nói: <em>'Tôi đang nghĩ giữa 2 hướng A và B. A có vẻ work nhưng O(n²), B chưa rõ. Để tôi try B thêm.'</em> Show thinking. Interviewer có thể hint dựa trên direction. Nếu hint, acknowledge gracefully + integrate ngay, không self-deprecate."
+    </blockquote>
+
+    <p><strong>Q4: Vì sao brute force trước optimal mặc dù sẽ code optimal?</strong></p>
+    <blockquote>
+      "3 lý do: ① Tạo baseline để derive optimal có context (BUD analysis). ② Show problem-solving process — interviewer note 'self-derived, not memorized'. ③ Nếu bí ở optimal, có fallback brute force để partial credit. Skip brute force = junior signal 'optimal-first syndrome'."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Senior (sau 8+ mock)</h3>
+    <p><strong>Q5: Strategy cho 6-month FAANG prep, target Google L4. Bạn còn 0 LC solve.</strong></p>
+    <pre><code class="language-text">Phút 1 — Phase 1: Foundation (Tháng 1)
+  - Java basics + 30 LC Easy
+  - Big-O reflex, equals/hashCode, exception
+  - Pattern: warm up, không vướng syntax khi interview
+
+Phút 2 — Phase 2: Pattern Mastery (Tháng 2-3)
+  - 18 patterns × 5-7 problems = 90-130 Medium
+  - Mỗi pattern theo UMPIRE: Understand → Match → Plan → Implement → Review → Evaluate
+  - Track Notion: bài, time, mistakes, pattern weak
+
+Phút 3 — Phase 3: Mock + Speed (Tháng 4)
+  - 2 mock/tuần (Pramp + Interviewing.io)
+  - Focus rubric: 5 trục self-assessment sau mỗi mock
+  - Solve 1 Hard/tuần với UMPIRE recorded
+
+Phút 4 — Phase 4: System Design (Tháng 5)
+  - 5 design kinh điển (URL shortener, Twitter, Uber, WhatsApp, YouTube)
+  - 2 mock/tuần system design với senior
+
+Phút 5 — Phase 5: Behavioral + Final (Tháng 6)
+  - 12-15 STAR stories cover Googleyness + 16 Amazon LP
+  - 1 mock behavioral/tuần
+  - Apply Google sau cùng — đã pass 5-10 loop khác trước
+
+Trade-off:
+  + Front-load grinding (Phase 2-3) = solid foundation
+  + Last 2 tháng polish soft skill = differentiator
+  - Sacrifice: 6 tháng giảm side activity
+  Risk mitigation: bookmark recovery plan nếu reject — apply company khác
+  trong cooldown 12 tháng.</code></pre>
+  </div>
+</section>
+
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 8 mock + 2 lab BẮT BUỘC</h2>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — Self-recorded mock + rubric self-eval (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự nhìn mình qua lens interviewer.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Pick 1 LC Medium chưa từng solve.</li>
+      <li>Setup: timer 45 phút, Voice Memo, screen recording, Google Doc.</li>
+      <li>Solve full UMPIRE, NÓI LIÊN TỤC.</li>
+      <li>Sau xong, watch video. Mở Section 3 (Rubric 5 trục) + Section 4 (Feedback form).</li>
+      <li>Fill feedback form như thể bạn là interviewer.</li>
+      <li>Count metrics: im &gt; 30s mấy lần? Edge cases tự liệt kê mấy cái? Complexity tự derive đúng?</li>
+      <li>Score 5 trục (1-5 mỗi cái). Trục nào &lt; 3 → focus tuần tới.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Fill được feedback form đầy đủ + identify 2 anti-pattern dính (Section 9).</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — 8 Mock interview thật (4 tuần)</h3>
+    <p><strong>Schedule:</strong> Theo Section 10. 2 mock/tuần × 4 tuần.</p>
+    <p><strong>Sau mỗi mock:</strong></p>
+    <ol>
+      <li>Trao đổi feedback với peer/interviewer theo rubric 5 trục.</li>
+      <li>Tự fill feedback form cho mình.</li>
+      <li>So sánh: self-eval vs peer feedback. Gap nào?</li>
+      <li>Track Sheet: date, problem, score 5 trục, anti-patterns dính.</li>
+      <li>Sau 8 mock: review trend. Trục nào improve? Trục nào stuck?</li>
+    </ol>
+    <p><strong>Acceptance:</strong> 8 mock done, peer feedback ≥ 7/10 cho mock cuối, anti-pattern decreasing trend qua các mock.</p>
+  </div>
+</section>
+
+<!-- ==================== MOCK TRANSCRIPT + CRITIQUE ==================== -->
+<section id="mock-transcript">
+<h2>🎬 Mock Transcript + Critique — Phân tích từng câu chữ <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Đọc 200 LC mà không nghe lại mình nói = không sửa được communication. Đây là transcript thật của 2 mock 45 phút — bản OK và bản tốt — kèm critique line-by-line. Áp dụng pattern này cho mock của chính anh.</p>
+
+<div class="callout warn">
+<div class="ctitle">📼 Mock A — "Solved nhưng Lean Hire" (LC 200 Number of Islands)</div>
+<p><strong>Setup:</strong> Candidate solve trong 38 phút, code đúng, tất cả test pass. Interviewer rate: Lean Hire. Tại sao chỉ Lean Hire dù pass test?</p>
+
+<pre><code class="language-text">[00:00] Interviewer: "Given a 2D grid of '1's (land) and '0's (water), count number of islands. Islands connected horizontally or vertically."
+
+[00:08] Candidate: "OK, so I'll use BFS. Let me start coding."
+                                                            ┌── 🚨 CRITIQUE #1
+[00:15] *bắt đầu gõ code ngay*                              │   Skip Understand + Match
+                                                            │   Không clarify "diagonal có
+                                                            │   tính connected không?"
+                                                            │   Không discuss alternative
+                                                            │   (DFS vs Union-Find).
+                                                            └── Mất 2 điểm Communication
+
+[03:20] Candidate: *gõ thầm 3 phút*
+                                                            ┌── 🚨 CRITIQUE #2
+[03:25] Interviewer: "What are you thinking about?"         │   Im lặng &gt; 30s = bad signal
+[03:30] Candidate: "Just coding the BFS..."                 │   Interviewer phải prompt
+                                                            │   = mất điểm Problem Solving.
+                                                            └── Phải narrate liên tục.
+
+[18:45] *code complete, chạy test*
+[19:00] Candidate: "It works!"
+                                                            ┌── 🚨 CRITIQUE #3
+                                                            │   Không trace bằng concrete
+                                                            │   input. Test pass ≠ correct.
+                                                            │   Phải show "với input X, tôi
+                                                            │   đi qua từng bước Y".
+                                                            └── Mất điểm Verification.
+
+[19:30] Interviewer: "What's the time complexity?"
+[19:40] Candidate: "O(n)... I mean O(m*n) where m and n are dimensions."
+                                                            ┌── 🚨 CRITIQUE #4
+                                                            │   Chậm 10s + tự correct =
+                                                            │   không vững complexity.
+                                                            │   Should be immediate.
+                                                            └── Mất điểm Coding Skills.
+
+[20:00] Interviewer: "What if grid is 1 billion x 1 billion?"
+[20:15] Candidate: "Uh... I could... maybe use union-find?"
+                                                            ┌── 🚨 CRITIQUE #5
+                                                            │   Đoán mà không reason.
+                                                            │   Đúng đáp án là: "Bigger
+                                                            │   than memory → streaming
+                                                            │   + chunking + Union-Find
+                                                            │   per chunk + merge across
+                                                            │   chunk borders".
+                                                            └── Mất điểm Scalability.
+
+[Tổng kết của interviewer]:
+✅ Code đúng, complexity đúng (after correct)
+⚠️ Communication: 4/10 — quá im lặng
+⚠️ Problem solving: 5/10 — skip steps
+⚠️ Verification: 4/10 — không trace
+⚠️ Scalability: 5/10 — đoán không reason
+→ Lean Hire (signal yếu, không strong)</code></pre>
+</div>
+
+<div class="callout success">
+<div class="ctitle">🎤 Mock B — "Strong Hire" với cùng problem</div>
+<pre><code class="language-text">[00:00] Interviewer: same problem
+[00:10] Candidate: "Let me make sure I understand. Quick questions:
+        1. Are islands connected diagonally too, or only horizontal/vertical?
+        2. Can I modify the input grid, or must keep it immutable?
+        3. What's the grid size — fits in memory?"
+                                                            ┌── ✅ CRITIQUE #1
+                                                            │   Clarify upfront. Show care
+                                                            │   about edge case + constraint.
+                                                            └── +2 Communication.
+
+[01:00] Interviewer: "H/V only. Modify OK. Grid is moderate."
+[01:10] Candidate: "OK so I see 2 approaches:
+        - DFS/BFS: visit each cell, mark visited, count starts.
+        - Union-Find: union adjacent lands, count components.
+        Both O(m*n). DFS is simpler, let me start there.
+        If you want, after I finish I can discuss when Union-Find wins."
+                                                            ┌── ✅ CRITIQUE #2
+                                                            │   Show 2 approaches + reason.
+                                                            │   Commit to one + offer
+                                                            │   trade-off discussion.
+                                                            └── +3 Problem Solving.
+
+[02:00] Candidate: "Plan: iterate cells, when see '1' that's an unvisited
+        island start, BFS/DFS to mark whole island '0', increment count.
+        Edge cases: empty grid, single cell, no islands.
+        I'll use iterative DFS with explicit stack to avoid stack overflow
+        on large skewed islands."
+                                                            ┌── ✅ CRITIQUE #3
+                                                            │   Edge case + scalability
+                                                            │   thinking in PLAN phase.
+                                                            └── +2 Coding Skills.
+
+[02:30 - 14:00] *Code, narrate continuously*
+"... so I'm using a Deque as stack..."
+"... checking bounds before adding to stack..."
+"... marking visited by overwriting to '0' so no extra space..."
+                                                            ┌── ✅ CRITIQUE #4
+                                                            │   Narrate every decision.
+                                                            │   Interviewer sees thinking.
+                                                            └── +3 Communication.
+
+[14:30] *Code complete*
+[14:40] Candidate: "Let me trace with example [['1','1','0'],['0','1','0'],['1','0','1']]:
+        - Start (0,0)='1', count=1, DFS marks (0,0),(0,1),(1,1) as '0'
+        - Cell (0,2)='0', skip
+        - Cell (1,0)='0', skip ... etc
+        - End: count = 3. Matches expected."
+                                                            ┌── ✅ CRITIQUE #5
+                                                            │   Concrete trace, not "looks
+                                                            │   good".
+                                                            └── +3 Verification.
+
+[16:00] Interviewer: "Complexity?"
+[16:01] Candidate: "Time O(m*n) each cell visited once. Space O(min(m,n))
+        for DFS stack worst case spiral island."
+                                                            ┌── ✅ CRITIQUE #6
+                                                            │   Immediate, with reason for
+                                                            │   space bound.
+                                                            └── +2 Coding Skills.
+
+[16:30] Interviewer: "1B x 1B grid?"
+[16:45] Candidate: "Can't fit in memory. Approach:
+        1. Stream grid in chunks (say 10K x 10K).
+        2. Run Union-Find per chunk, get local component ids.
+        3. Merge across chunk borders: same id if adjacent across border.
+        4. Final count = distinct merged ids.
+        Trade-off: 2 passes, +metadata for border cells.
+        Or distributed: MapReduce style — emit cell + neighbors, group, reduce."
+                                                            ┌── ✅ CRITIQUE #7
+                                                            │   Structured answer with
+                                                            │   concrete numbers + trade-off.
+                                                            └── +3 Scalability.
+
+[Tổng kết]:
+✅ Communication: 9/10 — clarify + narrate + trace
+✅ Problem solving: 9/10 — 2 approaches discussed
+✅ Coding: 9/10 — clean, edge cases, complexity instant
+✅ Verification: 9/10 — concrete trace
+✅ Scalability: 9/10 — structured large-scale answer
+→ Strong Hire</code></pre>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Symptom → Failure Mode Recipes — Self-diagnosis sau mỗi mock</div>
+<p>Sau mỗi mock, replay recording + đối chiếu với 5 symptom dưới. Mỗi symptom có root cause + fix cụ thể.</p>
+<ol>
+<li><strong>Symptom: Interviewer phải prompt "what are you thinking?"</strong>
+<br>→ Root: Im lặng quá lâu khi code (&gt; 30s).
+<br>→ Fix: Practice solo nhưng nói thành tiếng. Record bản thân. Mục tiêu mọi 15s phải có 1 câu narrate.</li>
+
+<li><strong>Symptom: Solve được nhưng nói complexity chậm hoặc sai</strong>
+<br>→ Root: Tính complexity sau khi xong, không phải lúc code.
+<br>→ Fix: "Code-as-you-think complexity" — mỗi khi viết loop/recursion, thì thầm "this adds O(n)".</li>
+
+<li><strong>Symptom: Test pass nhưng interviewer chưa hài lòng</strong>
+<br>→ Root: Không trace bằng concrete input.
+<br>→ Fix: Sau khi code xong, chọn 1 input có nontrivial → trace từng bước trên giấy (hoặc nói ra).</li>
+
+<li><strong>Symptom: Bí khi hỏi follow-up "what if 1B input?"</strong>
+<br>→ Root: Không có framework cho scalability question.
+<br>→ Fix: Học template — "Can't fit memory → streaming + chunking + merge". "Too slow single node → distributed/parallel". "Need real-time → cache + index".</li>
+
+<li><strong>Symptom: Skip clarification, code 5 phút sau mới hỏi</strong>
+<br>→ Root: Vội muốn show "có pattern recognition".
+<br>→ Fix: Force quy tắc: 60s đầu CHỈ clarify, không gõ phím. Time-box.</li>
+</ol>
+</div>
+
+</section>
+
+<section id="feynman-end">
+  <h2>🧠 Feynman test</h2>
+
+  <div class="feynman">
+    <h3>🎓 Giải thích cho candidate chưa biết FAANG prep — &lt; 30s mỗi câu</h3>
+    <ol>
+      <li><strong>"Vì sao solve 200 LC vẫn fail FAANG?"</strong> — Coding round không phải cuộc thi giải bài. Là đánh giá đa chiều theo rubric 5 trục: Problem Solving 25%, Coding 25%, Communication 25%, Verification 15%, Knowledge 10%. Junior chỉ tối ưu trục 1 → fail.</li>
+      <li><strong>"Vì sao brute force trước optimal dù sẽ code optimal?"</strong> — Show thinking process (Problem Solving). BUD analysis derive optimal từ brute force. Có fallback nếu optimal bí. Skip brute = 'optimal-first syndrome' junior signal.</li>
+      <li><strong>"Khi bí trong interview, làm gì?"</strong> — KHÔNG im. Narrate: 'Tôi đang nghĩ giữa A và B. A O(n²), B chưa rõ. Try B thêm.' Show thinking. Im lặng = no signal Communication (25%).</li>
+      <li><strong>"Khác biệt L4 và L5 bar coding?"</strong> — L4: Medium 25-30 phút, Hard với 1-2 hints. L5: Hard 30 phút cleanly, handle 2-3 follow-up deeply, spot edge case preemptively. Junior 3 năm apply L4, không L5+ trực tiếp.</li>
+      <li><strong>"8 mock thật sự cần thiết?"</strong> — Yes. Pramp + Interviewing.io + peer + self-record. Mỗi mock fill rubric self-eval. Trend qua 8 mock: anti-pattern decrease, score improve. Đây là điều file/blog không thay được.</li>
+    </ol>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — Primary sources</h3>
+    <ul>
+      <li><strong>Cracking the Coding Interview 6e</strong> (Gayle McDowell, 2015) — ISBN 978-0984782857. Bible.</li>
+      <li><strong>Elements of Programming Interviews in Java</strong> (Aziz et al, 2016) — ISBN 978-1517435806. Harder tier.</li>
+      <li><strong>Pramp.com</strong> — free peer-to-peer mock. Bắt buộc dùng.</li>
+      <li><strong>Interviewing.io</strong> — paid với senior từ FAANG. Real signal.</li>
+      <li><strong>Levels.fyi</strong> — verify L4/L5 salary + bar per company.</li>
+      <li><strong>Blind</strong> — anonymous tech forum. Insider info về interview process per company.</li>
+      <li><strong>r/cscareerquestions</strong> — community Q&amp;A về interview.</li>
+      <li><strong>System Design Interview Vol 1 + 2</strong> (Alex Xu) — pair với <a href="45-faang-system-design.html">#45</a>.</li>
+      <li><strong>Educative.io Grokking the Coding Interview</strong> — paid course, pattern-based.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap Tháng 4 (1 tháng)</h3>
+    <pre><code class="language-text">Tuần 1: Đọc file này + Self-record mock (Lab 1) + 2 Pramp mock.
+        Score yourself qua 5 trục. Identify 2 anti-pattern chính.
+
+Tuần 2: 2 Interviewing.io mock (paid). Compare with senior FAANG signal.
+        Focus fix anti-pattern từ tuần 1.
+
+Tuần 3: 1 mock với senior + 1 self-record.
+        Practice handle hint + follow-up.
+
+Tuần 4: 2 mock final (peer + paid). Stamina test 60 phút.
+        Pre-loop checklist Section 11.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps sau khi master file này:</strong>
+    <ol>
+      <li><a href="45-faang-system-design.html">#45 FAANG System Design (HLD)</a> — 4S framework + 5 designs kinh điển.</li>
+      <li><a href="46-faang-behavioral-deep-dive.html">#46 FAANG Behavioral</a> — Amazon 16 LPs, Googleyness, Meta values.</li>
+      <li><a href="42-leetcode-patterns-mastery.html">#42 LeetCode Patterns</a> — refresh 18 patterns nếu rusty.</li>
+      <li><a href="43-algorithm-mental-model.html">#43 UMPIRE</a> — framework root.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng apply FAANG thật:</strong> 8 mock với feedback ≥ 7/10 · Tự fill được feedback form · 18 pattern reflex template · 12 STAR stories sẵn cho behavioral · 3 reverse Q chuẩn bị per company.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

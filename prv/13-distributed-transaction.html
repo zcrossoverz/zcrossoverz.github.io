@@ -845,6 +845,113 @@ public OrderResponse placeOrder(
 <p>Service A lock row, wait service B, B wait C, C wait A → deadlock cross-service. Hard to detect/recover. Avoid locks across service boundary.</p>
 </section>
 
+<section id="symptom-debug">
+<h2>8b. Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+<p class="lead">Distributed transaction lỗi không crash app — lỗi xuất hiện dưới dạng <strong>data inconsistency</strong> phát hiện sau X ngày/tuần. Đây là cách bắt lỗi trước khi customer report.</p>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #1 — Customer "đã trả tiền nhưng đơn hàng không có"</div>
+<p><strong>Symptom:</strong> Cuối tháng reconcile: payment service có 1247 transaction status PAID, order service chỉ có 1241 ORDER_CREATED. Lệch 6 đơn, ~12 triệu VND. Không log error nào.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Saga state table: <code>SELECT * FROM saga_instances WHERE state NOT IN ('COMPLETED','COMPENSATED') AND updated_at &lt; NOW() - INTERVAL '10 minutes'</code> — đây là saga "treo"</li>
+<li>Outbox table: số record <code>WHERE processed_at IS NULL</code> tăng dần = relay bị dừng</li>
+<li>Kafka consumer lag trên topic <code>order-events</code>, <code>payment-events</code></li>
+<li>Distributed trace (Jaeger/Tempo): tìm trace có span <code>payment.charge</code> nhưng không có <code>order.create</code></li>
+</ul>
+<p><strong>3 nguyên nhân theo độ phổ biến:</strong></p>
+<ol>
+<li><strong>Outbox relay crash giữa chừng</strong> — payment commit DB (PAID + outbox row), nhưng relay process die trước khi publish. Recover: restart relay với <code>WHERE processed_at IS NULL ORDER BY created_at</code></li>
+<li><strong>Order service consume event nhưng throw exception, không retry</strong> — consumer phải có DLQ + alert khi DLQ &gt; 0. Check Kafka <code>__consumer_offsets</code> và DLQ topic</li>
+<li><strong>Idempotency key bị duplicate detect SAI</strong> — order service thấy event đã xử lý (cache), skip nhưng cache stale. Check idempotency table có entry cho event đó không</li>
+</ol>
+<p><strong>Recovery procedure:</strong></p>
+<pre><code class="language-sql">-- 1. Tìm payment đã PAID nhưng order chưa có
+SELECT p.id, p.amount, p.created_at
+FROM payment_db.payments p
+LEFT JOIN order_db.orders o ON o.payment_id = p.id
+WHERE p.status = 'PAID' AND o.id IS NULL
+  AND p.created_at &lt; NOW() - INTERVAL '5 minutes';
+
+-- 2. Re-publish event hoặc trigger compensation manual
+-- (KHÔNG insert order trực tiếp vì bypass business logic)</code></pre>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #2 — Saga compensation throw exception, log "silent"</div>
+<p><strong>Symptom:</strong> Inventory reservation thành công, payment fail → cần compensate (release reservation). Compensation call inventory service nhưng inventory đã restart, response 503. Saga "đứng" ở state COMPENSATING. Không alert.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Saga state: <code>SELECT state, COUNT(*) FROM saga_instances GROUP BY state</code> — alert nếu <code>COMPENSATING &gt; 0</code> lâu hơn 5 phút</li>
+<li>Saga step retry log: mỗi compensation phải có retry count + last_attempt_at</li>
+<li>Dead letter queue cho compensation events</li>
+</ul>
+<p><strong>Anti-pattern cần tránh:</strong> <code>try { compensate(); } catch(Exception e) { log.error(e); }</code> — exception bị nuốt, saga đứng. Đúng là phải retry với exponential backoff, sau N lần fail → escalate đến human ops queue.</p>
+<p><strong>Pattern đúng (state machine):</strong></p>
+<pre><code class="language-java">@Scheduled(fixedDelay = 30000)
+public void retryStuckCompensations() {
+    var stuck = sagaRepo.findByStateAndUpdatedBefore(
+        SagaState.COMPENSATING, Instant.now().minusSeconds(60));
+    for (var saga : stuck) {
+        if (saga.getCompensationAttempts() &gt; 5) {
+            alertOps(saga); // escalate
+            saga.setState(SagaState.COMPENSATION_FAILED);
+        } else {
+            try {
+                compensationService.compensate(saga);
+                saga.setState(SagaState.COMPENSATED);
+            } catch (Exception e) {
+                saga.incrementAttempts();
+                saga.setLastError(e.getMessage());
+            }
+            sagaRepo.save(saga);
+        }
+    }
+}</code></pre>
+</div>
+
+<div class="callout danger">
+<div class="ctitle">🚨 Recipe #3 — "Duplicate order" sau khi user click 2 lần</div>
+<p><strong>Symptom:</strong> User click "Đặt hàng" 2 lần vì lag UI → 2 order, 2 payment. Customer report. Reproduce: tạo 2 request gần nhau với cùng cart.</p>
+<p><strong>Log/Metric cần xem:</strong></p>
+<ul>
+<li>Access log nginx/load balancer: tìm 2 request POST <code>/orders</code> cùng <code>user_id</code> trong &lt; 2s</li>
+<li>Idempotency key table: kiểm có entry duplicate không</li>
+<li>Order create endpoint: có check Idempotency-Key header không</li>
+</ul>
+<p><strong>Root cause + Fix tier:</strong></p>
+<ol>
+<li><strong>Client-side debounce</strong> (Tier 1, không đủ) — disable button sau click. Vẫn fail với network retry, browser back/forward</li>
+<li><strong>Idempotency-Key header</strong> (Tier 2, chuẩn) — client gen UUID per intent, server lưu (key, response) → request 2 cùng key trả lại response cũ</li>
+<li><strong>Business-level uniqueness</strong> (Tier 3, defense-in-depth) — unique constraint <code>(user_id, cart_hash, created_within_5min)</code></li>
+</ol>
+<p><strong>Note:</strong> Idempotency key TTL phải đủ dài (24h) để cover retry sau network blip. Lưu trong Redis với expire, hoặc Postgres với cleanup job.</p>
+</div>
+
+<div class="callout why">
+<div class="ctitle">🎯 3 cấp độ Mastery cho distributed transaction</div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Recognize (Junior)</h3>
+    <p>Biết tên "saga", "2PC", "outbox". Biết "@Transactional không work cross-service". Khi gặp bug consistency, đề xuất "thêm transaction".</p>
+    <p><em>Symptom của L1: dùng từ "eventual consistency" như buzzword, không giải thích lag bao lâu là acceptable.</em></p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain (Mid)</h3>
+    <p>Hiểu dual-write problem, biết outbox giải quyết bằng cách nào (commit cùng local TX). Phân biệt choreography vs orchestration trade-off. Biết idempotency key cần TTL.</p>
+    <p><em>Symptom của L2: đề xuất outbox và biết explain tại sao Kafka transactional producer KHÔNG thay thế outbox được trong mọi case.</em></p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply (Senior)</h3>
+    <p>Thiết kế saga state machine có retry + compensation + escalation queue. Đo end-to-end latency của saga, biết alert khi nào. Build reconciliation job. Recipe 3 ở trên là phản xạ.</p>
+    <p><em>Symptom của L3: ngoài happy path, list được 3 failure mode và recovery procedure cho từng case trong design doc.</em></p>
+  </div>
+</div>
+
+</section>
+
 <section id="build-projects">
 <h2>9. Build Projects</h2>
 

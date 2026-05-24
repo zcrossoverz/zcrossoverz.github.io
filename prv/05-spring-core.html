@@ -1,532 +1,1485 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#05 - Spring Core | Java Backend Interview Prep</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-<link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#05 — Spring Core: IoC, DI, AOP, Bean Lifecycle, Scope | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#05 Spring Core</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm B · Spring Ecosystem</span>
+    <span class="sep">›</span>
+    <span class="current">#05 Spring Core</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
 </div>
 
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
-  <nav class="toc">
-    <a href="#intro">Tổng quan</a>
-    <a href="#anti-fake">Cách học chống hiểu giả</a>
-    <a href="#scope-map">Cần nắm vs phụ</a>
-    <a href="#problem">1. Bài toán thực tế</a>
-    <a href="#mental-model">2. Mental model</a>
-    <div class="sub">
-      <a href="#ioc">IoC Container</a>
-      <a href="#lifecycle">Bean lifecycle</a>
-      <a href="#scope">Bean scope</a>
-      <a href="#aop">AOP proxy</a>
-      <a href="#bean-resolution">Bean resolution</a>
-      <a href="#proxy-types">JDK vs CGLIB</a>
-    </div>
-    <a href="#implementation">3. Code production</a>
-    <a href="#debug">4. Debug lab</a>
-    <a href="#tradeoffs">5. Trade-offs</a>
-    <a href="#interview">6. Interview framework</a>
-    <a href="#checklist">Checklist</a>
-  </nav>
-</aside>
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#how-to-read">📖 Cách đọc</a>
+      <a href="#roadmap">🗺️ Roadmap 6 modules</a>
+      <a href="#intro">1. Vì sao Spring Core là gốc</a>
+      <a href="#real-problem">2. Bug e-contract — 4 hiểu lầm</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#ioc">3. IoC Container</a>
+      <a href="#di-patterns">4. DI — 3 cách inject</a>
+      <a href="#lifecycle">5. Bean Lifecycle (7 bước)</a>
+      <a href="#scope">6. Bean Scope</a>
+      <a href="#aop">7. AOP — Proxy mechanism</a>
+      <a href="#self-invocation">8. Self-invocation problem</a>
+      <div class="toc-section">Production</div>
+      <a href="#audit-aspect">9. Audit log aspect</a>
+      <a href="#fix-signing">10. Fix SigningService</a>
+      <a href="#prototype-singleton">11. Prototype trong Singleton</a>
+      <div class="toc-section">Pitfalls &amp; Áp dụng</div>
+      <a href="#antipatterns">⚠️ 7 anti-patterns</a>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#build-projects">🔧 Build &amp; drill</a>
+      <a href="#feynman-end">🧠 Feynman + verify</a>
+    </nav>
+  </aside>
 
-<main>
-<div class="content">
+  <main>
+    <div class="content">
 
+<!-- ==================== HERO ==================== -->
 <section class="hero">
-  <span class="meta-tag">Phase 2 - Daily work - High priority</span>
-  <h1>#05 - Spring Core: IoC, DI, AOP, Bean Lifecycle, Scope</h1>
-  <p class="lead">Spring Core không phải là chuyện nhớ annotation. Điểm phỏng vấn nằm ở việc bạn hiểu <strong>container tạo object thế nào</strong>, tại sao service singleton phải stateless, và vì sao AOP như <code>@Transactional</code> có những giới hạn rất cụ thể.</p>
+  <div class="meta-tag">Nhóm B · Spring Ecosystem · File 1/6 (Foundation)</div>
+  <h1>Spring Core — IoC, DI, AOP, Bean Lifecycle &amp; Scope (Từ cơ chế đến production bug)</h1>
+  <p class="lead">
+    Spring Core là <strong>nền tảng</strong> của mọi thứ trong Spring ecosystem — Spring Boot auto-config, Spring Data JPA, Spring Security, Spring Transaction đều đứng trên 4 trụ: <em>IoC container, Dependency Injection, AOP proxy, Bean lifecycle</em>. 100% phỏng vấn Spring hỏi 4 trụ này, nhưng <strong>bẫy nằm ở cơ chế bên trong</strong>: vì sao <code>@Transactional</code> trên private method không chạy? Vì sao self-invocation bypass AOP? Vì sao singleton service mà bị race condition? File này deep-dive từ first principle.
+  </p>
   <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">B - Spring Ecosystem</div></div>
-    <div class="meta-item"><div class="k">Tần suất dùng</div><div class="v">Hằng ngày</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#6 Boot, #7 Transaction, #8 Security</div></div>
-    <div class="meta-item"><div class="k">Mục tiêu</div><div class="v">Debug được bean/proxy/scope issue</div></div>
+    <div><strong>🎯 Mục tiêu</strong><br>Hiểu cơ chế bên trong IoC + AOP proxy + lifecycle. Tránh 7 bug kinh điển.</div>
+    <div><strong>📅 Thời lượng</strong><br>1–2 tuần đọc + lab · Foundation cho #06 Spring Boot, #07 Transaction</div>
+    <div><strong>📚 Prereq</strong><br>Java OOP (#48) · Reflection cơ bản · Đã viết &gt; 1 Spring Boot app</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🔴 Critical — gốc của 5 file Spring tiếp theo</div>
   </div>
 </section>
 
+<!-- ==================== HOW TO READ ==================== -->
+<div class="study-banner" id="how-to-read">
+  <h3>📖 5 quy tắc đọc file này — KHÔNG đọc một mạch</h3>
+  <ol>
+    <li><strong>Đọc 1 module/ngày, kèm lab.</strong> Mỗi mental model (IoC, DI, Lifecycle, Scope, AOP) có lab tương ứng — đừng đọc lý thuyết suông. Tạo project nhỏ, viết bean, debug step-by-step.</li>
+    <li><strong>Mở debugger khi đọc Lifecycle.</strong> Đặt breakpoint ở constructor, @PostConstruct, @PreDestroy. Quan sát thứ tự thực sự — KHÔNG tin trí nhớ.</li>
+    <li><strong>Run code mọi anti-pattern.</strong> 7 anti-pattern phải tự reproduce bug trên máy. <em>Đọc</em> "self-invocation không chạy" ≠ <em>thấy</em> log không in ra. Trực giác chỉ có khi tay đã chạm code.</li>
+    <li><strong>So sánh proxy thực tế.</strong> Trong debugger, hover lên bean được inject → thấy class name có <code>$$SpringCGLIB$$0</code>. Không thấy = không phải proxy = AOP không chạy.</li>
+    <li><strong>Cuối file làm Feynman test.</strong> Đóng tab, giải thích 5 câu cho người không biết Spring. Câu nào bí → đọc lại module đó.</li>
+  </ol>
+</div>
+
+<!-- ==================== ROADMAP ==================== -->
+<section id="roadmap">
+  <h2>🗺️ Roadmap 6 modules — Đi theo thứ tự</h2>
+  <p>Sắp xếp từ <strong>nền tảng → thực hành → bẫy</strong>. Module sau dùng intuition từ module trước. <code>CORE</code> = bắt buộc, <code>HIGH-SIGNAL</code> = phân biệt mid vs senior, <code>ADV</code> = bonus.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-item core"><span class="num">M1</span><div><strong>IoC Container</strong> · CORE · Hollywood Principle, ApplicationContext, BeanFactory</div></div>
+    <div class="roadmap-item core"><span class="num">M2</span><div><strong>Dependency Injection</strong> · CORE · Constructor vs Setter vs Field — best practice + lý do</div></div>
+    <div class="roadmap-item core"><span class="num">M3</span><div><strong>Bean Lifecycle</strong> · CORE · 7 bước từ instantiation đến destroy, vị trí của @PostConstruct và AOP proxy</div></div>
+    <div class="roadmap-item core"><span class="num">M4</span><div><strong>Bean Scope</strong> · CORE · Singleton vs Prototype vs Request/Session — vì sao mutable field trong singleton là bug</div></div>
+    <div class="roadmap-item core"><span class="num">M5</span><div><strong>AOP Proxy</strong> · HIGH-SIGNAL · CGLIB vs JDK Dynamic Proxy, vì sao private/final method bypass</div></div>
+    <div class="roadmap-item supp"><span class="num">M6</span><div><strong>Self-invocation</strong> · HIGH-SIGNAL · 3 cách fix + trade-off</div></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Vì sao 6 modules?</strong> Đây là minimal set để debug được mọi bug Spring kinh điển. Nếu thiếu M3 (Lifecycle) → không biết AOP proxy tạo lúc nào → không debug được @Transactional. Nếu thiếu M5 (AOP) → không hiểu vì sao @Transactional silent fail. 6 module phải đi cùng.
+  </div>
+</section>
+
+<!-- ==================== INTRO ==================== -->
 <section id="intro">
-<h2 class="no-border">Spring Core Là Nền Móng Của Spring</h2>
-<p>Trong dự án thật, bạn hiếm khi gọi trực tiếp <code>ApplicationContext.getBean()</code>, nhưng mọi thứ bạn dùng đều đi qua nó: controller, service, repository, transaction, security, event, configuration. Nếu không hiểu container, bạn sẽ debug Spring bằng cảm giác: thêm annotation cho tới khi chạy.</p>
-<p>Senior không cần thuộc mọi annotation. Senior cần nhìn thấy ranh giới: object nào do Spring quản lý, object nào do mình tự <code>new</code>; method call nào đi qua proxy, method call nào bypass proxy; state nào được share giữa request, state nào chỉ sống trong stack của một request.</p>
+  <h2>1. Vì sao Spring Core là gốc? <span class="k-tag core">CORE</span></h2>
+
+  <p>Nhiều junior Spring developer nghĩ "biết viết @Service @Autowired là đủ". Sai. Hiểu Spring ở mức "API surface" sẽ fail mọi bug production có dấu vết của <em>cơ chế bên trong</em>: AOP proxy, bean lifecycle, scope. File này tồn tại để chuyển bạn từ "user của Spring" thành "người hiểu Spring vận hành".</p>
+
+  <div class="history-block">
+    <h4>📜 Lịch sử Spring Framework — vì sao IoC ra đời</h4>
+    <ul>
+      <li><strong>1990s – early 2000s</strong> — Java EE (J2EE) phổ biến mô hình EJB (Enterprise JavaBeans). EJB heavy-weight, đòi phải implement nhiều interface (<code>SessionBean</code>, <code>EntityBean</code>), deploy vào application server (WebLogic, WebSphere). Unit test gần như không thể vì code phụ thuộc vào container.</li>
+      <li><strong>2002</strong> — Rod Johnson xuất bản <em>Expert One-on-One J2EE Design and Development</em> (Wiley). Cuốn sách chỉ trích EJB và đề xuất "lightweight container" với code DI. Code mẫu trong sách chính là phôi của Spring Framework.</li>
+      <li><strong>2004</strong> — Spring 1.0 release. POJOs + IoC + AOP, không cần EJB container. Triết lý "Don't repeat yourself" và "Convention over configuration".</li>
+      <li><strong>2006</strong> — Spring 2.0: AspectJ integration, annotation-driven config (<code>@Transactional</code>, <code>@Component</code>).</li>
+      <li><strong>2009</strong> — Spring 3.0: Java config (<code>@Configuration</code>), REST support, native annotation-driven.</li>
+      <li><strong>2013</strong> — Spring Boot 1.0 launch tại SpringOne. Auto-configuration + embedded server + opinionated defaults. Spring Boot làm Spring trở thành de-facto standard cho Java backend.</li>
+      <li><strong>2017</strong> — Spring 5.0: Reactive (WebFlux), Kotlin support, Java 8 baseline.</li>
+      <li><strong>2022</strong> — Spring 6.0 + Spring Boot 3.0: Java 17 baseline, AOT (Ahead-of-Time) compilation cho GraalVM, Jakarta EE 9+ (đổi <code>javax.*</code> → <code>jakarta.*</code>).</li>
+      <li><strong>2024–2026</strong> — Spring 6.1+: virtual threads support, observability improvements. Spring vẫn dominate Java backend với 60%+ market share (theo JetBrains Developer Ecosystem Report).</li>
+    </ul>
+    <p><em>Verifiable: Rod Johnson — Expert One-on-One J2EE, ISBN 978-0764543852. Spring source — github.com/spring-projects/spring-framework. Release notes — spring.io/blog. JetBrains report — jetbrains.com/lp/devecosystem-2024.</em></p>
+  </div>
+
+  <h3>"User của Spring" vs "Hiểu Spring"</h3>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Chỉ là user</h4>
+      <ul>
+        <li>Biết viết <code>@Service @Autowired</code></li>
+        <li>Copy template Spring Boot từ Stack Overflow</li>
+        <li>Bug "@Transactional không rollback" → Google → copy answer → vẫn không hiểu vì sao</li>
+        <li>Khi senior hỏi "AOP proxy hoạt động thế nào?" → "Cứ đặt @Transactional là chạy thôi"</li>
+        <li>Singleton service có mutable field, lâu lâu data leak → debug 2 ngày không ra</li>
+      </ul>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Hiểu Spring</h4>
+      <ul>
+        <li>Vẽ được Bean lifecycle 7 bước, biết AOP proxy tạo ở bước 4</li>
+        <li>Bug "@Transactional private method" → reflex giải được trong 30 giây</li>
+        <li>Debug bằng cách inspect proxy class name → biết AOP chạy hay không</li>
+        <li>Stateless singleton là habit, không phải rule học thuộc</li>
+        <li>Self-invocation problem → reflex 3 cách fix + trade-off</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pause-block">
+    <h4>⏸️ Pause &amp; Predict</h4>
+    <p>Trước khi đọc tiếp: <strong>nếu đặt <code>@Transactional</code> trên một <code>private</code> method, transaction có hoạt động không? Vì sao?</strong> Viết câu trả lời + cơ chế cụ thể. Đáp án ở cuối Section 7.</p>
+  </div>
 </section>
 
-<section id="anti-fake">
-<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
-<div class="pillar-grid">
-  <div class="pillar">
-    <div class="num">Layer 1</div>
-    <h4>Sự cố trước định nghĩa</h4>
-    <p>Mỗi concept bắt đầu bằng bug production. Bạn học để giải thích nguyên nhân, không học để đọc thuộc câu trả lời.</p>
-  </div>
-  <div class="pillar">
-    <div class="num">Layer 2</div>
-    <h4>Trace từng bước</h4>
-    <p>Luôn vẽ được flow: container scan, tạo bean, inject, tạo proxy, request gọi proxy rồi mới tới target.</p>
-  </div>
-  <div class="pillar">
-    <div class="num">Layer 3</div>
-    <h4>Code có lỗi và code sửa</h4>
-    <p>Đặt cạnh nhau để thấy chính xác dòng nào gây bug, không chỉ nghe "best practice".</p>
-  </div>
-  <div class="pillar">
-    <div class="num">Layer 4</div>
-    <h4>Checklist teach-back</h4>
-    <p>Học xong phải giải thích lại bằng miệng và dự đoán log/behavior khi code chạy.</p>
-  </div>
-</div>
-</section>
+<!-- ==================== REAL PROBLEM ==================== -->
+<section id="real-problem">
+  <h2>2. Bug e-contract — 4 hiểu lầm trong 1 service <span class="k-tag core">CORE</span></h2>
 
-<section id="scope-map">
-<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
-  <tbody>
-    <tr><td><strong>A - Bắt buộc</strong></td><td>IoC/DI, lifecycle, singleton stateless, scope, AOP proxy, self-invocation</td><td>Giải thích được bug thật và sửa được code.</td></tr>
-    <tr><td><strong>B - Nên biết</strong></td><td><code>@Primary</code>, <code>@Qualifier</code>, provider/prototype, JDK proxy vs CGLIB, circular dependency</td><td>Debug được startup/runtime issue trong dự án hằng ngày.</td></tr>
-    <tr><td><strong>C - Bonus</strong></td><td><code>BeanFactoryPostProcessor</code>, custom scope, deep container extension</td><td>Chỉ cần biết tên và khi nào tránh lạm dụng.</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
+  <p>Team e-contract báo cáo: <em>chữ ký số đôi khi bị ký trùng, nhưng không phải lúc nào cũng xảy ra</em>. Production rồi, đã trên prod 2 tuần. Sau 2 ngày debug, developer tìm thấy đoạn code này:</p>
 
-<section id="problem">
-<h2>1. Bài Toán Thực Tế - Voucher Bị Áp Dụng Sai Trong Marketplace</h2>
-<p>Một marketplace có service áp voucher cho đơn hàng. Bug chỉ xuất hiện lúc traffic cao: khách A dùng voucher <code>SUMMER10</code>, khách B đôi khi bị báo "voucher đã dùng", dù chưa từng dùng voucher đó.</p>
+  <pre><code class="language-java">@Service
+public class SigningService {
 
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">Sai: Stateful singleton service</div>
-<pre><code class="language-java">@Service
-public class VoucherService {
-    private Set&lt;String&gt; appliedCodes = new HashSet&lt;&gt;();
-    private BigDecimal lastDiscount = BigDecimal.ZERO;
+    // ⚠️ Lỗi #1: Developer nghĩ đây là stateless service
+    private List&lt;String&gt; signedDocuments = new ArrayList&lt;&gt;();
+    private int requestCount = 0;
 
-    public DiscountResult apply(Cart cart, String code) {
-        if (appliedCodes.contains(code)) {
-            return DiscountResult.rejected("Code already used");
+    public SignResult sign(SignRequest request) {
+        requestCount++;
+        signedDocuments.add(request.getDocumentId()); // Accumulates across requests!
+
+        if (signedDocuments.contains(request.getDocumentId())) {
+            // Logic này LUÔN true sau request đầu tiên
+            return SignResult.duplicate();
         }
-        BigDecimal discount = calculate(cart, code);
-        appliedCodes.add(code);
-        lastDiscount = discount;
-        return DiscountResult.accepted(discount);
+        return doActualSigning(request);
+    }
+}
+
+@RestController
+public class ContractController {
+
+    // ⚠️ Lỗi #2: @Autowired field injection trên controller
+    @Autowired
+    private SigningService signingService;
+
+    // ⚠️ Lỗi #3: AOP không hoạt động như mong đợi
+    @AuditLog  // Custom annotation
+    public SignResult signContract(@RequestBody SignRequest request) {
+        return signingService.sign(request);
+    }
+}
+
+// ⚠️ Lỗi #4: @Transactional trên private method
+@Service
+public class DocumentService {
+    @Transactional
+    private void saveDocumentInternal(Document doc) { // Không bao giờ có transaction!
+        documentRepository.save(doc);
     }
 }</code></pre>
+
+  <div class="misconception">
+    <h4>❌ 4 hiểu lầm trong 50 dòng code</h4>
+    <ol>
+      <li><strong>Singleton scope là default</strong> → <code>signedDocuments</code> được SHARE giữa mọi request → User A ký xong, User B sign → thấy documentIds của User A → race condition + data leak.</li>
+      <li><strong>Field injection bằng <code>@Autowired</code> trực tiếp</strong> → field không thể <code>final</code> → mutable → khó test (phải dùng reflection), khó detect circular dependency, dependencies "hidden".</li>
+      <li><strong>AOP self-invocation</strong> → khi gọi <code>signingService.sign()</code> ngon, nhưng nếu trong <code>SigningService</code> có method khác gọi <code>this.sign()</code> → bypass proxy → <code>@AuditLog</code> không trigger.</li>
+      <li><strong><code>@Transactional</code> trên private method</strong> → CGLIB không thể override private method → proxy không intercept được → transaction KHÔNG BAO GIỜ active → exception không rollback.</li>
+    </ol>
   </div>
-  <div class="col good">
-    <div class="col-head">Đúng: Stateless service</div>
-<pre><code class="language-java">@Service
-public class VoucherService {
-    private final VoucherRepository voucherRepository;
 
-    public DiscountResult apply(Cart cart, String code) {
-        Voucher voucher = voucherRepository
-            .findActiveByCode(code)
-            .orElseThrow(() -&gt; new VoucherNotFoundException(code));
+  <h3>4 câu hỏi buộc bạn tư duy</h3>
+  <ol>
+    <li>Tại sao <code>signedDocuments</code> accumulate qua các requests? Singleton scope hoạt động thế nào? (→ Section 6)</li>
+    <li><code>@Transactional</code> trên private method có hoạt động không? Tại sao liên quan đến AOP? (→ Section 7)</li>
+    <li><code>@AuditLog</code> AOP annotation trên method trong cùng class có hoạt động không? (→ Section 8)</li>
+    <li>Field injection (<code>@Autowired</code> trực tiếp) có vấn đề gì so với constructor injection? (→ Section 4)</li>
+  </ol>
 
-        BigDecimal discount = voucher.calculateDiscount(cart);
-        return DiscountResult.accepted(discount);
-    }
-}</code></pre>
+  <div class="callout warn">
+    <strong>Chi phí thực:</strong> Bug này trên production 2 tuần, ~200 hợp đồng bị "ký trùng signal" trả về cho user dù chưa ký xong. Team phải migrate data, gửi mail xin lỗi 200 khách hàng, audit log lại toàn bộ chữ ký. <em>4 hiểu lầm × 50 dòng code = ~80 giờ remediation</em>. File này tồn tại để bạn KHÔNG mắc phải.
   </div>
-</div>
-
-<div class="callout danger">
-  <div class="ctitle">Điểm mấu chốt</div>
-  <p><code>@Service</code> mặc định là singleton trong một <code>ApplicationContext</code>. Một instance được mọi request dùng chung. Field mutable như <code>appliedCodes</code> hoặc <code>lastDiscount</code> sẽ trở thành state toàn cục trá hình.</p>
-</div>
-
-<p>Bug cùng nhóm thường đi kèm 3 lỗi khác: field injection khiến dependency ẩn, <code>@Transactional</code> đặt trên private method không chạy, và method có annotation AOP được gọi nội bộ trong cùng class nên không đi qua proxy.</p>
 </section>
 
-<section id="mental-model">
-<h2>2. Mental Model - Spring Không Magic, Spring Quản Lý Object Graph</h2>
-
+<!-- ==================== IOC ==================== -->
 <section id="ioc">
-<h3>2.1 IoC Container</h3>
-<p>IoC nghĩa là bạn không tự tạo dependency bằng <code>new</code>. Bạn khai báo object cần gì, container quyết định tạo object theo thứ tự nào, inject vào đâu, và bọc proxy nào nếu cần.</p>
+  <h2>3. IoC Container — "Hollywood Principle" <span class="k-tag core">CORE</span></h2>
 
-<div class="diagram">
-<svg viewBox="0 0 760 250" role="img" aria-label="Spring IoC startup flow">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path>
-    </marker>
-  </defs>
-  <rect x="20" y="80" width="120" height="70" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
-  <text x="80" y="110" text-anchor="middle" font-size="13" fill="#0f172a">Classpath</text>
-  <text x="80" y="130" text-anchor="middle" font-size="12" fill="#475569">@Component</text>
-  <line x1="140" y1="115" x2="205" y2="115" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="205" y="80" width="140" height="70" rx="8" fill="#f0f9ff" stroke="#0284c7"></rect>
-  <text x="275" y="108" text-anchor="middle" font-size="13" fill="#0f172a">BeanDefinition</text>
-  <text x="275" y="130" text-anchor="middle" font-size="12" fill="#475569">metadata</text>
-  <line x1="345" y1="115" x2="410" y2="115" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="410" y="80" width="130" height="70" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
-  <text x="475" y="108" text-anchor="middle" font-size="13" fill="#0f172a">Instantiate</text>
-  <text x="475" y="130" text-anchor="middle" font-size="12" fill="#475569">constructor</text>
-  <line x1="540" y1="115" x2="600" y2="115" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="600" y="80" width="130" height="70" rx="8" fill="#fffbeb" stroke="#d97706"></rect>
-  <text x="665" y="105" text-anchor="middle" font-size="13" fill="#0f172a">Inject + Proxy</text>
-  <text x="665" y="127" text-anchor="middle" font-size="12" fill="#475569">ready bean</text>
-</svg>
-<div class="caption">Container đi từ metadata đến instance thật. AOP proxy được tạo trong giai đoạn BeanPostProcessor, không phải khi bạn viết annotation.</div>
-</div>
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Mọi thứ trong Spring đứng trên IoC container. Hiểu container = hiểu thứ tự bean được tạo + khi nào dependencies sẵn sàng + tại sao AOP proxy tồn tại. Không hiểu = chỉ là user.
+  </div>
 
-<p>Ba khái niệm cần tách rõ:</p>
-<ul>
-  <li><strong>IoC</strong>: quyền tạo và nối object graph nằm ở container.</li>
-  <li><strong>DI</strong>: cách container đưa dependency vào object, thường qua constructor.</li>
-  <li><strong>Bean</strong>: object được container quản lý lifecycle, scope, proxy và dependency.</li>
-</ul>
+  <h3>IoC = "Don't call us, we'll call you"</h3>
+  <p>IoC (Inversion of Control) là <strong>nguyên tắc thiết kế</strong>: control flow bị đảo ngược — framework gọi code của bạn, không phải bạn gọi framework. DI (Dependency Injection) là <strong>implementation pattern</strong> của IoC.</p>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Truyền thống (bạn kiểm soát)</h4>
+      <pre><code class="language-java">public class OrderService {
+  private PaymentService ps;
+
+  public OrderService() {
+    // Bạn tự tạo dependency
+    this.ps = new PaymentService();
+    // → Phải biết PaymentService
+    //   được tạo thế nào
+    // → Tight coupling
+    // → Khó test (không mock được)
+  }
+}</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ IoC (container kiểm soát)</h4>
+      <pre><code class="language-java">public class OrderService {
+  private final PaymentService ps;
+
+  // Container inject vào
+  public OrderService(PaymentService ps) {
+    this.ps = ps;
+  }
+  // → OrderService chỉ biết
+  //   interface, không biết cách tạo
+  // → Loose coupling
+  // → Dễ test (mock PaymentService)
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>ApplicationContext — Cấu trúc thực sự</h3>
+  <pre><code class="language-text">ApplicationContext
+├── BeanFactory (core: create, store, retrieve beans)
+│   ├── BeanDefinitionRegistry (đăng ký metadata của bean)
+│   ├── DefaultListableBeanFactory (implementation chính)
+│   └── Bean instances (singleton cache)
+│
+├── MessageSource (i18n)
+├── ApplicationEventPublisher (event system)
+└── ResourceLoader (file, classpath, URL)</code></pre>
+
+  <h3>Spring Boot start — 7 bước cụ thể</h3>
+  <pre><code class="language-text">1. Scan classpath → tìm @Component, @Service, @Repository, @Controller
+2. Đọc @Configuration classes → build BeanDefinition objects (metadata, CHƯA tạo instance)
+3. Sort BeanDefinitions theo dependency order (topological sort)
+4. Instantiate beans theo thứ tự
+5. Inject dependencies (constructor → setter → field)
+6. Chạy BeanPostProcessors (★ AOP proxies được tạo ở đây!)
+7. Chạy @PostConstruct → ApplicationContextEvent.REFRESHED → READY</code></pre>
+
+  <div class="callout info">
+    <strong>Key insight về bước 6:</strong> AOP proxy KHÔNG được tạo ở constructor — nó được tạo ở <code>BeanPostProcessor.postProcessAfterInitialization()</code>. Đây là lý do trong constructor, <code>this</code> = target object (chưa wrap proxy), KHÔNG phải proxy. Đó cũng là lý do bạn KHÔNG nên gọi <code>@Transactional</code> method từ constructor.
+  </div>
+
+  <h3>BeanDefinition vs Bean instance — khái niệm phân biệt</h3>
+  <p>Junior thường confuse 2 khái niệm này:</p>
+  <ul>
+    <li><strong>BeanDefinition</strong> = metadata mô tả cách tạo bean (class, scope, init-method, dependencies). Được register ở bước 2. <em>1 BeanDefinition có thể tạo nhiều instance</em> (prototype scope).</li>
+    <li><strong>Bean instance</strong> = object thực tế trong memory. Singleton → 1 instance / context. Prototype → N instance.</li>
+  </ul>
+
+  <p>Hiểu phân biệt này quan trọng khi:</p>
+  <ul>
+    <li>Auto-configuration (Spring Boot) → register BeanDefinition, KHÔNG tạo instance ngay.</li>
+    <li>Conditional bean (<code>@ConditionalOnProperty</code>) → quyết định ở bước 2 (register hay không), không phải runtime.</li>
+    <li>Lazy initialization (<code>@Lazy</code>) → có BeanDefinition nhưng instance tạo khi lần đầu inject/getBean.</li>
+  </ul>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: IoC có lỗ hổng nào?</h4>
+    <ul>
+      <li><strong>Magic quá nhiều</strong> — junior không biết bean được tạo từ đâu. Khi debug bug "NoSuchBeanDefinitionException" → mất 30 phút tìm vì sao class không scan được. Fix: bật <code>--debug</code> mode để xem auto-config report.</li>
+      <li><strong>Circular dependency dễ tạo ra</strong> — A inject B, B inject A → khi constructor injection thì fail-fast (good), khi field injection thì late-fail (bad).</li>
+      <li><strong>Performance overhead start-up</strong> — scan classpath + reflection chậm. Spring Boot 3 có AOT để giảm xuống ~10× nhưng cấu hình phức tạp.</li>
+      <li><strong>Test harness phức tạp</strong> — full <code>@SpringBootTest</code> mất 10–30 giây. Cần <code>@WebMvcTest</code>, <code>@DataJpaTest</code> để scoped test — nhưng phải hiểu rõ slice annotations.</li>
+    </ul>
+  </div>
 </section>
 
+<!-- ==================== DI PATTERNS ==================== -->
+<section id="di-patterns">
+  <h2>4. DI — 3 cách inject, chỉ 1 đúng <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> 90% junior Spring developer dùng field injection — sai. Constructor injection là best practice không phải vì style mà vì <em>5 lý do kỹ thuật cụ thể</em>: immutability, testability, fail-fast, explicit dependencies, circular detection.
+  </div>
+
+  <h3>3 cách inject — so sánh</h3>
+
+  <table>
+    <thead>
+      <tr><th>Khía cạnh</th><th>Constructor</th><th>Setter</th><th>Field</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Immutable (final)</td><td>✅ OK</td><td>❌ Không</td><td>❌ Không</td></tr>
+      <tr><td>Required check</td><td>✅ Compile-time</td><td>⚠️ Runtime</td><td>⚠️ Runtime</td></tr>
+      <tr><td>Unit test (không Spring)</td><td>✅ <code>new Service(mock)</code></td><td>⚠️ Multiple setter calls</td><td>❌ Reflection cần thiết</td></tr>
+      <tr><td>Circular detect</td><td>✅ Fail-fast khi startup</td><td>⚠️ Có thể hoạt động (lazy)</td><td>⚠️ Có thể hoạt động (lazy)</td></tr>
+      <tr><td>Dependencies explicit</td><td>✅ Nhìn constructor biết hết</td><td>⚠️ Setters rải rác</td><td>❌ Hidden, scan @Autowired</td></tr>
+      <tr><td>Code length</td><td>⚠️ Verbose hơn (Lombok @RequiredArgsConstructor giải quyết)</td><td>⚠️ Verbose</td><td>✅ Ngắn nhất</td></tr>
+      <tr><td>Spring docs khuyến nghị</td><td>✅ Official since 4.3</td><td>Optional cho dependency có default</td><td>❌ Discouraged</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Constructor injection — chuẩn vàng</h3>
+  <pre><code class="language-java">@Service
+@Slf4j
+public class PaymentService {
+
+    // final → immutable sau khi inject → thread-safe
+    private final PaymentGatewayClient gatewayClient;
+    private final TransactionRepository transactionRepository;
+    private final FeeCalculator feeCalculator;
+    private final MeterRegistry meterRegistry;
+    private final ApplicationEventPublisher events;
+
+    // @Autowired optional từ Spring 4.3+ khi chỉ có 1 constructor
+    public PaymentService(
+            PaymentGatewayClient gatewayClient,
+            TransactionRepository transactionRepository,
+            FeeCalculator feeCalculator,
+            MeterRegistry meterRegistry,
+            ApplicationEventPublisher events) {
+        // Validate critical dependencies ngay trong constructor
+        this.gatewayClient = Objects.requireNonNull(gatewayClient, "gatewayClient required");
+        this.transactionRepository = Objects.requireNonNull(transactionRepository);
+        this.feeCalculator = Objects.requireNonNull(feeCalculator);
+        this.meterRegistry = Objects.requireNonNull(meterRegistry);
+        this.events = Objects.requireNonNull(events);
+    }
+}</code></pre>
+
+  <h3>Lombok shortcut — chuẩn production</h3>
+  <pre><code class="language-java">@Service
+@RequiredArgsConstructor  // Lombok tạo constructor cho mọi final field
+public class PaymentService {
+    private final PaymentGatewayClient gatewayClient;
+    private final TransactionRepository transactionRepository;
+    // ... không cần viết constructor thủ công
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>Pitfall Lombok:</strong> <code>@RequiredArgsConstructor</code> không inject <code>Objects.requireNonNull</code>. Nếu cần validate null, hoặc viết constructor thủ công, hoặc dùng <code>@NonNull</code> trên field — Lombok sẽ generate null check trong constructor.
+  </div>
+
+  <h3>Field injection — vì sao tệ</h3>
+  <pre><code class="language-java">@Service
+public class BadPaymentService {
+    @Autowired
+    private PaymentGatewayClient gatewayClient; // Field injection
+
+    // Vấn đề 1: Không thể mark final → mutable → thread-safety risk
+    // Vấn đề 2: Unit test phải dùng reflection để inject mock:
+    //          ReflectionTestUtils.setField(service, "gatewayClient", mock);
+    // Vấn đề 3: Circular dependency khó detect — Spring "magic" làm nó silent
+    // Vấn đề 4: Dependencies hidden — không nhìn thấy class cần gì
+    // Vấn đề 5: SonarQube / IntelliJ inspections warn "field injection is discouraged"
+}</code></pre>
+
+  <h3>Setter injection — chỉ khi optional dependency</h3>
+  <p>Setter injection có chỗ đứng narrow: <em>khi dependency thực sự optional</em>. Ví dụ:</p>
+  <pre><code class="language-java">@Service
+public class CacheService {
+    private final RedisClient redis;
+    private CacheMetrics metrics; // Optional — chỉ enable khi observability bật
+
+    public CacheService(RedisClient redis) {
+        this.redis = redis;
+    }
+
+    @Autowired(required = false)
+    public void setMetrics(CacheMetrics metrics) {
+        this.metrics = metrics;
+    }
+}</code></pre>
+
+  <p>Trong 95% trường hợp, dùng constructor + <code>@ConditionalOnProperty</code> sạch hơn.</p>
+</section>
+
+<!-- ==================== LIFECYCLE ==================== -->
 <section id="lifecycle">
-<h3>2.2 Bean Lifecycle</h3>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Bước</th><th>Việc Spring làm</th><th>Điều bạn cần nhớ</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td>Đọc BeanDefinition</td><td>Mới là metadata, chưa có object thật.</td></tr>
-    <tr><td>2</td><td>Gọi constructor</td><td>Constructor injection chạy ở đây, field injection chưa có.</td></tr>
-    <tr><td>3</td><td>Populate properties</td><td><code>@Autowired</code> field/setter và <code>@Value</code> được set.</td></tr>
-    <tr><td>4</td><td>BeanPostProcessor before init</td><td>Framework có cơ hội bọc proxy.</td></tr>
-    <tr><td>5</td><td><code>@PostConstruct</code></td><td>Đúng chỗ để validate config, warm cache nhỏ, kiểm tra kết nối nhẹ.</td></tr>
-    <tr><td>6</td><td>Bean ready</td><td>Singleton được cache và share cho các injection sau.</td></tr>
-    <tr><td>7</td><td><code>@PreDestroy</code></td><td>Dọn resource: shutdown executor, flush buffer, close client.</td></tr>
-  </tbody>
-</table>
-</div>
+  <h2>5. Bean Lifecycle — 7 bước từ sinh đến chết <span class="k-tag core">CORE</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> Biết đúng vị trí của AOP proxy + @PostConstruct + Aware interfaces = debug được mọi bug "tại sao dependency null khi constructor?" và "tại sao proxy chưa được tạo?". Đây là lifecycle bí mật bên dưới mỗi <code>@Service</code>.
+  </div>
+
+  <h3>7 bước chuẩn — vẽ ra giấy</h3>
+  <pre><code class="language-text">[1] Instantiation
+    → Constructor được gọi
+    → Chỉ có constructor injection available ở đây
+    → this = target object thực, KHÔNG phải proxy
+
+[2] Populate Properties
+    → @Autowired fields được inject (sau constructor)
+    → @Value được resolve
+
+[3] BeanNameAware, BeanFactoryAware, ApplicationContextAware (nếu implement)
+    → Bean biết tên của mình trong container
+    → Hiếm dùng, chỉ cho framework code
+
+[4] BeanPostProcessor.postProcessBeforeInitialization()
+    → Hook cho framework
+
+[5] @PostConstruct / InitializingBean.afterPropertiesSet() / init-method
+    → Custom init logic
+    → Validate config, warm up cache, establish connections
+
+[6] BeanPostProcessor.postProcessAfterInitialization()
+    → ★ AOP proxy tạo ở đây ★
+    → Bean được wrap thành proxy nếu có advice
+    → Sau bước này, bean trong container = proxy
+    → Singleton cache lưu PROXY, không phải target
+
+[7] Bean READY — đưa vào singleton cache, ApplicationContext trả bean này cho mọi @Autowired
+
+--- runtime ---
+
+[8] ApplicationContext.close() / @PreDestroy
+    → Cleanup: đóng connection, flush buffer, cancel scheduled tasks
+    → Sau đó: DisposableBean.destroy() / destroy-method</code></pre>
+
+  <div class="callout info">
+    <strong>Bí mật bước 6:</strong> Vì proxy được tạo SAU @PostConstruct, nếu trong @PostConstruct bạn gọi <code>this.someMethod()</code> → gọi vào target, KHÔNG qua proxy → @Transactional / @Async / @Cacheable trong @PostConstruct sẽ KHÔNG hoạt động. Đây là gotcha rất hay gặp.
+  </div>
+
+  <h3>Constructor vs @PostConstruct — khi nào dùng cái nào</h3>
+
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Init logic trong constructor</h4>
+      <pre><code class="language-java">@Service
+public class CoreBankingConnector {
+  private final ConnectionPool pool;
+  private Connection conn;
+
+  public CoreBankingConnector(ConnectionPool pool) {
+    this.pool = pool;
+    // ❌ I/O trong constructor:
+    //   - dependencies có thể chưa
+    //     hoàn tất setup
+    //   - Test chậm (full I/O cho
+    //     mỗi @Autowired)
+    //   - Khó debug fail-fast
+    this.conn = pool.acquire();
+    if (!conn.ping()) throw ...;
+  }
+}</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Init logic trong @PostConstruct</h4>
+      <pre><code class="language-java">@Service
+@Slf4j
+public class CoreBankingConnector {
+  private final ConnectionPool pool;
+  private Connection conn;
+
+  public CoreBankingConnector(
+      ConnectionPool pool) {
+    this.pool = Objects.requireNonNull(pool);
+    // Chỉ assign, không I/O
+  }
+
+  @PostConstruct
+  public void initConnection() {
+    log.info("Init connection...");
+    this.conn = pool.acquire();
+    if (!conn.ping()) {
+      throw new IllegalStateException(
+        "Cannot connect to core banking");
+    }
+    log.info("Connection established");
+  }
+
+  @PreDestroy
+  public void close() {
+    if (conn != null) conn.close();
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>3 cách hook lifecycle — phân biệt</h3>
+  <table>
+    <thead>
+      <tr><th>Cách</th><th>Init</th><th>Destroy</th><th>Pros / Cons</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>JSR-250 annotation</td>
+        <td><code>@PostConstruct</code></td>
+        <td><code>@PreDestroy</code></td>
+        <td>✅ Khuyến nghị. Standard Java EE. Spring 6.0+ Jakarta package: <code>jakarta.annotation.PostConstruct</code>.</td>
+      </tr>
+      <tr>
+        <td>Spring interface</td>
+        <td><code>InitializingBean.afterPropertiesSet()</code></td>
+        <td><code>DisposableBean.destroy()</code></td>
+        <td>⚠️ Couple với Spring. Chỉ dùng cho framework code.</td>
+      </tr>
+      <tr>
+        <td>XML / @Bean config</td>
+        <td><code>init-method="..."</code></td>
+        <td><code>destroy-method="..."</code></td>
+        <td>Cho 3rd-party bean không thể annotate. Ví dụ: <code>HikariDataSource</code> có <code>close()</code> method.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="edge-cases">
+    <h4>⚠️ Edge cases lifecycle phải nhớ</h4>
+    <ol>
+      <li><strong>@PostConstruct trên method có override-able.</strong> Subclass override → BaseService init chạy method của subclass khi subclass CHƯA fully initialized → state corruption. Fix: @PostConstruct trên <code>private</code> method.</li>
+      <li><strong>@PostConstruct gọi @Transactional / @Async của chính mình.</strong> Bypass proxy (xem Section 7). Fix: inject self qua @Lazy hoặc tách service.</li>
+      <li><strong>@PreDestroy không chạy khi JVM crash.</strong> Cleanup logic KHÔNG được đảm bảo. Production: dùng external cleanup (k8s preStop hook) cộng @PreDestroy.</li>
+      <li><strong>Prototype scope KHÔNG có @PreDestroy.</strong> Spring không track lifecycle của prototype sau khi tạo. Phải tự cleanup hoặc dùng <code>DestructionAwareBeanPostProcessor</code>.</li>
+      <li><strong>Order khi có nhiều @PostConstruct trong inheritance.</strong> Parent @PostConstruct chạy TRƯỚC child. Order trong same class: không guarantee — chỉ dùng 1 @PostConstruct per class.</li>
+      <li><strong>Exception trong @PostConstruct.</strong> Bean fails to start → ApplicationContext startup fails → app không boot. Có thể cố ý "fail-fast" để catch config sai.</li>
+      <li><strong>@PostConstruct trên @Bean method.</strong> KHÔNG được — @Bean trong @Configuration không support @PostConstruct trực tiếp. Phải dùng <code>@Bean(initMethod = "init")</code>.</li>
+    </ol>
+  </div>
 </section>
 
+<!-- ==================== SCOPE ==================== -->
 <section id="scope">
-<h3>2.3 Bean Scope</h3>
-<p>Trong web backend, 90% bean là singleton: controller, service, repository, mapper, policy. Vì vậy rule an toàn là: <strong>singleton service không giữ mutable per-request state</strong>.</p>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Scope</th><th>Vòng đời</th><th>Dùng khi</th><th>Bẫy</th></tr></thead>
-  <tbody>
-    <tr><td>singleton</td><td>1 instance / ApplicationContext</td><td>Service stateless, repository, client config</td><td>Mutable field share giữa request</td></tr>
-    <tr><td>prototype</td><td>Instance mới mỗi lần request từ container</td><td>Builder/parser có state ngắn hạn</td><td>Inject thẳng vào singleton chỉ lấy một instance lúc startup</td></tr>
-    <tr><td>request</td><td>1 instance / HTTP request</td><td>Request context đặc biệt</td><td>Không dùng được ngoài web context</td></tr>
-    <tr><td>session</td><td>1 instance / HTTP session</td><td>Wizard nhiều bước, cart dạng session</td><td>Không hợp với REST stateless</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
+  <h2>6. Bean Scope — Vì sao Singleton sinh bug <span class="k-tag core">CORE</span></h2>
 
-<section id="aop">
-<h3>2.4 AOP Proxy</h3>
-<p>Spring AOP không sửa bytecode của class bạn. Nó tạo proxy đứng trước target. External caller gọi proxy, proxy chạy advice, rồi mới gọi method thật.</p>
-<div class="diagram">
-<svg viewBox="0 0 760 220" role="img" aria-label="AOP proxy flow">
-  <rect x="35" y="72" width="120" height="70" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
-  <text x="95" y="103" text-anchor="middle" font-size="13">Controller</text>
-  <text x="95" y="124" text-anchor="middle" font-size="12" fill="#475569">external call</text>
-  <path d="M155 107 H250" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></path>
-  <rect x="250" y="55" width="170" height="105" rx="8" fill="#f0f9ff" stroke="#0284c7"></rect>
-  <text x="335" y="88" text-anchor="middle" font-size="13">Spring Proxy</text>
-  <text x="335" y="112" text-anchor="middle" font-size="12" fill="#475569">transaction, security</text>
-  <text x="335" y="134" text-anchor="middle" font-size="12" fill="#475569">logging advice</text>
-  <path d="M420 107 H515" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></path>
-  <rect x="515" y="72" width="165" height="70" rx="8" fill="#ecfdf5" stroke="#059669"></rect>
-  <text x="598" y="103" text-anchor="middle" font-size="13">Target Service</text>
-  <text x="598" y="124" text-anchor="middle" font-size="12" fill="#475569">business method</text>
-</svg>
-<div class="caption">Nếu method gọi nội bộ bằng <code>this.otherMethod()</code>, call đi thẳng tới target, không qua proxy.</div>
-</div>
-<ul>
-  <li><strong>Private method</strong>: proxy không intercept được.</li>
-  <li><strong>Final method/class</strong>: CGLIB không override được.</li>
-  <li><strong>Self-invocation</strong>: gọi trong cùng class bypass proxy.</li>
-  <li><strong>Object tự new</strong>: không phải Spring bean nên không có proxy.</li>
-</ul>
-</section>
+  <div class="k-banner core">
+    <strong>Vì sao CORE:</strong> 90% bug "data leak giữa users" / "race condition trong service" đều từ hiểu sai scope. Default = singleton — nghĩa là <em>1 instance share giữa tất cả request, tất cả thread</em>. Mọi mutable field = bug tiềm năng.
+  </div>
 
-<section id="bean-resolution">
-<h3>2.5 Bean Resolution: Khi Có Nhiều Bean Cùng Type</h3>
-<p>Khi constructor cần một interface nhưng trong context có nhiều implementation, Spring phải chọn một bean duy nhất. Nếu không có tín hiệu rõ, startup fail với lỗi kiểu <code>NoUniqueBeanDefinitionException</code>. Đây là kiến thức daily work, không phải chi tiết phụ.</p>
+  <h3>5 scope chuẩn</h3>
+  <table>
+    <thead>
+      <tr><th>Scope</th><th>Lifecycle</th><th>Use case</th><th>Thread-safe?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>singleton</code> (DEFAULT)</td><td>1 instance / container</td><td>Service, Repository, Controller</td><td>⚠️ PHẢI stateless</td></tr>
+      <tr><td><code>prototype</code></td><td>1 instance / injection point</td><td>Stateful helper (builder, parser)</td><td>✅ Mỗi caller có instance riêng</td></tr>
+      <tr><td><code>request</code></td><td>1 instance / HTTP request</td><td>RequestContext, current user</td><td>✅ Per-request isolation</td></tr>
+      <tr><td><code>session</code></td><td>1 instance / HTTP session</td><td>Shopping cart, multi-step form</td><td>⚠️ Multi-tab có thể race</td></tr>
+      <tr><td><code>application</code></td><td>1 instance / ServletContext</td><td>Hiếm dùng. Web-only.</td><td>⚠️ Như singleton nhưng scope ServletContext</td></tr>
+    </tbody>
+  </table>
 
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Cơ chế</th><th>Dùng khi</th><th>Trade-off</th></tr></thead>
-  <tbody>
-    <tr><td><code>@Qualifier</code></td><td>Call site cần implementation cụ thể</td><td>Rõ ràng nhất, nhưng tên bean trở thành contract.</td></tr>
-    <tr><td><code>@Primary</code></td><td>Một implementation là default cho đa số use case</td><td>Dễ che dependency nếu lạm dụng.</td></tr>
-    <tr><td><code>Map&lt;String, Strategy&gt;</code></td><td>Cần registry nhiều strategy</td><td>Phù hợp plugin/strategy pattern.</td></tr>
-    <tr><td><code>ObjectProvider&lt;T&gt;</code></td><td>Dependency optional/lazy/multiple</td><td>Đừng dùng để giấu thiết kế phụ thuộc mơ hồ.</td></tr>
-  </tbody>
-</table>
-</div>
+  <h3>Vì sao bug Singleton ở Section 2?</h3>
+  <pre><code class="language-text">SigningService là @Service → default singleton scope.
 
-<pre><code class="language-java">public interface DiscountPolicy {
-    Money apply(Cart cart);
-}
+→ 1 instance duy nhất trong ApplicationContext.
+→ Mỗi HTTP request đến /sign endpoint:
+   Tomcat thread A: signingService.sign(reqA)
+   Tomcat thread B: signingService.sign(reqB)  ← cùng instance!
+   Tomcat thread C: signingService.sign(reqC)  ← cùng instance!
 
-@Service("seasonalPolicy")
-class SeasonalDiscountPolicy implements DiscountPolicy { ... }
+→ signedDocuments field = SHARED giữa A, B, C.
+→ Thread A add docId_A. Thread B đọc list → thấy docId_A!
+   → B return "duplicate" cho document chưa từng ký.
+→ requestCount++ không atomic → race condition.
 
-@Service("loyaltyPolicy")
-class LoyaltyDiscountPolicy implements DiscountPolicy { ... }
+Đây là bug DATA LEAK + CONCURRENCY trong 5 dòng code.</code></pre>
 
-@Service
-class CheckoutPricingService {
-    private final DiscountPolicy discountPolicy;
+  <h3>Quy tắc cứng cho Singleton</h3>
+  <ol>
+    <li><strong>Không mutable field.</strong> Mọi state per-request phải là <em>local variable</em>.</li>
+    <li><strong>Dependencies = final.</strong> Inject 1 lần, dùng mãi.</li>
+    <li><strong>Configuration = final + @Value.</strong> Immutable từ properties.</li>
+    <li><strong>Caches phải là thread-safe collection.</strong> <code>ConcurrentHashMap</code>, không phải <code>HashMap</code>.</li>
+    <li><strong>Counters phải là atomic.</strong> <code>AtomicLong</code>, không phải <code>long</code>.</li>
+  </ol>
 
-    CheckoutPricingService(@Qualifier("seasonalPolicy") DiscountPolicy discountPolicy) {
-        this.discountPolicy = discountPolicy;
-    }
-}</code></pre>
+  <h3>Prototype trong Singleton — bẫy kinh điển</h3>
 
-<p>Nếu số policy thay đổi theo business rule, inject <code>Map&lt;String, DiscountPolicy&gt;</code> và chọn theo key trong config sẽ rõ hơn tạo nhiều <code>if/else</code> hoặc dùng <code>@Primary</code> tùy tiện.</p>
-</section>
+  <div class="misconception">
+    <h4>❌ Hiểu lầm: Inject prototype = mỗi lần dùng có instance mới</h4>
+    <p>Field được resolve <strong>1 lần khi singleton được tạo</strong> → singleton "nắm" 1 instance prototype duy nhất → behavior như singleton.</p>
+  </div>
 
-<section id="proxy-types">
-<h3>2.6 JDK Dynamic Proxy vs CGLIB Proxy</h3>
-<p>Spring AOP có thể tạo proxy theo interface bằng JDK dynamic proxy hoặc subclass bằng CGLIB. Dù dùng loại nào, giới hạn quan trọng vẫn là call phải đi qua proxy.</p>
-
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Loại proxy</th><th>Cách hoạt động</th><th>Cần nhớ</th></tr></thead>
-  <tbody>
-    <tr><td>JDK dynamic proxy</td><td>Proxy implement interface</td><td>Caller nên depend vào interface.</td></tr>
-    <tr><td>CGLIB proxy</td><td>Proxy subclass target class</td><td>Không override được <code>final</code> class/method.</td></tr>
-    <tr><td>Self-invocation</td><td><code>this.method()</code> gọi target trực tiếp</td><td>Advice không chạy dù proxy type nào.</td></tr>
-    <tr><td>Object tự <code>new</code></td><td>Không nằm trong context</td><td>Không có DI, lifecycle, AOP.</td></tr>
-  </tbody>
-</table>
-</div>
-
-<div class="callout warn">
-  <div class="ctitle">Không học proxy để thuộc implementation</div>
-  <p>Điểm phải nắm là hành vi runtime: annotation có cần proxy không, method call có đi qua proxy không, class/method có bị final/private cản không. Đây là thứ quyết định <code>@Transactional</code>, security method advice, metrics advice có chạy hay không.</p>
-</div>
-</section>
-</section>
-
-<section id="implementation">
-<h2>3. Production-Grade Implementation</h2>
-
-<h3>3.1 Constructor Injection Là Default</h3>
-<pre><code class="language-java">@Service
-public class CheckoutService {
-    private final CartRepository cartRepository;
-    private final VoucherService voucherService;
-    private final PriceCalculator priceCalculator;
-
-    public CheckoutService(
-            CartRepository cartRepository,
-            VoucherService voucherService,
-            PriceCalculator priceCalculator) {
-        this.cartRepository = Objects.requireNonNull(cartRepository);
-        this.voucherService = Objects.requireNonNull(voucherService);
-        this.priceCalculator = Objects.requireNonNull(priceCalculator);
-    }
-
-    public CheckoutPreview preview(String cartId, String voucherCode) {
-        Cart cart = cartRepository.findById(cartId)
-            .orElseThrow(() -&gt; new CartNotFoundException(cartId));
-        DiscountResult discount = voucherService.apply(cart, voucherCode);
-        return priceCalculator.preview(cart, discount);
-    }
-}</code></pre>
-<p>Lợi ích thật của constructor injection: dependency hiện rõ trong signature, field có thể <code>final</code>, unit test không cần Spring context, thiếu dependency thì fail ngay lúc startup.</p>
-
-<h3>3.2 Prototype Bean Trong Singleton: Dùng Provider</h3>
-<pre><code class="language-java">@Component
+  <pre><code class="language-java">@Component
 @Scope("prototype")
-public class CsvImportReportBuilder {
-    private final List&lt;String&gt; warnings = new ArrayList&lt;&gt;();
+public class ReportBuilder {
+    private final List&lt;ReportSection&gt; sections = new ArrayList&lt;&gt;();
+    // ...
+}
 
-    public void warn(String message) {
-        warnings.add(message);
+@Service
+public class ReportService {
+    // ❌ SAI: inject prototype vào singleton
+    //    = 1 instance dùng mãi (singleton behavior!)
+    @Autowired private ReportBuilder reportBuilder;
+
+    public Report generate(...) {
+        // reportBuilder.sections accumulate qua mọi call!
+        ...
+    }
+}</code></pre>
+
+  <h3>3 cách fix prototype-in-singleton</h3>
+  <pre><code class="language-java">// ✅ CÁCH 1: javax.inject.Provider (PREFERRED)
+@Service
+public class ReportService {
+    private final Provider&lt;ReportBuilder&gt; builderProvider;
+
+    public ReportService(Provider&lt;ReportBuilder&gt; builderProvider) {
+        this.builderProvider = builderProvider;
     }
 
-    public ImportReport build() {
-        return new ImportReport(List.copyOf(warnings));
+    public Report generate(List&lt;Transaction&gt; txs) {
+        ReportBuilder builder = builderProvider.get(); // Instance mới mỗi lần
+        txs.forEach(tx -&gt; builder.addSection(ReportSection.from(tx)));
+        return builder.build();
+    }
+}
+
+// ✅ CÁCH 2: ObjectFactory (Spring native equivalent)
+@Autowired
+private ObjectFactory&lt;ReportBuilder&gt; builderFactory;
+// builderFactory.getObject() trả instance mới
+
+// ✅ CÁCH 3: ApplicationContext.getBean() (verbose, không recommend)
+@Autowired
+private ApplicationContext context;
+// context.getBean(ReportBuilder.class) trả instance mới — nhưng couple với Spring API</code></pre>
+
+  <h3>Request/Session scope — chỉ web</h3>
+  <pre><code class="language-java">@Component
+@Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+public class RequestContext {
+    private String userId;
+    private String traceId;
+    private Instant requestStartTime;
+    // ... getters/setters
+}
+
+// Inject vào singleton service:
+@Service
+public class OrderService {
+    private final RequestContext requestContext; // Thực ra là PROXY
+
+    public OrderService(RequestContext rc) {
+        this.requestContext = rc; // proxy được inject 1 lần
+    }
+
+    public void placeOrder(...) {
+        // Mỗi lần call, proxy tự resolve về REAL bean của REQUEST hiện tại
+        String user = requestContext.getUserId();
+        // → Thread-safe! Mỗi request thấy data của riêng nó.
+    }
+}</code></pre>
+
+  <p><strong>Tại sao cần <code>proxyMode</code>?</strong> Vì singleton OrderService được tạo lúc startup — khi đó CHƯA có HTTP request → không có RequestContext thực sự. Spring inject một PROXY làm placeholder; proxy tự resolve về RequestContext thực của thread/request hiện tại khi được gọi.</p>
+</section>
+
+<!-- ==================== AOP ==================== -->
+<section id="aop">
+  <h2>7. AOP — Proxy mechanism, không phải magic <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <div class="k-banner core">
+    <strong>Vì sao HIGH-SIGNAL:</strong> AOP là kỹ thuật phân biệt mid vs senior. Senior debug được "@Transactional silent fail" trong 30 giây vì hiểu proxy. Junior tốn 2 ngày. Đây là điểm câu hỏi yêu thích của interviewer Spring.
+  </div>
+
+  <h3>AOP hoạt động qua PROXY</h3>
+  <p>AOP trong Spring <strong>không phải bytecode manipulation</strong> (như AspectJ compile-time weaving). Nó tạo <strong>proxy object</strong> wraps bean của bạn:</p>
+
+  <pre><code class="language-text">Bạn inject:                Thực ra bạn nhận:
+────────────               ─────────────────────────────────
+PaymentService       →     PaymentService$$SpringCGLIB$$0
+                           (subclass được tạo runtime bởi CGLIB
+                            hoặc JDK Dynamic Proxy)
+
+Khi bạn gọi:
+  paymentService.charge(100)
+
+Thực ra:
+  proxy.charge(100)
+    → before advice (logging, security check, tx begin)
+    → TARGET.charge(100)  ← method thực tế
+    → after advice (logging, tx commit/rollback)</code></pre>
+
+  <h3>2 loại proxy — phân biệt</h3>
+  <table>
+    <thead>
+      <tr><th>Loại</th><th>Khi nào dùng</th><th>Giới hạn</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>JDK Dynamic Proxy</td>
+        <td>Bean implement interface → proxy implement cùng interface</td>
+        <td>Bean PHẢI có interface. Inject phải qua interface (không qua impl class).</td>
+      </tr>
+      <tr>
+        <td>CGLIB Proxy</td>
+        <td>Default từ Spring Boot 2+. Subclass của target class.</td>
+        <td>Không proxy được: <code>final</code> class, <code>final</code> method, <code>private</code> method. Cần constructor không có business logic.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Default trong Spring Boot 2+ là CGLIB (vì developer hay quên tạo interface). Có thể force JDK qua <code>spring.aop.proxy-target-class=false</code>.</p>
+
+  <h3>3 điều kiện làm @Transactional / @Async / @Cacheable SILENT FAIL</h3>
+  <div class="misconception">
+    <h4>❌ Điều kiện 1: <code>private</code> method</h4>
+    <pre><code class="language-java">@Service
+public class OrderService {
+    @Transactional
+    private void saveOrder(Order order) { // KHÔNG BAO GIỜ có transaction!
+        orderRepository.save(order);
+        // Nếu exception → dữ liệu vẫn bị save (không có rollback)
+    }
+}</code></pre>
+    <p><strong>Cơ chế:</strong> CGLIB tạo subclass và override method để intercept. Nhưng <code>private</code> method KHÔNG được override (Java rule). Method bị bypass proxy → annotation ignored. <strong>Không có warning</strong> — Spring không thể detect ở compile-time.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Điều kiện 2: <code>final</code> method / <code>final</code> class</h4>
+    <pre><code class="language-java">@Service
+public final class FinalService {  // ❌ CGLIB không thể subclass
+    @Transactional
+    public void process() { ... }   // Annotation silent ignored
+}</code></pre>
+    <p><strong>Cơ chế:</strong> CGLIB subclass <em>không thể override final method</em>. Class final = không thể subclass. Application start sẽ có warning log nhưng dễ miss.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Điều kiện 3: Self-invocation</h4>
+    <pre><code class="language-java">@Service
+public class TransactionService {
+
+    @Transactional
+    public void processPayment(Payment payment) {
+        validatePayment(payment);
+        savePayment(payment);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void auditLog(Payment payment) {
+        // ❌ KHÔNG có transaction mới khi gọi qua self-invocation
+    }
+
+    public void processWithAudit(Payment payment) {
+        processPayment(payment);
+        auditLog(payment); // ← Self-invocation: gọi this.auditLog(),
+                          //   KHÔNG qua proxy → propagation NEW không trigger
+    }
+}</code></pre>
+    <p><strong>Cơ chế:</strong> Trong <code>processWithAudit</code>, <code>this</code> = target object (NOT proxy). Spring inject proxy vào field/constructor của caller, nhưng bên trong target object, <code>this</code> luôn là target. Method call <code>this.auditLog()</code> đi thẳng vào target, bypass proxy hoàn toàn.</p>
+  </div>
+
+  <h3>📌 Đáp án Pause &amp; Predict từ Section 1</h3>
+  <div class="callout info">
+    <strong>Câu hỏi:</strong> Nếu đặt @Transactional trên private method, transaction có hoạt động không?<br>
+    <strong>Câu trả lời:</strong> <strong>KHÔNG</strong>. Cơ chế: CGLIB proxy = subclass + override method. Java <code>private</code> method KHÔNG override được → CGLIB không intercept được → annotation ignored. Spring không log warning rõ ràng → bug silent. Fix: chuyển method thành <code>public</code> hoặc <code>protected</code>, hoặc move logic ra service khác.
+  </div>
+
+  <h3>Khi nào AspectJ thắng Spring AOP?</h3>
+  <p>Spring AOP có giới hạn của proxy-based. Khi cần advice trong cùng class, advice trên private method, advice trên field access — phải dùng AspectJ với <em>compile-time weaving</em> (AspectJ Compiler) hoặc <em>load-time weaving</em> (LTW agent):</p>
+
+  <pre><code class="language-text">Spring AOP (proxy-based):
+  ✅ Đơn giản: thêm @EnableAspectJAutoProxy
+  ✅ Không cần build setup phức tạp
+  ❌ Chỉ public method qua external call
+  ❌ Self-invocation, final, private bypass
+
+AspectJ (weaving):
+  ✅ Mọi join point: private, final, constructor, field, self-invocation
+  ✅ Performance tốt hơn (no proxy indirection)
+  ❌ Build setup phức tạp: aspectjrt agent hoặc AJC compiler
+  ❌ Debug stack trace khó hơn (woven code)
+  ❌ Học cost cao
+
+Quy tắc: 95% case Spring AOP đủ. Chỉ chuyển AspectJ khi self-invocation
+unavoidable và refactor không khả thi.</code></pre>
+</section>
+
+<!-- ==================== SELF-INVOCATION ==================== -->
+<section id="self-invocation">
+  <h2>8. Self-invocation problem — 3 cách fix <span class="k-tag core">HIGH-SIGNAL</span></h2>
+
+  <p>Self-invocation là bug AOP phổ biến nhất. 3 cách fix dưới đây, theo thứ tự preferred:</p>
+
+  <div class="build-exercise">
+    <h3>✅ Cách 1 — Tách method ra class khác (PREFERRED)</h3>
+    <p><strong>Khi nào dùng:</strong> Default. Clean architecture luôn ưu tiên cách này.</p>
+    <pre><code class="language-java">@Service
+public class AuditService {
+    private final AuditRepository auditRepository;
+
+    public AuditService(AuditRepository auditRepository) {
+        this.auditRepository = auditRepository;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void log(AuditEntry entry) {
+        // Gọi từ class khác → qua proxy của AuditService → OK
+        auditRepository.save(entry);
     }
 }
 
 @Service
-public class ProductImportService {
-    private final Provider&lt;CsvImportReportBuilder&gt; reportBuilderProvider;
+public class PaymentServiceFixed {
+    private final AuditService auditService; // Inject service khác
 
-    public ProductImportService(Provider&lt;CsvImportReportBuilder&gt; reportBuilderProvider) {
-        this.reportBuilderProvider = reportBuilderProvider;
-    }
-
-    public ImportReport importCsv(Path file) {
-        CsvImportReportBuilder report = reportBuilderProvider.get();
-        // mỗi lần import có builder riêng
-        return report.build();
+    public void process(Payment payment) {
+        doProcess(payment);
+        auditService.log(AuditEntry.from(payment)); // Qua proxy của AuditService → OK
     }
 }</code></pre>
-
-<h3>3.3 Fix Self-Invocation Bằng Cách Tách Boundary</h3>
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">Sai: gọi nội bộ</div>
-<pre><code class="language-java">@Service
-public class OrderService {
-    public void place(OrderRequest request) {
-        validate(request);
-        saveOrder(request); // this.saveOrder(), không qua proxy
-    }
-
-    @Transactional
-    public void saveOrder(OrderRequest request) {
-        orderRepository.save(Order.from(request));
-    }
-}</code></pre>
+    <p><strong>Pros:</strong> Clean separation. Tuân SRP. Dễ test.</p>
+    <p><strong>Cons:</strong> Phải tạo thêm class — nhưng đây là feature, không phải bug.</p>
   </div>
-  <div class="col good">
-    <div class="col-head">Đúng: tách service có proxy riêng</div>
-<pre><code class="language-java">@Service
-public class OrderWriter {
-    @Transactional
-    public void save(OrderRequest request) {
-        orderRepository.save(Order.from(request));
+
+  <div class="build-exercise">
+    <h3>⚠️ Cách 2 — Self-inject với @Lazy</h3>
+    <p><strong>Khi nào dùng:</strong> Khi không thể tách class (ví dụ: legacy code, refactor risk cao).</p>
+    <pre><code class="language-java">@Service
+public class PaymentService {
+    @Lazy // Tránh circular dependency khi self-inject
+    @Autowired
+    private PaymentService self; // Inject PROXY của chính mình
+
+    public void process(Payment payment) {
+        doProcess(payment);
+        self.auditLog(payment); // Gọi qua proxy → AOP hoạt động
     }
-}
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void auditLog(Payment payment) { ... }
+}</code></pre>
+    <p><strong>Pros:</strong> Không phải tách class.</p>
+    <p><strong>Cons:</strong> Code smell — service inject chính nó. Reviewer ngạc nhiên. Test phức tạp.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>❌ Cách 3 — AopContext.currentProxy() (AVOID)</h3>
+    <p><strong>Khi nào dùng:</strong> Hầu như không bao giờ. Chỉ cho framework code.</p>
+    <pre><code class="language-java">@EnableAspectJAutoProxy(exposeProxy = true) // Phải enable expose
+@Configuration
+public class AopConfig { }
 
 @Service
-public class OrderService {
-    private final OrderWriter orderWriter;
-
-    public void place(OrderRequest request) {
-        validate(request);
-        orderWriter.save(request); // qua proxy
+public class PaymentService {
+    public void process(Payment payment) {
+        doProcess(payment);
+        // Lấy proxy của chính mình từ ThreadLocal
+        ((PaymentService) AopContext.currentProxy()).auditLog(payment);
     }
 }</code></pre>
+    <p><strong>Cons:</strong> Khó đọc. Static call → khó test. Couple với Spring API. <em>Nếu thấy code này trong PR, đề nghị refactor.</em></p>
   </div>
-</div>
 
-<h3>3.4 Custom AOP Chỉ Khi Có Cross-Cutting Concern Thật</h3>
-<pre><code class="language-java">@Target(ElementType.METHOD)
+  <div class="callout warn">
+    <strong>Pattern decision tree:</strong><br>
+    Self-invocation cần fix? → Có thể tách class không?<br>
+    &nbsp;&nbsp;Có → <strong>Cách 1</strong> (PREFERRED, clean architecture).<br>
+    &nbsp;&nbsp;Không (legacy / hot path) → <strong>Cách 2</strong> với comment giải thích.<br>
+    &nbsp;&nbsp;Vẫn không được → reconsider architecture. AspectJ weaving là last resort.
+  </div>
+</section>
+
+<!-- ==================== AUDIT ASPECT ==================== -->
+<section id="audit-aspect">
+  <h2>9. Production AOP — Custom audit log aspect <span class="k-tag core">CORE</span></h2>
+
+  <p>Banking requirement: <em>mọi thao tác tài chính phải có audit trail</em>. Implement với custom annotation + AOP aspect:</p>
+
+  <pre><code class="language-java">@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TraceBusinessAction {
-    String value();
+public @interface AuditLog {
+    String action() default "";
+    boolean logRequest() default true;
+    boolean logResponse() default false; // Cẩn thận: response có thể chứa sensitive data
 }
 
 @Aspect
 @Component
-public class BusinessActionTraceAspect {
-    private final Logger log = LoggerFactory.getLogger(getClass());
+@Slf4j
+public class AuditLogAspect {
 
-    @Around("@annotation(trace)")
-    public Object trace(ProceedingJoinPoint jp, TraceBusinessAction trace) throws Throwable {
-        long started = System.nanoTime();
+    private final AuditRepository auditRepository;
+    private final ObjectMapper objectMapper;
+
+    public AuditLogAspect(AuditRepository auditRepository, ObjectMapper objectMapper) {
+        this.auditRepository = auditRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * @Around: wrap toàn bộ method execution.
+     * Lý do chọn @Around thay vì @Before + @AfterReturning:
+     * - Cần đo duration (cả thời điểm trước và sau)
+     * - Cần xử lý exception nhất quán trong 1 chỗ
+     * - Cần capture cả request và response
+     */
+    @Around("@annotation(auditLog)")
+    public Object auditMethod(ProceedingJoinPoint joinPoint, AuditLog auditLog) throws Throwable {
+        long startTime = System.currentTimeMillis();
+        String methodName = joinPoint.getSignature().toShortString();
+        String action = auditLog.action().isBlank() ? methodName : auditLog.action();
+        String userId = getCurrentUserId();
+
+        AuditEntry.Builder builder = AuditEntry.builder()
+                .action(action)
+                .userId(userId)
+                .timestamp(Instant.now())
+                .ipAddress(getClientIpAddress());
+
+        if (auditLog.logRequest() &amp;&amp; joinPoint.getArgs().length &gt; 0) {
+            try {
+                String requestJson = objectMapper.writeValueAsString(joinPoint.getArgs()[0]);
+                builder.request(maskSensitiveData(requestJson));
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to serialize audit request for {}", methodName);
+            }
+        }
+
+        Object result = null;
+        String status = "SUCCESS";
+        String errorMessage = null;
+
         try {
-            return jp.proceed();
+            result = joinPoint.proceed(); // ★ Gọi method thực tế
+            return result;
+        } catch (Throwable ex) {
+            status = "FAILED";
+            errorMessage = ex.getMessage();
+            throw ex; // Re-throw để caller xử lý
         } finally {
-            long tookMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
-            log.info("action={} method={} tookMs={}",
-                    trace.value(), jp.getSignature().toShortString(), tookMs);
+            long duration = System.currentTimeMillis() - startTime;
+            AuditEntry entry = builder
+                    .status(status)
+                    .errorMessage(errorMessage)
+                    .durationMs(duration)
+                    .build();
+            auditRepository.saveAsync(entry); // Save async để không chậm main flow
+            log.info("AUDIT: action={}, user={}, status={}, duration={}ms",
+                     action, userId, status, duration);
         }
     }
+
+    /**
+     * @Pointcut: reusable expression để tái dụng
+     */
+    @Pointcut("within(com.banking.payment..*) || within(com.banking.contract..*)")
+    public void bankingServiceLayer() {}
+
+    @Before("bankingServiceLayer() &amp;&amp; @annotation(org.springframework.transaction.annotation.Transactional)")
+    public void logTransactionStart(JoinPoint jp) {
+        log.debug("Transaction starting: {}", jp.getSignature().toShortString());
+    }
 }</code></pre>
-<p>AOP hợp với logging, tracing, security, transaction, metric. Không dùng AOP để giấu business rule vì nó làm flow khó đọc.</p>
+
+  <h3>5 loại advice — when to use</h3>
+  <table>
+    <thead>
+      <tr><th>Advice</th><th>Khi nào dùng</th><th>Ví dụ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>@Before</code></td><td>Chỉ cần action trước method, không cần kết quả</td><td>Permission check, request log</td></tr>
+      <tr><td><code>@AfterReturning</code></td><td>Chỉ cần xử lý sau khi method success</td><td>Cache update sau write</td></tr>
+      <tr><td><code>@AfterThrowing</code></td><td>Chỉ xử lý khi exception</td><td>Alert khi error, error metric</td></tr>
+      <tr><td><code>@After</code> (finally)</td><td>Chạy dù success/exception</td><td>Resource cleanup</td></tr>
+      <tr><td><code>@Around</code></td><td>Cần kiểm soát toàn bộ method: trước, sau, exception, có gọi method không</td><td>Audit log, timing, retry, circuit breaker</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Quy tắc:</strong> <code>@Around</code> mạnh nhất nhưng phải <code>proceed()</code> — quên gọi = method KHÔNG chạy → bug khó debug.</p>
 </section>
 
-<section id="debug">
-<h2>4. Debug Lab - Khi Bean Không Chạy Như Bạn Nghĩ</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Triệu chứng</th><th>Cách nghĩ</th><th>Cách kiểm tra</th></tr></thead>
-  <tbody>
-    <tr><td><code>@Transactional</code> không rollback</td><td>Call có đi qua proxy không?</td><td>Log class runtime: <code>service.getClass()</code> có <code>$$SpringCGLIB</code> không?</td></tr>
-    <tr><td>Bean không inject được</td><td>Class có nằm dưới package scan không?</td><td>Kiểm tra package của <code>@SpringBootApplication</code> và component.</td></tr>
-    <tr><td>Prototype vẫn reuse state</td><td>Prototype bị inject vào singleton lúc startup?</td><td>Dùng <code>Provider</code> hoặc <code>ObjectFactory</code>.</td></tr>
-    <tr><td>Data lẫn giữa users</td><td>Singleton service có mutable field không?</td><td>Search field không final trong <code>@Service</code>.</td></tr>
-    <tr><td><code>NoUniqueBeanDefinitionException</code></td><td>Có nhiều bean cùng type?</td><td>Thêm <code>@Qualifier</code>, <code>@Primary</code> hoặc inject map strategy.</td></tr>
-    <tr><td>Circular dependency</td><td>Hai service phụ thuộc constructor lẫn nhau?</td><td>Tách responsibility, dùng event/domain service; lazy chỉ là workaround.</td></tr>
-  </tbody>
-</table>
-</div>
+<!-- ==================== FIX SIGNING ==================== -->
+<section id="fix-signing">
+  <h2>10. Fix SigningService — stateless singleton <span class="k-tag core">CORE</span></h2>
 
-<div class="callout tip">
-  <div class="ctitle">Drill 10 phút</div>
-  <p>Tự viết một service có <code>private List</code> field, bắn 20 request song song, quan sát state bị share. Sau đó refactor sang local variable và giải thích vì sao bug biến mất.</p>
-</div>
+  <pre><code class="language-java">@Service
+@Slf4j
+public class SigningServiceFixed {
+
+    // ✅ Dependencies — inject một lần, dùng mãi (stateless, thread-safe)
+    private final SignatureProvider signatureProvider;
+    private final DocumentRepository documentRepository;
+    private final IdempotencyService idempotencyService;
+
+    // ✅ Configuration — immutable, inject từ properties
+    @Value("${signing.timeout-seconds:30}")
+    private int signingTimeoutSeconds;
+
+    // ❌ KHÔNG CÓ: private List&lt;String&gt; signedDocuments, private int requestCount
+    // State thuộc về REQUEST, không thuộc về SERVICE
+
+    public SigningServiceFixed(
+            SignatureProvider signatureProvider,
+            DocumentRepository documentRepository,
+            IdempotencyService idempotencyService) {
+        this.signatureProvider = Objects.requireNonNull(signatureProvider);
+        this.documentRepository = Objects.requireNonNull(documentRepository);
+        this.idempotencyService = Objects.requireNonNull(idempotencyService);
+    }
+
+    @AuditLog(action = "SIGN_DOCUMENT", logRequest = true)
+    @Transactional
+    public SignResult sign(SignRequest request) {
+        // State per-request: local variable trong stack → thread-safe by design
+        String documentId = request.getDocumentId();
+        String userId = request.getUserId();
+
+        log.info("Signing request: docId={}, user={}", documentId, userId);
+
+        // Idempotency check: dùng service riêng, không phải field của class
+        if (idempotencyService.isDuplicate(request.getIdempotencyKey())) {
+            return idempotencyService.getPreviousResult(request.getIdempotencyKey());
+        }
+
+        Document doc = documentRepository.findById(documentId)
+                .orElseThrow(() -&gt; new DocumentNotFoundException(documentId));
+
+        SignResult result = signatureProvider.sign(doc, request.getCertificate());
+
+        idempotencyService.saveResult(request.getIdempotencyKey(), result);
+        return result;
+    }
+}</code></pre>
+
+  <div class="callout success">
+    <strong>Mọi thứ đã đúng:</strong> Constructor injection (final fields) · Stateless (no mutable state) · @Transactional public method (proxy intercept OK) · @AuditLog gọi từ Controller external → qua proxy OK · Idempotency tách service riêng (thread-safe state managed externally, không phải field).
+  </div>
+
+  <h3>Test verify stateless</h3>
+  <pre><code class="language-java">@SpringBootTest
+class SigningServiceConcurrencyTest {
+
+    @Autowired
+    SigningServiceFixed signingService;
+
+    @Test
+    void shouldHandle100ConcurrentRequestsWithoutStateLeak() throws Exception {
+        int requests = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(20);
+        CountDownLatch latch = new CountDownLatch(requests);
+
+        Set&lt;String&gt; resultDocIds = ConcurrentHashMap.newKeySet();
+
+        for (int i = 0; i &lt; requests; i++) {
+            String docId = "doc-" + i;
+            executor.submit(() -&gt; {
+                try {
+                    SignRequest req = SignRequest.builder()
+                            .documentId(docId)
+                            .userId("user-" + Thread.currentThread().getId())
+                            .idempotencyKey(UUID.randomUUID().toString())
+                            .build();
+                    SignResult r = signingService.sign(req);
+                    resultDocIds.add(r.getDocumentId());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await(10, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        // Không có duplicate sai do state leak
+        assertThat(resultDocIds).hasSize(requests);
+    }
+}</code></pre>
 </section>
 
-<section id="tradeoffs">
-<h2>5. Trade-offs & Anti-Patterns</h2>
+<!-- ==================== PROTOTYPE SINGLETON ==================== -->
+<section id="prototype-singleton">
+  <h2>11. Khi nào THỰC SỰ cần prototype scope <span class="k-tag supp">SUPP</span></h2>
 
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP1</span><h4>Field Injection</h4></div>
-  <div class="pb">
-    <p>Field injection làm dependency ẩn, khó test, không final, và dễ tạo circular dependency mà bạn chỉ phát hiện muộn. Dùng constructor injection làm default.</p>
-  </div>
-</div>
+  <p>90% bean nên là singleton. Prototype chỉ cần khi:</p>
+  <ul>
+    <li><strong>Stateful builder pattern:</strong> Mỗi caller cần object state riêng để accumulate (ReportBuilder, QueryBuilder).</li>
+    <li><strong>Object KHÔNG thread-safe:</strong> Như <code>SimpleDateFormat</code> (Java 8+ dùng <code>DateTimeFormatter</code> thay), một số XML parser legacy.</li>
+    <li><strong>Per-execution context:</strong> Workflow engine cần state per-flow-run.</li>
+  </ul>
 
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP2</span><h4>Mutable Field Trong Singleton</h4></div>
-  <div class="pb">
-    <p>Không đặt per-request state như current user, last cart, last discount, temporary result trong service field. Dùng local variable, database, cache có key rõ ràng, hoặc request-scoped object nếu thật sự cần.</p>
-  </div>
-</div>
+  <pre><code class="language-java">@Component
+@Scope("prototype") // Mỗi lần inject = instance mới
+public class ReportBuilder {
+    private final List&lt;ReportSection&gt; sections = new ArrayList&lt;&gt;(); // State per-build
+    private String title;
+    private LocalDate periodStart;
+    private LocalDate periodEnd;
 
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP3</span><h4>Annotation-Driven Programming</h4></div>
-  <div class="pb">
-    <p>Thấy lỗi thì thêm annotation là dấu hiệu chưa hiểu cơ chế. Hãy hỏi: annotation này được xử lý bởi BeanPostProcessor nào, proxy nào, vào thời điểm nào?</p>
+    public ReportBuilder addSection(ReportSection section) {
+        sections.add(section);
+        return this;
+    }
+
+    public ReportBuilder withTitle(String title) {
+        this.title = title;
+        return this;
+    }
+
+    public Report build() {
+        return new Report(title, periodStart, periodEnd, sections);
+    }
+}</code></pre>
+
+  <div class="callout warn">
+    <strong>Phải nhớ:</strong> Prototype scope KHÔNG có @PreDestroy. Spring "release" reference ngay sau khi tạo → bạn phải tự cleanup nếu cần. Đó là trade-off chính.
   </div>
-</div>
 </section>
 
+<!-- ==================== ANTI-PATTERNS ==================== -->
+<section id="antipatterns">
+  <h2>⚠️ 7 anti-patterns kinh điển <span class="k-tag core">CORE</span></h2>
+
+  <p>7 lỗi dưới đây chiếm ~80% bug Spring Core trong production. Memorize → tránh được 4 tuần debug.</p>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #1: Stateful Singleton</h4>
+    <pre><code class="language-java">@Service
+public class FeeCalculator {
+    private BigDecimal lastFee;     // Shared giữa mọi requests!
+    private String lastCurrency;    // Data leak giữa users!
+
+    public BigDecimal calculate(BigDecimal amount) {
+        lastFee = amount.multiply(RATE);   // Thread A set 100
+        lastCurrency = "VND";             // Thread B có thể thấy Thread A's lastFee
+        return lastFee;
+    }
+}</code></pre>
+    <p><strong>Symptom:</strong> Data leak intermittent. Bug chỉ xảy ra dưới concurrent load.</p>
+    <p><strong>Fix:</strong> Mọi state là local variable. Field chỉ chứa final dependencies + final config.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #2: @Transactional trên private/final method</h4>
+    <pre><code class="language-java">@Service
+public class OrderService {
+    @Transactional
+    private void saveOrder(Order order) { // KHÔNG BAO GIỜ có transaction!
+        orderRepository.save(order);
+    }
+}</code></pre>
+    <p><strong>Symptom:</strong> Exception throw nhưng data vẫn save (no rollback).</p>
+    <p><strong>Fix:</strong> Method PHẢI là <code>public</code> (hoặc <code>protected</code> nếu cần subclass override). KHÔNG <code>final</code>.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #3: Overuse AOP Pointcut</h4>
+    <pre><code class="language-java">@Around("execution(* com.banking..*.*(..))")  // Mọi method trong package
+public Object logEverything(ProceedingJoinPoint jp) throws Throwable { ... }</code></pre>
+    <p><strong>Symptom:</strong> Performance drop 30%+. Log spam. Có khi log cả <code>toString()</code>, <code>equals()</code>, <code>hashCode()</code>.</p>
+    <p><strong>Fix:</strong> Pointcut có target rõ ràng:</p>
+    <pre><code class="language-java">@Around("@annotation(com.banking.audit.AuditLog)")  // Chỉ method có annotation
+@Around("within(@org.springframework.stereotype.Service *) &amp;&amp; execution(public * *(..))")</code></pre>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #4: Circular Dependency qua Constructor</h4>
+    <pre><code class="language-java">@Service
+public class ServiceA {
+    public ServiceA(ServiceB b) { ... } // A cần B
+}
+@Service
+public class ServiceB {
+    public ServiceB(ServiceA a) { ... } // B cần A → Circular!
+}
+// Spring ném: UnsatisfiedDependencyException</code></pre>
+    <p><strong>Symptom:</strong> App không boot. Stack trace mention "Circular dependency".</p>
+    <p><strong>Fix:</strong> <em>Circular dependency là design smell.</em> Cách fix theo thứ tự ưu tiên:</p>
+    <ol>
+      <li>Tách dependency chung ra class C — A và B đều dùng C, không cần biết nhau.</li>
+      <li>Dùng <code>@Lazy</code> trên 1 trong 2 → defer initialization (workaround, không phải fix).</li>
+      <li>Refactor — tách thêm abstraction layer.</li>
+    </ol>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #5: @PostConstruct gọi Override-able Method</h4>
+    <pre><code class="language-java">@Service
+public class BaseService {
+    @PostConstruct
+    public void init() {
+        loadConfiguration(); // loadConfiguration() có thể bị override!
+    }
+
+    public void loadConfiguration() { /* default */ }
+}
+
+@Service
+public class ExtendedService extends BaseService {
+    @Override
+    public void loadConfiguration() {
+        // Chạy trong @PostConstruct của BaseService
+        // nhưng ExtendedService chưa được fully initialized!
+        // → NullPointerException trên field của ExtendedService
+    }
+}</code></pre>
+    <p><strong>Fix:</strong> @PostConstruct gọi <code>private</code> method (không thể override).</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #6: I/O trong Constructor</h4>
+    <pre><code class="language-java">@Service
+public class CacheService {
+    public CacheService(RedisClient redis) {
+        // ❌ I/O trong constructor:
+        this.cache = redis.preload(); // Bean chưa fully constructed
+        // Test chậm. Fail-fast khó debug.
+    }
+}</code></pre>
+    <p><strong>Fix:</strong> Constructor chỉ assign. I/O / init logic trong @PostConstruct.</p>
+  </div>
+
+  <div class="misconception">
+    <h4>❌ Anti-pattern #7: Inject ApplicationContext trực tiếp</h4>
+    <pre><code class="language-java">@Service
+public class GodService {
+    @Autowired
+    private ApplicationContext context; // ❌ Service Locator anti-pattern
+
+    public void process() {
+        SomeService s = context.getBean(SomeService.class); // ❌ Magic lookup
+        s.doWork();
+    }
+}</code></pre>
+    <p><strong>Vì sao tệ:</strong> Hidden dependencies. Khó test. Tight coupling với Spring API.</p>
+    <p><strong>Fix:</strong> Inject specific dependency qua constructor. Nếu cần lookup runtime, dùng <code>Provider&lt;T&gt;</code> hoặc <code>Map&lt;String, T&gt;</code> (Spring inject map of beans).</p>
+  </div>
+
+  <div class="break-it">
+    <h4>🔨 Thử Phá Vỡ: anti-pattern nào nguy hiểm nhất?</h4>
+    <p><strong>Câu trả lời:</strong> #1 (Stateful Singleton). Lý do:</p>
+    <ul>
+      <li>Bug intermittent — chỉ xảy ra dưới concurrent load → khó reproduce.</li>
+      <li>Data leak qua users → security + compliance issue.</li>
+      <li>Test unit không catch được — chỉ stress test mới phát hiện.</li>
+      <li>Senior reviewer có thể miss khi review code (field nhìn "vô hại").</li>
+    </ul>
+    <p>Đây là lý do quy tắc <em>"Default scope = stateless"</em> phải thành reflex, không phải checklist.</p>
+  </div>
+</section>
+
+<!-- ==================== INTERVIEW FRAMEWORK ==================== -->
 <section id="interview">
-<h2>6. Interview Framework</h2>
+  <h2>🎯 3-tier interview framework — Spring Core rubric</h2>
 
-<div class="tier t1">
-  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">IoC và DI khác nhau thế nào?</span></div>
-  <p class="a">IoC là nguyên tắc đảo quyền kiểm soát việc tạo và nối object graph cho container. DI là kỹ thuật cụ thể để đưa dependency vào object, thường qua constructor. Spring ApplicationContext là IoC container thực hiện DI.</p>
-</div>
+  <p>Spring Core gần như chắc chắn xuất hiện trong phỏng vấn Java backend. 3 tier dưới đây phân biệt junior / mid / senior signal.</p>
 
-<div class="tier t2">
-  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">Tại sao @Transactional trên private method không chạy?</span></div>
-  <p class="a">Spring transaction dựa trên AOP proxy. Proxy intercept public/protected method call đi từ bên ngoài vào bean. Private method không override được, self-invocation không đi qua proxy, object tự new cũng không có proxy. Vì vậy annotation tồn tại trên code nhưng không có interceptor nào chạy.</p>
-</div>
+  <div class="tier-card t1">
+    <h3>Tier 1 — Surface (Junior signal)</h3>
+    <p><strong>Q1: IoC và DI khác nhau như thế nào?</strong></p>
+    <p><em>Trả lời chuẩn:</em> "IoC là <strong>nguyên tắc thiết kế</strong>: control flow bị đảo ngược — framework gọi code của bạn, không phải bạn gọi framework. DI là <strong>implementation pattern</strong> của IoC: dependencies được inject vào object thay vì object tự tạo. Spring Container là IoC container thực hiện DI. Nói cách khác: DI là cách Spring thực hiện IoC."</p>
 
-<div class="tier t3">
-  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế plugin rule cho voucher mà không restart service?</span></div>
-  <p class="a">Tách rule engine khỏi Spring bean chính. Có thể dùng config-driven rules hoặc child ApplicationContext cho plugin code. Cần validate rule mới, atomic swap reference, giữ rule cũ cho in-flight requests, cleanup classloader/context cũ, và có rollback. Nếu rule đơn giản, DSL/config tốt hơn dynamic class loading.</p>
-</div>
+    <p><strong>Q2: Singleton scope trong Spring khác Singleton design pattern thế nào?</strong></p>
+    <p><em>Trả lời chuẩn:</em> "Singleton design pattern: 1 instance per JVM (classloader). Spring singleton: 1 instance per ApplicationContext. Một JVM có thể có nhiều ApplicationContext (parent-child trong web app) → mỗi context có singleton riêng. Spring singleton cũng không enforce private constructor — developer có thể tạo thêm instance bên ngoài container."</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Tier 2 — Deep Dive (Mid vs Senior)</h3>
+    <p><strong>Q3: Giải thích tại sao @Transactional không hoạt động khi gọi method trong cùng class. Cơ chế gì gây ra?</strong></p>
+    <p><em>Framework trả lời:</em></p>
+    <blockquote>
+      "Tôi sẽ giải thích từ cơ chế proxy của Spring AOP.<br><br>
+      Khi Spring thấy @Transactional trên một bean, nó không modify class của bạn. Thay vào đó, nó tạo một <strong>proxy object</strong> (CGLIB subclass hoặc JDK Dynamic Proxy) wraps bean của bạn. Proxy này intercept method calls để begin/commit/rollback transaction.<br><br>
+      Khi external code inject <code>OrderService</code>, nó nhận proxy chứ không phải OrderService thực. Mọi method call → proxy → begin transaction → delegate sang target → commit/rollback.<br><br>
+      Nhưng khi <strong>self-invocation</strong>: <code>this.saveInternal()</code> trong class — <code>this</code> là <em>target object thực</em>, không phải proxy. Call đi thẳng vào method, bypass proxy hoàn toàn → không có transaction.<br><br>
+      Trade-off của approach proxy-based: đơn giản và không cần instrument bytecode, nhưng giới hạn: không hoạt động với private method, final method, self-invocation. Nếu cần AOP với self-invocation, dùng AspectJ compile-time weaving — không có limitation này nhưng phức tạp hơn nhiều.<br><br>
+      Fix tôi thường dùng trong production: tách logic ra service khác, inject service đó vào. Clean architecture cũng recommend điều này."
+    </blockquote>
+
+    <p><strong>Q4: Mô tả đầy đủ Bean lifecycle. Khi nào dùng @PostConstruct vs Constructor để init?</strong></p>
+    <p><em>Framework trả lời:</em></p>
+    <blockquote>
+      "<strong>Constructor</strong> chạy đầu tiên — trước khi <em>bất kỳ</em> dependency nào được inject (nếu dùng field injection). Dùng constructor để: validate non-null dependencies, assign final fields. KHÔNG dùng để: gọi method phụ thuộc vào dependencies khác, thực hiện I/O.<br><br>
+      <strong>@PostConstruct</strong> chạy sau khi tất cả dependencies đã inject. Đây là nơi đúng để: khởi tạo cache từ DB, establish external connections, validate business config, start background threads. Dùng constructor injection thì @PostConstruct có thể access tất cả dependencies an toàn.<br><br>
+      <strong>Trade-off</strong>: Constructor init là fail-fast — lỗi xảy ra ngay khi create bean, stack trace rõ ràng hơn. @PostConstruct init có thể fail sau, khó trace hơn nhưng cần thiết khi init cần dependencies đã sẵn sàng.<br><br>
+      Trong banking service của tôi: Constructor = validate required dependencies (không null), @PostConstruct = connect to core banking system, warm up caches. @PreDestroy = gracefully close connections và drain in-flight transactions."
+    </blockquote>
+  </div>
+
+  <div class="tier-card t3">
+    <h3>Tier 3 — Architecture (Senior Level)</h3>
+    <p><strong>Q5: Thiết kế một plugin system cho banking platform — cho phép dynamically load/unload business rules (fee calculation) mà không cần restart service. Dùng Spring ApplicationContext.</strong></p>
+
+    <p><em>Cách tiếp cận trong 5 phút phỏng vấn:</em></p>
+    <pre><code class="language-text">Phút 1 — Clarify &amp; scope:
+  • Rules thay đổi tần suất thế nào? (daily? realtime?)
+  • Rules được define ở đâu? (code? DSL? DB config?)
+  • Cần rollback nếu rule mới có lỗi?
+  • Isolation: rule lỗi có ảnh hưởng service khác không?
+
+Phút 2 — Core mechanism:
+  Spring có ChildApplicationContext:
+  Parent context: cố định, chứa core services
+  Child context: dynamic, chứa fee rules
+
+  Khi load rule mới:
+  1. Compile/load rule class vào custom ClassLoader
+  2. Tạo new child ApplicationContext với ClassLoader đó
+  3. Register context với parent
+  4. Atomically swap reference đến context mới
+
+Phút 3 — Thread safety:
+  AtomicReference&lt;ApplicationContext&gt; currentRuleContext
+  → Reads không block (volatile reference)
+  → Update: tạo context mới, CAS swap
+  → Requests in-flight dùng context cũ đến khi complete
+  → Shutdown old context sau grace period
+
+Phút 4 — Error handling &amp; rollback:
+  Context mới được validate trước khi swap:
+    - Smoke test các rule chính
+    - Health check
+  Nếu fail → giữ nguyên context cũ
+  Lưu snapshot context cũ → rollback nếu cần
+
+Phút 5 — Alternative &amp; trade-offs:
+  Alternative: Scripting engine (Groovy/MVEL/Drools)
+  → không cần reload JVM
+  Trade-off: ClassLoader leak nếu không close context cũ đúng cách
+  Production: combine với feature flags để A/B test rules
+  Simpler approach: load rules từ DB/config server
+  → không cần dynamic ClassLoader</code></pre>
+  </div>
 </section>
 
-<section id="checklist">
-<h2>Checklist Thành Thạo</h2>
-<ul>
-  <li>Vẽ được startup flow: scan component → BeanDefinition → instantiate → inject → BeanPostProcessor/proxy → ready.</li>
-  <li>Giải thích được tại sao singleton service phải stateless bằng ví dụ race condition cụ thể.</li>
-  <li>Phân biệt constructor, <code>@PostConstruct</code>, <code>@PreDestroy</code> nên dùng cho việc gì.</li>
-  <li>Chỉ ra được 4 trường hợp AOP không chạy: private, final, self-invocation, object không do Spring quản lý.</li>
-  <li>Biết dùng <code>Provider</code>/<code>ObjectFactory</code> khi cần prototype instance trong singleton.</li>
-  <li>Giải quyết được nhiều bean cùng type bằng <code>@Qualifier</code>, <code>@Primary</code> hoặc strategy map.</li>
-  <li>Phân biệt JDK proxy và CGLIB ở mức hành vi ảnh hưởng tới final/private/self-invocation.</li>
-</ul>
+<!-- ==================== BUILD PROJECTS ==================== -->
+<section id="build-projects">
+  <h2>🔧 Build &amp; drill — 3 lab biến hiểu thành reflex</h2>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 1 — AOP Proxy Detective (2 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự mắt thấy proxy được tạo và cơ chế self-invocation bypass.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo Spring Boot project mới.</li>
+      <li>Tạo <code>SimpleService</code> với 2 method: <code>publicMethod()</code> annotate <code>@Transactional</code>, <code>callPublicMethod()</code> gọi <code>this.publicMethod()</code>.</li>
+      <li>Tạo <code>SimpleAspect</code> log "Before" và "After" cho <code>publicMethod</code>.</li>
+      <li>Inject <code>SimpleService</code> vào Controller, gọi <code>callPublicMethod()</code>.</li>
+      <li>Quan sát log: aspect KHÔNG được trigger (self-invocation bypass).</li>
+      <li>Gọi <code>publicMethod()</code> trực tiếp từ Controller → aspect TRIGGERED.</li>
+      <li>Bật <code>logging.level.org.springframework.aop=DEBUG</code> → quan sát proxy class name <code>$$SpringCGLIB$$0</code>.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Mắt thấy 3 hiện tượng: (1) proxy class name, (2) self-invocation bypass, (3) external call trigger aspect.</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 2 — Singleton Race Condition Reproducer (3 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Tự mắt thấy data leak trong singleton service.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo <code>CounterService</code> với field <code>private int count = 0;</code>, method <code>increment()</code> và <code>getCount()</code>.</li>
+      <li>Tạo Controller endpoint <code>/increment</code> gọi <code>counterService.increment()</code> và return <code>getCount()</code>.</li>
+      <li>Dùng <code>ab</code> hoặc <code>wrk</code> stress test: <code>ab -c 50 -n 1000 http://localhost:8080/increment</code>.</li>
+      <li>So sánh: expected count = 1000, actual count thường &lt; 1000 (race condition).</li>
+      <li>Fix bằng <code>AtomicInteger</code> → re-run → count = 1000 exactly.</li>
+      <li>Fix bằng <code>synchronized</code> → re-run → count = 1000 nhưng throughput thấp hơn.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Đo được throughput chênh lệch giữa <code>int</code> (sai), <code>AtomicInteger</code> (đúng, fast), <code>synchronized</code> (đúng, slow).</p>
+  </div>
+
+  <div class="build-exercise">
+    <h3>🔨 Lab 3 — Bean Lifecycle Debugger (2 giờ)</h3>
+    <p><strong>Mục tiêu:</strong> Vẽ được 7 bước lifecycle với data thực từ debugger.</p>
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Tạo <code>LifecycleBean</code> implement <code>InitializingBean</code>, <code>DisposableBean</code>, <code>BeanNameAware</code>.</li>
+      <li>Thêm constructor (log "1. Constructor"), setter cho dependencies (log "2. Setter"), <code>setBeanName</code> (log "3. Aware"), <code>@PostConstruct</code> (log "4. PostConstruct"), <code>afterPropertiesSet</code> (log "5. InitializingBean"), <code>@PreDestroy</code> (log "6. PreDestroy"), <code>destroy</code> (log "7. DisposableBean").</li>
+      <li>Tạo custom <code>BeanPostProcessor</code> in log trước/sau init.</li>
+      <li>Run app, observe console log → xác định thứ tự thực sự.</li>
+      <li>Đặt breakpoint trong từng method, inspect <code>this</code> để xem object state.</li>
+      <li>Vẽ sequence diagram theo log observed.</li>
+    </ol>
+    <p><strong>Acceptance:</strong> Diagram khớp với 7 bước trong Section 5 (constructor → setter → aware → BPP before → init → BPP after → ready).</p>
+  </div>
 </section>
 
-<footer>
-  <span>Phase 2 - Spring Ecosystem</span>
-  <span>Next: #06 Spring Boot</span>
-</footer>
+<!-- ==================== FEYNMAN END ==================== -->
+<section id="feynman-end">
+  <h2>🧠 Feynman test — kết thúc file này</h2>
 
-</div>
-</main>
+  <div class="feynman">
+    <h3>🎓 Tự test Feynman — giải thích cho junior chưa biết Spring</h3>
+    <p>Đóng file, giải thích các câu sau cho 1 sinh viên năm 3 đã biết Java OOP nhưng chưa biết Spring:</p>
+    <ol>
+      <li><strong>"Vì sao Spring tồn tại? Trước Spring, code Java EE thế nào?"</strong> — Trước Spring, code phải implement EJB interfaces, deploy vào application server. Test gần như không thể vì code phụ thuộc container. Spring làm "lightweight container": POJO + DI + AOP, không cần EJB → testable, đơn giản.</li>
+      <li><strong>"IoC khác DI thế nào?"</strong> — IoC là nguyên tắc thiết kế ("framework gọi code của bạn"). DI là implementation ("inject dependencies vào object"). DI là cách Spring thực hiện IoC.</li>
+      <li><strong>"Vì sao @Transactional trên private method KHÔNG chạy?"</strong> — Spring AOP qua proxy. CGLIB tạo subclass + override method. Java <code>private</code> method KHÔNG override được → proxy không intercept → annotation ignored. Silent bug.</li>
+      <li><strong>"Vì sao stateful singleton là bug?"</strong> — Singleton = 1 instance share giữa tất cả thread/request. Mutable field share = race condition + data leak giữa users. Fix: state là local variable, không phải field.</li>
+      <li><strong>"AOP proxy được tạo lúc nào trong lifecycle?"</strong> — Ở <code>BeanPostProcessor.postProcessAfterInitialization()</code> (bước 6), SAU @PostConstruct. Vì vậy gọi @Transactional method trong @PostConstruct của chính mình = bypass proxy → không có transaction.</li>
+    </ol>
+    <p>Bí 1 câu → quay lại module tương ứng. Mượt cả 5 = đã internalize.</p>
+  </div>
+
+  <div class="verify-source">
+    <h3>🔍 Verify — KHÔNG tin file này 100%</h3>
+    <p>File này tổng hợp từ kinh nghiệm + Spring docs, có thể có sai sót. Verify primary:</p>
+    <ul>
+      <li><strong>Spring Framework Reference</strong> — <a href="https://docs.spring.io/spring-framework/reference/core.html">docs.spring.io/spring-framework/reference/core.html</a>. Chapter "Core Technologies" là bible.</li>
+      <li><strong>Spring Boot Reference</strong> — <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/">docs.spring.io/spring-boot/docs/current/reference</a>.</li>
+      <li><strong>Spring source code</strong> — <a href="https://github.com/spring-projects/spring-framework">github.com/spring-projects/spring-framework</a>. <code>AbstractApplicationContext.refresh()</code> là entry point startup.</li>
+      <li><strong>Expert One-on-One J2EE</strong> (Rod Johnson, 2002) — ISBN 978-0764543852. Lịch sử + motivation.</li>
+      <li><strong>Spring in Action 6e</strong> (Craig Walls, 2022) — ISBN 978-1617297571. Practical tutorial.</li>
+      <li><strong>Pro Spring 6</strong> (Iuliana Cosmina et al, 2023) — ISBN 978-1484286395. Sâu hơn về internals.</li>
+      <li><strong>Baeldung</strong> — <a href="https://www.baeldung.com/spring-tutorial">baeldung.com/spring-tutorial</a>. Practical articles.</li>
+    </ul>
+    <p><strong>Khi nào trust file này, khi nào verify primary:</strong></p>
+    <ul>
+      <li>Concept &amp; mental model (IoC, DI, AOP, lifecycle) — file này OK (đã chuẩn hoá theo Spring docs).</li>
+      <li>API signature, package names — verify với Javadoc cho version cụ thể (Spring 5 vs 6 khác package <code>javax</code> → <code>jakarta</code>).</li>
+      <li>Configuration syntax — verify với Spring docs cho version.</li>
+      <li>Performance numbers — benchmark trên môi trường thực, không trust số tổng quát.</li>
+    </ul>
+  </div>
+
+  <div class="study-banner">
+    <h3>📌 Roadmap 2 tuần để master Spring Core</h3>
+    <pre><code class="language-text">Tuần 1 — Mental models + Labs
+  Ngày 1:  Section 1-3 (Vì sao + Bài toán + IoC) + đọc Spring docs Core chapter intro
+  Ngày 2:  Section 4 (DI patterns) + refactor 1 service từ field → constructor injection
+  Ngày 3:  Section 5 (Lifecycle) + Lab 3 (Lifecycle Debugger)
+  Ngày 4:  Section 6 (Scope) + Lab 2 (Singleton Race Reproducer)
+  Ngày 5:  Section 7-8 (AOP + Self-invocation) + Lab 1 (AOP Proxy Detective)
+  Ngày 6:  Section 9 (Audit aspect) + viết custom annotation cho project hiện tại
+  Ngày 7:  Section 10-11 (Fix patterns) + review 1 service production có "mùi"
+
+Tuần 2 — Anti-patterns + Interview prep
+  Ngày 8:  Đọc Section anti-patterns. Tự audit 1 codebase tìm 7 anti-patterns
+  Ngày 9-10: Interview prep — viết câu trả lời cho Q1-Q5 từ memory
+  Ngày 11: Mock interview với peer / Pramp về Spring Core
+  Ngày 12-13: Review code production team — propose refactor cho 3 file
+  Ngày 14: Feynman test cuối tuần. Câu nào bí → quay lại module đó.</code></pre>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps sau khi master file này (~2 tuần):</strong>
+    <ol>
+      <li><a href="06-spring-boot.html">#06 Spring Boot</a> — Auto-configuration mechanism dùng cùng IoC container.</li>
+      <li><a href="07-spring-transaction.html">#07 Spring Transaction</a> — @Transactional deep-dive: propagation, isolation, rollback rules.</li>
+      <li><a href="08-spring-security.html">#08 Spring Security</a> — SecurityFilterChain = AOP/Proxy cho HTTP pipeline.</li>
+      <li><a href="09-spring-data-jpa.html">#09 Spring Data JPA</a> — Hibernate LazyLoading = CGLIB proxy tương tự AOP.</li>
+    </ol>
+    <p><strong>Khi nào sẵn sàng vào #06:</strong> 3 labs xong · Feynman 5/5 mượt · Audit 1 codebase tìm được ≥ 3 anti-patterns · Refactor 1 service production từ field → constructor injection.</p>
+  </div>
+</section>
+
+    </div>
+  </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

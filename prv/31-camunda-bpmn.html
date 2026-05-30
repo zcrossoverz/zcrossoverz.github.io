@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#31 — Camunda &amp; BPMN (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm K · Workflow</span>
+    <span class="sep">›</span>
+    <span class="current">#31 Camunda &amp; BPMN</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: refund approval rối</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#bpmn">2. BPMN elements + process engine</a>
+      <a href="#tasks">3. User task vs Service task</a>
+      <a href="#timer">4. Timer + error handling</a>
+      <a href="#correlation">5. Message correlation</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm K · Workflow · File chống hiểu giả</div>
+  <h1>Camunda &amp; BPMN — Workflow Engine Đúng Cách</h1>
+  <p class="lead">
+    BPMN nhìn như "vẽ flowchart cho đẹp" — hiểu giả ở đây làm workflow thành mớ rối khó sửa. Phải hiểu <em>process engine quản state &amp; persistence ra sao</em>, <em>user task khác service task</em>, <em>vì sao service task phải idempotent</em>. File này dạy Camunda cho <strong>ShopFlow</strong> — quy trình duyệt hoàn tiền (refund approval) của sàn e-commerce.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Mô hình quy trình có người + tự động, bền với crash, dễ sửa</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #18 Event-Driven, #17 Microservices</div>
+    <div><strong>📚 Prereq</strong><br>Spring Boot · async · state machine</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟢 Chuyên biệt — khi cần workflow phức tạp có người duyệt</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "BPMN chỉ là sơ đồ để giải thích cho business, code vẫn viết tay."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Với process engine (Camunda), BPMN là <em>executable</em> — engine chạy sơ đồ thật, lưu state mỗi bước vào DB, recover sau crash, đợi người/timer. Coi nó là "tài liệu" → bỏ phí giá trị chính: state persistence + visibility.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Service task chỉ là gọi một hàm, chạy lại cũng không sao."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Engine có thể retry service task khi crash/timeout → nếu task không <em>idempotent</em> (vd gọi hoàn tiền) sẽ hoàn 2 lần. Service task BẮT BUỘC idempotent vì engine đảm bảo at-least-once.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Nhồi business logic vào expression trong BPMN cho gọn."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Logic phức tạp trong expression XML = không test được, không debug, không version đẹp. BPMN giữ <em>luồng</em>; logic để trong code (delegate/external task) test được.</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Process engine = state + persistence + recover (2), user task vs service task (3), vì sao service task phải idempotent (anti-patterns). Đây là lý do dùng engine thay vì tự code.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Timer/error handling (4), message correlation (5).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> external task pattern, BPMN elements chi tiết, gateway (exclusive/parallel).</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> compensation (Saga BPMN), DMN decision table, multi-instance, versioning process đang chạy.</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — refund approval rối <span class="k-tag core">CORE ★</span></h2>
+  <p>ShopFlow xử lý hoàn tiền: nếu &lt; 500K tự duyệt; ≥ 500K cần quản lý duyệt tay; quá hạn 48h chưa duyệt thì tự escalate; sau duyệt gọi PSP hoàn tiền. Bản tự code bằng if-else + cron + flag trạng thái → khó theo dõi đơn đang ở bước nào, crash giữa chừng mất state, gọi hoàn tiền 2 lần khi retry.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>Quy trình này có "chờ người duyệt" (có thể vài ngày) và "chờ timer 48h" — vì sao tự code bằng flag + cron dễ mất state khi service restart?</li>
+      <li>Bước "gọi PSP hoàn tiền" bị retry sau crash → hoàn 2 lần. Thuộc tính nào của task ngăn được?</li>
+      <li>Process engine cho bạn cái gì mà if-else + DB flag không cho (gợi ý: 2 thứ)?</li>
+    </ol>
+    <div class="pause-hint">Đáp án: engine lưu state mỗi bước vào DB nên restart không mất (mục 2); service task phải idempotent (anti-patterns); engine cho persistence của long-running state + visibility (đơn đang ở bước nào). Đừng đọc tiếp khi chưa thấy giá trị "state bền".</div>
+  </div>
+</section>
+
+<section id="bpmn">
+  <h2>2. BPMN elements + process engine <span class="k-tag core">CORE ★</span></h2>
+  <p>BPMN cơ bản: <strong>start/end event</strong>, <strong>task</strong> (việc cần làm), <strong>gateway</strong> (rẽ nhánh: exclusive = một đường, parallel = nhiều đường), <strong>sequence flow</strong> (mũi tên), <strong>timer/message event</strong>. <strong>Process engine</strong> đọc BPMN, tạo <em>process instance</em> cho mỗi đơn, di chuyển token qua các bước, và <em>lưu state vào DB tại mỗi điểm chờ</em> (wait state) → crash rồi restart vẫn tiếp tục đúng chỗ.</p>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Vẽ được sơ đồ BPMN. <em>Symptom hiểu giả:</em> không giải thích được engine lưu state ở đâu hay vì sao recover được sau crash.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Engine persist token + biến process vào DB tại mỗi wait state (user task, timer, message). Long-running (chờ người duyệt 3 ngày) không giữ thread — chỉ là row trong DB. Restart → load lại, tiếp tục.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Thiết kế quy trình: tách wait state rõ ràng, service task idempotent, dùng external task worker để scale; chọn dùng engine khi quy trình dài + có người + cần audit/visibility; tự code khi luồng ngắn đơn giản.</p>
+    </div>
+  </div>
+</section>
+
+<section id="tasks">
+  <h2>3. User task vs Service task <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>User Task</th><th>Service Task</th></tr></thead>
+    <tbody>
+      <tr><td>Ai làm</td><td>Con người (qua tasklist/UI)</td><td>Hệ thống (code)</td></tr>
+      <tr><td>Hành vi</td><td>Engine tạo task &amp; chờ người complete (wait state)</td><td>Engine gọi delegate/external worker</td></tr>
+      <tr><td>Ví dụ refund</td><td>Quản lý duyệt hoàn ≥500K</td><td>Gọi PSP hoàn tiền, gửi email</td></tr>
+      <tr><td>Lưu ý</td><td>Có thể chờ rất lâu — engine không giữ thread</td><td>BẮT BUỘC idempotent (engine retry)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="timer">
+  <h2>4. Timer + error handling <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p><strong>Timer event</strong>: chờ một khoảng (48h) hoặc tới mốc → tự escalate/timeout mà không cần cron riêng. <strong>Error handling</strong>: phân biệt <em>business error</em> (PSP từ chối hoàn — rẽ nhánh BPMN xử lý) vs <em>technical error</em> (timeout — engine retry với backoff, hết retry → incident cần người can thiệp).</p>
+</section>
+
+<section id="correlation">
+  <h2>5. Message correlation <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Khi PSP gửi callback "đã hoàn tiền cho refund #R123", engine phải route message tới <em>đúng process instance</em> đang chờ. Correlation dùng business key (refundId) để khớp message ↔ instance. Sai correlation → message rơi vào instance khác hoặc bị bỏ.</p>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi dùng BPMN engine là SAI / dùng sai</div>
+    <div class="bi-answer">
+      <ul>
+        <li><strong>Service task không idempotent:</strong> engine retry → hoàn tiền/gửi mail 2 lần. Mọi service task phải idempotent (key).</li>
+        <li><strong>Task quá mịn:</strong> chia 30 task cho việc tuyến tính đơn giản → sơ đồ rối, mỗi bước một transaction, chậm. Engine hợp với quy trình có wait state &amp; người, không phải mọi for-loop.</li>
+        <li><strong>Business logic trong expression XML:</strong> không test/debug được. Để trong code.</li>
+        <li><strong>Dùng engine cho luồng ngắn không có người:</strong> over-engineering — một REST call đồng bộ đơn giản không cần workflow engine.</li>
+      </ul>
+      <p><em>Quy tắc:</em> chọn workflow engine khi quy trình <strong>dài, có bước con người, cần audit/visibility, nhiều rẽ nhánh &amp; timer</strong>. Luồng ngắn thuần code → đừng dùng.</p>
+    </div>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+    <p><strong>Q:</strong> User task vs service task?</p>
+    <p class="a">User task = engine tạo việc cho con người &amp; chờ họ complete (wait state, có thể lâu). Service task = engine gọi code tự động; phải idempotent vì engine có thể retry.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Vì sao dùng Camunda thay vì tự code refund flow?</p>
+    <p class="a">Quy trình dài (chờ người duyệt, timer 48h) → engine persist state vào DB, recover sau crash, không giữ thread; visibility (đơn ở bước nào); audit; rẽ nhánh + escalation khai báo được. Tự code = flag + cron dễ mất state, khó theo dõi.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Khi nào KHÔNG dùng workflow engine?</p>
+    <p class="a">Luồng ngắn, đồng bộ, không có người, ít rẽ nhánh → code thường rẻ &amp; rõ hơn. Engine thêm hạ tầng (DB engine, học BPMN). Dùng khi quy trình dài + người + audit + nhiều biến thể; cân nhắc orchestration nhẹ (Saga) cho microservices thuần tự động.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — build &amp; phá (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Refund process.</strong> Vẽ &amp; chạy một BPMN: start → exclusive gateway (&lt;500K tự duyệt / ≥500K user task) → service task gọi "PSP refund" (mock) → end. Thêm timer boundary 48h trên user task → escalate. Tiêu chí: kill app giữa lúc chờ duyệt, khởi động lại, chứng minh instance vẫn ở đúng bước.</p>
+      <p><strong>Lab 2 — Idempotency của service task.</strong> Làm service task "PSP refund" non-idempotent (cộng tiền mỗi lần gọi). Ép nó throw sau khi đã hoàn → engine retry → hoàn 2 lần. Sửa bằng idempotency key. Tiêu chí: giải thích at-least-once của engine.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Process engine lưu state ở đâu? Vì sao recover được sau crash?</li>
+      <li>User task vs service task khác gì? Cái nào là wait state?</li>
+      <li>Vì sao service task BẮT BUỘC idempotent?</li>
+      <li>Message correlation giải quyết vấn đề gì khi PSP callback về?</li>
+      <li>Khi nào KHÔNG nên dùng workflow engine?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = biết khi nào dùng &amp; dùng đúng engine.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="17-microservices-patterns.html">#17 Microservices</a> — orchestration vs choreography (Saga).</li>
+    <li><a href="33-idempotency.html">#33 Idempotency</a> — service task idempotent.</li>
+    <li><a href="18-event-driven-architecture.html">#18 Event-Driven</a> — message correlation.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#25 — CI/CD Pipeline (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm G · DevOps &amp; Infra</span>
+    <span class="sep">›</span>
+    <span class="current">#25 CI/CD Pipeline</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: deploy thứ Sáu = nín thở</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#spectrum">2. CI vs CD vs CD</a>
+      <a href="#stages">3. Pipeline stages</a>
+      <a href="#strategies">4. Blue-green / Canary / Rolling</a>
+      <a href="#flags">5. Feature flags: tách deploy khỏi release</a>
+      <a href="#migration">6. DB migration backward-compatible</a>
+      <a href="#rollback">7. Rollback theo loại</a>
+      <div class="toc-section">Production</div>
+      <a href="#pipeline">8. GitHub Actions + GitOps</a>
+      <a href="#security">9. Supply-chain security + gates</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm G · DevOps · File chống hiểu giả</div>
+  <h1>CI/CD Pipeline — Deploy An Toàn, Rollback Trong Giây</h1>
+  <p class="lead">
+    "Có pipeline tự build &amp; deploy" là CI/CD ở mức bề mặt. Lên thật: "blue-green và canary khác nhau ở rủi ro nào?", "vì sao đổi schema DB và đổi code phải tách 2 lần deploy?", "feature flag không xoá thành nợ kỹ thuật ra sao?" — là lộ hiểu giả. File này dạy cả <strong>cơ chế</strong> (deployment strategy, expand-contract migration) lẫn <strong>vận hành</strong> (rollback, approval gate), trên domain <strong>ShopFlow</strong> — <code>checkout-api</code> của sàn e-commerce.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Thiết kế pipeline deploy zero-downtime, rollback nhanh, migration an toàn</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #24 Docker/K8s, #27 Testing</div>
+    <div><strong>📚 Prereq</strong><br>Git · Docker/K8s cơ bản · test pyramid</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 Cao — mọi team ship sản phẩm đều cần</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Deploy = release. Push code lên là user dùng feature mới."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Deploy (đưa code lên server) và release (bật feature cho user) là 2 việc tách được bằng <em>feature flag</em>. Tách ra cho phép deploy ngày thường, bật feature theo lịch, tắt ngay khi lỗi mà không rollback.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Đổi schema DB và đổi code cứ deploy chung một lần cho gọn."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Lúc rolling update, code cũ và code mới chạy <em>đồng thời</em>. Drop/rename cột ngay = pod cũ vỡ. Phải expand-contract: thêm cột (tương thích ngược) → deploy code → mới xoá cột ở lần sau.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Canary và blue-green na ná nhau, đều deploy an toàn."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Blue-green switch <em>100% tức thì</em> (rollback nhanh nhưng lỗi ảnh hưởng toàn bộ user ngay). Canary cho <em>1%→10%→100% dần</em> (bắt lỗi sớm trên ít user, nhưng cần đo metric để quyết định). Khác nhau ở "blast radius".</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Deployment strategies blue-green/canary/rolling + blast radius (4), DB migration expand-contract (6), feature flag tách deploy/release (5). Đây là phần phỏng vấn hỏi và là gốc của deploy an toàn.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Pipeline stages + fail-fast (3), rollback theo loại (7), CI vs CD (2).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> GitHub Actions workflow, GitOps/ArgoCD, approval gate.</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> supply-chain security (SBOM, image signing), artifact versioning, progressive delivery tooling.</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — deploy thứ Sáu = nín thở <span class="k-tag core">CORE ★</span></h2>
+  <p>ShopFlow deploy bằng tay, mỗi lần ~30 phút downtime, cả team thức canh. Một lần đổi schema (rename cột) làm pod cũ vỡ giữa rolling update → lỗi 500 hàng loạt. Rollback phải build lại từ đầu, mất 40 phút. Feature mới phải deploy đúng đêm ra mắt vì không tách được deploy khỏi release.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>"Rename cột làm pod cũ vỡ giữa rolling update" — vì sao? Pod cũ và pod mới có chạy đồng thời không? Cách migration nào tránh được?</li>
+      <li>"Feature phải deploy đúng đêm ra mắt" — kỹ thuật nào cho phép deploy trước, bật sau?</li>
+      <li>Muốn rollback trong &lt;1 phút thay vì build lại 40 phút, cần chuẩn bị gì từ trước (gợi ý: artifact)?</li>
+    </ol>
+    <div class="pause-hint">Đáp án: rolling update chạy song song code cũ+mới → cần expand-contract migration (mục 6); feature flag tách deploy/release (mục 5); rollback nhanh = giữ artifact/image version cũ sẵn sàng (mục 7), không build lại.</div>
+  </div>
+</section>
+
+<section id="spectrum">
+  <h2>2. CI vs Continuous Delivery vs Continuous Deployment <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-text">Continuous Integration : mỗi push → build + test tự động, merge thường xuyên
+Continuous Delivery    : luôn ở trạng thái deploy được, nhưng bấm nút mới deploy
+Continuous Deployment  : pass pipeline → tự động deploy production, không cần bấm</code></pre>
+</section>
+
+<section id="stages">
+  <h2>3. Pipeline stages + fail-fast <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-text">checkout → build → unit test → lint/static analysis → package (image)
+        → integration test → security scan → deploy staging → smoke test
+        → [approval] → deploy prod (canary) → monitor → promote/rollback</code></pre>
+  <p><strong>Fail-fast:</strong> chạy stage rẻ &amp; nhanh trước (unit test) để feedback sớm; stage đắt (integration, e2e) sau. Một stage đỏ chặn các stage sau.</p>
+</section>
+
+<section id="strategies">
+  <h2>4. Blue-green / Canary / Rolling <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Chiến lược</th><th>Cách hoạt động</th><th>Blast radius / rollback</th></tr></thead>
+    <tbody>
+      <tr><td>Rolling</td><td>Thay pod dần (mặc định K8s)</td><td>Cũ+mới chạy chung lúc rollout; rollback = rollout undo</td></tr>
+      <tr><td>Blue-Green</td><td>2 môi trường, switch 100% tức thì</td><td>Lỗi ảnh hưởng toàn bộ ngay; rollback = switch lại (giây), tốn gấp đôi tài nguyên</td></tr>
+      <tr><td>Canary</td><td>1%→10%→100% theo metric</td><td>Lỗi chỉ chạm ít user; cần đo error rate/latency để quyết promote</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Biết tên 3 chiến lược. <em>Symptom hiểu giả:</em> không nói được khác biệt blast radius hay khi nào chọn cái nào.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Giải thích blue-green = switch toàn bộ (rollback nhanh, blast radius lớn, tốn 2× tài nguyên); canary = phơi bày dần dựa trên metric (bắt lỗi sớm, cần observability); rolling = mặc định nhưng phải lo tương thích cũ/mới.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Chọn theo ngữ cảnh: thay đổi rủi ro cao + có metric tốt → canary; cần rollback tức thì + đủ tài nguyên → blue-green; thay đổi nhỏ thường ngày → rolling. Ghép với feature flag để giảm rủi ro thêm.</p>
+    </div>
+  </div>
+</section>
+
+<section id="flags">
+  <h2>5. Feature flags — tách deploy khỏi release <span class="k-tag core">CORE ★</span></h2>
+  <p>Code mới deploy nhưng nằm sau cờ <code>if (flags.isOn("new-checkout"))</code>. Bật cho 5% user, theo dõi, bật dần. Lỗi → tắt cờ ngay (không rollback). Cho phép trunk-based development (merge code chưa hoàn thiện nhưng tắt cờ).</p>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — feature flag thành nợ kỹ thuật</div>
+    <div class="bi-answer">
+      <p>Flag không miễn phí. Lạm dụng gây hại:</p>
+      <ul>
+        <li><strong>Flag không xoá:</strong> để mãi sau khi rollout 100% → code đầy <code>if(flag)</code> chết, mỗi flag nhân đôi đường code cần test.</li>
+        <li><strong>Flag lồng nhau:</strong> 5 flag = 32 tổ hợp trạng thái, không ai test hết → bug tổ hợp.</li>
+        <li><strong>Dùng flag thay cho config có cấu trúc:</strong> mọi thứ thành flag → mất khả năng suy luận hệ thống.</li>
+      </ul>
+      <p><em>Quy tắc:</em> flag là <strong>tạm thời</strong> — có ngày hết hạn và task dọn dẹp ngay khi rollout xong. Flag dài hạn (kill-switch, entitlement) thì tách loại rõ ràng.</p>
+    </div>
+  </div>
+</section>
+
+<section id="migration">
+  <h2>6. DB migration backward-compatible (expand-contract) <span class="k-tag core">CORE ★</span></h2>
+  <p>Vì rolling update chạy code cũ+mới đồng thời, migration phải tương thích ngược qua nhiều bước:</p>
+  <pre><code class="language-text">Đổi tên cột full_name → display_name (KHÔNG drop ngay):
+1. EXPAND   : thêm cột display_name, code mới ghi cả 2, đọc display_name fallback full_name
+2. MIGRATE  : backfill display_name từ full_name (batch)
+3. (deploy code chỉ dùng display_name)
+4. CONTRACT : sau khi chắc không pod nào dùng full_name → drop full_name</code></pre>
+  <div class="callout warn"><div class="ctitle">Anti-pattern + symptom</div><p><strong>Triệu chứng:</strong> ngay sau deploy, log đầy <code>column "full_name" does not exist</code> từ pod CŨ chưa bị thay. <strong>Nguyên nhân:</strong> drop cột cùng lúc deploy code. <strong>Fix:</strong> tách drop sang lần deploy sau (contract), dùng Liquibase/Flyway có changeset versioned + rollback.</p></div>
+</section>
+
+<section id="rollback">
+  <h2>7. Rollback theo loại <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Loại thay đổi</th><th>Cách rollback</th></tr></thead>
+    <tbody>
+      <tr><td>Code (stateless)</td><td><code>kubectl rollout undo</code> / switch blue-green / tắt feature flag — giây</td></tr>
+      <tr><td>DB schema (đã expand)</td><td>Rollback code an toàn vì schema còn tương thích ngược</td></tr>
+      <tr><td>DB schema (đã contract/drop)</td><td>KHÔNG rollback dễ — đây là lý do tách contract sang lần sau</td></tr>
+      <tr><td>Data migration</td><td>Cần compensating script; backup trước</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="pipeline">
+  <h2>8. GitHub Actions + GitOps <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-yaml">name: ci-cd
+on: { push: { branches: [main] } }
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: mvn -B verify              # build + unit + integration (Testcontainers)
+      - run: docker build -t shopflow/checkout-api:${{ github.sha }} .
+      - run: trivy image shopflow/checkout-api:${{ github.sha }}   # security scan
+      - run: docker push shopflow/checkout-api:${{ github.sha }}
+  # GitOps: cập nhật image tag trong repo manifest; ArgoCD tự sync về cluster</code></pre>
+  <p><strong>GitOps (ArgoCD):</strong> trạng thái mong muốn nằm trong Git; ArgoCD liên tục so sánh và sync cluster về đúng Git → audit trail + rollback = git revert.</p>
+</section>
+
+<section id="security">
+  <h2>9. Supply-chain security + approval gate <span class="k-tag adv">ADVANCED</span></h2>
+  <ul>
+    <li><strong>Scan image</strong> (Trivy/Grype) bắt CVE trước khi push.</li>
+    <li><strong>SBOM + image signing</strong> (cosign) — chứng minh image build từ source tin cậy.</li>
+    <li><strong>Secrets không nằm trong pipeline log</strong> — dùng OIDC/secret manager, không echo.</li>
+    <li><strong>Approval gate</strong> cho production: yêu cầu duyệt thủ công cho thay đổi rủi ro cao.</li>
+  </ul>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>Drop cột cùng lúc deploy code</td><td>Pod cũ vỡ giữa rollout</td><td>Expand-contract qua nhiều deploy</td></tr>
+      <tr><td>Deploy = release (không flag)</td><td>Phải deploy đúng giờ ra mắt, không tắt nhanh được</td><td>Feature flag tách 2 việc</td></tr>
+      <tr><td>Rollback = build lại</td><td>40 phút downtime</td><td>Giữ artifact/image cũ, switch/undo trong giây</td></tr>
+      <tr><td>Flag không bao giờ xoá</td><td>Nợ kỹ thuật, tổ hợp test bùng nổ</td><td>Flag có hạn + task dọn</td></tr>
+      <tr><td>Test chậm để cuối, không fail-fast</td><td>Feedback chậm, CI nghẽn</td><td>Unit trước, integration/e2e sau</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
+    <p><strong>Q:</strong> CI khác CD thế nào?</p>
+    <p class="a">CI = mỗi push build+test+merge thường xuyên. Continuous Delivery = luôn deploy được, bấm nút mới deploy. Continuous Deployment = pass pipeline thì tự deploy production.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Deploy đổi schema không downtime, có rollback.</p>
+    <p class="a">Expand-contract: thêm cột tương thích ngược → deploy code đọc/ghi cả hai → backfill → deploy code chỉ dùng cột mới → drop cột ở lần sau. Code rollback an toàn vì schema còn tương thích. Dùng Flyway/Liquibase versioned.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Thiết kế progressive delivery cho thay đổi rủi ro cao.</p>
+    <p class="a">Canary 1%→10%→50%→100% gắn metric gate (error rate, p99, business KPI); auto-rollback nếu vượt ngưỡng; bọc feature flag để tắt nhanh không cần rollback; GitOps để audit + revert; approval gate cho bước 100%.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — thực hành deploy an toàn (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Expand-contract migration.</strong> Với một bảng <code>users(full_name)</code>, thực hiện đổi tên sang <code>display_name</code> qua 4 bước expand-contract trên local. Giữa bước, chạy đồng thời "code cũ" (đọc full_name) và "code mới" (đọc display_name) → chứng minh cả hai chạy được. Tiêu chí: giải thích vì sao KHÔNG drop ở bước 1.</p>
+      <p><strong>Lab 2 — Feature flag tắt nhanh.</strong> Bọc một feature sau flag (config/env). Bật cho "10% request" bằng hash userId. Giả lập lỗi → tắt flag (không redeploy) và xác nhận hết lỗi tức thì. Sau đó viết task "dọn flag". Tiêu chí: nói được khác biệt deploy vs release.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Deploy và release khác gì? Feature flag tách chúng thế nào?</li>
+      <li>Blue-green vs canary khác nhau ở blast radius và rollback ra sao?</li>
+      <li>Vì sao drop cột cùng lúc deploy code gây lỗi? Expand-contract sửa thế nào?</li>
+      <li>Làm sao rollback trong giây thay vì build lại 40 phút?</li>
+      <li>Khi nào feature flag trở thành nợ kỹ thuật?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = nắm chắc CI/CD mức senior.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="24-docker-kubernetes.html">#24 Docker/K8s</a> — rolling update, graceful shutdown.</li>
+    <li><a href="27-testing-strategy.html">#27 Testing</a> — test pyramid trong pipeline.</li>
+    <li><a href="26-observability.html">#26 Observability</a> — metric gate cho canary.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

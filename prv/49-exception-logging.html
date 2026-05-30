@@ -762,7 +762,7 @@ public class CheckoutService {
 2026-05-24 03:00:12.523 [http-nio-8080-exec-1] WARN  [traceId=abc123] [customerId=USR_5523] c.s.InventoryService - Stock low for SKU-001: 2 left</code></pre>
   <p>→ Tất cả log của 1 request có cùng <code>traceId=abc123</code>. Kibana query: <code>traceId:abc123</code> ra hết trace.</p>
 
-  <h3>🚨 Bẫy MDC + thread pool</h3>
+    <h3>🚨 Bẫy MDC + thread pool</h3>
   <div class="callout danger">
     <div class="ctitle">MDC dùng ThreadLocal — KHÔNG pass tự động qua thread pool</div>
     <pre><code class="language-java">// ❌ Async task không có MDC của parent thread
@@ -846,7 +846,7 @@ for (Order o : pendingOrders) {
 // ✅ Log batch, hoặc DEBUG
 log.info("Processing {} pending orders", pendingOrders.size());
 for (Order o : pendingOrders) {
-    log.debug("Processing order: {}", o.getId());  // DEBUG chỉ bật khi cần
+    log.debug("Processing order: {}", o.getId());
     process(o);
 }
 log.info("Processed {} orders successfully", pendingOrders.size());</code></pre>
@@ -855,59 +855,21 @@ log.info("Processed {} orders successfully", pendingOrders.size());</code></pre>
 
   <div class="callout danger">
     <div class="ctitle">❌ Anti-pattern #3: Log exception nhiều lần</div>
-    <pre><code class="language-java">// ❌ Log ở mọi layer
-public class Repository {
-    public Order find(String id) {
-        try { /* */ } catch (SQLException e) {
-            log.error("DB error", e);   // log lần 1
-            throw new DatabaseException(e);
-        }
-    }
-}
-public class Service {
-    public Order get(String id) {
-        try {
-            return repo.find(id);
-        } catch (DatabaseException e) {
-            log.error("Service failed", e);  // log lần 2
-            throw e;
-        }
-    }
-}
-public class Controller {
-    public Order get(String id) {
-        try {
-            return service.get(id);
-        } catch (Exception e) {
-            log.error("Controller error", e);  // log lần 3
-            throw e;
-        }
-    }
-}
-// → 1 exception, 3 stack trace trong log → noise + ELK index bloat</code></pre>
-    <p><strong>Quy tắc:</strong> Log exception <strong>1 lần</strong> ở layer cao nhất bắt nó (thường là <code>@ControllerAdvice</code>). Layer dưới chỉ throw, không log.</p>
+    <p>Log ở Repository → Service → Controller → 1 exception, 3 stack trace trong log. <strong>Quy tắc:</strong> Log exception <strong>1 lần</strong> ở layer cao nhất bắt nó (thường là <code>@ControllerAdvice</code>). Layer dưới chỉ throw.</p>
   </div>
 
   <div class="callout danger">
     <div class="ctitle">❌ Anti-pattern #4: log.error() khi không phải error</div>
     <pre><code class="language-java">// ❌ Validation fail là expected, không phải error
 log.error("Invalid email: {}", email);
-
-// ✅ WARN hoặc INFO
+// ✅
 log.warn("Invalid email submitted: {}", email);</code></pre>
-    <p><strong>Symptom:</strong> "Alert fatigue" — Slack channel #alerts kêu 100 lần/giờ, on-call bỏ qua, đến khi có real ERROR cũng không ai nhìn.</p>
+    <p><strong>Symptom:</strong> "Alert fatigue" — Slack channel #alerts kêu 100 lần/giờ, on-call bỏ qua.</p>
   </div>
 
   <div class="callout danger">
     <div class="ctitle">❌ Anti-pattern #5: System.out.println / printStackTrace</div>
-    <pre><code class="language-java">// ❌ Junior thường viết
-System.out.println("DEBUG: order = " + order);
-e.printStackTrace();
-
-// ✅ Luôn dùng logger
-log.debug("Order: {}", order);
-log.error("Failed", e);</code></pre>
-    <p>Như câu chuyện #3 ở Section 1 — Docker stderr → /dev/null, mất log hoàn toàn.</p>
+    <p>Như câu chuyện #3 ở Section 1 — Docker stderr → /dev/null, mất log hoàn toàn. Luôn dùng SLF4J logger.</p>
   </div>
 
   <div class="callout danger">
@@ -916,52 +878,40 @@ log.error("Failed", e);</code></pre>
 catch (Exception e) {
     log.error("Failed: " + e.getMessage());
 }
-
 // ✅ Truyền exception, SLF4J xử lý
 catch (Exception e) {
-    log.error("Failed processing order {}", orderId, e);  // exception ở cuối, không placeholder
+    log.error("Failed processing order {}", orderId, e);
 }</code></pre>
-    <p><strong>Symptom:</strong> Log có "Failed: null" — vì <code>e.getMessage()</code> return null cho 1 số exception type (như NPE). Không có stack trace → không biết bug ở đâu.</p>
+    <p><strong>Symptom:</strong> Log có "Failed: null" — vì <code>e.getMessage()</code> return null cho NPE.</p>
   </div>
 </section>
 
 <section id="structured-logging">
   <h2>10. Structured Logging (JSON) <span class="phase-tag">ADVANCED</span></h2>
-  <p>JSON log thay vì plain text → ELK / Splunk / CloudWatch / Datadog parse được dễ dàng, query filter mạnh.</p>
+  <p>JSON log thay vì plain text → ELK / Datadog parse được dễ dàng.</p>
 
-  <h3>Setup Logstash encoder</h3>
   <pre><code class="language-xml">&lt;dependency&gt;
     &lt;groupId&gt;net.logstash.logback&lt;/groupId&gt;
     &lt;artifactId&gt;logstash-logback-encoder&lt;/artifactId&gt;
     &lt;version&gt;7.4&lt;/version&gt;
 &lt;/dependency&gt;</code></pre>
 
-  <pre><code class="language-xml">&lt;appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender"&gt;
-    &lt;encoder class="net.logstash.logback.encoder.LogstashEncoder"&gt;
-        &lt;includeMdcKeyName&gt;traceId&lt;/includeMdcKeyName&gt;
-        &lt;includeMdcKeyName&gt;customerId&lt;/includeMdcKeyName&gt;
-    &lt;/encoder&gt;
-&lt;/appender&gt;</code></pre>
-
-  <h3>Output JSON</h3>
   <pre><code class="language-text">{
   "@timestamp": "2026-05-24T03:00:12.453Z",
   "level": "ERROR",
   "logger_name": "com.shop.OrderService",
-  "thread_name": "http-nio-8080-exec-1",
   "message": "Order create failed",
   "traceId": "abc123",
   "customerId": "USR_5523",
-  "stack_trace": "com.shop.OrderException: ..."
+  "stack_trace": "..."
 }</code></pre>
-  <p>→ Kibana query: <code>level:ERROR AND traceId:abc123</code>. Datadog: <code>service:orders status:error @customerId:USR_5523</code>.</p>
 
-  <h3>Khi nào KHÔNG cần JSON log</h3>
   <div class="callout warn">
+    <div class="ctitle">Khi nào KHÔNG cần JSON log</div>
     <ul>
-      <li><strong>Dev local</strong>: human-readable text dễ đọc hơn JSON. Dùng profile dev với pattern thường, prod với JSON</li>
-      <li><strong>App không có ELK/Datadog</strong>: nếu chỉ <code>tail -f</code>, JSON tệ hơn plain text</li>
-      <li><strong>Service rất nhỏ với 1 instance</strong>: overhead JSON không đáng</li>
+      <li>Dev local: human-readable text dễ đọc hơn</li>
+      <li>App không có ELK/Datadog: nếu chỉ <code>tail -f</code>, JSON tệ hơn</li>
+      <li>Service rất nhỏ với 1 instance: overhead không đáng</li>
     </ul>
   </div>
 </section>
@@ -973,18 +923,18 @@ catch (Exception e) {
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Recognize (Junior)</h3>
-      <p>Biết try-catch syntax. Phân biệt checked/unchecked. Dùng <code>e.printStackTrace()</code> khi debug. Tạo exception bằng <code>throw new RuntimeException("error")</code>.</p>
-      <p><em>Symptom:</em> code có pattern <code>catch (Exception e) { e.printStackTrace(); }</code>, không có <code>@ControllerAdvice</code>.</p>
+      <p>Biết try-catch syntax. Phân biệt checked/unchecked. Dùng <code>e.printStackTrace()</code>. Tạo exception bằng <code>throw new RuntimeException("error")</code>.</p>
+      <p><em>Symptom:</em> code có <code>catch (Exception e) { e.printStackTrace(); }</code>, không có <code>@ControllerAdvice</code>.</p>
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain (Mid)</h3>
-      <p>Giải thích 7 anti-patterns + refactor. Hiểu fail-fast principle. Tạo custom exception hierarchy với errorCode + cause. Dùng try-with-resources. Hiểu vì sao Spring wrap SQLException → DataAccessException.</p>
+      <p>Giải thích 7 anti-patterns + refactor. Hiểu fail-fast. Tạo custom exception hierarchy với errorCode + cause. Dùng try-with-resources.</p>
       <p><em>Symptom:</em> code review từ chối PR có <code>catch (Exception)</code> không có context.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply (Senior)</h3>
-      <p>Design exception strategy cho service: domain exception layer thấp, wrap thành business exception layer cao, <code>@ControllerAdvice</code> map → HTTP. Biết exception boundary. Custom exception có error catalog cho client + alert rule.</p>
-      <p><em>Symptom:</em> service có error catalog doc (mỗi error code có description + recovery action + alert level), code recovery test bao phủ.</p>
+      <p>Design exception strategy cho service: domain exception layer thấp, <code>@ControllerAdvice</code> map → HTTP. Custom exception có error catalog cho client + alert rule.</p>
+      <p><em>Symptom:</em> service có error catalog doc, code recovery test bao phủ.</p>
     </div>
   </div>
 
@@ -993,33 +943,30 @@ catch (Exception e) {
     <div class="tier-card t1">
       <h3>L1 — Recognize</h3>
       <p>Biết SLF4J + log levels. Đôi khi log password / dùng System.out. Log nhiều INFO. Không biết MDC.</p>
-      <p><em>Symptom:</em> log của 1 request không track được, debug ssh vào server đọc thủ công.</p>
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain</h3>
-      <p>Phân biệt được 5 log levels theo case. Dùng parameterized log. Implement MDC filter. Biết PII never-log list. Hiểu structured logging giúp gì.</p>
-      <p><em>Symptom:</em> code có <code>%X{traceId}</code> trong pattern, có MDC filter, log level đúng theo nature event.</p>
+      <p>Phân biệt được 5 log levels theo case. Dùng parameterized log. Implement MDC filter. Biết PII never-log list.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply</h3>
-      <p>Build observability stack: structured JSON log + traceId xuyên service + alert rule trên Kibana/Datadog. Debug production 3h sáng &lt;15 phút dùng traceId. Capacity plan log storage. Recipe debug 5 scenario là phản xạ.</p>
-      <p><em>Symptom:</em> production incident có timeline đầy đủ từ trace, post-mortem có "log/metric đã có đủ để diagnose trong X phút".</p>
+      <p>Build observability stack: JSON log + traceId xuyên service + alert rule. Debug production 3h sáng &lt;15 phút dùng traceId. Recipe debug 5 scenario là phản xạ.</p>
     </div>
   </div>
 
   <h3>MDC + Distributed Tracing</h3>
   <div class="three-level">
     <div class="tier-card t1">
-      <h3>L1 — Recognize</h3>
-      <p>Biết tên MDC. Chưa setup. Debug bằng grep service name + timestamp.</p>
+      <h3>L1</h3>
+      <p>Biết tên MDC. Chưa setup. Debug bằng grep timestamp.</p>
     </div>
     <div class="tier-card t2">
-      <h3>L2 — Explain</h3>
-      <p>Hiểu MDC = ThreadLocal context. Setup filter cho traceId, customerId. Biết bẫy MDC + thread pool. Pass traceId qua HTTP header giữa service.</p>
+      <h3>L2</h3>
+      <p>Hiểu MDC = ThreadLocal context. Setup filter cho traceId, customerId. Biết bẫy MDC + thread pool.</p>
     </div>
     <div class="tier-card t3">
-      <h3>L3 — Apply</h3>
-      <p>Distributed tracing với OpenTelemetry / Sleuth. TraceId propagate qua Kafka, async task. Sampling strategy. Pair với Jaeger/Tempo để visualize span tree.</p>
+      <h3>L3</h3>
+      <p>Distributed tracing với OpenTelemetry / Sleuth. TraceId propagate qua Kafka, async task. Pair với Jaeger/Tempo.</p>
     </div>
   </div>
 </section>
@@ -1028,64 +975,42 @@ catch (Exception e) {
   <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
 
   <div class="callout danger">
-    <div class="ctitle">🚨 Recipe #1 — "Order create thành công nhưng customer không thấy"</div>
-    <p><strong>Symptom:</strong> Customer report tạo order xong không thấy trong "My Orders". App log show <code>"Order created: orderId=ORD_123"</code> nhưng DB không có row.</p>
-    <p><strong>Debug:</strong></p>
-    <ol>
-      <li>Tìm log của request đó bằng traceId hoặc customerId+timestamp</li>
-      <li>Đọc kỹ stack trace: có exception nào sau "Order created" không? (có thể bị catch silently ở layer sau)</li>
-      <li>Check @Transactional: log "Order created" trong transaction → nếu sau đó throw exception thì rollback, DB không có data nhưng log đã ghi</li>
-      <li>Tool: enable Hibernate SQL log <code>org.hibernate.SQL=DEBUG</code> + <code>org.hibernate.type.descriptor.sql=TRACE</code> để xem actual INSERT có chạy không</li>
-    </ol>
-    <p><strong>Root cause typical:</strong> log INFO inside transaction trước khi commit. Sau đó downstream call fail, transaction rollback. Fix: log INFO ở @TransactionalEventListener(AFTER_COMMIT), không phải giữa transaction.</p>
+    <div class="ctitle">🚨 Recipe #1 — "Order created log có, DB không có"</div>
+    <p><strong>Symptom:</strong> App log show <code>"Order created"</code> nhưng DB không có row.</p>
+    <p><strong>Root cause typical:</strong> log INFO inside transaction trước khi commit. Sau đó downstream call fail, transaction rollback. Fix: log INFO ở <code>@TransactionalEventListener(AFTER_COMMIT)</code>.</p>
+    <p><strong>Debug:</strong> tìm traceId + check Hibernate SQL log + check stack trace có exception sau "Order created" không.</p>
   </div>
 
   <div class="callout danger">
     <div class="ctitle">🚨 Recipe #2 — "Error rate spike nhưng không log nào"</div>
-    <p><strong>Symptom:</strong> Datadog/Grafana báo error rate 12% nhưng grep ELK không thấy ERROR log nào.</p>
     <p><strong>Checklist:</strong></p>
     <ol>
-      <li>Có <code>catch (Exception) { /* empty */ }</code> ở đâu không? Code review pull request gần đây</li>
-      <li>Có <code>e.printStackTrace()</code> không? Container stderr → /dev/null</li>
-      <li>Có exception throw từ <code>@Async</code> task không? Default Spring sẽ log warning vào stdout nhưng nếu disabled thì mất</li>
-      <li>Có async event listener throw exception? Spring 5+ default swallow nếu không có error handler</li>
-      <li>Error rate count từ đâu (5xx HTTP, hay custom metric)? Mismatch có thể là metric đếm sai</li>
+      <li>Có <code>catch (Exception) { /* empty */ }</code> ở đâu không?</li>
+      <li>Có <code>e.printStackTrace()</code> không? Docker stderr → /dev/null</li>
+      <li>Có exception throw từ <code>@Async</code> task không? Spring có thể swallow</li>
+      <li>Error rate count từ đâu (5xx HTTP, hay custom metric)? Có thể đếm sai</li>
     </ol>
   </div>
 
   <div class="callout danger">
-    <div class="ctitle">🚨 Recipe #3 — "Log mất traceId, không trace được request"</div>
-    <p><strong>Symptom:</strong> Log của 1 request scattered, không group được bằng traceId vì có log <code>[traceId=-]</code>.</p>
+    <div class="ctitle">🚨 Recipe #3 — "Log mất traceId, không trace được"</div>
     <p><strong>3 nguyên nhân:</strong></p>
     <ol>
-      <li><strong>MDC chưa setup ở filter</strong> — log trước khi filter chạy không có traceId. Check filter order: traceId filter phải chạy đầu tiên</li>
-      <li><strong>Async task không inherit MDC</strong> — fix bằng <code>MDC.getCopyOfContextMap()</code> trước submit</li>
-      <li><strong>Scheduled task không có traceId</strong> — task không phải request, không có context. Fix: generate traceId mới ở start task</li>
+      <li>MDC chưa setup ở filter — filter order sai</li>
+      <li>Async task không inherit MDC — fix bằng <code>MDC.getCopyOfContextMap()</code></li>
+      <li>Scheduled task không có traceId — generate mới ở start task</li>
     </ol>
   </div>
 
   <div class="callout danger">
     <div class="ctitle">🚨 Recipe #4 — "Log file phình 100GB/ngày"</div>
-    <p><strong>Symptom:</strong> ELK index full, log retention chỉ giữ 1 ngày thay vì 30. Cost storage tăng 10×.</p>
-    <p><strong>Debug:</strong></p>
-    <ol>
-      <li>Top 10 loggers by volume: <code>grep -c "logger_name" log.json | sort | uniq -c | sort -rn | head</code></li>
-      <li>Loop logging? Tìm logger nào log &gt; 1000 lines/giây — thường là batch job log INFO mỗi item</li>
-      <li>Library noise? <code>org.hibernate.SQL</code>, <code>org.springframework.web</code> có thể spam DEBUG. Set <code>WARN</code></li>
-      <li>Stack trace duplicate? Nếu cùng exception log nhiều layer → fix anti-pattern #3</li>
-    </ol>
+    <p><strong>Debug:</strong> Top 10 loggers by volume. Tìm loop logging. Library noise (Hibernate SQL DEBUG). Duplicate stack trace.</p>
   </div>
 
   <div class="callout danger">
-    <div class="ctitle">🚨 Recipe #5 — "Production crash không có log lúc crash"</div>
-    <p><strong>Symptom:</strong> App crash lúc 3h sáng. Log file dừng lại lúc 02:59:58. Không có ERROR/FATAL trước khi crash.</p>
-    <p><strong>3 case:</strong></p>
-    <ol>
-      <li><strong>OOM kill (OS hoặc K8s)</strong> — JVM không kịp flush log. Check dmesg / kubectl describe pod → "OOMKilled"</li>
-      <li><strong>JVM crash native</strong> — sẽ có <code>hs_err_pidXXX.log</code> trong working dir. Native memory leak, JIT bug</li>
-      <li><strong>kill -9 from parent</strong> — supervisor (systemd, Docker) bị health check fail → SIGKILL. App không có chance log</li>
-    </ol>
-    <p><strong>Pattern phòng ngừa:</strong> Async appender với <code>queueSize=512</code> + flush on shutdown. Heap dump on OOM. Health check endpoint không phụ thuộc DB.</p>
+    <div class="ctitle">🚨 Recipe #5 — "Crash 3h sáng, log dừng lại lúc 2:59:58"</div>
+    <p><strong>3 case:</strong> OOM kill (K8s OOMKilled), JVM crash native (hs_err_pid.log), SIGKILL từ supervisor (health check fail).</p>
+    <p><strong>Phòng ngừa:</strong> Async appender + flush on shutdown. Heap dump on OOM. Health check không phụ thuộc DB.</p>
   </div>
 </section>
 
@@ -1094,8 +1019,7 @@ catch (Exception e) {
 
   <div class="callout warn">
     <div class="ctitle">🧪 Exercise #1 — Refactor bad exception code (Easy, 1h)</div>
-    <pre><code class="language-java">// Refactor code này:
-public class ProductService {
+    <pre><code class="language-java">public class ProductService {
     public Product findProduct(String id) {
         try {
             Product p = repo.findById(id);
@@ -1109,139 +1033,81 @@ public class ProductService {
             return null;
         }
     }
-
-    public void updatePrice(String id, BigDecimal price) {
-        try {
-            Product p = findProduct(id);
-            p.setPrice(price);
-            repo.save(p);
-        } catch (Exception e) {
-            // silent
-        }
-    }
 }</code></pre>
-    <p><strong>Requirements:</strong></p>
-    <ul>
-      <li>Throw <code>ProductNotFoundException</code> khi không tìm thấy</li>
-      <li>Log đúng level + có context (id, operation)</li>
-      <li>Dùng <code>Optional</code> hoặc throw, không return null</li>
-      <li><code>@RestControllerAdvice</code> map exception → HTTP 404</li>
-      <li>Validate price &gt; 0 — throw <code>IllegalArgumentException</code></li>
-      <li>Test cover happy path + 3 error case</li>
-    </ul>
+    <p><strong>Requirements:</strong> Throw <code>ProductNotFoundException</code>, log đúng level + context, dùng Optional, <code>@RestControllerAdvice</code> map → HTTP 404, validate price &gt; 0, test cover 4 case.</p>
   </div>
 
   <div class="callout warn">
     <div class="ctitle">🧪 Exercise #2 — Setup MDC end-to-end (Medium, 2h)</div>
-    <p>Spring Boot project, implement:</p>
-    <ul>
-      <li>Filter add <code>traceId</code> + <code>customerId</code> vào MDC mỗi request</li>
-      <li>Log pattern hiển thị 2 field này</li>
-      <li>Echo <code>X-Trace-Id</code> ra response header</li>
-      <li>Test: gửi 5 request đồng thời với <code>ab -n 5 -c 5</code>, verify mỗi request có traceId riêng</li>
-      <li>Bonus: Service A gọi Service B qua RestTemplate — forward <code>X-Trace-Id</code>, verify log 2 service có cùng traceId</li>
-      <li>Bonus 2: <code>@Async</code> task, verify MDC bị mất, fix bằng <code>TaskDecorator</code></li>
-    </ul>
-    <p><strong>Exit criteria:</strong> Kibana query <code>traceId:&lt;một-id&gt;</code> ra hết flow của 1 request, kể cả qua async task.</p>
+    <p>Spring Boot: filter add traceId + customerId vào MDC, echo <code>X-Trace-Id</code> response header, test 5 request đồng thời với <code>ab -n 5 -c 5</code>. Bonus: Service A gọi Service B qua RestTemplate forward traceId. Bonus 2: <code>@Async</code> với <code>TaskDecorator</code>.</p>
+    <p><strong>Exit:</strong> Kibana query <code>traceId:&lt;id&gt;</code> ra hết flow.</p>
   </div>
 
   <div class="callout warn">
     <div class="ctitle">🧪 Exercise #3 — E-commerce Exception Hierarchy (Hard, 3h)</div>
-    <p>Cho e-commerce app, design:</p>
-    <ul>
-      <li>Base <code>OrderException</code> với <code>errorCode</code></li>
-      <li>5 concrete: <code>OrderNotFoundException</code>, <code>InsufficientInventoryException</code>, <code>PaymentDeclinedException</code>, <code>DuplicateOrderException</code>, <code>RateLimitExceededException</code></li>
-      <li><code>@RestControllerAdvice</code> map mỗi exception → HTTP code đúng (404, 409, 402, 409, 429)</li>
-      <li>Log strategy: WARN cho expected (4 cái), ERROR cho unexpected</li>
-      <li>ErrorResponse format chuẩn: <code>{ errorCode, message, details, traceId }</code></li>
-      <li>Test cover từng case + verify HTTP status + body</li>
-      <li>Bonus: Tạo error catalog markdown (mỗi error code có description + recovery)</li>
-    </ul>
+    <p>Base <code>OrderException</code> + 5 concrete (NotFound, InsufficientInventory, PaymentDeclined, DuplicateOrder, RateLimitExceeded), <code>@RestControllerAdvice</code> map → 404/409/402/409/429, log WARN cho expected, ErrorResponse <code>{errorCode, message, details, traceId}</code>, test cover từng case. Bonus: error catalog markdown.</p>
   </div>
 </section>
 
 <section id="interview">
   <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
 
-  <h3>Tier 1 — Surface (Junior screening)</h3>
-
+  <h3>Tier 1 — Surface (Junior)</h3>
   <div class="tier-card t1">
     <h3>Q: Checked vs Unchecked exception?</h3>
-    <p><strong>Trả lời mẫu:</strong> "Checked extends Exception (trừ RuntimeException) — compiler force handle hoặc throws. Ví dụ IOException, SQLException. Unchecked extends RuntimeException — không bắt buộc handle, dùng cho bug logic hoặc business exception. Ví dụ NPE, IllegalArgument.</p>
-    <p>Modern Java + Spring xu hướng unchecked vì checked clutter signature, caller thường wrap thành RuntimeException dù sao. Spring wrap SQLException → DataAccessException unchecked."</p>
+    <p>Checked extends Exception — compiler force handle. Unchecked extends RuntimeException — không buộc. Modern Java xu hướng unchecked vì clutter signature. Spring wrap SQLException → DataAccessException unchecked.</p>
   </div>
 
   <div class="tier-card t1">
     <h3>Q: try-with-resources hoạt động thế nào?</h3>
-    <p><strong>Trả lời mẫu:</strong> "Java 7+ feature. Resource trong <code>try(...)</code> phải implement AutoCloseable. JVM tự gọi <code>close()</code> ở finally implicit, kể cả có exception. Multi-resource close theo thứ tự ngược lại.</p>
-    <p>Lợi: ngắn gọn hơn try-finally truyền thống, không quên close, không null check, không nested try-catch cho close()."</p>
+    <p>Java 7+. Resource implement AutoCloseable. JVM tự gọi close() ở finally implicit, close theo thứ tự ngược lại.</p>
   </div>
 
-  <h3>Tier 2 — Deep Dive (Mid level)</h3>
-
+  <h3>Tier 2 — Deep Dive (Mid)</h3>
   <div class="tier-card t2">
-    <h3>Q: Tại sao log parameterized thay vì string concat?</h3>
-    <p><strong>Trả lời mẫu:</strong> "2 lý do:</p>
-    <p>1. <strong>Performance</strong>: <code>log.debug("User " + user)</code> luôn build string, kể cả khi DEBUG OFF. <code>log.debug("User {}", user)</code> chỉ build khi DEBUG ON. Hot path log nhiều → khác biệt rõ ràng.</p>
-    <p>2. <strong>Consistency</strong>: SLF4J chuẩn hóa format, parser ELK dễ hiểu placeholder.</p>
-    <p>Edge case: nếu argument có <code>toString()</code> đắt (object lớn), kể cả parameterized cũng tốn — phải <code>if (log.isDebugEnabled())</code> guard."</p>
+    <h3>Q: Tại sao log parameterized?</h3>
+    <p>Performance: chỉ build string khi level ON. Consistency: SLF4J chuẩn hóa format, ELK parse được. Edge case: argument <code>toString()</code> đắt vẫn cần guard <code>if (log.isDebugEnabled())</code>.</p>
   </div>
 
   <div class="tier-card t2">
-    <h3>Q: MDC là gì? Tại sao quan trọng cho microservices?</h3>
-    <p><strong>Trả lời mẫu:</strong> "MDC là ThreadLocal map gắn key-value vào mọi log trong thread hiện tại. Trong microservices, traceId truyền qua header HTTP, mỗi service đặt traceId vào MDC → log của tất cả service trong 1 request có cùng traceId → distributed tracing.</p>
-    <p>Pitfall: thread pool / async — MDC không tự pass. Phải copy contextMap trước submit task. Spring Cloud Sleuth + Brave / OpenTelemetry tự động hóa, nhưng manual code phải nhớ."</p>
+    <h3>Q: MDC là gì? Microservices?</h3>
+    <p>ThreadLocal map gắn key-value vào mọi log. TraceId truyền qua HTTP header giữa service → distributed tracing. Pitfall: thread pool / async không inherit, phải copy contextMap. Sleuth/OTel tự động hóa.</p>
   </div>
 
   <h3>Tier 3 — Architecture (Senior)</h3>
-
   <div class="tier-card t3">
-    <h3>Q: Design exception handling strategy cho e-commerce microservices.</h3>
-    <p><strong>Trả lời mẫu:</strong> "Layer-by-layer:</p>
-    <p><strong>Domain layer</strong>: throw business exception (InsufficientInventory, PaymentDeclined) — extends RuntimeException + có errorCode.</p>
-    <p><strong>Repository layer</strong>: catch SQLException → wrap thành DatabaseException (Spring DataAccessException nếu JPA). Không expose JDBC chi tiết.</p>
-    <p><strong>Service layer</strong>: business logic, throw domain exception. Không catch trừ khi handle có ý nghĩa (retry, fallback).</p>
-    <p><strong>Controller layer</strong>: @ControllerAdvice convert exception → ResponseEntity. ErrorResponse có errorCode + message + details + traceId. KHÔNG leak stack trace.</p>
-    <p><strong>Cross-cutting</strong>:</p>
-    <ul>
-      <li>All log có traceId qua MDC</li>
-      <li>Sentry/Rollbar capture stack trace cho ERROR</li>
-      <li>Metric counter cho mỗi error type (Prometheus)</li>
-      <li>Alert trên error rate &gt; threshold (PagerDuty)</li>
-    </ul>
-    <p>Có error catalog doc cho team — mỗi error code có description + recovery action + alert level."</p>
+    <h3>Q: Design exception strategy cho e-commerce microservices</h3>
+    <p><strong>Domain</strong>: business exception extends RuntimeException + errorCode. <strong>Repository</strong>: wrap SQLException → DatabaseException. <strong>Service</strong>: throw domain exception. <strong>Controller</strong>: <code>@ControllerAdvice</code> convert → ResponseEntity với errorCode + message + traceId. <strong>Cross-cutting</strong>: MDC traceId, Sentry, Prometheus metric, PagerDuty alert. Có error catalog doc.</p>
   </div>
 </section>
 
 <section id="feynman">
   <h2>🧠 Feynman Test — 5 câu giải thích cho người chưa biết</h2>
   <p>Trả lời thành tiếng &lt; 60s mỗi câu. Bí 1 câu = quay lại section tương ứng.</p>
-
   <ol>
-    <li><strong>Tại sao <code>catch (Exception e) { }</code> là anti-pattern?</strong> Người nghe chưa biết Java exception là gì.</li>
+    <li><strong>Tại sao <code>catch (Exception e) { }</code> là anti-pattern?</strong></li>
     <li><strong>Vì sao SLF4J <code>log.info("user={}", user)</code> tốt hơn <code>log.info("user=" + user)</code>?</strong></li>
-    <li><strong>MDC dùng để làm gì? Cho ví dụ cụ thể giúp debug production.</strong></li>
-    <li><strong>Liệt kê 5 loại PII NEVER được log. Tại sao?</strong></li>
+    <li><strong>MDC dùng để làm gì? Ví dụ cụ thể giúp debug production?</strong></li>
+    <li><strong>Liệt kê 5 loại PII NEVER log. Tại sao?</strong></li>
     <li><strong>Khi nào log ERROR vs WARN vs INFO? Cho 3 ví dụ cụ thể.</strong></li>
   </ol>
-
   <div class="callout success">
     <div class="ctitle">✅ Acceptance criteria</div>
-    <p>Pass 5/5 trong 5 phút = ready dùng production. Pass &lt; 4/5 → quay lại section yếu.</p>
+    <p>Pass 5/5 trong 5 phút = ready production. Pass &lt; 4/5 → quay lại section yếu.</p>
   </div>
 </section>
 
 <section id="checklist">
   <h2>✅ Checklist Thành Thạo</h2>
   <ul>
-    <li>☐ Phân biệt được Error / Checked / Unchecked, biết khi nào dùng cái nào</li>
+    <li>☐ Phân biệt Error / Checked / Unchecked, biết khi nào dùng cái nào</li>
     <li>☐ Convert mọi try-catch-finally cho resource sang try-with-resources</li>
     <li>☐ Viết được hierarchy domain exception với errorCode + cause</li>
     <li>☐ Liệt kê 7 anti-patterns exception + refactor mỗi cái</li>
     <li>☐ Setup logback-spring.xml với CONSOLE + FILE + JSON appender</li>
     <li>☐ Implement MDC filter, verify log có traceId xuyên suốt</li>
     <li>☐ Liệt kê 5+ loại PII NEVER log</li>
-    <li>☐ Implement <code>@RestControllerAdvice</code> map exception → HTTP response chuẩn</li>
+    <li>☐ Implement <code>@RestControllerAdvice</code> map exception → HTTP chuẩn</li>
     <li>☐ Hoàn thành 3 exercises BẮT BUỘC</li>
     <li>☐ Pass Feynman test 5/5</li>
   </ul>
@@ -1249,28 +1115,28 @@ public class ProductService {
   <h3>📚 Tự học tiếp</h3>
   <ul>
     <li><strong>Effective Java</strong> (Joshua Bloch) — Items 69-77 chương Exceptions</li>
-    <li><strong>Spring Boot Logging docs</strong>: <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging">features.logging</a></li>
-    <li><strong>12-Factor App</strong>, Factor 11 (Logs): <a href="https://12factor.net/logs">12factor.net/logs</a></li>
-    <li><strong>OpenTelemetry Java</strong>: <a href="https://opentelemetry.io/docs/instrumentation/java/">opentelemetry.io/docs/instrumentation/java</a> — distributed tracing chuẩn</li>
+    <li><strong>Spring Boot Logging</strong>: <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging">features.logging</a></li>
+    <li><strong>12-Factor App, Factor 11</strong>: <a href="https://12factor.net/logs">12factor.net/logs</a></li>
+    <li><strong>OpenTelemetry Java</strong>: <a href="https://opentelemetry.io/docs/instrumentation/java/">distributed tracing chuẩn</a></li>
   </ul>
 
   <h3>🛠️ Tools production</h3>
   <ul>
-    <li><strong>ELK stack</strong> (Elasticsearch + Logstash + Kibana) — local docker-compose để học</li>
-    <li><strong>Sentry / Rollbar</strong> — error tracking + grouping + alert</li>
+    <li><strong>ELK stack</strong> — local docker-compose để học</li>
+    <li><strong>Sentry / Rollbar</strong> — error tracking + grouping</li>
     <li><strong>Datadog / New Relic</strong> — APM commercial</li>
     <li><strong>Jaeger / Tempo</strong> — distributed tracing visualization</li>
-    <li><strong>Spring Cloud Sleuth</strong> hoặc Micrometer Tracing — Spring integration</li>
+    <li><strong>Micrometer Tracing</strong> — Spring integration</li>
   </ul>
 
   <div class="callout success">
     <strong>Next steps:</strong>
     <ol>
-      <li><a href="50-git-daily-workflow.html">#50 Git Daily Workflow</a> — next file trong Junior Foundation pack</li>
-      <li><a href="34-audit-logging.html">#34 Audit Logging</a> — production-grade log cho compliance</li>
-      <li><a href="22-resilience-patterns.html">#22 Resilience Patterns</a> — exception trong context retry/fallback</li>
+      <li><a href="50-git-daily-workflow.html">#50 Git Daily Workflow</a></li>
+      <li><a href="34-audit-logging.html">#34 Audit Logging</a></li>
+      <li><a href="22-resilience-patterns.html">#22 Resilience Patterns</a></li>
     </ol>
-    <p><strong>Khi nào sẵn sàng chuyển #50:</strong> 3 exercises xong + Feynman 5/5 + Đã setup MDC trong project thật (work hoặc side).</p>
+    <p><strong>Khi sẵn sàng chuyển #50:</strong> 3 exercises xong + Feynman 5/5 + setup MDC trong project thật.</p>
   </div>
 </section>
 

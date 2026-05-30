@@ -57,6 +57,7 @@
     <a href="#patterns">9. Patterns</a>
     <a href="#debug-lab">10. Debug lab</a>
     <a href="#interview">11. Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
     <a href="#checklist">Checklist</a>
   </nav>
 </aside>
@@ -140,6 +141,25 @@
 <div class="callout warn">
   <div class="ctitle">Điểm tinh tế</div>
   <p><code>volatile sent</code> chỉ đúng nếu write data xảy ra trước volatile write. Nếu đổi thứ tự thành <code>sent = true</code> rồi mới set <code>messageId</code>, volatile không cứu được logic sai.</p>
+</div>
+
+<div class="roadmap">
+  <div class="roadmap-head">🗺️ Nếu chỉ có X giờ thì học gì</div>
+  <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Happens-before (3) là khái niệm gốc; visibility vs ordering vs atomicity (2); volatile recipe publish-bằng-flag (4.1). Nắm được là đọc/sửa được 80% bug JMM.</div>
+  <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> synchronized = lock + visibility đi chung (5), AtomicXxx/CAS (6.1), safe publication + final fields (7.1-7.2). Phỏng vấn senior hỏi thẳng.</div>
+  <div class="roadmap-item supp"><strong>+1.5 giờ (SUPPLEMENTARY):</strong> wait/notify trong while (5.2), ABA (6.3), this-escape (7.3), double-checked locking đúng (7.4).</div>
+  <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> false sharing + @Contended (8.1), VarHandle (8.2), deep immutability (8.3).</div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Nhìn class <code>NotificationState</code> bản "Sai" ở trên. Trả lời ra giấy:</div>
+  <ol>
+    <li>Vì sao thread đọc có thể thấy <code>sent==true</code> nhưng <code>messageId==null</code>, dù code ghi <code>messageId</code> TRƯỚC <code>sent</code>? (gợi ý: reordering + visibility)</li>
+    <li>Bản "Fix" chỉ đặt <code>volatile</code> lên <code>sent</code>, KHÔNG lên <code>messageId</code>. Vì sao vẫn đúng? happens-before bắc cầu thế nào?</li>
+    <li>Nếu lập trình viên đổi thứ tự hai dòng trong <code>markSent</code> thành <code>sent=true; messageId=id;</code>, volatile còn cứu được không? Vì sao đây là bug logic chứ không phải bug JMM?</li>
+  </ol>
+  <div class="pause-hint">Đáp án ở mục 2.1 (reordering), 3 (happens-before bắc cầu: data-write → volatile-write → volatile-read → data-read). Đừng đọc tiếp khi chưa viết được câu 2.</div>
 </div>
 </section>
 
@@ -323,6 +343,33 @@ public void reload(CampaignSnapshot next) {
 
 <h3>4.3 Volatile Không Phải Lock Nhẹ</h3>
 <p>Nhiều người dùng volatile như "synchronized nhanh hơn". Đây là cách nghĩ sai. Volatile không đảm bảo critical section, không bảo vệ invariant nhiều field và không làm read-modify-write atomic.</p>
+
+<div class="break-it">
+  <div class="bi-head">🔧 Counter-example — khi nào volatile SAI</div>
+  <div class="bi-answer">
+    <ul>
+      <li><strong><code>volatile int count; count++;</code></strong> — vẫn mất update. <code>count++</code> là read-modify-write 3 bước; volatile chỉ lo visibility, không lo atomicity. Dùng <code>AtomicInteger</code>.</li>
+      <li><strong>Invariant nhiều field:</strong> <code>volatile BigDecimal low, high;</code> với ràng buộc <code>low &lt;= high</code> — hai thread cập nhật xen kẽ vẫn phá invariant. Cần lock bao cả cặp.</li>
+      <li><strong>Check-then-act:</strong> <code>if (!initialized) { init(); initialized = true; }</code> với <code>volatile initialized</code> — hai thread cùng thấy false, cùng init. Volatile không tạo critical section.</li>
+    </ul>
+    <p><em>Quy tắc:</em> volatile chỉ đủ khi (1) chỉ một thread ghi, hoặc (2) thao tác ghi là một single write độc lập (publish flag, snapshot reference). Có read-modify-write hay invariant nhiều biến → cần lock/Atomic.</p>
+  </div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Biết tên</h3>
+    <p>Biết "volatile làm biến hiển thị giữa các thread". <em>Symptom hiểu giả:</em> dùng volatile cho counter, hoặc tin volatile = lock nhẹ.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain được</h3>
+    <p>Phân biệt visibility (volatile cho) vs atomicity (không cho) vs mutual exclusion (không cho). Giải thích happens-before của volatile write→read và vì sao nó bắc cầu kéo theo các write thường trước đó.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply được</h3>
+    <p>Chọn đúng tầng guarantee cho từng bug: flag dừng → volatile; publish immutable snapshot → volatile reference; counter → Atomic/LongAdder; invariant nhiều field → synchronized. Giải thích trade-off và chứng minh tính đúng bằng happens-before.</p>
+  </div>
+</div>
 </section>
 
 <section id="synchronized">
@@ -405,7 +452,19 @@ public void reload(CampaignSnapshot next) {
 </section>
 
 <section id="atomic">
-<h2>6. AtomicXxx</h2>
+<h2>6. AtomicXxx <span class="k-tag core">CORE ★</span></h2>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Trước khi đọc về CAS:</div>
+  <ol>
+    <li><code>AtomicInteger.incrementAndGet()</code> không dùng lock mà vẫn atomic. Cơ chế nào ở tầng CPU làm được điều đó?</li>
+    <li>Khi 64 thread cùng <code>incrementAndGet()</code> một <code>AtomicLong</code> liên tục, vì sao throughput có thể TỆ đi? <code>LongAdder</code> sửa điều này bằng cách nào?</li>
+    <li>CAS so sánh "giá trị có còn là X không". Tình huống nào giá trị quay về X nhưng thực ra đã đổi giữa chừng, khiến CAS "đúng nhầm"? (tên vấn đề này là gì?)</li>
+  </ol>
+  <div class="pause-hint">Đáp án: CAS = lệnh <code>cmpxchg</code> của CPU (6.1); contention cao → CAS spin retry tốn CPU, LongAdder tách thành nhiều cell cộng dồn (6.2); ABA problem (6.3) dùng <code>AtomicStampedReference</code> để vá.</div>
+</div>
+
 <p>Atomic classes dùng CAS: compare current value với expected, nếu khớp thì set new value trong một hardware-level atomic operation. Nếu fail, retry hoặc return false.</p>
 
 <section id="cas">
@@ -916,6 +975,30 @@ public static TemplateRegistry getInstance() {
 <div class="tier t3">
   <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế hot-reload pricing rules thread-safe</span></div>
   <p class="a">Represent rules bằng immutable snapshot. Loader build snapshot mới đầy đủ, validate, rồi publish bằng volatile reference hoặc AtomicReference. Reader đọc snapshot một lần vào local variable rồi dùng. Không mutate map/list bên trong snapshot sau khi publish.</p>
+</div>
+</section>
+
+<section id="lab">
+<div class="build-exercise">
+  <div class="be-head">🛠️ Lab bắt buộc — quan sát JMM tận mắt (2 bài)</div>
+  <div class="be-deliverable">
+    <p><strong>Lab 1 — Reproduce visibility bug.</strong> Viết class với <code>boolean running = true</code> (KHÔNG volatile). Một worker thread <code>while(running){}</code>, main thread sleep 1s rồi set <code>running=false</code>. Chạy với <code>-server</code>: worker có thể KHÔNG bao giờ dừng (JIT cache cờ vào register). Thêm <code>volatile</code> → dừng ngay. Tiêu chí: giải thích vì sao thiếu visibility làm vòng lặp không thấy update.</p>
+    <p><strong>Lab 2 — Mất update vì thiếu atomicity.</strong> 8 thread cùng <code>count++</code> trên một <code>volatile int</code> 100.000 lần mỗi thread. Assert kết quả &lt; 800.000 (volatile không cứu). Đổi sang <code>AtomicInteger.incrementAndGet()</code> → đúng 800.000. Tiêu chí: phân biệt rõ "volatile cho visibility, không cho atomicity".</p>
+  </div>
+</div>
+</section>
+
+<section id="feynman">
+<div class="feynman">
+  <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+  <ol class="fy-prompt">
+    <li>Happens-before nghĩa là gì? Vì sao nó là khái niệm gốc, quan trọng hơn từ khóa <code>volatile</code>?</li>
+    <li>Tách rõ visibility, ordering, atomicity. Cho một bug chỉ thiếu visibility và một bug chỉ thiếu atomicity.</li>
+    <li>Vì sao <code>volatile sent=true</code> lại làm thread khác thấy được <code>messageId</code> dù <code>messageId</code> không volatile?</li>
+    <li>CAS hoạt động thế nào? ABA problem là gì và vá ra sao?</li>
+    <li>"Safe publication" là gì? Vì sao một object khởi tạo trong constructor vẫn có thể bị thread khác thấy ở trạng thái nửa vời?</li>
+  </ol>
+  <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = bạn nắm JMM ở mức hiếm gặp ở mid-level.</div>
 </div>
 </section>
 

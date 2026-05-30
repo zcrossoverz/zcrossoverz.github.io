@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#36 — Clean Code &amp; SOLID (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm I · Code Quality</span>
+    <span class="sep">›</span>
+    <span class="current">#36 Clean Code &amp; SOLID</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: PR pricing 200 dòng</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#smells">2. 7 code smell</a>
+      <a href="#solid">3. SOLID — WHY từng nguyên tắc</a>
+      <a href="#refactor">4. Refactoring techniques</a>
+      <a href="#tell-dont-ask">5. Tell-Don't-Ask</a>
+      <div class="toc-section">Production</div>
+      <a href="#walkthrough">6. Refactor messy → clean</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ Khi SOLID phản tác dụng</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm I · Code Quality · File chống hiểu giả</div>
+  <h1>Clean Code &amp; SOLID — Smell, Refactor, và Khi Nào Đừng</h1>
+  <p class="lead">
+    SOLID là thứ ai cũng đọc thuộc 5 chữ cái nhưng ít người dùng đúng — và <em>over-apply</em> SOLID còn hại hơn không biết nó. File này dạy mỗi nguyên tắc qua <strong>WHY</strong> (vấn đề gì sinh ra nó), kèm <strong>counter-example</strong> (khi nào áp dụng là over-engineering), trên domain <strong>ShopFlow</strong> — <code>OrderPricingService</code> tính giá/khuyến mãi của sàn e-commerce.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Nhận diện smell, refactor có kiểm soát, biết khi nào KHÔNG abstract</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #16 Design Patterns, #15 Clean Arch</div>
+    <div><strong>📚 Prereq</strong><br>OOP · interface/polymorphism · unit test</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 Cao — code review &amp; design hỏi mỗi vòng senior</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Thuộc 5 chữ S-O-L-I-D và định nghĩa mỗi cái là hiểu SOLID."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Hiểu thật = nhìn một đoạn code chỉ ra nó <em>vi phạm nguyên tắc nào</em> và <em>hậu quả cụ thể</em> khi thêm feature. Đọc định nghĩa mà không nói được "vi phạm O thì sao" = hiểu giả.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Càng nhiều interface, abstraction, design pattern thì code càng SOLID, càng tốt."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Abstraction sớm/thừa là code smell ngược: 1 implementation mà có interface, factory, strategy = đọc 5 file để hiểu 1 việc. SOLID phục vụ <em>thay đổi</em>; chỗ không đổi thì abstraction chỉ thêm nhiễu.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Refactor là dọn code cho đẹp, làm lúc nào cũng được."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Refactor KHÔNG đổi hành vi — nên bắt buộc có test phủ trước khi đổi. Refactor không test = viết lại + cầu may. Đây là khác biệt giữa refactoring và "rewrite".</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> SRP + OCP (3) — hai nguyên tắc dùng nhiều nhất; nhận diện 7 code smell (2). Đủ để pass phần "tìm lỗi SOLID" của interview.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Refactor messy → clean theo bước có test (6), Tell-Don't-Ask (5), khi nào KHÔNG áp dụng SOLID (anti-patterns).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> LSP, ISP, DIP với ví dụ; Extract Method/Class/Parameter Object.</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> Replace conditional with polymorphism, đánh giá ROI abstraction theo "rule of three".</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — PR tính giá 200 dòng <span class="k-tag core">CORE ★</span></h2>
+  <p>Bạn review một PR: method <code>calculateOrderTotal()</code> dài 200 dòng, nhận 7 tham số, có magic number <code>0.05</code>, <code>0.1</code> rải khắp, trộn validate + tính phí + ghi DB + gửi email trong một chỗ. Mỗi lần thêm một loại khuyến mãi phải sửa đúng method này và làm vỡ 3 chỗ khác.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Nhìn mô tả PR trên, viết ra giấy:</div>
+    <ol>
+      <li>Liệt kê đúng <strong>tên</strong> ít nhất 4 code smell trong đoạn này (không nói chung "code xấu").</li>
+      <li>"Thêm 1 loại khuyến mãi phải sửa method này" — đây vi phạm nguyên tắc SOLID nào? Hậu quả khi có 10 loại khuyến mãi?</li>
+      <li>Nếu refactor, bước ĐẦU TIÊN phải làm là gì trước khi đụng vào code (gợi ý: không phải tách method)?</li>
+    </ol>
+    <div class="pause-hint">Đáp án: Long Method, Long Parameter List, Magic Number, Mixed Concerns (mục 2); vi phạm OCP (sửa thay vì mở rộng) + SRP (mục 3); bước đầu là <strong>viết test phủ hành vi hiện tại</strong> (anti-pattern "refactor không test"). Đừng đọc tiếp khi chưa đặt tên được 4 smell.</div>
+  </div>
+
+  <h3>4 câu thinking</h3>
+  <ol>
+    <li>Code smell nào đang có và mỗi cái gây hại gì khi maintain?</li>
+    <li>Vi phạm nguyên tắc SOLID nào? Thêm feature thì vỡ ở đâu?</li>
+    <li>Refactor theo bước nào để KHÔNG đổi hành vi?</li>
+    <li>Khi nào dừng — abstraction tới đâu là đủ, đâu là over-engineering?</li>
+  </ol>
+</section>
+
+<section id="smells">
+  <h2>2. 7 code smell — red flags <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Smell</th><th>Dấu hiệu</th><th>Hại khi maintain</th></tr></thead>
+    <tbody>
+      <tr><td>Long Method</td><td>Method 100+ dòng, nhiều cấp if lồng</td><td>Không test được từng nhánh, khó đọc</td></tr>
+      <tr><td>Long Parameter List</td><td>7+ tham số</td><td>Dễ truyền nhầm thứ tự, khó mở rộng</td></tr>
+      <tr><td>Magic Number</td><td><code>* 0.05</code> không tên</td><td>Đổi VAT phải tìm khắp codebase</td></tr>
+      <tr><td>Mixed Concerns</td><td>1 method vừa validate vừa tính vừa ghi DB vừa gửi mail</td><td>Đổi 1 việc đụng cả 4, khó test riêng</td></tr>
+      <tr><td>Feature Envy</td><td>Method dùng dữ liệu của class khác nhiều hơn của chính nó</td><td>Logic đặt sai chỗ → sửa lan man</td></tr>
+      <tr><td>God Class</td><td>1 class 2000 dòng làm mọi thứ</td><td>Merge conflict liên tục, không ai dám đụng</td></tr>
+      <tr><td>Shotgun Surgery</td><td>1 thay đổi nghiệp vụ phải sửa 8 file</td><td>Dễ sót chỗ → bug</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="solid">
+  <h2>3. SOLID — WHY từng nguyên tắc <span class="k-tag core">CORE ★</span></h2>
+
+  <h3>S — Single Responsibility</h3>
+  <p><strong>WHY:</strong> một class chỉ nên có <em>một lý do để thay đổi</em>. <code>OrderPricingService</code> vừa tính giá vừa gửi email → bộ phận marketing đổi email làm vỡ logic tính tiền. Tách ra: pricing đổi vì rule giá, notifier đổi vì kênh gửi.</p>
+
+  <h3>O — Open/Closed</h3>
+  <p><strong>WHY:</strong> mở để <em>mở rộng</em>, đóng để <em>sửa đổi</em>. Thêm loại khuyến mãi mới không nên sửa <code>if/else</code> khổng lồ (rủi ro vỡ cái cũ) mà thêm một <code>DiscountStrategy</code> mới.</p>
+  <pre><code class="language-java">interface DiscountRule { BigDecimal apply(Order o); }
+// Thêm "BlackFridayRule" = thêm 1 class mới, KHÔNG sửa code cũ
+List&lt;DiscountRule&gt; rules;   // inject; pricing chỉ lặp qua rules</code></pre>
+
+  <h3>L — Liskov Substitution</h3>
+  <p><strong>WHY:</strong> subclass phải thay được superclass mà không phá kỳ vọng. Cổ điển: <code>Square extends Rectangle</code> ghi đè setter làm vỡ bất biến diện tích. Trong e-commerce: <code>FreeShippingOrder extends Order</code> mà ném exception ở <code>getShippingFee()</code> = vi phạm LSP.</p>
+
+  <h3>I — Interface Segregation</h3>
+  <p><strong>WHY:</strong> đừng ép client phụ thuộc method nó không dùng. Một interface <code>OrderRepository</code> 30 method khiến test phải mock cả 30. Tách thành interface nhỏ theo nhu cầu (read vs write).</p>
+
+  <h3>D — Dependency Inversion</h3>
+  <p><strong>WHY:</strong> module cấp cao không phụ thuộc cấp thấp, cả hai phụ thuộc <em>abstraction</em>. <code>PricingService</code> phụ thuộc interface <code>TaxProvider</code>, không phụ thuộc <code>VietnamVatApiClient</code> cụ thể → đổi nhà cung cấp/test dễ.</p>
+
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Đọc thuộc 5 chữ S-O-L-I-D và định nghĩa. <em>Symptom hiểu giả:</em> nhìn code không chỉ ra được nó vi phạm cái nào.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Cho một đoạn code, chỉ ra nguyên tắc bị vi phạm + hậu quả cụ thể khi thêm feature (vd "vi phạm OCP → mỗi khuyến mãi mới sửa if-else → vỡ cũ").</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Refactor có kiểm soát: viết test trước, tách theo SRP/OCP, và biết <em>dừng</em> đúng lúc — không abstract chỗ chỉ có 1 implementation. Cân nhắc ROI mỗi abstraction.</p>
+    </div>
+  </div>
+</section>
+
+<section id="refactor">
+  <h2>4. Refactoring techniques <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <ul>
+    <li><strong>Extract Method:</strong> tách một khối thành method có tên rõ → method gốc đọc như mục lục.</li>
+    <li><strong>Extract Class:</strong> nhóm field/method liên quan ra class riêng (tách God Class).</li>
+    <li><strong>Replace Magic Number with Constant:</strong> <code>0.08</code> → <code>VAT_RATE</code>.</li>
+    <li><strong>Replace Conditional with Polymorphism:</strong> <code>switch(type)</code> dài → mỗi nhánh thành một subclass/strategy.</li>
+    <li><strong>Introduce Parameter Object:</strong> 7 tham số → một <code>PricingRequest</code>.</li>
+  </ul>
+</section>
+
+<section id="tell-dont-ask">
+  <h2>5. Tell-Don't-Ask <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <div class="compare">
+    <div class="compare-col bad">
+      <h4>❌ Ask — lôi data ra ngoài xử lý</h4>
+      <pre><code class="language-java">if (order.getStatus() == PAID
+    &amp;&amp; order.getItems().size() &gt; 0) {
+    order.setStatus(SHIPPED);
+}</code></pre>
+    </div>
+    <div class="compare-col good">
+      <h4>✅ Tell — giao việc cho object giữ data</h4>
+      <pre><code class="language-java">order.markShipped();
+// invariant (đã PAID, có item) nằm TRONG Order
+// → không thể quên check ở nơi khác</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="walkthrough">
+  <h2>6. Refactor messy → clean (có test) <span class="k-tag core">CORE ★</span></h2>
+  <p>Quy trình an toàn cho method <code>calculateOrderTotal()</code> 200 dòng:</p>
+  <ol>
+    <li><strong>Phủ test trước</strong> — capture hành vi hiện tại (kể cả bug) bằng characterization test.</li>
+    <li><strong>Introduce Parameter Object</strong> — gom 7 tham số thành <code>PricingRequest</code>.</li>
+    <li><strong>Extract + Strategy</strong> — mỗi loại khuyến mãi thành <code>DiscountRule</code> (OCP).</li>
+    <li><strong>Extract Validation</strong> — tách validate ra <code>OrderValidator</code> (SRP).</li>
+    <li><strong>Tách side-effect</strong> — ghi DB và gửi email ra khỏi hàm tính (notification async).</li>
+    <li><strong>Orchestrator (Facade)</strong> — một service mỏng nối các phần; chạy lại test xanh sau mỗi bước.</li>
+  </ol>
+  <div class="callout success"><div class="ctitle">Nguyên tắc vàng</div><p>Mỗi bước nhỏ + chạy test ngay. Test xanh sau mỗi commit = bạn luôn có điểm quay lui. Đây là khác biệt giữa "refactor" (an toàn) và "rewrite" (rủi ro).</p></div>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ Khi SOLID phản tác dụng <span class="k-tag core">CORE ★</span></h2>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi nào KHÔNG áp dụng SOLID/abstraction</div>
+    <div class="bi-answer">
+      <p>Over-engineering hại không kém dưới-engineering:</p>
+      <ul>
+        <li><strong>Premature abstraction:</strong> tạo interface + factory cho cái chỉ có <em>một</em> implementation và chưa có dấu hiệu sẽ có cái thứ hai. Theo "rule of three": chờ đến lần thứ ba lặp lại mới abstract.</li>
+        <li><strong>SOLID over-engineering:</strong> một CRUD đơn giản mà có 6 lớp (controller → service → usecase → gateway → mapper → repository) cho một <code>findById</code> = đọc 6 file để hiểu 1 việc.</li>
+        <li><strong>Tách SRP quá mịn:</strong> mỗi class 5 dòng, 40 class cho một flow → "shotgun surgery" ngược: thêm 1 field phải đụng 6 class.</li>
+        <li><strong>DIP cho thứ không bao giờ đổi:</strong> abstract <code>java.time.Clock</code> thì hợp lý (test time), nhưng abstract <code>String</code> formatting thì thừa.</li>
+      </ul>
+      <p><em>Quy tắc:</em> abstraction phục vụ <strong>thay đổi đã thấy hoặc rất khả năng xảy ra</strong>. Không có trục thay đổi → YAGNI. Senior thể hiện ở chỗ biết <em>dừng</em>, kèm lý do.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>Premature abstraction</td><td>5 file cho 1 việc, khó đọc</td><td>Rule of three; abstract khi có trục đổi</td></tr>
+      <tr><td>Refactor không test</td><td>Đổi hành vi âm thầm → bug</td><td>Characterization test trước</td></tr>
+      <tr><td>God class</td><td>Merge conflict, không ai dám sửa</td><td>Extract class theo trách nhiệm</td></tr>
+      <tr><td>Feature envy</td><td>Logic đặt sai chỗ</td><td>Move method tới class giữ data</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+    <p><strong>Q:</strong> Cho đoạn code, chỉ ra vi phạm SOLID.</p>
+    <p class="a">Nói tên nguyên tắc + bằng chứng cụ thể: "method này thêm loại giảm giá phải sửa chuỗi if-else → vi phạm OCP", "class này vừa tính tiền vừa gửi mail → vi phạm SRP". Không nói chung "code xấu".</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Refactor method 200 dòng này từng bước.</p>
+    <p class="a">Test phủ trước → Parameter Object → Strategy cho discount (OCP) → tách validation (SRP) → tách side-effect → Facade orchestrator. Chạy test sau mỗi bước. Nhấn mạnh "không đổi hành vi".</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Khi nào KHÔNG nên áp dụng SOLID?</p>
+    <p class="a">Khi không có trục thay đổi (YAGNI), code đơn giản/throwaway, 1 implementation duy nhất, hoặc abstraction làm tăng chi phí đọc &gt; lợi ích. Rule of three. Senior cân bằng giữa flexibility và simplicity, không cargo-cult pattern.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — refactor có kiểm soát (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — OCP qua Strategy.</strong> Lấy một method tính khuyến mãi với <code>if(type=="PERCENT")...else if(type=="FIXED")...</code>. Viết characterization test phủ các nhánh. Refactor sang <code>DiscountRule</code> interface + các implementation, inject list. Thêm một rule mới mà KHÔNG sửa code cũ. Tiêu chí: chứng minh test cũ vẫn xanh và rule mới chỉ thêm file.</p>
+      <p><strong>Lab 2 — Nhận diện over-engineering.</strong> Lấy một đoạn code "SOLID quá đà" (interface + factory cho 1 implementation). Viết lại đơn giản hơn (xoá abstraction thừa) mà vẫn pass test. Tiêu chí: giải thích "rule of three" và vì sao bản đơn giản dễ đọc hơn ở quy mô hiện tại.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>SRP nói "một lý do để thay đổi" nghĩa là gì? Cho ví dụ một class vi phạm.</li>
+      <li>OCP: "mở để mở rộng, đóng để sửa đổi" — refactor if-else thành cái gì để đạt OCP?</li>
+      <li>Tại sao phải viết test TRƯỚC khi refactor? Khác gì với rewrite?</li>
+      <li>Cho 2 ví dụ over-engineering SOLID và vì sao chúng hại.</li>
+      <li>Tell-Don't-Ask là gì? Cho một cặp code Ask vs Tell.</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = bạn vừa biết áp dụng vừa biết khi nào dừng — đúng tầm senior.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="16-design-patterns.html">#16 Design Patterns</a> — Strategy/Factory để đạt OCP đúng cách.</li>
+    <li><a href="15-clean-architecture-ddd.html">#15 Clean Architecture</a> — SOLID ở mức kiến trúc.</li>
+    <li><a href="27-testing-strategy.html">#27 Testing</a> — characterization test cho refactor an toàn.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -40,6 +40,7 @@
     </div>
     <a href="#antipatterns">4. Anti-Patterns</a>
     <a href="#interview">5. Interview Framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
   </nav>
 </aside>
 
@@ -117,6 +118,25 @@
 <li>Làm sao biết service nào tốn 5s trong 1 API call 10s?</li>
 <li>Granularity đúng: 15 services (nanoservices) hay 4 bounded contexts?</li>
 </ol>
+
+<div class="roadmap">
+  <div class="roadmap-head">🗺️ Nếu chỉ có X giờ thì học gì</div>
+  <div class="roadmap-item core"><strong>1.5 giờ (CORE ★):</strong> Saga (compensating transaction thay 2PC), Circuit Breaker (fail-fast chống cascading), API Gateway. Đây là 3 thứ interview microservices hỏi gần như chắc chắn.</div>
+  <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Cascading failure timeline + cách chặn (3), Service Discovery, anti-pattern Distributed Monolith &amp; Shared Database.</div>
+  <div class="roadmap-item supp"><strong>+1.5 giờ (SUPPLEMENTARY):</strong> CQRS, Bulkhead, Retry với backoff+jitter, Sidecar/Service Mesh.</div>
+  <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> Orchestration (Camunda BPMN) vs Choreography sâu, distributed tracing setup, API versioning strategy.</div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Nhìn câu hỏi #3: TripService và PaymentService phải cùng success/fail. Trả lời ra giấy:</div>
+  <ol>
+    <li>Vì sao KHÔNG dùng 2PC (two-phase commit) ở đây? Nêu 2 lý do cụ thể (availability, coupling).</li>
+    <li>Saga thay thế bằng cái gì? Nếu PaymentService fail sau khi TripService đã tạo trip, "rollback" thực ra là làm gì?</li>
+    <li>Service A gọi B sync, B gọi C, C gọi D. A crash. Vì sao B, C, D cũng chết theo, và pattern nào chặn được? (gợi ý: cái gì cạn trước — thread hay memory?)</li>
+  </ol>
+  <div class="pause-hint">Đáp án: 2PC cần mọi node sống đồng thời + coordinator = giảm availability và tight coupling (mục Saga); Saga dùng compensating action (hoàn tiền/hủy trip) chứ không có rollback thật; cascading do thread pool của B cạn vì giữ kết nối chờ A (mục 3 + Circuit Breaker + Bulkhead).</div>
+</div>
 </section>
 
 <section id="patterns">
@@ -514,10 +534,39 @@ public void on(PaymentFailedEvent e) {
 <div class="callout why">
   <div class="ctitle">🎯 Khi nào chọn cái nào?</div>
   <ul style="margin:8px 0 0 20px">
-  <li><strong>Orchestration</strong>: workflow phức tạp 5+ steps, business rule "thực sự" có order rõ ràng (booking trip, loan approval), audit trail quan trọng (regulatory). Camunda BPMN giúp visual hóa.</li>
+  <li><strong>Orchestration</strong>: workflow phức tạp 5+ steps, business rule "thực sự" có order rõ ràng (booking trip, order fulfillment nhiều bước), audit trail quan trọng (compliance). Camunda BPMN giúp visual hóa.</li>
   <li><strong>Choreography</strong>: workflow đơn giản 2-3 steps, services autonomous, low coupling priority. Phù hợp event-driven architecture.</li>
   <li><strong>Hybrid</strong>: lớn thì hybrid OK — choreography cho main flow, orchestration cho complex sub-flow.</li>
   </ul>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Biết tên</h3>
+    <p>Biết "Saga thay 2PC cho distributed transaction". <em>Symptom hiểu giả:</em> vẽ được sơ đồ nhưng không nói được điều gì xảy ra khi step 3/5 fail, hoặc tin Saga cho ACID.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain được</h3>
+    <p>Giải thích mỗi local transaction publish event/command kế tiếp; khi một step fail thì chạy <strong>compensating transaction</strong> ngược chiều; Saga cho <em>eventual consistency</em> + atomicity nghiệp vụ, KHÔNG cho isolation → phải xử lý trạng thái trung gian (đã trừ kho nhưng chưa thu tiền).</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply được</h3>
+    <p>Chọn orchestration vs choreography theo độ phức tạp; thiết kế compensation idempotent (chạy 2 lần không sai); xử lý "compensation cũng fail" bằng retry + dead-letter + alert; chừa semantic lock cho dữ liệu trung gian. Chứng minh được vì sao không cần 2PC.</p>
+  </div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🛠️ Lab bắt buộc — build một Saga nhỏ (orchestration)</div>
+  <div class="be-deliverable">
+    <p><strong>Bài toán:</strong> đặt vé trip gồm 3 bước qua 3 service giả lập (in-memory, không cần hạ tầng thật): <code>reserveSeat()</code> → <code>chargePayment()</code> → <code>confirmTrip()</code>. Mỗi service có hàm forward và hàm compensate (<code>releaseSeat</code>, <code>refund</code>, <code>cancelTrip</code>).</p>
+    <ol>
+      <li>Viết một <code>SagaOrchestrator</code> chạy 3 bước tuần tự, lưu lại các bước đã hoàn thành.</li>
+      <li>Ép <code>chargePayment()</code> ném exception. Orchestrator phải gọi compensate cho các bước ĐÃ làm theo thứ tự ngược (chỉ <code>releaseSeat</code>), KHÔNG đụng bước chưa chạy.</li>
+      <li>Làm <code>refund()</code> idempotent: gọi 2 lần chỉ hoàn tiền 1 lần. Test bằng cách gọi compensate lặp.</li>
+      <li>Thêm trường hợp <code>refund()</code> fail lần đầu, thành công lần retry → log + không mất tiền.</li>
+    </ol>
+    <p><em>Tiêu chí đạt:</em> giải thích được "Saga không có rollback, chỉ có compensation", và vì sao mọi compensation phải idempotent.</p>
+  </div>
 </div>
 </section>
 
@@ -720,6 +769,20 @@ public void callDriverService() { /* ... */ }</code></pre>
 <section id="antipatterns">
 <h2>4. Anti-Patterns</h2>
 
+<div class="break-it">
+  <div class="bi-head">🔧 Counter-example — khi nào KHÔNG nên microservices</div>
+  <div class="bi-answer">
+    <p>Microservices không phải mặc định "kiến trúc tốt". Nó đánh đổi độ phức tạp vận hành lấy khả năng scale độc lập. Chọn microservices là <em>sai</em> khi:</p>
+    <ul>
+      <li><strong>Team nhỏ / sản phẩm sớm:</strong> 3-5 kỹ sư mà 15 service = mỗi người gánh nhiều repo, distributed bug, không ai hiểu toàn cảnh. Modular monolith (module rõ ràng trong 1 deploy) tốt hơn.</li>
+      <li><strong>Domain chưa ổn định:</strong> bounded context còn đổi liên tục → cắt service sai chỗ, sau phải gộp/tách lại rất đắt. Monolith cho phép đổi ranh giới gần như free.</li>
+      <li><strong>Transaction mạnh là cốt lõi:</strong> nghiệp vụ cần ACID xuyên nhiều thực thể liên tục → Saga + eventual consistency thêm hàng tá edge case so với một DB transaction.</li>
+      <li><strong>Chưa có nền tảng vận hành:</strong> không có CI/CD, observability, service discovery → microservices phơi bày mọi điểm yếu đó cùng lúc.</li>
+    </ul>
+    <p><em>Quy tắc:</em> "monolith first" — tách service khi có lý do cụ thể (một phần scale khác hẳn phần còn lại, team cần deploy độc lập), không phải vì microservices đang là trend.</p>
+  </div>
+</div>
+
 <h3>#1 Distributed Monolith</h3>
 <pre><code class="language-text">ServiceA → sync call → ServiceB → sync call → ServiceC → sync call → ServiceD
 Latency: 4 × network hop + 4 × timeout potential
@@ -788,7 +851,7 @@ restTemplate.exchange(driverUrl, GET, entity, DriverInfo.class);</code></pre>
 <div class="a">"Không có DB transaction span 3 services. 2 approach:<br><br>
 <strong>Orchestration (recommended for complex)</strong>: BookingOrchestrator coordinate steps (reserve driver → charge payment → create trip). Mỗi step có compensation (release driver, refund). Camunda BPMN cho visual workflow + state persistence (recover sau crash).<br><br>
 <strong>Choreography</strong>: TripService publish TripRequestedEvent. DriverService listen, reserve, emit DriverReservedEvent. PaymentService listen, charge, emit PaymentChargedEvent. TripService confirm. Nếu fail giữa chừng, emit compensation events.<br><br>
-Trade-off: Orchestration visible nhưng tight coupling với services. Choreography decoupled nhưng flow implicit, debug khó. Choice: orchestration cho 5+ steps complex workflow (banking, booking), choreography cho 2-3 steps đơn giản."</div>
+Trade-off: Orchestration visible nhưng tight coupling với services. Choreography decoupled nhưng flow implicit, debug khó. Choice: orchestration cho 5+ steps complex workflow (order fulfillment, booking trip), choreography cho 2-3 steps đơn giản."</div>
 
 <div class="q">Q: Cách prevent cascading failures khi A → B → C?</div>
 <div class="a">"<strong>Trinity</strong>: Timeout + Circuit Breaker + Bulkhead.<br><br>
@@ -809,6 +872,20 @@ Trade-off: Orchestration visible nhưng tight coupling với services. Choreogra
 <strong>4. Alerts (Alertmanager + PagerDuty)</strong>: rule như <em>"error rate &gt; 5% trong 5 min → page on-call"</em>, <em>"P99 latency &gt; 2s → warning"</em>. On-call nhận alert, mở Grafana dashboard → biết service nào, mở Jaeger trace → biết bottleneck. Mở Kibana logs → biết exception cụ thể.<br><br>
 <strong>End-to-end example</strong>: alert &quot;TripService error rate 8%&quot; → Grafana cho thấy spike từ 14:32 → Jaeger trace 14:32 cho thấy DriverService timeout 5s → Kibana log DriverService 14:32 cho thấy <code>SQLException: deadlock</code>. <strong>Root cause: DriverService DB deadlock</strong>. Total debug time: 5 phút thay vì hours.<br><br>
 <strong>Investment</strong>: setup tốn 2-4 tuần engineering. ROI: mỗi outage giảm từ hours xuống minutes, mỗi P1 incident saving thousand $ cost."</div>
+</div>
+</section>
+
+<section id="feynman">
+<div class="feynman">
+  <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+  <ol class="fy-prompt">
+    <li>Vì sao microservices KHÔNG dùng 2PC cho transaction xuyên service? Saga thay bằng gì?</li>
+    <li>Saga "không có rollback, chỉ có compensation" nghĩa là gì? Vì sao mọi compensation phải idempotent?</li>
+    <li>Mô tả một cascading failure từ đầu đến cuối: cái gì cạn trước, vì sao lan, và "trinity" Timeout+Circuit Breaker+Bulkhead chặn ở đâu.</li>
+    <li>Circuit Breaker có 3 trạng thái nào? Khi nào chuyển OPEN → HALF_OPEN → CLOSED?</li>
+    <li>Nêu 2 tình huống KHÔNG nên dùng microservices và lý do.</li>
+  </ol>
+  <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = sẵn sàng cho vòng phỏng vấn microservices.</div>
 </div>
 </section>
 

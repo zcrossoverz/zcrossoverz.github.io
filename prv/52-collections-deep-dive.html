@@ -1,561 +1,607 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#52 — Collections Deep Dive | Java Backend Interview Prep</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <link rel="stylesheet" href="assets/style.css">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#52 — Collections Deep Dive | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#52 Collections Deep Dive</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Nhóm N · Junior Foundation</span><span class="sep">›</span><span class="current">#52 Collections Deep Dive</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#how-to-read">Cách đọc file này</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
     <a href="#roadmap">🗺️ Roadmap</a>
-    <a href="#intro">Tổng quan</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. ArrayList internals</a>
-    <a href="#concept-1">3. HashMap collision</a>
-    <a href="#concept-2">4. TreeMap and ordering</a>
-    <a href="#concept-3">5. ConcurrentHashMap</a>
-    <a href="#antipatterns">Anti-patterns</a>
-    <a href="#edge-cases">Edge Cases</a>
-    <a href="#mastery-plan">Mastery Plan</a>
-    <a href="#practice-bank">Practice Bank</a>
-    <a href="#build-projects">Build Projects</a>
-    <a href="#drill-bank">Interview Drill Bank</a>
-    <a href="#self-test">Self-Test</a>
-    <a href="#interview">Interview Framework</a>
-    <a href="#feynman-end">Feynman Closing</a>
+    <a href="#real-problem">1. Sai collection = bug ẩn</a>
+    <a href="#list">2. List internals</a>
+    <a href="#map">3. Map internals</a>
+    <a href="#set">4. Set implementations</a>
+    <a href="#queue">5. Queue + PriorityQueue</a>
+    <a href="#jmh">6. JMH benchmark</a>
+    <a href="#antipatterns">7. 7 anti-patterns</a>
+    <a href="#decision">8. Decision tree</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 3 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
+    <a href="#memory">📋 Memory footprint reference</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
+
 <section class="hero">
-  <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#52 — Collections Deep Dive</h1>
-  <p class="lead">Collections Deep Dive đi từ API sang internals: array resize, hash collision, tree map, concurrent map và benchmark bằng evidence.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#47 Foundation, #1 Concurrency</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">Content streaming + e-commerce catalog</div></div>
+  <span class="meta-tag">#52 · Junior Foundation</span>
+  <h1>Collections Deep Dive — Internals + Production Choice</h1>
+  <p class="lead">Junior dùng <code>ArrayList</code> + <code>HashMap</code> cho mọi thứ. Khi data lên 1M+, latency tăng 100×, không biết tại sao. File này bóc internals (B-tree node, hash collision, treeify) + recipe chọn đúng collection cho từng access pattern.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + JMH benchmark</span>
+    <span class="phase-tag">Domain: E-commerce / SaaS</span>
   </div>
 </section>
 
-
-<div class="study-banner" id="how-to-read">
-  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
-  <div class="sb-rules">
-    <p>Junior rất dễ đọc trôi chảy rồi tưởng đã hiểu. Dùng file này theo luật học chủ động:</p>
-    <ol>
-      <li>Dừng ở mỗi block Pause &amp; Predict và tự trả lời trước khi xem phần giải.</li>
-      <li>Với mỗi Bad vs Good, tự nói vì sao code sai gây bug thật, không chỉ nói "code xấu".</li>
-      <li>Chạy lại ít nhất 2 ví dụ trên máy cá nhân, đổi input để phá happy path.</li>
-      <li>Sau mỗi section lớn, dùng Feynman: giải thích lại cho một bạn junior trong 90 giây.</li>
-      <li>Làm Build Exercise. Không làm bài tập thì kiến thức vẫn ở mức đọc hiểu, chưa thành kỹ năng.</li>
-    </ol>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <ul>
+    <li>Biết <code>HashMap O(1)</code> — nhưng không biết <strong>khi nào degrade thành O(log n)</strong> (Java 8+ treeify khi bucket &gt; 8)</li>
+    <li>Dùng <code>LinkedList</code> vì nghĩ "insert nhanh hơn ArrayList" — không biết LinkedList iterate cache-unfriendly, thường <strong>chậm hơn</strong> ArrayList trong thực tế</li>
+    <li>Biết <code>ConcurrentHashMap</code> thread-safe — không phân biệt với <code>Collections.synchronizedMap()</code> hay <code>HashMap</code> + lock external</li>
+    <li>Biết <code>equals/hashCode contract</code> — quên override khi dùng POJO làm Map key → bug silent (object "biến mất" khỏi Map)</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> dùng ArrayList + HashMap cho mọi case. Không nghĩ về complexity.<br>
+    <strong>L2 (Explain):</strong> chọn collection theo access pattern. Hiểu hash collision, load factor, treeify threshold. Implement equals/hashCode đúng.<br>
+    <strong>L3 (Apply):</strong> JMH benchmark trước decision. Tune initialCapacity + loadFactor. Biết khi nào ConcurrentHashMap, khi nào LongAdder, khi nào CopyOnWriteArrayList.</p>
   </div>
-</div>
-
+</section>
 
 <section id="roadmap">
-  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
-  <div class="roadmap">
-    <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> ArrayList internals — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> HashMap collision — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> TreeMap and ordering — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> ConcurrentHashMap — ADV: senior signal.</div></div>
-  </div>
-</section>
-
-<section id="intro">
-  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Collections Deep Dive là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
-  <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
-  <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Collections Deep Dive</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Collections Deep Dive xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
-  </div>
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: section 1, 2, 3, 7, 8 (bài toán + List + Map + anti-patterns + decision tree).</p>
+  <p>Nếu có <strong>1 tuần</strong>: full + JMH benchmark lab.</p>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Sai collection = bug ẩn</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>List internals (ArrayList, LinkedList)</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>3</td><td>Map internals (HashMap, TreeMap, LinkedHashMap, ConcurrentHashMap)</td><td><span class="phase-tag">CORE ★</span></td><td>40min</td></tr>
+      <tr><td>4</td><td>Set implementations</td><td>SUPPLEMENTARY</td><td>15min</td></tr>
+      <tr><td>5</td><td>Queue + PriorityQueue</td><td>SUPPLEMENTARY</td><td>15min</td></tr>
+      <tr><td>6</td><td>JMH benchmark</td><td>ADVANCED</td><td>30min</td></tr>
+      <tr><td>7</td><td>7 anti-patterns</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>8</td><td>Decision tree chọn collection</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Collections Deep Dive sai trong project Content streaming + e-commerce catalog <span class="k-tag core">CORE</span></h2>
-  <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
-  <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">List&lt;String&gt; ids = new LinkedList&lt;&gt;();
-if (ids.contains(id)) return;
-ids.add(id);</code></pre>
-  <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
+  <h2>1. Bài toán thực tế — Sai collection = bug performance ẩn <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #1 — "Service chậm dần sau 4 giờ"</div>
+    <p><strong>Bối cảnh:</strong> Recommendation service. Sau restart 4h, p99 latency từ 50ms → 800ms. Restart fix tạm. CPU + heap bình thường.</p>
+    <pre><code class="language-java">// Code junior viết
+private Map&lt;String, Product&gt; cache = new HashMap&lt;&gt;();
+
+public Product get(String customSku) {
+    return cache.get(customSku);
+}
+
+// Mỗi giờ, async job add 50K product mới vào cache</code></pre>
+    <p><strong>Root cause:</strong> <code>customSku</code> là object custom, hashCode trả về cùng giá trị cho 80% sku → mọi entry rơi vào 1 bucket → Java 8+ treeify thành Red-Black tree → lookup O(log n) thay vì O(1). Sau 200K entry, bucket có 160K node, lookup 17 step thay vì 1.</p>
+    <p><strong>Fix:</strong> Override <code>hashCode()</code> đúng — distribute đều theo các field. JFR profile show <code>HashMap.getNode</code> + <code>TreeNode.find</code> chiếm 60% CPU.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #2 — "LinkedList chậm hơn ArrayList trên 1M items"</div>
+    <p><strong>Bối cảnh:</strong> Junior chọn <code>LinkedList</code> để "insert nhanh". Benchmark: iterate 1M item sum total.</p>
+    <pre><code class="language-text">ArrayList:  18 ms
+LinkedList: 142 ms  ← chậm 8×!</code></pre>
+    <p><strong>Root cause:</strong> ArrayList = mảng liên tiếp trong memory → CPU cache prefetch hiệu quả. LinkedList = nodes scattered khắp heap → mỗi <code>node.next</code> = cache miss → fetch từ RAM (100× chậm hơn cache).</p>
+    <p><strong>Bài học:</strong> "Insert nhanh" chỉ đúng khi insert <strong>vào giữa</strong> với iterator đã ở đó. Hầu hết case backend không cần — ArrayList tốt hơn cho mọi access pattern khác.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Câu chuyện #3 — "Object 'biến mất' khỏi HashSet"</div>
+    <pre><code class="language-java">class Order {
+    private String id;
+    private OrderStatus status;
+    // equals + hashCode dùng cả id + status
+}
+
+Set&lt;Order&gt; orders = new HashSet&lt;&gt;();
+Order o = new Order("ORD_1", PENDING);
+orders.add(o);
+o.setStatus(PAID);            // ← mutate field dùng trong hashCode
+orders.contains(o);           // false! object "biến mất"</code></pre>
+    <p><strong>Root cause:</strong> hashCode thay đổi sau khi add → object nằm sai bucket → <code>contains</code> tìm bucket mới, không có.</p>
+    <p><strong>Rule:</strong> field dùng trong <code>hashCode()</code> phải <strong>immutable</strong>. Hoặc dùng chỉ <code>id</code> (không bao giờ đổi) làm key.</p>
+  </div>
+
   <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
-    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
-    <ol><li>Failure mode đầu tiên bạn nghĩ tới là gì?</li><li>Nếu data/input/traffic tăng 100 lần thì đoạn này còn ổn không?</li><li>Bạn sẽ test hoặc debug bằng cách nào để chứng minh?</li></ol>
-    <div class="pause-hint">Nếu trả lời còn mơ hồ, đọc kỹ phần concept và tự chạy lại ví dụ.</div>
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trả lời:</div>
+    <ol>
+      <li>Tình huống #1: tại sao Java 8 thêm treeify cho HashMap? Trade-off là gì?</li>
+      <li>Tình huống #2: thực tế khi nào LinkedList thắng ArrayList?</li>
+      <li>Tình huống #3: nếu phải dùng mutable object, alternative gì?</li>
+    </ol>
+    <div class="pause-hint">Đáp án ở Section 3 (Map internals) và Section 7 (anti-patterns).</div>
   </div>
 </section>
 
+<section id="list">
+  <h2>2. List Implementations — Internals <span class="phase-tag">CORE ★</span></h2>
 
-<section id="concept-0">
-  <h2>2. ArrayList internals <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Hiểu resize và random access.
-  </div>
-  <p>ArrayList dùng Object[] liên tục trong memory, get(i) O(1), add cuối amortized O(1).</p>
-  <p>Insert đầu/giữa phải shift phần tử nên O(n).</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Rất nhiều DTO/list processing dùng ArrayList.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Insert đầu liên tục</div>
-    <pre><code class="language-java">List&lt;Event&gt; events = new ArrayList&lt;&gt;();
-for (Event e : input) events.add(0, e);</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Dùng Deque hoặc reverse cuối</div>
-    <pre><code class="language-java">Deque&lt;Event&gt; events = new ArrayDeque&lt;&gt;();
-for (Event e : input) events.addFirst(e);</code></pre>
-  </div>
-</div>
+  <h3>2.1 ArrayList — Dynamic Array</h3>
+  <pre><code class="language-text">[A][B][C][D][_][_][_][_]    ← array, size=4, capacity=8
+                ^^^^^^^^^^      empty slots</code></pre>
+  <p><strong>Internals:</strong> mảng <code>Object[]</code>. Khi full → tạo array mới capacity × 1.5 → copy. <code>add()</code> amortized O(1), worst O(n) khi grow.</p>
+  <p><strong>Khi nào nhanh:</strong> random access <code>get(i)</code> O(1), iterate (cache-friendly), append cuối.</p>
+  <p><strong>Khi nào chậm:</strong> <code>add(0, x)</code> hoặc <code>remove(0)</code> = O(n) vì phải shift cả mảng.</p>
 
-  
+  <h3>2.2 LinkedList — Doubly Linked List</h3>
+  <pre><code class="language-text">[null|A|→] ⇄ [←|B|→] ⇄ [←|C|null]</code></pre>
+  <p><strong>Internals:</strong> mỗi node = 3 pointer (prev, next, value) = 24 byte overhead/element (so với 4 byte ArrayList).</p>
+  <p><strong>Khi nào nhanh:</strong> insert/remove ở giữa với iterator đã ở đó.</p>
+  <p><strong>Khi nào chậm:</strong> random access <code>get(i)</code> O(n) — phải traverse. Iterate cache-unfriendly.</p>
+
+  <div class="callout warn">
+    <div class="ctitle">❌ Khi nào KHÔNG dùng LinkedList</div>
+    <ul>
+      <li><strong>Dev không biết khi nào dùng</strong> — default ArrayList. 95% case ArrayList thắng.</li>
+      <li><strong>Cần FIFO queue</strong> — dùng <code>ArrayDeque</code> (mảng tròn) thay vì LinkedList. ArrayDeque nhanh hơn 2-5×.</li>
+      <li><strong>Memory-sensitive</strong> — 1M Long element: ArrayList ~12MB, LinkedList ~32MB.</li>
+    </ul>
+    <p><em>Joshua Bloch trong Effective Java:</em> <em>"Tôi đã viết LinkedList. Đừng dùng nó."</em></p>
+  </div>
+
+  <h3>2.3 CopyOnWriteArrayList — Thread-safe Snapshot</h3>
+  <p>Mỗi <code>add/remove</code> tạo array MỚI (copy toàn bộ). Đọc lock-free. Use case: <strong>read-heavy, write-rare</strong> (event listener, config).</p>
+  <p><strong>KHÔNG dùng</strong> cho write-heavy — copy 1M element/write sẽ chết.</p>
 </section>
 
+<section id="map">
+  <h2>3. Map Implementations — Internals <span class="phase-tag">CORE ★</span></h2>
 
-<section id="concept-1">
-  <h2>3. HashMap collision <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: O(1) average không phải phép màu.
-  </div>
-  <p>HashMap dùng hash để tìm bucket, collision cần equals để so sánh.</p>
-  <p>Java 8 có treeification khi bucket đủ lớn và table đủ capacity.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>HashMap là xương sống của rất nhiều code Java.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Key hashCode constant</div>
-    <pre><code class="language-java">public int hashCode() { return 1; }</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ hashCode theo immutable fields</div>
-    <pre><code class="language-java">public record ProductKey(String sellerId, String sku) {}</code></pre>
-  </div>
-</div>
+  <h3>3.1 HashMap — Hash Table với Treeify (Java 8+)</h3>
+  <pre><code class="language-text">Index 0: [K1|V1|→] [K9|V9|→null]    ← linked list (chain)
+Index 1: null
+Index 2: [K2|V2|→null]
+Index 3: TreeNode root → RB-tree    ← treeify khi bucket > 8
+Index 4: null
+...
+Index 15:[K8|V8|→null]</code></pre>
+  <p><strong>Internals:</strong></p>
+  <ul>
+    <li>Default capacity 16 buckets, load factor 0.75 → resize khi size &gt; 12</li>
+    <li>Resize = double capacity, rehash all entries — <strong>cực đắt</strong></li>
+    <li><strong>Treeify</strong> (Java 8+): khi bucket có &gt; 8 nodes + tổng size &gt; 64 → convert linked list → Red-Black tree. Lookup từ O(n) bucket → O(log n).</li>
+    <li><strong>Untreeify:</strong> khi bucket &lt; 6, convert ngược.</li>
+  </ul>
 
-  
+  <h3>3.2 Khi nào HashMap fail</h3>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 nguyên nhân HashMap chậm bất ngờ</div>
+    <ol>
+      <li><strong>Bad hashCode</strong>: trả cùng số cho nhiều key → tất cả vào 1 bucket. Treeify giảm xuống O(log n) nhưng vẫn chậm hơn O(1).</li>
+      <li><strong>Quá nhiều resize</strong>: không set initialCapacity. Add 1M entry = resize ~16 lần, rehash từng phần.</li>
+      <li><strong>Mutable key</strong>: object thay đổi hashCode sau khi put → "biến mất" khỏi map.</li>
+    </ol>
+  </div>
+
+  <h3>3.3 Pre-size HashMap — Production rule</h3>
+  <pre><code class="language-java">// ❌ Default 16, resize 16 lần khi đạt 1M
+Map&lt;String, Order&gt; cache = new HashMap&lt;&gt;();
+
+// ✅ Pre-size theo expected size / load factor
+Map&lt;String, Order&gt; cache = new HashMap&lt;&gt;(1_300_000);
+// Java tự round lên 2^n = 2097152, capacity 2M → không resize</code></pre>
+
+  <h3>3.4 TreeMap — Red-Black Tree</h3>
+  <p><strong>Internals:</strong> self-balancing BST. Mọi operation O(log n). Keys luôn sorted.</p>
+  <p><strong>Khi dùng:</strong> cần iterate theo thứ tự, range query (<code>subMap(from, to)</code>, <code>headMap</code>, <code>tailMap</code>), ceiling/floor key.</p>
+  <p><strong>Khi KHÔNG dùng:</strong> không cần ordering → HashMap nhanh hơn 5-10×.</p>
+
+  <h3>3.5 LinkedHashMap — Insertion Order</h3>
+  <p>HashMap + doubly linked list track thứ tự insert (hoặc access order). Iterate predictable. Use case: LRU cache, JSON output cần thứ tự field.</p>
+  <pre><code class="language-java">// LRU cache 100 entry
+Map&lt;K,V&gt; lru = new LinkedHashMap&lt;&gt;(16, 0.75f, true) {  // accessOrder=true
+    protected boolean removeEldestEntry(Map.Entry&lt;K,V&gt; e) {
+        return size() &gt; 100;
+    }
+};</code></pre>
+
+  <h3>3.6 ConcurrentHashMap — Production Thread-safe</h3>
+  <p>Java 8+ dùng <strong>CAS + node-level locking</strong>. KHÔNG còn segment lock như Java 7. Read gần như lock-free, write lock chỉ 1 bucket.</p>
+  <p><strong>API quan trọng:</strong></p>
+  <pre><code class="language-java">map.computeIfAbsent(key, k -&gt; loadFromDb(k));    // atomic, không double-load
+map.compute(key, (k, v) -&gt; v == null ? 1 : v + 1);  // atomic update
+map.merge(key, 1, Integer::sum);                    // atomic counter
+// KHÔNG dùng: get + check null + put → race condition</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ ConcurrentHashMap vs alternatives</div>
+    <table>
+      <thead><tr><th>Cần</th><th>Dùng</th></tr></thead>
+      <tbody>
+        <tr><td>Thread-safe map general</td><td>ConcurrentHashMap</td></tr>
+        <tr><td>Counter concurrent</td><td>ConcurrentHashMap + LongAdder (high contention) hoặc AtomicLong (low)</td></tr>
+        <tr><td>Wrap HashMap thuần</td><td><strong>KHÔNG</strong> dùng <code>Collections.synchronizedMap</code> — lock toàn map, kém ConcurrentHashMap 10×</td></tr>
+        <tr><td>Cache với eviction</td><td>Caffeine (built-in TTL, max size, async refresh)</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
-
-<section id="concept-2">
-  <h2>4. TreeMap and ordering <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Dùng khi cần sorted/range query.
-  </div>
-  <p>TreeMap backed by Red-Black tree, operations O(log n).</p>
-  <p>Comparator phải consistent với equals nếu không muốn behavior khó hiểu.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Range query như top products theo time/category cần sorted structure.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Comparator bỏ qua field identity</div>
-    <pre><code class="language-java">Comparator&lt;Product&gt; byNameLength = comparing(p -&gt; p.name().length());</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Comparator ổn định</div>
-    <pre><code class="language-java">Comparator&lt;Product&gt; c = comparing(Product::category).thenComparing(Product::id);</code></pre>
-  </div>
-</div>
-
-  
+<section id="set">
+  <h2>4. Set Implementations <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <table>
+    <thead><tr><th>Set</th><th>Backed by</th><th>Order</th><th>Operations</th></tr></thead>
+    <tbody>
+      <tr><td><code>HashSet</code></td><td>HashMap</td><td>None</td><td>O(1) add/remove/contains</td></tr>
+      <tr><td><code>LinkedHashSet</code></td><td>LinkedHashMap</td><td>Insertion</td><td>O(1), slower hơn HashSet ~10%</td></tr>
+      <tr><td><code>TreeSet</code></td><td>TreeMap</td><td>Sorted</td><td>O(log n) all</td></tr>
+      <tr><td><code>EnumSet</code></td><td>Bitmap</td><td>Enum order</td><td>O(1), cực nhanh + ít memory cho enum key</td></tr>
+      <tr><td><code>CopyOnWriteArraySet</code></td><td>CopyOnWriteArrayList</td><td>Insertion</td><td>Read O(1), write O(n) — read-heavy thread-safe</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Default:</strong> HashSet. Cần ordering: LinkedHashSet (insert) hoặc TreeSet (sorted). Enum key: EnumSet (nhanh hơn HashSet 5×).</p>
 </section>
 
+<section id="queue">
+  <h2>5. Queue + PriorityQueue <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <table>
+    <thead><tr><th>Queue</th><th>Type</th><th>Use case</th></tr></thead>
+    <tbody>
+      <tr><td><code>ArrayDeque</code></td><td>Circular array</td><td>FIFO/LIFO general — <strong>default queue</strong>, nhanh hơn LinkedList 2-5×</td></tr>
+      <tr><td><code>LinkedList</code></td><td>Linked list</td><td>Implement Queue nhưng <strong>không nên dùng</strong> — slow</td></tr>
+      <tr><td><code>PriorityQueue</code></td><td>Binary heap</td><td>Lấy min/max element, top-K problem</td></tr>
+      <tr><td><code>ArrayBlockingQueue</code></td><td>Bounded array + lock</td><td>Producer-consumer với fixed capacity</td></tr>
+      <tr><td><code>LinkedBlockingQueue</code></td><td>Linked + 2 lock</td><td>Producer-consumer unbounded</td></tr>
+      <tr><td><code>ConcurrentLinkedQueue</code></td><td>CAS lock-free</td><td>High-throughput non-blocking</td></tr>
+    </tbody>
+  </table>
 
-<section id="concept-3">
-  <h2>5. ConcurrentHashMap <span class="k-tag advanced">ADVANCED</span></h2>
-  <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Thread-safe map không phải synchronizedMap đơn giản.
+  <div class="callout info">
+    <div class="ctitle">💡 Top-K pattern với PriorityQueue</div>
+    <pre><code class="language-java">// Top 5 đơn hàng mới nhất từ stream 1M element
+// O(n log k) thay vì O(n log n) nếu sort all
+PriorityQueue&lt;Order&gt; heap = new PriorityQueue&lt;&gt;(
+    Comparator.comparing(Order::getCreatedAt));
+for (Order o : orders) {
+    heap.offer(o);
+    if (heap.size() &gt; 5) heap.poll();   // bỏ min, giữ 5 lớn nhất
+}</code></pre>
   </div>
-  <p>ConcurrentHashMap tối ưu concurrent read/write tốt hơn synchronizedMap trong nhiều workload.</p>
-  <p>Compound action vẫn cần atomic method như compute/putIfAbsent.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Cache/in-memory registry trong backend thường multi-thread.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Check-then-put race</div>
-    <pre><code class="language-java">if (!map.containsKey(k)) map.put(k, load(k));</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ computeIfAbsent atomic</div>
-    <pre><code class="language-java">Value v = map.computeIfAbsent(k, this::load);</code></pre>
-  </div>
-</div>
-
-  
 </section>
 
+<section id="jmh">
+  <h2>6. JMH Benchmark — Đo trước khi optimize <span class="phase-tag">ADVANCED</span></h2>
+  <p><strong>JMH</strong> (Java Microbenchmark Harness) = framework benchmark chuẩn của OpenJDK. Loại bỏ JIT warmup, dead code elimination, OS noise.</p>
+  <pre><code class="language-java">@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Benchmark)
+public class MapBenchmark {
+
+    @Param({"100", "10000", "1000000"})
+    private int size;
+
+    private HashMap&lt;Integer, String&gt; hashMap;
+    private TreeMap&lt;Integer, String&gt; treeMap;
+
+    @Setup
+    public void setup() {
+        hashMap = new HashMap&lt;&gt;(size);
+        treeMap = new TreeMap&lt;&gt;();
+        for (int i = 0; i &lt; size; i++) {
+            hashMap.put(i, "v" + i);
+            treeMap.put(i, "v" + i);
+        }
+    }
+
+    @Benchmark
+    public String hashMapGet() {
+        return hashMap.get(size / 2);
+    }
+
+    @Benchmark
+    public String treeMapGet() {
+        return treeMap.get(size / 2);
+    }
+}</code></pre>
+  <p><strong>Rule:</strong> KHÔNG bao giờ optimize collection mà không benchmark. <code>System.nanoTime()</code> manual = sai 90% case vì JIT, warmup, GC noise.</p>
+</section>
 
 <section id="antipatterns">
-  <h2>Anti-Patterns — Lỗi junior hay mắc <span class="k-tag core">CORE</span></h2>
-  <div class="table-wrap">
-    <table><thead><tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr></thead><tbody><tr><td>Chỉ học lệnh/API, không học mental model</td><td>High</td><td>Gặp case lạ là panic</td><td>Vẽ state/timeline trước khi gõ lệnh</td></tr>
-<tr><td>Không test edge case</td><td>High</td><td>Bug chỉ lộ ở production</td><td>Thêm test empty/null/large/concurrent</td></tr>
-<tr><td>Copy snippet không hiểu</td><td>Medium</td><td>Không debug được khi fail</td><td>Tự giải thích từng dòng</td></tr>
-<tr><td>Che lỗi bằng try/catch hoặc workaround</td><td>High</td><td>Root cause bị giấu</td><td>Fix mechanism, không chỉ symptom</td></tr>
-<tr><td>Không viết README/runbook</td><td>Medium</td><td>Người sau không vận hành được</td><td>Document workflow và rollback</td></tr></tbody></table>
+  <h2>7. 7 Anti-Patterns Phổ Biến <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #1 — Mutate field trong hashCode</div>
+    <p>Mutate field dùng trong hashCode → object lạc bucket → "biến mất". Field hashCode phải immutable, hoặc dùng id-only.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #2 — Quên override hashCode khi override equals</div>
+    <pre><code class="language-java">// equals đúng, hashCode mặc định (Object.hashCode) sai
+// → 2 object "equal" có hashCode khác → vào 2 bucket khác
+@Override public boolean equals(Object o) { ... }
+// quên @Override public int hashCode() { ... }</code></pre>
+    <p>Contract: <code>a.equals(b)</code> → <code>a.hashCode() == b.hashCode()</code>. Vi phạm = HashMap/HashSet fail silent.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #3 — ConcurrentModificationException khi remove during iterate</div>
+    <pre><code class="language-java">// ❌
+for (Order o : orders) {
+    if (o.isExpired()) orders.remove(o);  // CME!
+}
+
+// ✅ Iterator.remove() hoặc removeIf
+orders.removeIf(Order::isExpired);
+
+// ✅ Iterator explicit
+Iterator&lt;Order&gt; it = orders.iterator();
+while (it.hasNext()) {
+    if (it.next().isExpired()) it.remove();
+}</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #4 — Arrays.asList() return fixed-size</div>
+    <pre><code class="language-java">List&lt;String&gt; list = Arrays.asList("a", "b");
+list.add("c");   // UnsupportedOperationException!
+
+// ✅ Wrap thành ArrayList
+List&lt;String&gt; list = new ArrayList&lt;&gt;(Arrays.asList("a", "b"));</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #5 — Synchronized wrapper thay vì Concurrent</div>
+    <pre><code class="language-java">// ❌ Lock toàn map mỗi op
+Map&lt;K,V&gt; m = Collections.synchronizedMap(new HashMap&lt;&gt;());
+
+// ✅ Lock từng bucket
+Map&lt;K,V&gt; m = new ConcurrentHashMap&lt;&gt;();</code></pre>
+    <p>Benchmark: dưới contention, ConcurrentHashMap nhanh hơn 5-10×.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #6 — Boxing trong hot loop</div>
+    <pre><code class="language-java">// ❌ Auto-box Integer mỗi entry
+Map&lt;Integer, Integer&gt; counter = new HashMap&lt;&gt;();
+
+// ✅ Dùng IntIntHashMap (Eclipse Collections) hoặc int[] nếu key range hạn chế</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #7 — Default HashMap không pre-size</div>
+    <pre><code class="language-java">// ❌ Add 1M entry → resize 16 lần
+Map&lt;String, Order&gt; cache = new HashMap&lt;&gt;();
+orders.forEach(o -&gt; cache.put(o.getId(), o));
+
+// ✅ Pre-size
+Map&lt;String, Order&gt; cache = new HashMap&lt;&gt;(orders.size() * 4 / 3);</code></pre>
   </div>
 </section>
 
-<section id="edge-cases">
-  <h2>🎯 Edge Cases — Production Reality <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="edge-cases">
-    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
-    <p class="ec-intro">Happy path chưa đủ. Junior cần học cách hỏi: input lạ, data lớn, concurrency, security và vận hành thì sao?</p>
-    <ul class="ec-list"><li><strong>Race condition</strong>: Hai thao tác cùng chạy có thể ghi đè state; cần lock/atomic workflow khi phù hợp.</li>
-<li><strong>Scale limit</strong>: Dataset hoặc repo lớn làm thao tác vốn ổn ở local trở nên chậm.</li>
-<li><strong>Security</strong>: Không để lộ secret, token, PII trong log, command history hoặc commit.</li>
-<li><strong>Data integrity</strong>: Phải biết khi nào thao tác làm mất dữ liệu và cách rollback.</li>
-<li><strong>Time/timezone</strong>: Log, file timestamp, commit time và scheduler nên dùng UTC/ISO khi debug.</li>
-<li><strong>Concurrent access</strong>: Nhiều dev/process cùng chạm vào cùng resource cần quy ước rõ.</li>
-<li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
+<section id="decision">
+  <h2>8. Decision Tree — Chọn Collection <span class="phase-tag">CORE ★</span></h2>
+
+  <pre><code class="language-text">Cần Map (key-value)?
+├── Cần ordering theo key sorted? → TreeMap
+├── Cần insertion order / LRU? → LinkedHashMap
+├── Thread-safe? → ConcurrentHashMap
+├── Key là enum? → EnumMap (nhanh + ít memory)
+└── Default → HashMap (pre-size!)
+
+Cần Set (unique)?
+├── Sorted? → TreeSet
+├── Insertion order? → LinkedHashSet
+├── Thread-safe read-heavy? → CopyOnWriteArraySet
+├── Element là enum? → EnumSet
+└── Default → HashSet
+
+Cần List?
+├── Random access + iterate? → ArrayList (gần như luôn)
+├── FIFO/LIFO queue? → ArrayDeque
+├── Thread-safe read-heavy? → CopyOnWriteArrayList
+├── LinkedList? → gần như không bao giờ. Default ArrayList.
+
+Cần Queue?
+├── FIFO/LIFO general? → ArrayDeque
+├── Lấy min/max (top-K)? → PriorityQueue
+├── Producer-consumer fixed? → ArrayBlockingQueue
+├── Producer-consumer unbounded? → LinkedBlockingQueue
+└── High-throughput non-blocking? → ConcurrentLinkedQueue</code></pre>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Map choice + tuning</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Dùng <code>HashMap</code> cho mọi case. Không pre-size. Không hiểu hash collision.</p>
+      <p><em>Symptom:</em> service chậm dần sau hours, không biết nguyên nhân.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Phân biệt HashMap/TreeMap/LinkedHashMap/Concurrent. Pre-size khi biết expected size. Hiểu treeify, load factor. Implement equals/hashCode đúng.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>JMH benchmark trước decision. Tune initialCapacity + loadFactor cho production. Biết khi nào LongAdder vs AtomicLong vs ConcurrentHashMap counter. Dùng Caffeine cho cache.</p>
+    </div>
   </div>
-  <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Collections Deep Dive trong project thật</div>
-    <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
-    <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
+
+  <h3>equals / hashCode contract</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Biết phải override cả 2. Dùng IDE generate. Không hiểu contract sâu.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Hiểu contract: <code>a.equals(b)</code> → <code>a.hashCode() == b.hashCode()</code>. Field hashCode phải immutable. Dùng Java 17 record khi possible.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Design POJO làm cache key — immutable + hashCode pre-compute (cache hashCode trong constructor). Recipe debug "object biến mất khỏi HashSet" là phản xạ.</p></div>
   </div>
 </section>
 
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
 
-<section id="mastery-plan">
-  <h2>Mastery Plan — 14 ngày biến kiến thức thành phản xạ <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
-  <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Collections Deep Dive.</div>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "HashMap lookup chậm dần"</div>
+    <p><strong>Symptom:</strong> service cold start lookup 1ms. Sau vài giờ load 50ms. Heap OK, GC OK.</p>
+    <pre><code class="language-bash"># JFR profile show HashMap.getNode + TreeNode.find chiếm CPU
+# → Bad hashCode hoặc bucket distribution lệch
+
+# Check hashCode distribution
+jcmd PID GC.class_histogram | grep -i node
+# TreeNode count cao bất thường → bucket bị treeify
+
+# Fix: improve hashCode để distribute đều
+# Hoặc pre-size map đủ lớn để giảm collision rate</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "OutOfMemoryError nhưng heap không full"</div>
+    <p><strong>Symptom:</strong> OOM với <code>Requested array size exceeds VM limit</code>.</p>
+    <p><strong>Root cause:</strong> Resize HashMap/ArrayList rất lớn. Resize ArrayList 1B element = cần array size 1.5B (capacity × 1.5) — vượt <code>Integer.MAX_VALUE</code>.</p>
+    <p><strong>Fix:</strong> partition data thành multiple collection nhỏ, hoặc dùng external storage (DB, file).</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "ConcurrentModificationException trong production"</div>
+    <p><strong>Symptom:</strong> Stack trace <code>java.util.ConcurrentModificationException</code> từ ArrayList iterator.</p>
+    <p><strong>Debug:</strong></p>
     <ol>
-      <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
-      <li>Lúc đó bạn thiếu mental model nào?</li>
-      <li>Nếu gặp lại hôm nay, bạn sẽ debug nhanh hơn bằng bước nào?</li>
+      <li>Có thread khác modify list không? → đổi sang <code>CopyOnWriteArrayList</code> hoặc <code>synchronized</code> block</li>
+      <li>Cùng thread modify trong iterator? → dùng <code>removeIf</code> hoặc <code>Iterator.remove()</code></li>
+      <li>Có recursive call modify? → break thành 2 pass (collect, then remove)</li>
     </ol>
-    <div class="pause-hint">Nếu không nhớ lỗi thật, hãy tự tạo bug trong Build Exercise.</div>
-  </div>
-  <div class="table-wrap">
-    <table><thead><tr><th>Ngày</th><th>Việc làm</th><th>Evidence phải có</th><th>Rủi ro nếu bỏ qua</th></tr></thead><tbody><tr><td>Day 1</td><td>Đọc Roadmap + Intro, ghi lại 5 câu hỏi chưa chắc</td><td>Có note 5 câu hỏi</td><td>Đọc trôi nhưng không biết mình không biết gì</td></tr>
-<tr><td>Day 2</td><td>Chạy bad code và quan sát lỗi</td><td>Có output lỗi hoặc test fail</td><td>Chỉ đọc code, không thấy failure thật</td></tr>
-<tr><td>Day 3</td><td>Refactor bad code sang good code</td><td>Có commit before/after</td><td>Sửa theo cảm giác, không giữ behavior</td></tr>
-<tr><td>Day 4</td><td>Viết edge case tests</td><td>Ít nhất 5 test edge cases</td><td>Chỉ test happy path</td></tr>
-<tr><td>Day 5</td><td>Giải thích Feynman 5 phút</td><td>Có bản ghi âm/note</td><td>Nói được định nghĩa nhưng không có ví dụ</td></tr>
-<tr><td>Day 6</td><td>Đọc official docs liên quan</td><td>Ghi 3 điểm docs nói khác hiểu ban đầu</td><td>Tin AI/content tóm tắt tuyệt đối</td></tr>
-<tr><td>Day 7</td><td>Tự tạo một bug biến thể</td><td>Có test reproduce bug</td><td>Không biết cách phá code</td></tr>
-<tr><td>Day 8</td><td>Viết mini runbook/debug steps</td><td>Có checklist command/action</td><td>Gặp lỗi thật lại panic</td></tr>
-<tr><td>Day 9</td><td>Review code cũ của bản thân</td><td>Tìm ít nhất 3 anti-patterns</td><td>Không chuyển kiến thức vào code review</td></tr>
-<tr><td>Day 10</td><td>Pair với bạn khác hoặc tự role-play</td><td>Trả lời 5 drill questions</td><td>Không luyện nói nên interview lắp bắp</td></tr>
-<tr><td>Day 11</td><td>Tối ưu hoặc cleanup solution</td><td>Có reasoning trade-off</td><td>Refactor làm code phức tạp hơn</td></tr>
-<tr><td>Day 12</td><td>Chạy với input lớn/concurrent nếu phù hợp</td><td>Có số liệu hoặc observation</td><td>Không biết scale behavior</td></tr>
-<tr><td>Day 13</td><td>Viết README dạy lại topic</td><td>README 500-1000 từ</td><td>Kiến thức chỉ nằm trong đầu</td></tr>
-<tr><td>Day 14</td><td>Làm mock interview 20 phút</td><td>Có feedback list</td><td>Không biết lỗ hổng còn lại</td></tr></tbody></table>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Code Review Checklist cho topic này</h3>
-  <p>Dùng checklist này khi review PR của chính mình. Nó cố tình cụ thể để tránh câu “nhìn ổn”.</p>
-  <ol><li>Tên biến/method có nói đúng intent không?</li>
-<li>Input null/empty/invalid được xử lý rõ chưa?</li>
-<li>Data lớn có làm complexity đổi cấp không?</li>
-<li>Có shared mutable state không?</li>
-<li>Lỗi có bị swallow hoặc che mất stack trace không?</li>
-<li>Log có đủ context nhưng không lộ secret không?</li>
-<li>Có rollback/recovery path nếu thao tác fail giữa chừng không?</li>
-<li>Có test chứng minh edge case quan trọng không?</li>
-<li>Code có phụ thuộc implementation thay vì abstraction không cần thiết không?</li>
-<li>Có comment giải thích mechanism khó, không comment hiển nhiên không?</li>
-<li>Có source official nào confirm behavior không?</li>
-<li>Có cách reproduce bug nếu người khác hỏi không?</li>
-<li>Có trade-off được ghi trong README/PR description không?</li>
-<li>Có tránh domain-specific assumption quá hẹp không?</li>
-<li>Có thể dạy lại cho junior khác trong 10 phút không?</li></ol>
-
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không có evidence</div>
-    <pre><code class="language-text">I think this should work.\nNo test. No command output. No rollback note.</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Có evidence tối thiểu</div>
-    <pre><code class="language-text">Test: passes edge cases.\nCommand/output recorded.\nKnown trade-off documented.\nRollback/recovery step written.</code></pre>
-  </div>
-</div>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Junior → Middle calibration</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Level</th><th>Hiểu biết</th><th>Hành vi thấy được</th><th>Gap còn lại</th></tr></thead><tbody><tr><td>Beginner</td><td>Biết syntax/API</td><td>Code chạy với ví dụ mẫu</td><td>Không giải thích được failure mode</td></tr>
-<tr><td>Junior solid</td><td>Biết mental model</td><td>Chọn đúng pattern cho case thường</td><td>Còn chậm khi gặp edge case</td></tr>
-<tr><td>Middle-ready</td><td>Biết trade-off</td><td>Review được code người khác</td><td>Cần thêm production experience</td></tr>
-<tr><td>Mentor-ready</td><td>Dạy được người khác</td><td>Có runbook, exercises, checklist</td><td>Phải cập nhật theo tool/version mới</td></tr></tbody></table>
-  </div>
-
-  <div class="callout success">
-    <div class="ctitle">✅ Definition of done</div>
-    <p>Bạn hoàn thành topic này khi có thể: viết code đúng, phá code bằng edge case, sửa code, giải thích mechanism, và review code người khác mà không cần nhìn lại tài liệu.</p>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "GC pause cao bất thường khi dùng HashMap"</div>
+    <p><strong>Symptom:</strong> GC log show Full GC mỗi 30 phút, mỗi lần pause 5-10s. Heap dump show HashMap$Node chiếm 60% old gen.</p>
+    <p><strong>Root cause:</strong> Resize HashMap promote Node objects sang old gen → mỗi resize tạo wave Node mới → fragmentation old gen.</p>
+    <p><strong>Fix:</strong> Pre-size đủ lớn để chỉ resize 1 lần lúc init. Hoặc dùng Caffeine (off-heap option).</p>
   </div>
 </section>
 
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
 
-
-<section id="practice-bank">
-  <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Collections Deep Dive thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
-<tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
-<tr><td>3</td><td>Fix</td><td>Sửa bad code theo good pattern</td><td>Commit diff phải nhỏ và giải thích được.</td></tr>
-<tr><td>4</td><td>Break</td><td>Tạo input làm solution fail</td><td>Ít nhất một case null/empty hoặc concurrent nếu phù hợp.</td></tr>
-<tr><td>5</td><td>Scale</td><td>Tăng data size 100 lần</td><td>Ghi latency/memory hoặc mô tả behavior.</td></tr>
-<tr><td>6</td><td>Explain</td><td>Dạy lại cho một bạn mới</td><td>Bạn kia phải hỏi lại ít hơn 3 lần.</td></tr>
-<tr><td>7</td><td>Review</td><td>Tìm anti-pattern tương tự trong code cũ</td><td>Có link file/dòng hoặc snippet.</td></tr>
-<tr><td>8</td><td>Rewrite</td><td>Viết lại README cho người đi sau</td><td>Có command, expected output, rollback.</td></tr>
-<tr><td>9</td><td>Compare</td><td>So sánh 2 alternative</td><td>Nói được khi nào dùng A, khi nào dùng B.</td></tr>
-<tr><td>10</td><td>Verify</td><td>Mở official docs kiểm tra một statement</td><td>Ghi lại URL và câu bạn verify.</td></tr>
-<tr><td>11</td><td>Observe</td><td>Thêm log/test/metric nhỏ để nhìn thấy failure</td><td>Không làm lộ secret hoặc data nhạy cảm.</td></tr>
-<tr><td>12</td><td>Refactor</td><td>Giảm coupling hoặc tăng boundary</td><td>Behavior giữ nguyên qua test.</td></tr>
-<tr><td>13</td><td>Recover</td><td>Viết bước recovery khi lỡ làm sai</td><td>Có precheck trước khi chạy lệnh nguy hiểm.</td></tr>
-<tr><td>14</td><td>Pair</td><td>Nhờ người khác review lời giải</td><td>Ghi lại 3 feedback.</td></tr>
-<tr><td>15</td><td>Mock</td><td>Trả lời 5 câu drill không nhìn tài liệu</td><td>Mỗi câu dưới 2 phút, có ví dụ.</td></tr>
-<tr><td>16</td><td>Teach</td><td>Tạo 3 câu hỏi cho junior khác</td><td>Mỗi câu có expected answer.</td></tr>
-<tr><td>17</td><td>Document</td><td>Viết checklist PR cho topic này</td><td>Checklist dùng được ngay trong team.</td></tr>
-<tr><td>18</td><td>Automate</td><td>Tự động hóa một kiểm tra nhỏ</td><td>Script/test chạy lại được.</td></tr>
-<tr><td>19</td><td>Simplify</td><td>Xóa phần code/thao tác thừa</td><td>Giải thích vì sao đơn giản hơn vẫn đúng.</td></tr>
-<tr><td>20</td><td>Retrospective</td><td>Viết 5 dòng: mình hiểu sai gì ban đầu</td><td>Có lesson cụ thể.</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #1 — equals/hashCode contract (1h)</div>
+    <p>Cho class <code>Order(id, customerId, status, total)</code>:</p>
+    <ol>
+      <li>Implement equals + hashCode chỉ dùng <code>id</code></li>
+      <li>Test: put 2 Order cùng id khác status vào HashSet → size = 1</li>
+      <li>Test: thay đổi status → contains vẫn true</li>
+      <li>Bonus: dùng record thay vì class, so sánh code</li>
+    </ol>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Mistake Catalog — 12 lỗi phải tự bắt trước khi senior bắt</h3>
-  <p>Những lỗi này không riêng topic nào; chúng là pattern khiến junior mất thời gian mỗi tuần.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>Lỗi</th><th>Hậu quả</th><th>Thói quen thay thế</th></tr></thead><tbody><tr><td>Không đọc lỗi đầy đủ</td><td>Fix sai dòng đầu tiên nhìn thấy</td><td>Đọc từ root cause/first failing command</td></tr>
-<tr><td>Không ghi lại command đã chạy</td><td>Không reproduce được</td><td>Copy transcript vào note/README</td></tr>
-<tr><td>Không phân biệt symptom và root cause</td><td>Chữa tạm, lỗi quay lại</td><td>Viết hypothesis trước fix</td></tr>
-<tr><td>Không chạy test sau conflict/refactor</td><td>Merge xong mới vỡ</td><td>Run test liên quan trước push</td></tr>
-<tr><td>Dùng dữ liệu quá nhỏ</td><td>Không thấy performance issue</td><td>Tạo dataset đại diện hơn</td></tr>
-<tr><td>Không nghĩ đến người vận hành</td><td>Code khó debug</td><td>Thêm log/runbook/expected output</td></tr>
-<tr><td>Dựa vào IDE hoàn toàn</td><td>Ra server là bí</td><td>Biết command-line equivalent</td></tr>
-<tr><td>Không hỏi trade-off</td><td>Pattern bị dùng máy móc</td><td>Luôn có section khi nào không dùng</td></tr>
-<tr><td>Không kiểm security</td><td>Secret/PII lọt vào log/repo</td><td>Review data nhạy cảm trước commit/log</td></tr>
-<tr><td>Không rollback được</td><td>Sửa lỗi thành incident lớn</td><td>Chuẩn bị restore/revert path</td></tr>
-<tr><td>Không học từ lỗi cũ</td><td>Lặp lại lỗi</td><td>Biến incident thành checklist</td></tr>
-<tr><td>Không dạy lại</td><td>Hiểu mơ hồ</td><td>Feynman hoặc mentor note</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #2 — JMH benchmark (2h)</div>
+    <p>Benchmark 3 case:</p>
+    <ol>
+      <li>HashMap put 1M entry — với và không pre-size</li>
+      <li>ArrayList vs LinkedList iterate 1M element</li>
+      <li>ConcurrentHashMap vs <code>Collections.synchronizedMap</code> với 8 thread concurrent</li>
+    </ol>
+    <p><strong>Exit:</strong> đo được số liệu cụ thể (μs/op), giải thích sự khác biệt theo internals.</p>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Rubric tự chấm</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Trục</th><th>Câu hỏi</th><th>Evidence</th></tr></thead><tbody><tr><td>Correctness</td><td>Có đúng với input bình thường và edge case không?</td><td>Test pass, invariant rõ</td></tr>
-<tr><td>Clarity</td><td>Người khác đọc có hiểu intent không?</td><td>Tên tốt, README/runbook đủ</td></tr>
-<tr><td>Safety</td><td>Sai thì có làm mất dữ liệu/secret/code không?</td><td>Rollback, mask, backup, guard</td></tr>
-<tr><td>Scalability</td><td>Data lớn hoặc repo lớn có làm vỡ không?</td><td>Big-O/metric/workload đại diện</td></tr>
-<tr><td>Operability</td><td>Production/debug có đủ evidence không?</td><td>Log, command, trace, status</td></tr>
-<tr><td>Teachability</td><td>Bạn có dạy lại được không?</td><td>Feynman + exercise</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #3 — LRU cache với LinkedHashMap (1.5h)</div>
+    <p>Build LRU cache 1000 entry. Test:</p>
+    <ol>
+      <li>Put 1500 entry liên tiếp — chỉ giữ 1000 mới nhất</li>
+      <li>Get entry cũ → entry đó move lên top (không evict)</li>
+      <li>Thread-safe wrap nếu cần (cân nhắc Caffeine)</li>
+    </ol>
   </div>
-
-  <div class="callout why">
-    <div class="ctitle">🎯 Tại sao cần Practice Bank?</div>
-    <p>Junior hay học bằng cảm giác quen mắt. Practice Bank buộc bạn tạo evidence. Khi đi phỏng vấn hoặc review PR, evidence làm câu trả lời chắc hơn nhiều so với “em nghĩ vậy”.</p>
-  </div>
-</section>
-
-
-<section id="build-projects">
-  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Collections Deep Dive Kata (Beginner)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
-    <p>Requirements:</p>
-    <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Một junior khác làm theo được mà không cần hỏi thêm.</div>
-  </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #2 — Production Scenario Lab (Intermediate)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Mô phỏng một incident nhỏ và viết runbook xử lý.</div>
-    <p>Requirements:</p>
-    <ul><li>Có log/output trước và sau.</li><li>Có root cause.</li><li>Có rollback hoặc recovery step.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Bạn giải thích được failure timeline trong 3 phút.</div>
-  </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #3 — Mentor Pack (Advanced)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Chuẩn bị bài hướng dẫn 30 phút cho junior khác.</div>
-    <p>Requirements:</p>
-    <ul><li>5 misconceptions.</li><li>5 exercises.</li><li>Checklist review.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Người học làm đúng 80% bài tập sau buổi hướng dẫn.</div>
-  </div>
-
-</section>
-
-<section id="drill-bank">
-  <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
-  <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Collections Deep Dive quan trọng với junior backend?</h3>
-  <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
-  <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q2. Bạn debug khi không hiểu lỗi bắt đầu từ đâu thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Xác định state hiện tại, input, expected output, command/log gần nhất, rồi thu hẹp từng bước. Không sửa mù khi chưa có bằng chứng.</p>
-  <p><strong>Signal</strong>: Có method điều tra.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q3. Khi nào nên viết runbook?</h3>
-  <p><strong>Answer mẫu</strong>: Khi workflow có nhiều bước, có thể fail, hoặc người khác cần lặp lại an toàn. Runbook tốt có precheck, command, expected output và rollback.</p>
-  <p><strong>Signal</strong>: Có tư duy vận hành.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q4. Dấu hiệu bạn thật sự hiểu một foundation topic?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn giải thích được cơ chế, dự đoán edge case, viết test phá happy path và dạy lại người khác.</p>
-  <p><strong>Signal</strong>: Không chỉ thuộc syntax.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q5. Nếu code chạy đúng ở local, vì sao senior vẫn có thể reject?</h3>
-  <p><strong>Answer mẫu</strong>: Vì local happy path chỉ chứng minh một input nhỏ chạy được. Senior review failure mode: input bẩn, data lớn, concurrency, rollback, observability, security và maintainability.</p>
-  <p><strong>Signal</strong>: Bạn hiểu code review không phải bắt bẻ style.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q6. Một câu trả lời junior tốt khác gì câu trả lời thuộc lòng?</h3>
-  <p><strong>Answer mẫu</strong>: Nó có ví dụ cụ thể, trade-off, và nói được khi nào cách đó sai. Thuộc lòng thường chỉ có định nghĩa.</p>
-  <p><strong>Signal</strong>: Có thể tự tạo ví dụ mới.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Bạn sẽ viết checklist học topic này thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Chia thành concept, code example, edge case, exercise, Feynman explanation và source verification.</p>
-  <p><strong>Signal</strong>: Có cách học có thể lặp lại.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q8. Khi gặp output lạ, bước đầu tiên là gì?</h3>
-  <p><strong>Answer mẫu</strong>: Đóng băng hiện trạng: input, command, log, version, branch, environment. Sau đó thu hẹp bằng reproduction nhỏ.</p>
-  <p><strong>Signal</strong>: Không sửa mù.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Làm sao biết mình đã hiểu thật?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn có thể phá code, sửa code, giải thích mechanism, và dạy người khác tránh lỗi tương tự.</p>
-  <p><strong>Signal</strong>: Hiểu thật gắn với hành động.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q10. Nếu phải mentor junior khác, bạn bắt đầu từ đâu?</h3>
-  <p><strong>Answer mẫu</strong>: Bắt đầu từ lỗi thật họ vừa gặp, vẽ mental model, sửa một ví dụ nhỏ, rồi cho họ tự làm biến thể.</p>
-  <p><strong>Signal</strong>: Biết dạy bằng feedback loop.</p>
-
-</section>
-
-<section id="self-test">
-  <h2>Self-Test Scenarios <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đọc bối cảnh, tự viết đáp án, rồi mới xem gợi ý. Đây là phần chống đọc hiểu giả mạnh nhất.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Scenario 1 — Local pass, production fail</h3>
-  <p><strong>Bối cảnh</strong>: Feature chạy được trên máy cá nhân nhưng fail khi data lớn hoặc nhiều người dùng.</p>
-  <p><strong>Tự trả lời</strong>: Bạn cần thêm bằng chứng gì?</p>
-  <p><strong>Gợi ý</strong>: So sánh input, environment, concurrency, data size và logs.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Junior panic khi gặp lỗi lạ</h3>
-  <p><strong>Bối cảnh</strong>: Console có stack trace/command output dài.</p>
-  <p><strong>Tự trả lời</strong>: Bạn dạy bạn đó đọc từ đâu?</p>
-  <p><strong>Gợi ý</strong>: Tìm first cause, command gần nhất, state trước/sau, rồi reproduce nhỏ.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Review PR foundation</h3>
-  <p><strong>Bối cảnh</strong>: Code chạy nhưng thiếu guard/rollback/log.</p>
-  <p><strong>Tự trả lời</strong>: Comment thế nào để người viết học được?</p>
-  <p><strong>Gợi ý</strong>: Nêu failure mode cụ thể, hậu quả và hướng sửa nhỏ.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 4 — Code review bị hỏi &#x27;vì sao?&#x27;</h3>
-  <p><strong>Bối cảnh</strong>: Bạn chọn một cách implement nhưng chỉ trả lời được &#x27;em thấy người ta hay làm vậy&#x27;.</p>
-  <p><strong>Tự trả lời</strong>: Làm sao nâng câu trả lời?</p>
-  <p><strong>Gợi ý</strong>: Nói problem, constraint, trade-off, alternative và lý do chọn. Nếu chưa nói được, bạn mới copy pattern.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 5 — Unit test pass nhưng integration fail</h3>
-  <p><strong>Bối cảnh</strong>: Test nhỏ mock hết dependency, lên môi trường thật fail vì data/permission/path khác.</p>
-  <p><strong>Tự trả lời</strong>: Thiếu loại kiểm chứng nào?</p>
-  <p><strong>Gợi ý</strong>: Cần test gần reality hơn: integration, contract, command transcript, hoặc environment checklist.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bug chỉ xảy ra khi chạy song song</h3>
-  <p><strong>Bối cảnh</strong>: Hai request hoặc hai dev thao tác cùng resource làm state lệch.</p>
-  <p><strong>Tự trả lời</strong>: Bạn sẽ tìm race thế nào?</p>
-  <p><strong>Gợi ý</strong>: Tìm shared mutable state, check-then-act, non-atomic operation, lock/transaction boundary.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Log không đủ debug</h3>
-  <p><strong>Bối cảnh</strong>: Production chỉ có dòng &#x27;failed&#x27; mà không có id, input, stack trace.</p>
-  <p><strong>Tự trả lời</strong>: Log tối thiểu cần gì?</p>
-  <p><strong>Gợi ý</strong>: Event name, correlation id, business id, outcome, duration, exception cause, không chứa secret.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Tự viết runbook cho lỗi đã gặp</h3>
-  <p><strong>Bối cảnh</strong>: Bạn vừa được senior cứu một lỗi trong 5 phút.</p>
-  <p><strong>Tự trả lời</strong>: Biến nó thành tài sản học thế nào?</p>
-  <p><strong>Gợi ý</strong>: Ghi symptom, command, expected output, root cause, fix, rollback và prevention checklist.</p>
-
 </section>
 
 <section id="interview">
-  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Collections Deep Dive: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
-  <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
-  <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Tier 1 — Surface</h3>
+  <div class="tier-card t1">
+    <h3>Q: ArrayList vs LinkedList — chọn cái nào?</h3>
+    <p>Default ArrayList. ArrayList nhanh hơn cho random access (O(1) vs O(n)) và iterate (cache-friendly). LinkedList chỉ thắng khi insert/remove ở giữa với iterator đã ở đó — case hiếm trong backend. Joshua Bloch khuyên "đừng dùng LinkedList". Cần FIFO queue → ArrayDeque.</p>
+  </div>
+
+  <h3>Tier 2 — Deep Dive</h3>
+  <div class="tier-card t2">
+    <h3>Q: HashMap trong Java 8 khác Java 7 thế nào?</h3>
+    <p>Java 7: linked list trong bucket. Worst case O(n) khi nhiều collision. Java 8: <strong>treeify</strong> — khi bucket có &gt; 8 nodes và size &gt; 64, convert linked list → Red-Black tree. Worst case xuống O(log n). Untreeify khi bucket &lt; 6. Default capacity vẫn 16, load factor 0.75.</p>
+  </div>
+
+  <h3>Tier 3 — Architecture</h3>
+  <div class="tier-card t3">
+    <h3>Q: Design cache cho service 1M req/s, 100K key hot</h3>
+    <ol>
+      <li><strong>Don't use raw HashMap:</strong> không có eviction, OOM tiềm năng</li>
+      <li><strong>Caffeine</strong>: W-TinyLFU eviction, async refresh, max size + TTL, stat dashboard</li>
+      <li><strong>Pre-size</strong> ~1.3× max entries để tránh resize trong production</li>
+      <li><strong>Concurrent:</strong> Caffeine built-in thread-safe (CAS-based)</li>
+      <li><strong>Distributed?</strong> nếu cần share giữa instance → Redis layer 2, Caffeine layer 1 (multi-tier)</li>
+      <li><strong>Eval:</strong> hit rate dashboard, p99 latency, capacity plan growth</li>
+    </ol>
+  </div>
 </section>
 
-<section id="feynman-end">
-  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
-  <div class="feynman">
-    <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Collections Deep Dive cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
-    <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
-  </div>
-  <div class="verify-source">
-    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
-    <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html">Java List API</a></li>
-<li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/HashMap.html">HashMap API</a></li>
-<li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ConcurrentHashMap.html">ConcurrentHashMap API</a></li>
-<li><a href="https://github.com/openjdk/jmh">JMH</a></li></ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu</h2>
+  <ol>
+    <li><strong>Treeify trong HashMap Java 8 — khi nào trigger, lợi gì?</strong></li>
+    <li><strong>Tại sao mutate field dùng trong hashCode = bug?</strong></li>
+    <li><strong>ArrayList vs LinkedList: tại sao ArrayList iterate nhanh hơn dù cùng O(n)?</strong></li>
+    <li><strong>ConcurrentHashMap vs synchronizedMap — khác cơ chế lock?</strong></li>
+    <li><strong>Top-K với PriorityQueue: tại sao O(n log k) tốt hơn sort all O(n log n)?</strong></li>
+  </ol>
+  <div class="callout success"><strong>Pass:</strong> 5/5 trong &lt; 10 phút.</div>
+</section>
+
+<section id="memory">
+  <h2>📋 Memory Footprint Reference</h2>
+  <table>
+    <thead><tr><th>Cấu trúc</th><th>Overhead/element</th><th>1M Long ≈</th></tr></thead>
+    <tbody>
+      <tr><td>long[]</td><td>8 byte</td><td>~8 MB</td></tr>
+      <tr><td>ArrayList&lt;Long&gt;</td><td>~20 byte (boxing + ref)</td><td>~20 MB</td></tr>
+      <tr><td>LinkedList&lt;Long&gt;</td><td>~48 byte (node + ref + boxing)</td><td>~48 MB</td></tr>
+      <tr><td>HashMap entry</td><td>~48 byte (Node + ref + key + value)</td><td>~64 MB cho 1M (K,V)</td></tr>
+      <tr><td>TreeMap entry</td><td>~56 byte (Entry + 3 ref color)</td><td>~72 MB</td></tr>
+      <tr><td>ConcurrentHashMap entry</td><td>~56 byte</td><td>~72 MB</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Insight:</strong> ArrayList&lt;Long&gt; tốn 2.5× long[]. Khi cần performance + memory cho primitive, dùng <strong>Eclipse Collections</strong> hoặc <strong>HPPC</strong> (primitive-specific collections).</p>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="48-java-oop-foundation.html">#48 Java OOP Foundation</a></li>
+      <li><a href="01-java-concurrency.html">#1 Java Concurrency</a></li>
+      <li><a href="04-java-memory-model.html">#4 Java Memory Model</a></li>
+    </ol>
+    <p><strong>Khi sẵn sàng chuyển #48:</strong> 3 exercises xong + Feynman 5/5 + đã chạy JMH benchmark thật.</p>
   </div>
 </section>
 
-<footer>
-  <div>📁 #52 Collections Deep Dive · Junior Foundation</div>
-  <div>Tiếp theo: #53 next junior topic</div>
-</footer>
 </div>
 </main>
 </div>
@@ -563,9 +609,6 @@ for (Event e : input) events.addFirst(e);</code></pre>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

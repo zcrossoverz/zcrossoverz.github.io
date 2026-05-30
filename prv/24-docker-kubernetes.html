@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#24 — Docker &amp; Kubernetes (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm G · DevOps &amp; Infra</span>
+    <span class="sep">›</span>
+    <span class="current">#24 Docker &amp; Kubernetes</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: CrashLoopBackOff</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#container-vm">2.1 Container vs VM</a>
+      <a href="#pod">2.2 Pod — đơn vị nhỏ nhất</a>
+      <a href="#deploy">2.3 Deployment → ReplicaSet → Pod</a>
+      <a href="#service">2.4 Service — entry point ổn định</a>
+      <a href="#config-secret">2.5 ConfigMap vs Secret</a>
+      <a href="#req-limit">2.6 Requests vs Limits + QoS</a>
+      <a href="#probes">2.7 Liveness / Readiness / Startup</a>
+      <a href="#rollout">2.8 Rolling update + zero-downtime</a>
+      <a href="#hpa">2.9 HPA — autoscale</a>
+      <div class="toc-section">Production code</div>
+      <a href="#dockerfile">3.1 Dockerfile multi-stage</a>
+      <a href="#manifest">3.2 Deployment manifest đầy đủ</a>
+      <a href="#svc-cm-secret">3.3 Service · ConfigMap · Secret</a>
+      <a href="#hpa-pdb">3.4 HPA · PodDisruptionBudget</a>
+      <a href="#netpol">3.5 NetworkPolicy</a>
+      <a href="#quota">3.6 ResourceQuota · LimitRange · QoS</a>
+      <a href="#debug">3.7 Troubleshooting cheat-sheet</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">4. Anti-patterns + decision</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">5. 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm G · DevOps &amp; Infra · File chống hiểu giả</div>
+  <h1>Docker &amp; Kubernetes — Container, Probe, Resource, Zero-Downtime</h1>
+  <p class="lead">
+    K8s là chủ đề ai cũng "biết" — gõ <code>kubectl apply</code> được, vẽ được Pod/Service. Nhưng probe lên thật: "liveness probe check DB connection thì điều gì xảy ra khi DB chậm?", "requests khác limits chỗ nào và cái nào gây OOMKilled?", "maxUnavailable=0 mà vẫn downtime 30s thì thiếu gì?" — là lộ hiểu giả. File này dạy cả <strong>cơ chế</strong> (scheduler, QoS, rolling update) lẫn <strong>vận hành thật</strong> (đọc CrashLoopBackOff, OOMKilled, endpoints trống), với manifest production đầy đủ, trên domain <strong>ShopFlow</strong> — checkout service của một sàn e-commerce.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Viết Dockerfile + manifest production, hiểu probe/QoS, deploy zero-downtime</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #6 Spring Boot, #22 Resilience</div>
+    <div><strong>📚 Prereq</strong><br>Linux cơ bản · HTTP health check · Spring Boot Actuator</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 Cao — gần như mọi backend production chạy trên K8s</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy phổ biến</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Liveness và readiness gần giống nhau, đều check sức khoẻ app, để cả hai cùng gọi <code>/health</code> là xong."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Hai probe gây <em>hậu quả ngược nhau</em> khi fail — liveness fail → <strong>kill + restart pod</strong>; readiness fail → <strong>rút pod khỏi Service</strong> (không restart). Để liveness check DB → DB chậm → pod khoẻ bị giết hàng loạt → mất luôn cả nhóm.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Secret an toàn hơn ConfigMap vì nó được mã hoá."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Secret mặc định chỉ <strong>base64</strong> (obfuscation), KHÔNG mã hoá at-rest trong etcd. Ai đọc được etcd hoặc có quyền <code>get secret</code> là thấy plaintext. Mã hoá thật cần KMS / EncryptionConfiguration.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Đặt <code>maxUnavailable: 0</code> là chắc chắn zero-downtime."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Rolling update chỉ đảm bảo <em>có pod READY</em>, không đảm bảo pod cũ <em>drain sạch request đang chạy</em>. Thiếu graceful shutdown (xử lý SIGTERM + <code>terminationGracePeriodSeconds</code> + preStop) thì request in-flight vẫn bị cắt → vẫn lỗi lúc deploy.</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1.5 giờ (CORE ★):</strong> Probe liveness/readiness/startup (2.7), Requests vs Limits + QoS + OOMKilled (2.6), Pod→Deployment→Service (2.2–2.4). Đây là 3 thứ phỏng vấn K8s hỏi gần như chắc chắn và là gốc của mọi sự cố production.</div>
+    <div class="roadmap-item core"><strong>+1.5 giờ (CORE ★):</strong> Rolling update + graceful shutdown (2.8), Dockerfile multi-stage + non-root (3.1), Deployment manifest đầy đủ (3.2), đọc lỗi CrashLoopBackOff/OOMKilled (3.7).</div>
+    <div class="roadmap-item supp"><strong>+1.5 giờ (SUPPLEMENTARY):</strong> ConfigMap vs Secret (2.5), HPA + PDB (2.9, 3.4), QoS classes (3.6).</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> NetworkPolicy micro-segmentation (3.5), ResourceQuota/LimitRange (3.6), affinity/anti-affinity, init containers, Helm multi-env.</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — checkout service crash lúc flash sale <span class="k-tag core">CORE ★</span></h2>
+  <p>ShopFlow là sàn e-commerce. Dịch vụ <code>checkout-api</code> thỉnh thoảng crash vài giờ một lần. K8s dashboard cho thấy pod <code>CrashLoopBackOff</code>; memory leo dần tới khi OOM killer giết container. Mỗi lần deploy mất đúng 30 giây downtime. Tệ hơn: feature bật ở staging nhưng tắt ở production vì config lệch nhau.</p>
+
+  <div class="log-card">
+    <span class="ts">14:02:11</span> <span class="lvl-warn">WARN</span> <span class="msg">checkout-api-7c9 Liveness probe failed: Get "http://10.1.4.7:8080/health": context deadline exceeded (DB query 3s &gt; probe timeout 2s)</span><br>
+    <span class="ts">14:02:11</span> <span class="lvl-error">ERROR</span> <span class="msg">kubelet Container checkout-api failed liveness probe, will be restarted</span><br>
+    <span class="ts">14:03:40</span> <span class="lvl-error">ERROR</span> <span class="msg">checkout-api-7c9 Last State: Terminated · Reason: OOMKilled · Exit Code: 137</span><br>
+    <span class="ts">14:03:41</span> <span class="lvl-warn">WARN</span> <span class="msg">Back-off restarting failed container checkout-api → CrashLoopBackOff</span>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Nhìn log trên, viết ra giấy:</div>
+    <ol>
+      <li>Có <strong>hai</strong> nguyên nhân crash khác hẳn nhau trong log. Tách chúng ra: cái nào do <em>probe</em>, cái nào do <em>resource</em>? Dấu hiệu phân biệt?</li>
+      <li>Vì sao để liveness probe gọi xuống DB lại biến "DB chậm" thành "pod bị giết"? Sửa bằng probe nào?</li>
+      <li><code>exit 137</code> nghĩa là gì? Tăng <code>limit</code> memory có chắc hết OOMKilled không, hay cần làm gì khác trước?</li>
+    </ol>
+    <div class="pause-hint">Đáp án rải ở 2.6 (OOMKilled = SIGKILL khi vượt memory limit; 137 = 128+9 = SIGKILL), 2.7 (liveness chỉ check nội bộ, readiness mới check DB). Đừng đọc tiếp khi chưa tách được 2 nguyên nhân.</div>
+  </div>
+
+  <h3>5 câu Senior phải trả lời</h3>
+  <ol>
+    <li>Vì sao pod vào CrashLoopBackOff? Phân biệt app crash vs resource starvation thế nào?</li>
+    <li>Liveness vs readiness khác gì? Vì sao check DB trong liveness gây thêm crash?</li>
+    <li>Requests vs limits cấu hình ra sao để tránh OOM mà không lãng phí hạ tầng?</li>
+    <li>Vì sao config lệch giữa môi trường? Có nên để mật khẩu DB trong ConfigMap không?</li>
+    <li>Chiến lược zero-downtime deploy là gì? Làm sao 30s downtime → 0?</li>
+  </ol>
+</section>
+
+<section id="container-vm">
+  <h2>2.1 Container vs Virtual Machine <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p><strong>WHY trước WHAT:</strong> vấn đề gốc là "code chạy trên máy tôi nhưng fail trên server" (lệch dependency, OS, config). VM giải bằng cách đóng gói cả OS trong hypervisor — nặng, chậm khởi động. Container giải nhẹ hơn: là một <em>process bị cô lập</em> qua Linux namespace + cgroup, đóng gói filesystem theo lớp (Union FS), và <strong>dùng chung kernel</strong> với host.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>Container</th><th>Virtual Machine</th></tr></thead>
+    <tbody>
+      <tr><td>Cô lập</td><td>Process + namespace (pid/net/mount) + cgroup, chung kernel host</td><td>OS đầy đủ (guest kernel) trong hypervisor</td></tr>
+      <tr><td>Khởi động</td><td>~mili-giây đến giây</td><td>chục giây đến phút</td></tr>
+      <tr><td>Memory overhead</td><td>~1/10 VM (không nhân bản OS)</td><td>nặng (mỗi VM một OS)</td></tr>
+      <tr><td>Filesystem</td><td>Union FS theo lớp — layer dependency cache được</td><td>Disk image đầy đủ</td></tr>
+      <tr><td>Mức cô lập bảo mật</td><td>Yếu hơn — kernel bug/container-escape ảnh hưởng host + container khác</td><td>Mạnh hơn (ranh giới hypervisor)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout info"><div class="ctitle">Điểm dễ quên</div><p>Container chia sẻ kernel nghĩa là một lỗ hổng kernel hoặc container-escape có thể ảnh hưởng host và mọi container khác. Đó là lý do <strong>không chạy bằng root</strong> trong container (xem 3.1) và dùng <code>securityContext</code>.</p></div>
+</section>
+
+<section id="pod">
+  <h2>2.2 Pod — đơn vị deploy nhỏ nhất <span class="k-tag core">CORE ★</span></h2>
+  <p>Pod = 1 hoặc nhiều container + <strong>chung network namespace</strong> (mọi container trong pod nói chuyện qua <code>localhost</code>) + <strong>chung volume</strong>. Nhiều container một pod = <em>sidecar pattern</em>: ví dụ app container + log-shipper sidecar, hoặc app + service-mesh proxy. Pod là phù du (ephemeral) — bị xoá/tạo lại liên tục, IP đổi mỗi lần.</p>
+  <pre><code class="language-text">Pod "checkout-api-7c9"
+ ├─ container: checkout-api   (8080)  ┐ chung localhost
+ ├─ container: log-sidecar             ┘ chung volume /var/log
+ └─ shared: network namespace + emptyDir volume</code></pre>
+</section>
+
+<section id="deploy">
+  <h2>2.3 Deployment → ReplicaSet → Pod <span class="k-tag core">CORE ★</span></h2>
+  <p>Bạn không tạo Pod trực tiếp trong production. <strong>Deployment</strong> khai báo trạng thái mong muốn (image, số replica) → tạo <strong>ReplicaSet</strong> giữ đúng N replica sống → ReplicaSet tạo <strong>Pod</strong>. Khi đổi image, Deployment tạo ReplicaSet mới, chuyển dần traffic từ cũ sang mới (rolling update).</p>
+  <pre><code class="language-text">Deployment (desired: image v1.2.3, replicas=3)
+   └─ ReplicaSet v1.2.3 (đảm bảo luôn có 3 Pod)
+        └─ Pod  Pod  Pod   (container đang chạy thật)
+Update image → Deployment tạo ReplicaSet v1.2.4, scale down v1.2.3 dần</code></pre>
+</section>
+
+<section id="service">
+  <h2>2.4 Service — entry point ổn định <span class="k-tag core">CORE ★</span></h2>
+  <p>Vì Pod phù du (restart → đổi IP), không thể gọi thẳng Pod IP. <strong>Service</strong> cho một địa chỉ DNS + IP ổn định, route tới Pod theo <em>label selector</em> (không phải IP), và tự cập nhật danh sách <em>endpoints</em> khi pod lên/xuống.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Loại Service</th><th>Phạm vi</th><th>Cơ chế</th><th>Dùng khi</th></tr></thead>
+    <tbody>
+      <tr><td>ClusterIP</td><td>Trong cluster</td><td>DNS nội bộ, IP ảo</td><td>service gọi service bên trong (mặc định)</td></tr>
+      <tr><td>NodePort</td><td>Mọi node</td><td>Mở port tĩnh (30000–32767) trên mỗi node</td><td>expose ra ngoài đơn giản / dev</td></tr>
+      <tr><td>LoadBalancer</td><td>Bên ngoài</td><td>Cloud provider tạo LB thật</td><td>public endpoint production</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Bạn deploy 3 pod checkout-api. Một pod restart và đổi IP từ 10.1.2.3 sang 10.1.2.9.</div>
+    <ol>
+      <li>Nếu service khác đang hardcode <code>http://10.1.2.3:8080</code>, điều gì xảy ra? ClusterIP sửa vấn đề này thế nào?</li>
+      <li>Service biết route tới pod nào bằng cơ chế gì (không phải IP)?</li>
+      <li>Nếu <code>kubectl get endpoints</code> trả về <em>rỗng</em> dù pod đang chạy, nguyên nhân thường gặp là gì?</li>
+    </ol>
+    <div class="pause-hint">Pod IP phù du → hardcode = vỡ khi restart. Service route theo <em>label selector</em> khớp Pod label. Endpoints rỗng thường do <strong>readiness probe fail</strong> → pod chưa Ready → bị loại khỏi endpoints (xem 2.7, 3.7).</div>
+  </div>
+</section>
+
+<section id="config-secret">
+  <h2>2.5 ConfigMap vs Secret <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <ul>
+    <li><strong>ConfigMap:</strong> cấu hình không nhạy cảm (profile active, feature flag, TTL cache, log level). Plaintext. Mount thành file hoặc inject env. Đây là lý do "config lệch môi trường" ở phần 1 — mỗi môi trường một ConfigMap.</li>
+    <li><strong>Secret:</strong> credential, token, key. Base64 — <em>obfuscation chứ không phải mã hoá</em>; không encrypt at-rest mặc định. Cũng mount file/env.</li>
+  </ul>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi nào KHÔNG nên dùng Secret kiểu mặc định</div>
+    <div class="bi-answer">
+      <p>Đừng coi Secret mặc định là "đã an toàn":</p>
+      <ul>
+        <li><strong>Compliance / dữ liệu thật:</strong> Secret base64 nằm plaintext trong etcd. Production cần EncryptionConfiguration (encrypt etcd) hoặc external secret manager (Vault, cloud KMS, External Secrets Operator).</li>
+        <li><strong>Mật khẩu DB / API key trong ConfigMap:</strong> không bao giờ — quyền đọc ConfigMap thường rộng hơn Secret, lộ ngay.</li>
+        <li><strong>Secret commit vào Git:</strong> kể cả "đã base64" vẫn là plaintext. Dùng SealedSecrets / SOPS để commit an toàn.</li>
+      </ul>
+      <p><em>Quy tắc:</em> ConfigMap cho cái lộ ra không sao; Secret cho cái lộ ra là sự cố — và Secret mặc định vẫn cần thêm một lớp mã hoá thật.</p>
+    </div>
+  </div>
+</section>
+
+<section id="req-limit">
+  <h2>2.6 Requests vs Limits + QoS <span class="k-tag core">CORE ★</span></h2>
+  <p><strong>Request</strong> = mức tối thiểu được <em>đảm bảo</em>; scheduler dùng request để xếp pod lên node (đảm bảo node còn đủ chỗ). Không set request → pod dễ bị evict khi node quá tải. <strong>Limit</strong> = trần cứng:</p>
+  <ul>
+    <li>Vượt <strong>memory</strong> limit → container bị <strong>OOMKilled</strong> (SIGKILL, exit 137). Không "throttle" được memory.</li>
+    <li>Vượt <strong>CPU</strong> limit → bị <strong>throttle</strong> (chạy chậm lại), KHÔNG bị giết.</li>
+  </ul>
+
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Biết "requests và limits là cấu hình tài nguyên". <em>Symptom hiểu giả:</em> đặt request = limit = số đại khái, không lý giải được vì sao pod bị OOMKilled hay Evicted, hay vì sao JVM heap không tôn trọng limit.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Phân biệt: vượt <strong>memory</strong> limit → kill (137); vượt <strong>CPU</strong> limit → throttle. Hiểu QoS class quyết định thứ tự bị evict khi node thiếu tài nguyên. Hiểu JVM cần <code>-XX:+UseContainerSupport -XX:MaxRAMPercentage</code> để nhìn đúng limit thay vì RAM của cả node.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Chọn request theo P95 thực đo, limit theo P99.5; đặt service quan trọng (checkout/order/inventory) ở Guaranteed QoS; gắn LimitRange để pod quên set vẫn có default; chẩn đoán "OOMKilled" = sửa leak hoặc tăng limit; "Evicted" = QoS thấp + node thiếu RAM → nâng QoS/right-size.</p>
+    </div>
+  </div>
+
+  <pre><code class="language-text">QoS class (ảnh hưởng thứ tự evict khi node hết tài nguyên):
+1. Guaranteed : requests == limits cho CẢ cpu và memory  → evict CUỐI CÙNG → checkout/order/inventory
+2. Burstable  : requests < limits (hoặc chỉ 1 trong 2)     → evict trước Guaranteed → reporting/notification
+3. BestEffort : KHÔNG set requests/limits                  → evict ĐẦU TIÊN → KHÔNG dùng cho service quan trọng</code></pre>
+</section>
+
+<section id="probes">
+  <h2>2.7 Liveness / Readiness / Startup probe <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Probe</th><th>Câu hỏi</th><th>Fail → hậu quả</th><th>Có nên check DB/downstream?</th></tr></thead>
+    <tbody>
+      <tr><td>Liveness</td><td>Container còn sống?</td><td><strong>Kill + restart</strong> container</td><td>❌ KHÔNG — DB chậm → giết oan pod khoẻ</td></tr>
+      <tr><td>Readiness</td><td>Nhận traffic được chưa?</td><td>Rút khỏi Service endpoints (KHÔNG restart)</td><td>✅ Nên — chỗ đúng để check downstream sẵn sàng</td></tr>
+      <tr><td>Startup</td><td>App khởi động xong chưa?</td><td>Hoãn liveness/readiness tới khi xong</td><td>App khởi động chậm (JVM nặng) dùng cái này để liveness không giết sớm</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout warn"><div class="ctitle">Anti-pattern kinh điển + symptom</div><p><strong>Triệu chứng:</strong> log <code>Liveness probe failed</code> đồng loạt nhiều pod đúng lúc DB/downstream chậm, theo sau là restart hàng loạt → mất luôn cả nhóm pod đang khoẻ. <strong>Nguyên nhân:</strong> liveness check DB. <strong>Fix:</strong> liveness chỉ check nội bộ (<code>/actuator/health/liveness</code> — chỉ kiểm app process còn phản hồi); chuyển check DB/cache sang readiness (<code>/actuator/health/readiness</code>). Spring Boot tách sẵn 2 group này.</p></div>
+</section>
+
+<section id="rollout">
+  <h2>2.8 Rolling update + zero-downtime <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-yaml">strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1         # cho phép tạo thêm tối đa 1 pod trong lúc rollout (cost: +1 pod)
+    maxUnavailable: 0   # luôn giữ đủ pod READY → không tụt capacity</code></pre>
+  <p>Rolling = thay pod dần. Nhưng "có pod READY" chưa đủ để zero-downtime. Cần thêm <strong>graceful shutdown</strong>: khi nhận SIGTERM, app ngừng nhận request mới, xử lý nốt request đang chạy, rồi mới thoát — trong khoảng <code>terminationGracePeriodSeconds</code>. Thêm <strong>preStop</strong> sleep vài giây để load balancer/kube-proxy kịp ngừng gửi traffic tới pod sắp chết (xoá khỏi endpoints có độ trễ lan truyền).</p>
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Đã đặt <code>maxUnavailable: 0</code> mà deploy vẫn rớt vài request (HTTP 502) mỗi lần. Vì sao?</div>
+    <ol>
+      <li>Khi K8s gửi SIGTERM cho pod cũ, request đang xử lý dở ra sao nếu app thoát ngay lập tức?</li>
+      <li>Có một "race" giữa lúc pod bị xoá khỏi endpoints và lúc nó thật sự dừng nhận traffic. preStop sleep giải quyết race đó thế nào?</li>
+      <li>Spring Boot cần bật gì để hỗ trợ graceful shutdown (gợi ý: một property)?</li>
+    </ol>
+    <div class="pause-hint">maxUnavailable=0 chỉ lo capacity, không lo in-flight request. Thiếu graceful shutdown → app thoát ngay → request dở bị cắt = 502. Fix: bật <code>server.shutdown=graceful</code> + <code>spring.lifecycle.timeout-per-shutdown-phase</code>, set <code>terminationGracePeriodSeconds: 30</code>, thêm preStop <code>sleep 5</code> để LB kịp drain.</div>
+  </div>
+</section>
+
+<section id="hpa">
+  <h2>2.9 Horizontal Pod Autoscaler <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>HPA theo dõi metric (CPU/memory/custom) và tăng/giảm số replica tự động — cần <strong>metrics-server</strong> chạy. Ví dụ CPU trung bình &gt; 70% → thêm pod tới <code>maxReplicas</code>. Cấu hình <code>behavior</code> để scale up nhanh (bám spike) nhưng scale down chậm (tránh giật — flapping). Manifest đầy đủ ở 3.4.</p>
+</section>
+
+<section id="dockerfile">
+  <h2>3.1 Dockerfile multi-stage + non-root <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-bash"># ───── Stage 1: build — chứa Maven + JDK, sẽ bị bỏ đi ─────
+FROM maven:3.9-eclipse-temurin-21 AS builder
+WORKDIR /build
+COPY pom.xml .
+RUN mvn dependency:go-offline          # WHY: cache layer dependency (ít đổi hơn source)
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# ───── Stage 2: runtime — chỉ JRE + JAR → image 1.2GB còn ~250MB ─────
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# WHY: chạy non-root — container escape khi chạy root = chiếm root host
+RUN addgroup -S shop && adduser -S appuser -G shop
+USER appuser
+
+# WHY: chỉ copy JAR từ builder; toàn bộ Maven/source bị bỏ → image nhỏ, ít attack surface
+COPY --from=builder /build/target/*.jar app.jar
+
+# WHY exec form (mảng) chứ không shell form: PID 1 nhận được SIGTERM → graceful shutdown
+# WHY UseContainerSupport + MaxRAMPercentage: JVM tôn trọng memory LIMIT của container,
+#     không nhìn RAM của cả node (nếu không, JVM xin quá limit → OOMKilled)
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
+
+EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+LABEL service="checkout-api" version="1.2.3"</code></pre>
+  <div class="callout info"><div class="ctitle">Vì sao multi-stage quan trọng</div><p>Image nhỏ = pull nhanh (giây thay vì phút khi scale/rollout), startup nhanh, bề mặt tấn công nhỏ (ít package = ít CVE). Tách layer dependency (ít đổi) khỏi layer source (đổi luôn) tận dụng Docker cache → build nhanh hơn nhiều lần.</p></div>
+</section>
+
+<section id="manifest">
+  <h2>3.2 Deployment manifest đầy đủ <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-api
+  namespace: shop
+  labels: { app: checkout-api, team: checkout }
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }   # zero-downtime
+  selector:
+    matchLabels: { app: checkout-api }
+  template:
+    metadata:
+      labels: { app: checkout-api }
+      annotations:                                       # cho Prometheus scrape
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      terminationGracePeriodSeconds: 30                  # cửa sổ graceful shutdown
+      containers:
+      - name: checkout-api
+        image: shopflow/checkout-api:v1.2.3
+        imagePullPolicy: IfNotPresent
+        ports:
+        - { name: http, containerPort: 8080 }
+        env:
+        - name: SPRING_PROFILES_ACTIVE                   # config không nhạy cảm ← ConfigMap
+          valueFrom: { configMapKeyRef: { name: checkout-config, key: environment } }
+        - name: LOGGING_LEVEL_ROOT
+          valueFrom: { configMapKeyRef: { name: checkout-config, key: log.level } }
+        - name: DB_PASSWORD                              # nhạy cảm ← Secret
+          valueFrom: { secretKeyRef: { name: checkout-secrets, key: db-password } }
+        - name: PAYMENT_API_KEY
+          valueFrom: { secretKeyRef: { name: checkout-secrets, key: payment-api-key } }
+        resources:
+          requests: { memory: "512Mi", cpu: "250m" }     # đảm bảo cho scheduler
+          limits:   { memory: "1Gi",  cpu: "1000m" }     # trần cứng (mem vượt → OOMKill)
+        livenessProbe:                                   # CHỈ nội bộ — không check DB
+          httpGet: { path: /actuator/health/liveness, port: http }
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:                                  # check downstream sẵn sàng
+          httpGet: { path: /actuator/health/readiness, port: http }
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 2
+        startupProbe:                                    # app khởi động chậm
+          httpGet: { path: /actuator/health/liveness, port: http }
+          failureThreshold: 30                           # 30 × 10s = tối đa 5 phút khởi động
+          periodSeconds: 10
+        lifecycle:
+          preStop:
+            exec: { command: ["sh", "-c", "sleep 5"] }   # cho LB kịp drain trước khi SIGTERM
+      affinity:                                          # rải pod ra nhiều node (HA)
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector: { matchLabels: { app: checkout-api } }
+              topologyKey: kubernetes.io/hostname</code></pre>
+</section>
+
+<section id="svc-cm-secret">
+  <h2>3.3 Service · ConfigMap · Secret <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata: { name: checkout-api-service, namespace: shop }
+spec:
+  type: ClusterIP
+  selector: { app: checkout-api }        # route theo label, không phải IP
+  ports:
+  - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: checkout-config, namespace: shop }
+data:
+  environment: "production"
+  log.level: "INFO"
+  feature.express-checkout: "true"
+  cache.ttl.minutes: "30"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: checkout-secrets, namespace: shop }
+type: Opaque
+stringData:
+  # ⚠️ base64 KHÔNG phải mã hoá — chỉ obfuscation. Production: external secret manager / KMS.
+  db-password: "change-me-in-vault"
+  payment-api-key: "sk_live_xxx"</code></pre>
+</section>
+
+<section id="hpa-pdb">
+  <h2>3.4 HPA · PodDisruptionBudget <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: checkout-api-hpa, namespace: shop }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: checkout-api }
+  minReplicas: 3                         # tối thiểu HA
+  maxReplicas: 10                        # chặn chi phí leo thang
+  metrics:
+  - type: Resource
+    resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+  - type: Resource
+    resource: { name: memory, target: { type: Utilization, averageUtilization: 80 } }
+  behavior:
+    scaleUp:   { stabilizationWindowSeconds: 30 }    # bám spike flash sale nhanh
+    scaleDown: { stabilizationWindowSeconds: 300 }   # giảm chậm, tránh flapping
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget               # giữ HA khi drain node (bảo trì, upgrade)
+metadata: { name: checkout-api-pdb, namespace: shop }
+spec:
+  minAvailable: 2                        # luôn giữ ≥2 pod checkout sống khi voluntary disruption
+  selector: { matchLabels: { app: checkout-api } }</code></pre>
+</section>
+
+<section id="netpol">
+  <h2>3.5 NetworkPolicy — micro-segmentation <span class="k-tag adv">ADVANCED</span></h2>
+  <p>Mặc định K8s cho <em>mọi pod gọi mọi pod</em>. Một pod bị chiếm = lateral movement khắp cluster. NetworkPolicy = firewall mức pod (whitelist): chỉ cho traffic cần thiết.</p>
+  <pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: checkout-api-netpol, namespace: shop }
+spec:
+  podSelector: { matchLabels: { app: checkout-api } }
+  policyTypes: [Ingress, Egress]
+  ingress:                                       # CHỈ api-gateway được gọi vào checkout
+  - from: [{ podSelector: { matchLabels: { app: api-gateway } } }]
+    ports: [{ port: 8080 }]
+  egress:                                        # checkout CHỈ gọi ra DB + notification + DNS
+  - to: [{ podSelector: { matchLabels: { app: postgres-checkout } } }]
+    ports: [{ port: 5432 }]
+  - to: [{ podSelector: { matchLabels: { app: notification-service } } }]
+    ports: [{ port: 8080 }]
+  - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+    ports: [{ port: 53, protocol: UDP }]         # DNS cho service discovery</code></pre>
+</section>
+
+<section id="quota">
+  <h2>3.6 ResourceQuota · LimitRange · QoS <span class="k-tag adv">ADVANCED</span></h2>
+  <p><strong>ResourceQuota</strong> chặn một team/namespace nuốt cả cluster. <strong>LimitRange</strong> đặt default cho pod quên set request/limit (tránh pod BestEffort lọt vào).</p>
+  <pre><code class="language-yaml">apiVersion: v1
+kind: ResourceQuota
+metadata: { name: checkout-quota, namespace: shop }
+spec:
+  hard:
+    requests.cpu: "20"          # team checkout tối đa 20 core (request)
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    pods: "100"
+---
+apiVersion: v1
+kind: LimitRange
+metadata: { name: checkout-defaults, namespace: shop }
+spec:
+  limits:
+  - type: Container
+    default:        { memory: "512Mi", cpu: "500m" }   # limit mặc định nếu pod quên set
+    defaultRequest: { memory: "256Mi", cpu: "100m" }   # → không pod nào rơi vào BestEffort</code></pre>
+  <pre><code class="language-text">Quy tắc QoS cho ShopFlow:
+  checkout, order, inventory  → Guaranteed (requests == limits) — không bao giờ evict trước
+  reporting, notification     → Burstable OK
+  job thử nghiệm/throwaway    → KHÔNG để BestEffort cho service hứng traffic thật</code></pre>
+</section>
+
+<section id="debug">
+  <h2>3.7 Troubleshooting cheat-sheet <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-bash"># CrashLoopBackOff — vì sao crash
+kubectl describe pod checkout-api-xxx -n shop          # xem Events + Last State
+kubectl logs checkout-api-xxx -n shop --previous       # log container TRƯỚC khi chết (quan trọng!)
+
+# OOMKilled — kiểm tra memory
+kubectl top pod -n shop                                # usage hiện tại
+kubectl describe pod checkout-api-xxx -n shop | grep -A5 "Last State"
+#   Reason: OOMKilled, Exit Code: 137  → tăng memory limit HOẶC sửa memory leak (đo trước)
+
+# Pod stuck Pending — không schedule được
+kubectl describe pod checkout-api-xxx -n shop | grep -A10 Events
+#   "Insufficient memory/cpu" → node hết tài nguyên (scale cluster / giảm request)
+#   "0/3 nodes available: node(s) didn't match affinity" → affinity quá strict
+
+# Service không route — endpoints rỗng = readiness fail
+kubectl get endpoints checkout-api-service -n shop     # ENDPOINTS trống → pod chưa Ready
+
+# Rolling update kẹt / lỗi
+kubectl rollout status deployment/checkout-api -n shop
+kubectl rollout undo deployment/checkout-api -n shop   # rollback NGAY về ReplicaSet trước
+
+# Debug network: chạy pod tạm để test connectivity
+kubectl run debug --rm -it --image=busybox -n shop -- sh
+#   wget -qO- http://checkout-api-service:8080/actuator/health</code></pre>
+</section>
+
+<section id="antipatterns">
+  <h2>4. Anti-patterns + decision matrix <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>Không set resource limit</td><td>1 pod nuốt hết RAM node, evict pod khác → cascade</td><td>limit = trần cứng, request = đảm bảo scheduler</td></tr>
+      <tr><td>Liveness probe check DB</td><td>DB chậm → pod khoẻ bị giết hàng loạt</td><td>Liveness nội bộ; DB ở readiness</td></tr>
+      <tr><td>Chạy root trong container</td><td>Container escape = root host</td><td>non-root user + <code>securityContext</code></td></tr>
+      <tr><td>Image lớn (không multi-stage)</td><td>Pull chậm (phút), startup chậm, nhiều CVE</td><td>Multi-stage build: 1.2GB → 250MB</td></tr>
+      <tr><td>Secret trong ConfigMap</td><td>Plaintext, quyền đọc rộng → lộ credential</td><td>Secret + KMS / external secret manager</td></tr>
+      <tr><td>BestEffort cho service quan trọng</td><td>Bị evict đầu tiên khi node thiếu RAM</td><td>Guaranteed QoS (request == limit)</td></tr>
+      <tr><td>Không có NetworkPolicy</td><td>Mọi pod gọi được checkout → lateral movement</td><td>NetworkPolicy whitelist: chỉ gateway → checkout</td></tr>
+      <tr><td>maxUnavailable&gt;0 cho service nhạy cảm</td><td>Tụt capacity giữa rollout</td><td>maxUnavailable: 0 + maxSurge: 1 + graceful shutdown</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre><code class="language-text">Decision — cần gì cho quy mô nào?
+  1–2 service, ít traffic        → Docker Compose 1 VM đủ (K8s thừa)
+  3–10 service, tải vừa          → K8s managed (EKS/GKE/AKS)
+  10+ service, tải lớn           → K8s + Service Mesh (Istio/Linkerd)
+  1 môi trường, config tĩnh       → raw YAML
+  nhiều môi trường (dev/stg/prod) → Helm values per env
+  cần migration trước khi app start → initContainer</code></pre>
+</section>
+
+<section id="interview">
+  <h2>5. 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
+    <p><strong>Q:</strong> Liveness vs readiness probe khác gì?</p>
+    <p class="a">Liveness = "container còn sống?" → fail thì kill+restart. Readiness = "nhận traffic được chưa?" → fail thì rút khỏi Service endpoints (không restart). Không check downstream (DB) trong liveness vì DB chậm sẽ giết oan pod khoẻ; check downstream thuộc readiness.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Thiết kế zero-downtime deploy cho checkout service đang xử lý request dở (in-flight).</p>
+    <p class="a">Rolling update <code>maxUnavailable: 0, maxSurge: 1</code>; bật graceful shutdown ở app (<code>server.shutdown=graceful</code>, bắt SIGTERM ngừng nhận request mới, xử lý nốt in-flight); readiness probe chính xác; preStop <code>sleep 5</code> cho LB kịp drain (xoá endpoint có độ trễ); <code>terminationGracePeriodSeconds</code> ≥ thời gian request dài nhất; PodDisruptionBudget <code>minAvailable</code> giữ tối thiểu pod khi drain node.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> 5000 pod, tổng memory request 10TB nhưng ngân sách chỉ 5TB. Tối ưu chi phí.</p>
+    <p class="a">Request đang over-provision = lãng phí. Load test để biết P95/P99 memory thật → request = P95, limit = P99.5 (bắt runaway nhưng cho phép spike bình thường). Kết hợp HPA (horizontal) + cluster autoscaler + cân nhắc VPA. Service phi-critical dùng Burstable + spot/preemptible instance; service quan trọng giữ Guaranteed. Đặt LimitRange + ResourceQuota để team không over-request. Theo dõi utilization thực và right-size định kỳ.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — reproduce &amp; fix (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Gây &amp; sửa OOMKilled.</strong> Deploy một Spring Boot app với <code>limits.memory: 256Mi</code> nhưng app cấp phát ~400MB lúc khởi động. Quan sát pod vào CrashLoopBackOff; <code>kubectl describe</code> thấy <code>Reason: OOMKilled, Exit Code: 137</code>. Sửa theo 2 hướng: (a) tăng limit hợp lý sau khi đo, (b) thêm <code>-XX:+UseContainerSupport -XX:MaxRAMPercentage=75</code> để JVM tôn trọng container. Tiêu chí: giải thích vì sao thiếu <code>UseContainerSupport</code> thì JVM nhìn RAM cả node và xin quá limit.</p>
+      <p><strong>Lab 2 — Liveness sai → restart bão.</strong> Cấu hình liveness probe gọi một endpoint check DB; tắt DB; quan sát toàn bộ pod bị kill+restart liên tục dù app vẫn "sống". Chuyển check DB sang readiness, bật lại; quan sát pod bị rút khỏi Service (ngừng nhận traffic) nhưng KHÔNG restart, và tự Ready lại khi DB lên. Tiêu chí: nói được "fail readiness ≠ fail liveness" và hậu quả mỗi loại.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Container khác VM ở chỗ nào? Vì sao container khởi động nhanh hơn nhưng cô lập yếu hơn?</li>
+      <li>Vì sao Service tồn tại thay vì gọi thẳng Pod IP? Service tìm đúng Pod bằng cách nào?</li>
+      <li>Requests vs limits khác gì? Vượt memory limit và vượt CPU limit, cái nào giết pod (và exit code)?</li>
+      <li>Tại sao đặt liveness probe check DB là anti-pattern? Hậu quả cụ thể khi DB chậm?</li>
+      <li><code>maxUnavailable: 0</code> mà vẫn rớt request lúc deploy — thiếu gì? (3 thứ)</li>
+      <li>3 QoS class là gì? Vì sao checkout service phải là Guaranteed?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 6 không nhìn tài liệu = sẵn sàng cho vòng phỏng vấn K8s mức senior.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="06-spring-boot.html">#06 Spring Boot</a> — Actuator health group liveness/readiness, profile per env, graceful shutdown.</li>
+    <li><a href="22-resilience-patterns.html">#22 Resilience</a> — health, timeout, graceful degradation.</li>
+    <li><a href="25-cicd-pipeline.html">#25 CI/CD</a> — rolling/canary deploy, rollback.</li>
+    <li><a href="26-observability.html">#26 Observability</a> — metric/log để debug pod trong production.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

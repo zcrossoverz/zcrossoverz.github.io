@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#26 — Observability (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm G · DevOps &amp; Infra</span>
+    <span class="sep">›</span>
+    <span class="current">#26 Observability</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: "request X chậm" mà mù</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#pillars">2. 3 trụ cột: log / metric / trace</a>
+      <a href="#logging">3. Structured logging + log level</a>
+      <a href="#tracing">4. Distributed tracing + correlation ID</a>
+      <a href="#metrics">5. Metrics: RED &amp; USE</a>
+      <a href="#slo">6. SLI / SLO / SLA</a>
+      <a href="#alerting">7. Alerting: symptom-based</a>
+      <div class="toc-section">Production</div>
+      <a href="#impl">8. Logback + MDC + Micrometer</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm G · DevOps · File chống hiểu giả</div>
+  <h1>Observability — Log, Metric, Trace, và Alert Đúng</h1>
+  <p class="lead">
+    "Có log với dashboard" chưa phải observability. Lên thật: "log, metric, trace mỗi cái trả lời câu hỏi gì khác nhau?", "SLI/SLO/SLA khác nhau ra sao và error budget dùng để làm gì?", "alert dựa trên CPU 80% vì sao gây alert fatigue?" — là lộ hiểu giả. File này dạy 3 trụ cột + cách alert theo <em>symptom</em>, trên domain <strong>ShopFlow</strong> — sàn e-commerce nhiều microservice.
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Debug production bằng evidence: trace → log → metric, alert đúng</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #17 Microservices, #24 K8s</div>
+    <div><strong>📚 Prereq</strong><br>HTTP · Spring Boot Actuator · log cơ bản</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 Cao — không quan sát được = không vận hành được</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Log, metric, trace na ná nhau, có log là đủ debug."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Mỗi trụ cột trả lời câu hỏi khác: <em>metric</em> "có vấn đề không &amp; mức độ" (rẻ, tổng hợp); <em>trace</em> "vấn đề ở service nào trong chuỗi" (theo 1 request); <em>log</em> "chính xác chuyện gì xảy ra" (chi tiết, đắt). Thiếu trace thì trong 8 service không biết cái nào chậm.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "SLA, SLO, SLI là ba tên gọi của một thứ."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> SLI = số đo thực (vd % request &lt;300ms); SLO = mục tiêu nội bộ (99.9%); SLA = cam kết với khách hàng kèm phạt (thường lỏng hơn SLO). Error budget = 1−SLO, quyết định được phép ship rủi ro bao nhiêu.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Alert càng nhiều càng an toàn, cứ CPU&gt;80% là báo."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Alert theo <em>cause</em> (CPU cao) gây alert fatigue — CPU cao chưa chắc user bị ảnh hưởng. Alert theo <em>symptom</em> (error rate, latency user thấy) ít hơn, đúng hơn, đánh thức người đúng lúc.</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> 3 trụ cột mỗi cái trả lời gì (2), distributed tracing + correlation ID (4), structured logging (3). Đủ để debug production xuyên service.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> RED/USE metrics (5), SLI/SLO/error budget (6), alert theo symptom (7).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Logback JSON + MDC, Micrometer custom metric, Prometheus/Grafana.</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> sampling trace, cardinality control, log masking PII, OpenTelemetry.</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — "request checkout chậm" mà mù <span class="k-tag core">CORE ★</span></h2>
+  <p>User báo "đặt hàng mất 8 giây". ShopFlow có 8 microservice. Có log nhưng mỗi service một file, không nối được; không biết service nào tốn 5s trong 8s; không có alert nên đội biết khi user phàn nàn.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>Để trả lời "service nào tốn 5s trong 8s", bạn cần trụ cột observability nào — log, metric hay trace? Vì sao 2 cái kia không trả lời được câu này?</li>
+      <li>Làm sao nối log của cùng một request rải khắp 8 service lại với nhau? (gợi ý: một id đi xuyên suốt)</li>
+      <li>Đội nên biết sự cố TRƯỚC khi user phàn nàn bằng cách nào, và alert dựa trên cái gì để không bị nhiễu?</li>
+    </ol>
+    <div class="pause-hint">Đáp án: distributed tracing (mục 4) trả lời "ở đâu chậm" bằng waterfall span; correlation/trace ID propagate qua header + MDC nối log (mục 3,4); alert theo symptom error rate/latency (mục 7). Đừng đọc tiếp khi chưa map đúng câu hỏi ↔ trụ cột.</div>
+  </div>
+</section>
+
+<section id="pillars">
+  <h2>2. 3 trụ cột — mỗi cái trả lời gì <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Trụ cột</th><th>Trả lời câu hỏi</th><th>Chi phí / đặc tính</th></tr></thead>
+    <tbody>
+      <tr><td>Metrics</td><td>"Có vấn đề không? Mức độ? Xu hướng?"</td><td>Rẻ, tổng hợp số, lưu lâu; không cho chi tiết 1 request</td></tr>
+      <tr><td>Traces</td><td>"Vấn đề ở service/bước nào trong chuỗi?"</td><td>Theo 1 request xuyên service; thường sampling</td></tr>
+      <tr><td>Logs</td><td>"Chính xác chuyện gì đã xảy ra?"</td><td>Chi tiết nhất, đắt nhất để lưu/tìm</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout info"><div class="ctitle">Luồng debug điển hình</div><p>Alert (metric) báo error rate tăng → mở trace tìm service chậm/lỗi → đọc log của trace đó để thấy exception cụ thể. Ba trụ cột phối hợp, không thay thế nhau.</p></div>
+</section>
+
+<section id="logging">
+  <h2>3. Structured logging + log level <span class="k-tag core">CORE ★</span></h2>
+  <p>Log JSON (key-value) thay vì chuỗi text → query được trong ELK/Loki (<code>traceId:xyz AND level:ERROR</code>).</p>
+  <pre><code class="language-java">// dùng placeholder, không nối chuỗi (rẻ hơn + structured)
+log.info("order placed orderId={} customerId={} total={}", id, cid, total);</code></pre>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Level</th><th>Dùng khi</th></tr></thead>
+    <tbody>
+      <tr><td>ERROR</td><td>Cần người xử lý: request thất bại không tự phục hồi</td></tr>
+      <tr><td>WARN</td><td>Bất thường nhưng đã handle (retry, fallback)</td></tr>
+      <tr><td>INFO</td><td>Sự kiện nghiệp vụ quan trọng (order placed, payment ok)</td></tr>
+      <tr><td>DEBUG</td><td>Chi tiết để debug, tắt ở prod (hoặc bật tạm)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="tracing">
+  <h2>4. Distributed tracing + correlation ID <span class="k-tag core">CORE ★</span></h2>
+  <p>Một <code>traceId</code> sinh ở entry (gateway), propagate qua header xuống mọi service; mỗi service ghi <code>span</code> (start/end, parentSpanId). UI (Jaeger/Tempo) vẽ waterfall: <code>Gateway[1ms] → Order[50ms] → Inventory[200ms ← chậm!]</code>.</p>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Biết "tracing theo dõi request xuyên service". <em>Symptom hiểu giả:</em> không nói được span/traceId propagate thế nào hay vì sao cần sampling.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Giải thích traceId sinh ở entry, đi theo header (W3C traceparent), MDC đưa traceId vào mọi dòng log; span có parent → dựng cây; sampling giảm chi phí (giữ 1-10% trace).</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Thiết kế: chuẩn hoá header propagation, MDC filter, tail-based sampling (giữ trace lỗi/chậm), nối trace↔log↔metric bằng exemplar; kiểm soát cardinality để Prometheus không nổ.</p>
+    </div>
+  </div>
+</section>
+
+<section id="metrics">
+  <h2>5. Metrics — RED &amp; USE <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-text">RED (cho service):  Rate (req/s) · Errors (% lỗi) · Duration (latency p50/p95/p99)
+USE (cho hạ tầng):  Utilization · Saturation (queue/chờ) · Errors</code></pre>
+  <p>Dùng <strong>percentile</strong> (p95/p99), không dùng trung bình — trung bình giấu đuôi chậm mà user thật sự cảm nhận.</p>
+</section>
+
+<section id="slo">
+  <h2>6. SLI / SLO / SLA + error budget <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <ul>
+    <li><strong>SLI</strong> (Indicator): số đo thực, vd "% request &lt;300ms".</li>
+    <li><strong>SLO</strong> (Objective): mục tiêu nội bộ, vd 99.9%.</li>
+    <li><strong>SLA</strong> (Agreement): cam kết với khách hàng + phạt, thường lỏng hơn SLO.</li>
+    <li><strong>Error budget</strong> = 1 − SLO (vd 0.1% = ~43 phút/tháng). Hết budget → đóng băng feature, tập trung độ ổn định.</li>
+  </ul>
+</section>
+
+<section id="alerting">
+  <h2>7. Alerting — theo symptom <span class="k-tag core">CORE ★</span></h2>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi thêm alert làm hệ thống TỆ hơn</div>
+    <div class="bi-answer">
+      <p>Nhiều alert ≠ an toàn hơn. Alert sai gây alert fatigue → on-call bỏ qua cả alert thật:</p>
+      <ul>
+        <li><strong>Alert theo cause:</strong> "CPU &gt; 80%" — CPU cao lúc batch chạy là bình thường, user không bị ảnh hưởng → đánh thức người vô ích.</li>
+        <li><strong>Alert mọi metric:</strong> 200 alert rule → noise. On-call học cách ignore → bỏ sót sự cố thật.</li>
+        <li><strong>Không có ngưỡng/độ trễ:</strong> spike 1 giây cũng báo → flapping.</li>
+      </ul>
+      <p><em>Quy tắc:</em> alert theo <strong>symptom user cảm nhận</strong> (error rate, latency p99, SLO burn rate), ít mà đúng; cause để chẩn đoán <em>sau khi</em> alert symptom nổ, không để alert.</p>
+    </div>
+  </div>
+</section>
+
+<section id="impl">
+  <h2>8. Logback + MDC + Micrometer <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-java">// MDC filter: gắn traceId vào mọi log của request
+String traceId = req.getHeader("X-Trace-Id");
+MDC.put("traceId", traceId != null ? traceId : UUID.randomUUID().toString());
+try { chain.doFilter(req, res); } finally { MDC.clear(); }   // tránh leak qua thread pool
+
+// Micrometer custom metric
+meterRegistry.counter("orders.placed", "channel", "web").increment();
+Timer.Sample s = Timer.start(meterRegistry);
+// ... xử lý ...
+s.stop(meterRegistry.timer("checkout.duration"));</code></pre>
+  <div class="callout warn"><div class="ctitle">Anti-pattern + symptom</div><p><strong>Triệu chứng:</strong> log của request A bỗng mang traceId của request B. <strong>Nguyên nhân:</strong> quên <code>MDC.clear()</code> → thread pool reuse thread giữ MDC cũ. <strong>Fix:</strong> luôn clear trong <code>finally</code>.</p></div>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>Chỉ có log, không trace</td><td>8 service không biết cái nào chậm</td><td>Distributed tracing + traceId</td></tr>
+      <tr><td>Alert theo cause (CPU)</td><td>Alert fatigue, bỏ sót thật</td><td>Alert theo symptom (error rate, p99)</td></tr>
+      <tr><td>Metric dùng trung bình</td><td>Giấu đuôi chậm user cảm nhận</td><td>Percentile p95/p99</td></tr>
+      <tr><td>Log PII (email, thẻ)</td><td>Rò rỉ dữ liệu, vi phạm compliance</td><td>Masking trước khi log</td></tr>
+      <tr><td>Quên MDC.clear()</td><td>traceId lẫn giữa request</td><td>clear trong finally</td></tr>
+      <tr><td>Metric cardinality cao (userId làm label)</td><td>Prometheus nổ bộ nhớ</td><td>Label giá trị hữu hạn</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
+    <p><strong>Q:</strong> 3 trụ cột observability là gì?</p>
+    <p class="a">Logs (chuyện gì xảy ra, chi tiết), Metrics (có vấn đề không &amp; mức độ, số tổng hợp), Traces (ở service nào trong chuỗi). Mỗi cái trả lời câu hỏi khác nhau, phối hợp khi debug.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Thiết kế observability để trả lời "vì sao request X fail xuyên 5 service".</p>
+    <p class="a">traceId propagate header + MDC → log JSON query theo traceId; trace UI waterfall tìm service lỗi/chậm; metric RED báo trước; alert SLO burn. End-to-end: alert → trace → log = phút thay vì giờ.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Quy mô lớn, chi phí observability tăng vọt. Tối ưu.</p>
+    <p class="a">Tail-based sampling (giữ trace lỗi/chậm, bỏ trace bình thường), kiểm soát cardinality metric, log level động, tiered retention (log nóng 7 ngày, lạnh sang object storage), alert ít theo SLO burn rate thay vì mọi metric.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — quan sát thật (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Correlation ID xuyên service.</strong> 2 service Spring Boot gọi nhau. Viết filter sinh/propagate <code>X-Trace-Id</code> qua header + đưa vào MDC. Gây một lỗi ở service 2, dùng traceId tìm toàn bộ log của request đó ở cả 2 service. Tiêu chí: chứng minh nối được log bằng traceId và giải thích vì sao phải MDC.clear().</p>
+      <p><strong>Lab 2 — Alert symptom vs cause.</strong> Expose metric RED bằng Micrometer + Actuator. Tạo 2 alert: (a) CPU&gt;80% (cause), (b) error rate&gt;5% trong 5 phút (symptom). Chạy một batch nặng CPU nhưng không lỗi → quan sát alert (a) nổ vô ích, (b) im. Tiêu chí: giải thích vì sao symptom-based ít nhiễu hơn.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Log, metric, trace mỗi cái trả lời câu hỏi gì? Vì sao thiếu trace thì khó debug microservice?</li>
+      <li>traceId/correlation ID nối log xuyên service thế nào? Vì sao phải MDC.clear()?</li>
+      <li>SLI/SLO/SLA khác nhau ra sao? Error budget dùng để làm gì?</li>
+      <li>Vì sao dùng p99 thay vì trung bình cho latency?</li>
+      <li>Vì sao alert theo symptom tốt hơn theo cause?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = nắm chắc observability mức senior.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="17-microservices-patterns.html">#17 Microservices</a> — tracing để debug cascading failure.</li>
+    <li><a href="24-docker-kubernetes.html">#24 Docker/K8s</a> — probe, metric scrape annotation.</li>
+    <li><a href="34-audit-logging.html">#34 Audit Logging</a> — phân biệt audit log vs ops log.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

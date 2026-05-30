@@ -266,6 +266,17 @@ Candidate: [im lặng]
 <section id="step-estimate">
   <h2>4. Step 2 — Estimate (5 phút) <span class="k-tag core">HIGH-SIGNAL</span></h2>
 
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — estimate cho Twitter timeline</div>
+    <div class="pause-q">Bài: 300 triệu MAU, 50% dùng hằng ngày, mỗi DAU đọc timeline 10 lần/ngày. Nhẩm TRƯỚC khi đọc tiếp:</div>
+    <ol>
+      <li>Read QPS trung bình ≈ ? Peak QPS (×2-3) ≈ ? (làm tròn, show work)</li>
+      <li>Mỗi tweet ~300 byte, 150M tweet/ngày → storage/ngày ≈ ? /năm ≈ ?</li>
+      <li>Con số nào ở trên quyết định bạn chọn <em>fan-out on write</em> hay <em>fan-out on read</em>? Vì sao celebrity (50M follower) làm vỡ fan-out-on-write?</li>
+    </ol>
+    <div class="pause-hint">Gợi ý đáp án: DAU=150M, read=150M×10/86400 ≈ 17K QPS, peak ≈ 35-50K QPS. Storage 150M×300B ≈ 45GB/ngày ≈ 16TB/năm. Tỉ lệ read:write rất cao → fan-out-on-write (precompute) cho user thường, fan-out-on-read cho celebrity = hybrid. Chi tiết ở Step 3 và §9.</div>
+  </div>
+
   <div class="k-banner core">
     <strong>Quy tắc:</strong> Math nhẩm trên whiteboard, show work. Interviewer đánh giá <em>phương pháp</em>, không phải con số chính xác. ±50% acceptable.
   </div>
@@ -482,6 +493,20 @@ DELETE /api/v1/urls/:short_code   (require auth)</code></pre>
 
   <div class="k-banner core">
     <strong>Quy tắc:</strong> Interviewer PICK chỗ deep dive — không phải bạn. Nếu interviewer im, hỏi: <em>"Bạn muốn tôi đi sâu component nào? Short code generation, cache strategy, hay click counter?"</em>
+  </div>
+
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi "thêm component" lại là tín hiệu XẤU</div>
+    <div class="bi-answer">
+      <p>Nhiều ứng viên nghĩ vẽ càng nhiều box (Kafka, Redis, sharding, microservices) càng "senior". Ngược lại — over-engineering là red flag rõ nhất. Đừng thêm khi:</p>
+      <ul>
+        <li><strong>Sharding khi chưa cần:</strong> 16TB/năm vẫn nằm gọn trong một Postgres + read replica. Đề xuất shard ngay từ đầu cho dữ liệu nhỏ = bạn không ước lượng. Interviewer sẽ hỏi "vì sao shard?" và bạn kẹt.</li>
+        <li><strong>Kafka cho mọi thứ:</strong> nếu flow là request-response đồng bộ cần kết quả ngay, nhét message queue vào chỉ thêm latency + độ phức tạp. Queue hợp cho async/decouple/buffer, không phải mặc định.</li>
+        <li><strong>Microservices cho MVP:</strong> chia 8 service trong một bài 45 phút = tiêu thời gian vào ranh giới service thay vì giải bài toán cốt lõi.</li>
+        <li><strong>Cache trước khi có read pattern:</strong> thêm Redis trước khi nói rõ cái gì hot, TTL bao lâu, invalidation thế nào = cargo-culting.</li>
+      </ul>
+      <p><em>Câu nói ăn điểm:</em> "Bắt đầu đơn giản nhất chạy được ở quy mô này, rồi scale khi con số bắt buộc." Senior thể hiện ở chỗ <strong>biết khi nào KHÔNG cần</strong> một pattern, kèm lý do định lượng.</p>
+    </div>
   </div>
 
   <h3>4 chỗ deep dive thường gặp cho URL shortener</h3>

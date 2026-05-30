@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#8 Decision Theory + Bayesian | Cổ Trùng</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<div class="topbar"><div class="crumb"><a href="index.html">Cổ Trùng</a><span class="sep">›</span><span>TIER A</span><span class="sep">›</span><span class="current">#8 Decision Theory + Bayesian</span></div><button class="theme-toggle" id="themeToggle">🌓</button></div>
+<div class="layout">
+<aside class="sidebar"><nav class="toc"><div class="toc-title">Trong file</div>
+<a href="#why">Vì sao cho INTJ + Type 6</a>
+<a href="#bayes">1. Bayes' Theorem</a><a href="#ppl">2. Prior / Likelihood / Posterior</a>
+<a href="#calibration">3. Calibration</a><a href="#ev-tree">4. EV Decision Tree</a>
+<a href="#option">5. Optionality</a><a href="#convex">6. Convex vs Concave (Taleb)</a>
+<a href="#rules">7. Rule of Thumb</a>
+<a href="#start">Khởi điểm + Practice</a>
+<a href="#three-level">🎯 Mastery</a><a href="#lab">🧪 Labs</a><a href="#feynman">🧠 Feynman</a></nav></aside>
+<main><div class="content">
+
+<section class="hero">
+  <span class="meta-tag">#8 · TIER A · Anti-paralysis cho INTJ</span>
+  <h1>Decision Theory + Bayesian — Quyết định calibrated</h1>
+  <p class="lead">INTJ + Type 6 = phân tích nhiều, paralysis. File này cho <strong>framework dừng phân tích đúng lúc</strong> + <strong>đo độ chính xác của dự đoán theo thời gian</strong> → cải thiện.</p>
+  <div class="hero-tags"><span class="phase-tag">TIER A · CORE ★</span></div>
+</section>
+
+<section id="why">
+  <h2>Vì sao file này cho Nhân</h2>
+  <p>INTJ thường rơi vào <strong>analysis paralysis</strong> vì cố tìm "câu trả lời đúng". Decision theory cho phép quyết định khi data chưa đủ — vì <strong>không quyết = vẫn quyết (chọn status quo)</strong>.</p>
+  <div class="callout danger"><div class="ctitle">🚨 3 cấp</div>
+    <p><strong>L1:</strong> Quyết định cảm tính. Confidence vague ("khá chắc"). Không track outcome.<br>
+    <strong>L2:</strong> Tính EV thô trước quyết định lớn. Track 5 prediction/tuần với % confidence.<br>
+    <strong>L3:</strong> Calibrated &gt; 1 năm. Quyết định nhanh cho reversible, kỹ cho irreversible. Bayesian update tự động khi có evidence mới.</p>
+  </div>
+</section>
+
+<section id="bayes">
+  <h2>1. Bayes' Theorem <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-text">P(A|B) = P(B|A) × P(A) / P(B)</code></pre>
+  <ul>
+    <li><strong>P(A|B)</strong> = xác suất A đúng, biết B đã xảy ra</li>
+    <li><strong>P(B|A)</strong> = xác suất quan sát B, nếu A đúng</li>
+    <li><strong>P(A)</strong> = xác suất ban đầu của A (<strong>prior</strong>)</li>
+    <li><strong>P(B)</strong> = xác suất quan sát B nói chung</li>
+  </ul>
+  <p>Đừng sợ công thức. <strong>Cốt lõi: mỗi khi có evidence mới, update belief theo công thức.</strong></p>
+</section>
+
+<section id="ppl">
+  <h2>2. Prior / Likelihood / Posterior <span class="phase-tag">CORE ★</span></h2>
+  <ul>
+    <li><strong>Prior</strong>: niềm tin ban đầu (trước evidence)</li>
+    <li><strong>Likelihood</strong>: khả năng quan sát evidence nếu giả thuyết đúng</li>
+    <li><strong>Posterior</strong>: niềm tin sau cập nhật</li>
+  </ul>
+  <div class="callout success">
+    <div class="ctitle">💡 Ví dụ Upwork</div>
+    <ul>
+      <li><strong>Prior:</strong> 30% job sẽ landing</li>
+      <li><strong>Evidence:</strong> khách reply trong 2h với câu hỏi cụ thể về scope</li>
+      <li><strong>Likelihood:</strong> nếu landing, khả năng reply nhanh + hỏi scope = 70%; nếu không = 20%</li>
+      <li><strong>Posterior</strong> (theo Bayes) ≈ <strong>60%</strong></li>
+    </ul>
+    <p>→ Update 30% → 60% <strong>dựa evidence cụ thể</strong>, không cảm tính.</p>
+  </div>
+</section>
+
+<section id="calibration">
+  <h2>3. Calibration — Hiệu chỉnh <span class="phase-tag">CORE ★</span></h2>
+  <p>Đo độ chính xác của dự đoán theo thời gian.</p>
+  <p><strong>Practice:</strong> mỗi tuần viết 5 dự đoán với % confidence.</p>
+  <ul>
+    <li><em>"70% job X sẽ reply"</em></li>
+    <li><em>"50% MCP sẽ thành mainstream cuối 2026"</em></li>
+  </ul>
+  <p>Sau 3 tháng: trong 100 dự đoán bạn nói "70%", có ~70 đúng không? Nếu chỉ 50 → bạn over-confident, cần đặt thấp hơn.</p>
+  <p><strong>Tools:</strong> PredictionBook (free), Manifold Markets (gamified). Hoặc Notion spreadsheet đơn giản.</p>
+  <div class="callout success">
+    <p>→ Sau 1-2 năm calibration, bạn quyết định dựa xác suất chính xác hơn 90% người. <strong>Lợi thế khủng khiếp.</strong></p>
+  </div>
+</section>
+
+<section id="ev-tree">
+  <h2>4. Expected Value Decision Tree <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-text">Option A (50% success → +$1000, 50% fail → -$200)
+    EV = 0.5 × 1000 + 0.5 × (-200) = $400
+
+Option B (90% success → +$300, 10% fail → -$50)
+    EV = 0.9 × 300 + 0.1 × (-50) = $265
+
+→ A có EV cao hơn nhưng variance cao hơn
+→ Chọn A nếu chịu downside; B nếu rủi ro lớn</code></pre>
+</section>
+
+<section id="option">
+  <h2>5. Optionality — Tính tuỳ chọn <span class="phase-tag">CORE ★</span></h2>
+  <p>Giữ nhiều cửa thoát mở. Cách giải quyết uncertainty.</p>
+  <table>
+    <thead><tr><th>Loại</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td>Commit</td><td>Bán nhà mua crypto. 1 đường, không lùi.</td></tr>
+      <tr><td>Optionality</td><td>Giữ job dev, build AI side project. Side project work → quit job. Không → vẫn an toàn.</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Rule:</strong> uncertainty cao → giá trị optionality &gt; commitment. <strong>Type 6 của Nhân thực ra là asset</strong> — nhưng cần dùng đúng (optionality strategic, không phải lo âu trốn).</p>
+</section>
+
+<section id="convex">
+  <h2>6. Convex vs Concave (Taleb) <span class="phase-tag">CORE ★</span></h2>
+  <table>
+    <thead><tr><th>Loại</th><th>Mô tả</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Convex</strong> ⭐</td><td>Upside không giới hạn, downside giới hạn</td><td>Viết 1 blog → mất 2h, có thể viral 1M view</td></tr>
+      <tr><td>Concave</td><td>Downside không giới hạn, upside giới hạn</td><td>Trading margin — mất tất, lời tối đa 200%</td></tr>
+    </tbody>
+  </table>
+  <p>→ <strong>Search convex bet trong đời, tránh concave.</strong> Đây là asymmetric thinking applied.</p>
+</section>
+
+<section id="rules">
+  <h2>7. Rule of Thumb cho Quyết Định <span class="phase-tag">CORE ★</span></h2>
+  <ol>
+    <li><strong>Reversible (đảo được):</strong> quyết định nhanh (Bezos: <em>"two-way door"</em>)</li>
+    <li><strong>Irreversible (không đảo):</strong> chậm, kỹ (kết hôn, all-in tiền)</li>
+    <li><strong>50/50:</strong> chọn cái optionality cao hơn</li>
+    <li><strong>Khi sợ regret:</strong> <em>"5 năm tới tôi sẽ regret cái nào hơn nếu không làm?"</em></li>
+  </ol>
+</section>
+
+<section id="start">
+  <h2>Khởi điểm + Practice <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <p><strong>Đọc:</strong></p>
+  <ol>
+    <li><em>How to Decide</em> — Annie Duke (practical, không lý thuyết)</li>
+    <li><em>Algorithms to Live By</em> — Brian Christian</li>
+    <li><em>Thinking in Bets</em> — Annie Duke (focus poker mindset)</li>
+    <li><em>Antifragile</em> — Nassim Taleb (convexity deep)</li>
+  </ol>
+  <p><strong>Practice:</strong> Spreadsheet "Predictions": ngày, prediction, confidence%, outcome, đúng/sai. 3-5 prediction/tuần. Review calibration mỗi quý, adjust.</p>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Mastery <span class="phase-tag">CORE ★</span></h2>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Quyết cảm tính. Vague confidence ("khá chắc"). Không track outcome.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Tính EV thô trước quyết định lớn. Track 5 prediction/tuần với %. Bayes update khi có evidence.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Calibrated &gt; 1 năm. Reversible quyết nhanh, irreversible kỹ. Quyết định tốt hơn 90% người.</p></div>
+  </div>
+</section>
+
+<section id="lab">
+  <h2>🧪 3 Labs <span class="phase-tag">CORE ★</span></h2>
+  <div class="callout warn"><div class="ctitle">🧪 Lab #1 — Calibration Spreadsheet (12 tuần)</div>
+    <p>Notion DB: 5 predictions/tuần với %. Outcome tự update khi resolve. Sau 12 tuần: 60+ data points → check calibration.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Lab #2 — EV Decision Tree cho 3 cơ hội (1h)</div>
+    <p>Pick 3 cơ hội. Vẽ tree, ước probability + payout. Tính EV. Chọn theo EV thay vì cảm xúc.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Lab #3 — Reversible vs Irreversible audit (30 phút)</div>
+    <p>List 10 quyết định gần đây. Mark reversible/irreversible. Bạn có dành thời gian ngược? Reversible quá kỹ, irreversible vội?</p></div>
+</section>
+
+<section id="feynman">
+  <h2>🧠 Feynman</h2>
+  <ol>
+    <li>Bayes Theorem trong 1 câu cho người không biết toán.</li>
+    <li>Calibration là gì? Vì sao quan trọng cho INTJ?</li>
+    <li>Optionality vs Commitment. Khi nào dùng cái nào?</li>
+    <li>Convex bet — cho 2 ví dụ Nhân có thể start tuần này.</li>
+    <li>Reversible vs irreversible — vì sao Bezos dùng để quyết nhanh?</li>
+  </ol>
+  <div class="callout success"><strong>Next:</strong><ol><li><a href="09-personal-finance.html">#9 Personal Finance VN Freelancer</a> (Vol 2)</li><li><a href="index.html">← Index</a></li></ol></div>
+</section>
+
+</div></main></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body></html>

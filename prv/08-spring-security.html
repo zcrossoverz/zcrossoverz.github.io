@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#08 - Spring Security | Java Backend Interview Prep</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#08 — Spring Security | Java Backend Interview Prep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,437 +10,557 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#08 Spring Security</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Spring Ecosystem</span><span class="sep">›</span><span class="current">#08 Spring Security</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#intro">Tổng quan</a>
-    <a href="#anti-fake">Chống hiểu giả</a>
-    <a href="#scope-map">Cần nắm vs phụ</a>
-    <a href="#problem">1. Bài toán thực tế</a>
-    <a href="#mental-model">2. Mental model</a>
-    <div class="sub">
-      <a href="#filter-chain">Filter chain</a>
-      <a href="#jwt">JWT</a>
-      <a href="#context">SecurityContext</a>
-      <a href="#method-security">Method security</a>
-      <a href="#cors">CORS</a>
-      <a href="#status-codes">401 vs 403</a>
-      <a href="#oauth2">OAuth2/OIDC</a>
-      <a href="#csrf">CSRF</a>
-    </div>
-    <a href="#implementation">3. Code production</a>
-    <div class="sub">
-      <a href="#security-testing">Security testing</a>
-    </div>
-    <a href="#debug">4. Debug lab</a>
-    <a href="#tradeoffs">5. Trade-offs</a>
-    <a href="#interview">6. Interview framework</a>
-    <a href="#checklist">Checklist</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#real-problem">1. Token leak production</a>
+    <a href="#filter">2. Filter Chain mental model</a>
+    <a href="#jwt">3. JWT stateless auth</a>
+    <a href="#oauth">4. OAuth2 framework</a>
+    <a href="#context">5. SecurityContext</a>
+    <a href="#prod">6. Production setup</a>
+    <a href="#method-sec">7. Method security</a>
+    <a href="#refresh">8. Refresh token flow</a>
+    <a href="#antipatterns">9. 5 Anti-patterns</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 3 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
 
 <section class="hero">
-  <span class="meta-tag">Phase 2 - Daily work - High priority</span>
-  <h1>#08 - Spring Security: JWT, OAuth2, Filter Chain, Method Security, CORS</h1>
-  <p class="lead">Security trong Spring không phải chỉ là thêm <code>.authenticated()</code>. Bạn cần hiểu request đi qua filter nào, ai set <code>SecurityContext</code>, role/authority được check ở đâu, và vì sao authorization theo ownership phải nằm gần business resource.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">AuthN + AuthZ</div></div>
-    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">SaaS workspace</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#5 AOP, #29 OWASP, #30 Crypto</div></div>
-    <div class="meta-item"><div class="k">Bẫy</div><div class="v">permitAll rộng, token log, CORS sai</div></div>
+  <span class="meta-tag">#08 · Spring Ecosystem</span>
+  <h1>Spring Security — Filter Chain + JWT + Authorization</h1>
+  <p class="lead">Junior copy config từ Stack Overflow rồi pray. Khi gặp <code>401 Unauthorized</code> không rõ filter nào reject, khi token leak không biết rotate thế nào, khi CORS bị browser block không hiểu preflight. File này bóc filter chain + JWT internals + 5 anti-pattern gây security incident.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + build secure API</span>
+    <span class="phase-tag">Domain: E-commerce / SaaS API</span>
   </div>
 </section>
 
-<section id="intro">
-<h2 class="no-border">Security Là Pipeline Trước Controller</h2>
-<p>Spring Security đứng trước <code>DispatcherServlet</code>. Request phải đi qua filter chain để xác thực, set identity, xử lý exception và kiểm tra quyền. Controller không nên tự parse token thủ công ở từng endpoint.</p>
-<p>Học Spring Security đúng là học 2 câu hỏi: <strong>user là ai?</strong> và <strong>user được làm gì trên resource nào?</strong> JWT/OAuth2 trả lời phần xác thực; method security và domain check trả lời phần phân quyền.</p>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <ul>
+    <li>Dùng <code>SecurityFilterChain</code> — không biết exactly filter order, không biết debug "request bị reject filter nào"</li>
+    <li>Hiểu JWT — không phân biệt được <code>access token</code> vs <code>refresh token</code> vs <code>ID token</code> (OIDC)</li>
+    <li>Biết CORS — copy <code>allowedOrigins("*")</code> không hiểu kèm <code>allowCredentials(true)</code> là vi phạm spec</li>
+    <li>Biết <code>@PreAuthorize</code> — không hiểu nó eval expression khi nào, có miss method nào không</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp</div>
+    <p><strong>L1:</strong> copy config từ tutorial. Endpoint nào cũng <code>permitAll()</code> trừ <code>/admin</code>.<br>
+    <strong>L2:</strong> hiểu filter chain, viết custom <code>JwtAuthFilter</code>, debug 401 qua filter log. Method security với SpEL.<br>
+    <strong>L3:</strong> design refresh token rotation, key rotation, audit security event. Hiểu OAuth2/OIDC khi tích hợp Google/Microsoft SSO.</p>
+  </div>
 </section>
 
-<section id="anti-fake">
-<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
-<div class="pillar-grid">
-  <div class="pillar"><div class="num">1</div><h4>Trace filter</h4><p>Nói được request đi qua JWT filter, anonymous filter, exception translation, authorization filter.</p></div>
-  <div class="pillar"><div class="num">2</div><h4>Token không phải session</h4><p>JWT stateless nên logout/revoke là bài toán riêng, không phải xóa session server.</p></div>
-  <div class="pillar"><div class="num">3</div><h4>Resource ownership</h4><p>Role là chưa đủ. User có quyền đọc document này hay chỉ có role USER?</p></div>
-  <div class="pillar"><div class="num">4</div><h4>Browser model</h4><p>CORS là cơ chế của browser. Server phải trả header đúng cho preflight.</p></div>
-</div>
+<section id="roadmap">
+  <h2>🗺️ Roadmap</h2>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Token leak — bài toán production</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>Filter Chain — tường thành trước Controller</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>3</td><td>JWT stateless</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>4</td><td>OAuth2 (khác JWT)</td><td>SUPPLEMENTARY</td><td>15min</td></tr>
+      <tr><td>5</td><td>SecurityContext + ThreadLocal</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>6</td><td>Production setup config</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>7</td><td>Method Security với SpEL</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>8</td><td>Refresh token flow</td><td>ADVANCED</td><td>20min</td></tr>
+      <tr><td>9</td><td>5 anti-patterns</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+    </tbody>
+  </table>
 </section>
 
-<section id="scope-map">
-<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
-  <tbody>
-    <tr><td><strong>A - Bắt buộc</strong></td><td>Filter chain, Authentication vs Authorization, JWT, 401/403, method security, ownership, CORS/CSRF cơ bản</td><td>Debug được request bị deny và tránh lộ data multi-tenant.</td></tr>
-    <tr><td><strong>B - Nên biết</strong></td><td>OAuth2/OIDC flow ở mức resource server, JWKS/key rotation, refresh/revoke strategy, security tests</td><td>Thiết kế auth thực dụng cho service.</td></tr>
-    <tr><td><strong>C - Bonus</strong></td><td>Custom permission evaluator sâu, tự viết auth server, OAuth spec chi tiết</td><td>Không đào sâu nếu không làm identity platform.</td></tr>
-  </tbody>
-</table>
-</div>
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — Token leak production <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống — E-commerce API bị gọi trái phép</div>
+    <p><strong>Bối cảnh:</strong> Shop API có 5K user. Tuần này phát hiện 50 account đặt order với địa chỉ giao lạ, charge card thật. Customer phàn nàn.</p>
+    <p><strong>Debug:</strong></p>
+    <ol>
+      <li>Audit log show: order tạo bởi đúng user_id, nhưng từ IP lạ (US, RU)</li>
+      <li>User claim không login lúc đó</li>
+      <li>JWT log: token hợp lệ, signature đúng, chưa expire</li>
+    </ol>
+    <p><strong>Root cause:</strong> 3 nguyên nhân kết hợp:</p>
+    <pre><code class="language-yaml"># 1. Log token vào ELK
+log.info("Auth request: Authorization={}", request.getHeader("Authorization"));
+# → ELK index public dashboard → attacker quét → có 5K token
+
+# 2. Access token TTL = 30 ngày
+jwt:
+  access-token-ttl: 30d   # ❌ quá dài cho mobile + web
+
+# 3. Không có token rotation hoặc revoke list
+# → token leak vẫn valid 30 ngày</code></pre>
+
+    <p><strong>Fix immediate (4 giờ):</strong></p>
+    <ol>
+      <li>Rotate JWT signing key → invalidate mọi token</li>
+      <li>Force re-login mọi user</li>
+      <li>Xóa Authorization header khỏi ELK index, scrub log history</li>
+      <li>Alert Stripe để refund unauthorized charge</li>
+    </ol>
+
+    <p><strong>Fix long-term:</strong></p>
+    <ol>
+      <li>Access token TTL = 15 phút. Refresh token TTL = 7 ngày, single-use rotation</li>
+      <li>Logger filter strip <code>Authorization</code>, <code>Cookie</code>, <code>X-API-Key</code> headers</li>
+      <li>Token blacklist (Redis) cho revoke ngay</li>
+      <li>Device fingerprint + IP anomaly detection</li>
+    </ol>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <ol>
+      <li>Tại sao access token TTL 30 ngày là tệ? Trade-off nếu 15 phút?</li>
+      <li>Refresh token rotation hoạt động thế nào? Vì sao "single-use" quan trọng?</li>
+      <li>Tại sao rotate signing key invalidate mọi token? Có cách nào revoke 1 token cụ thể không?</li>
+    </ol>
+  </div>
 </section>
 
-<section id="problem">
-<h2>1. Bài Toán Thực Tế - SaaS Workspace Lộ Document Của Team Khác</h2>
-<p>Một SaaS quản lý tài liệu có API <code>GET /workspaces/{workspaceId}/documents/{id}</code>. Security incident: user có token hợp lệ nhưng thuộc workspace A vẫn đọc được document workspace B nếu đoán được ID.</p>
+<section id="filter">
+  <h2>2. Spring Security Filter Chain <span class="phase-tag">CORE ★</span></h2>
+  <p>Mỗi request đi qua chuỗi filter <strong>trước khi đến Controller</strong>. Filter nào cũng có thể reject (401/403) hoặc tiếp tục.</p>
+  <pre><code class="language-text">Request → SecurityContextPersistenceFilter   (load context từ session)
+        → HeaderWriterFilter                  (add security headers)
+        → CorsFilter                          (CORS preflight)
+        → CsrfFilter                          (CSRF token check, default ON cho session)
+        → LogoutFilter
+        → UsernamePasswordAuthenticationFilter (form login)
+        → BearerTokenAuthenticationFilter      (JWT bearer)
+        → ExceptionTranslationFilter           (catch AuthException → 401)
+        → AuthorizationFilter                  (check authorization rules)
+        → DispatcherServlet                    (route to Controller)</code></pre>
 
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">Sai: chỉ authenticated, không check ownership</div>
-<pre><code class="language-java">@RestController
-class DocumentController {
-    @GetMapping("/workspaces/{workspaceId}/documents/{id}")
-    public DocumentDto get(@PathVariable String workspaceId,
-                           @PathVariable String id,
-                           @RequestHeader("Authorization") String token) {
-        log.info("token={}", token); // lộ token trong log
-        return documentService.findById(id);
+  <p><strong>Debug filter chain:</strong></p>
+  <pre><code class="language-yaml">logging:
+  level:
+    org.springframework.security: DEBUG
+# Sẽ log mọi filter visit + decision</code></pre>
+
+  <p><strong>Custom filter — JWT example:</strong></p>
+  <pre><code class="language-java">@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+    private final JwtService jwt;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
+        String header = req.getHeader("Authorization");
+        if (header != null &amp;&amp; header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                Claims claims = jwt.validate(token);
+                var auth = new UsernamePasswordAuthenticationToken(
+                    claims.getSubject(), null,
+                    parseAuthorities(claims.get("roles", List.class)));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (JwtException e) {
+                // Log nhưng KHÔNG block — để filter sau quyết định
+                log.debug("Invalid JWT: {}", e.getMessage());
+            }
+        }
+        chain.doFilter(req, res);
     }
 }</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">Đúng: identity từ context + ownership check</div>
-<pre><code class="language-java">@RestController
-class DocumentController {
-    @GetMapping("/workspaces/{workspaceId}/documents/{id}")
-    @PreAuthorize("@workspaceSecurity.canRead(#workspaceId, #id, authentication)")
-    public DocumentDto get(@PathVariable String workspaceId,
-                           @PathVariable String id) {
-        return documentService.findById(workspaceId, id);
-    }
-}</code></pre>
-  </div>
-</div>
-</section>
-
-<section id="mental-model">
-<h2>2. Mental Model</h2>
-
-<section id="filter-chain">
-<h3>2.1 Security Filter Chain</h3>
-<div class="diagram">
-<svg viewBox="0 0 760 280" role="img" aria-label="Spring Security filter chain">
-  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
-  <rect x="25" y="110" width="105" height="58" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
-  <text x="78" y="144" text-anchor="middle" font-size="12">HTTP Request</text>
-  <line x1="130" y1="139" x2="175" y2="139" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="175" y="45" width="410" height="190" rx="10" fill="#f8fafc" stroke="#cbd5e1"></rect>
-  <text x="380" y="72" text-anchor="middle" font-size="14" fill="#0f172a">SecurityFilterChain</text>
-  <rect x="205" y="92" width="135" height="42" rx="6" fill="#f0f9ff" stroke="#0284c7"></rect>
-  <text x="272" y="118" text-anchor="middle" font-size="12">CORS / CSRF</text>
-  <rect x="365" y="92" width="150" height="42" rx="6" fill="#ecfdf5" stroke="#059669"></rect>
-  <text x="440" y="118" text-anchor="middle" font-size="12">JWT Auth Filter</text>
-  <rect x="205" y="155" width="135" height="42" rx="6" fill="#fffbeb" stroke="#d97706"></rect>
-  <text x="272" y="181" text-anchor="middle" font-size="12">ExceptionTranslation</text>
-  <rect x="365" y="155" width="150" height="42" rx="6" fill="#fef2f2" stroke="#dc2626"></rect>
-  <text x="440" y="181" text-anchor="middle" font-size="12">AuthorizationFilter</text>
-  <line x1="585" y1="139" x2="635" y2="139" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="635" y="110" width="105" height="58" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
-  <text x="688" y="144" text-anchor="middle" font-size="12">Controller</text>
-</svg>
-<div class="caption">JWT filter không "cho phép" request; nó chỉ xác thực và set SecurityContext. AuthorizationFilter mới quyết định allow/deny.</div>
-</div>
-
-<p>Flow khi token hợp lệ: JWT filter đọc header, verify token, load user details, tạo <code>Authentication</code>, set vào <code>SecurityContextHolder</code>. Flow khi token invalid: không set authentication, request tiếp tục, authorization rule trả 401/403.</p>
 </section>
 
 <section id="jwt">
-<h3>2.2 JWT</h3>
-<p>JWT là token format gồm header, payload, signature. Payload chỉ được base64url encoded, không được mã hóa. Ai có token đều đọc được payload, nên không đưa password, secret, token khác, dữ liệu cá nhân nhạy cảm vào claims.</p>
-<div class="log-card">
-Header: {"alg":"RS256","typ":"JWT"}<br>
-Payload: {"sub":"user-123","roles":["ROLE_EDITOR"],"workspace":"ws-9","exp":1760000000}<br>
-Signature: sign(base64(header) + "." + base64(payload), privateKey)
-</div>
+  <h2>3. JWT — Stateless Authentication <span class="phase-tag">CORE ★</span></h2>
+  <p><strong>JWT</strong> = JSON Web Token. 3 phần encode base64url: <code>header.payload.signature</code>.</p>
+  <pre><code class="language-text">eyJhbGciOiJIUzI1NiJ9          ← header  {"alg":"HS256"}
+.eyJzdWIiOiJVU1JfMSIsImV4cCI6MTcwMDAwMDAwMH0  ← payload {"sub":"USR_1","exp":...}
+.SflKxwRJSMeKKF2QT4fwpMeJf36...  ← signature HMAC(header+payload, secret)</code></pre>
 
-<div class="callout tip">
-  <div class="ctitle">JWT logout problem</div>
-  <p>JWT access token stateless nên server không có session để xóa. Giải pháp thường là access token ngắn hạn + refresh token lưu server-side; nếu cần revoke ngay, thêm blacklist bằng Redis với TTL bằng thời gian còn lại của token.</p>
-</div>
+  <h3>3 claim chuẩn (RFC 7519)</h3>
+  <ul>
+    <li><code>sub</code> — subject (user id)</li>
+    <li><code>iat</code> — issued at (timestamp)</li>
+    <li><code>exp</code> — expiration</li>
+    <li><code>iss</code> — issuer (service nào tạo)</li>
+    <li><code>aud</code> — audience (service nào được dùng)</li>
+    <li><code>jti</code> — JWT ID (cho revoke list)</li>
+  </ul>
+
+  <h3>Stateless vs Session</h3>
+  <table>
+    <thead><tr><th></th><th>JWT Stateless</th><th>Session-based</th></tr></thead>
+    <tbody>
+      <tr><td>Storage</td><td>Client (cookie/localStorage)</td><td>Server (Redis/DB)</td></tr>
+      <tr><td>Scale</td><td>Dễ horizontal scale</td><td>Sticky session hoặc shared store</td></tr>
+      <tr><td>Revoke</td><td>Khó (cần blacklist)</td><td>Dễ (xóa session)</td></tr>
+      <tr><td>Payload size</td><td>~200-500 byte/request</td><td>~32 byte session id</td></tr>
+      <tr><td>XSS risk</td><td>localStorage = cao. HTTP-only cookie = thấp</td><td>HTTP-only cookie = thấp</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Bẫy JWT junior</div>
+    <ul>
+      <li><strong>JWT KHÔNG phải encryption</strong> — payload base64, ai cũng decode được. KHÔNG đặt password/PII trong payload.</li>
+      <li><strong>Signature ≠ encryption</strong> — chỉ verify integrity. Want encrypt: dùng JWE thay JWT.</li>
+      <li><strong>HS256 cần shared secret</strong> giữa services. <strong>RS256 (asymmetric)</strong> tốt hơn cho microservices — chỉ issuer cần private key.</li>
+      <li><strong>alg:none attack</strong>: JWT spec cho phép <code>"alg":"none"</code> — đảm bảo verify reject. Modern lib default reject.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="oauth">
+  <h2>4. OAuth2 vs JWT <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <p>JWT và OAuth2 KHÔNG cùng tầng:</p>
+  <ul>
+    <li><strong>JWT</strong> = token format (cách encode credential)</li>
+    <li><strong>OAuth2</strong> = authorization framework (cách obtain + dùng access token)</li>
+  </ul>
+  <p>OAuth2 thường <em>dùng</em> JWT làm access token, nhưng cũng có thể dùng opaque token.</p>
+
+  <h3>OAuth2 4 grant types</h3>
+  <ul>
+    <li><strong>Authorization Code</strong> — web app + user login qua provider (Google, GitHub)</li>
+    <li><strong>Client Credentials</strong> — service-to-service, không user (vd: microservice gọi internal API)</li>
+    <li><strong>Password</strong> — deprecated, không nên dùng</li>
+    <li><strong>Implicit</strong> — deprecated, không nên dùng</li>
+  </ul>
+
+  <p><strong>OIDC (OpenID Connect)</strong> = OAuth2 + ID Token (info user). Dùng khi cần biết "ai đăng nhập" không chỉ "có quyền gì".</p>
 </section>
 
 <section id="context">
-<h3>2.3 SecurityContext</h3>
-<p><code>SecurityContextHolder</code> giữ identity của request hiện tại, mặc định bằng ThreadLocal trong servlet stack. Vì vậy async execution cần chú ý context propagation.</p>
-<pre><code class="language-java">Authentication authentication =
-    SecurityContextHolder.getContext().getAuthentication();
+  <h2>5. SecurityContext — ThreadLocal Identity <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-java">// Filter set
+SecurityContextHolder.getContext().setAuthentication(auth);
 
-String username = authentication.getName();
-Collection&lt;? extends GrantedAuthority&gt; roles = authentication.getAuthorities();</code></pre>
-</section>
+// Controller / Service đọc
+@GetMapping("/me")
+public User me() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String userId = (String) auth.getPrincipal();
+    return userService.findById(userId);
+}
 
-<section id="method-security">
-<h3>2.4 Method Security</h3>
-<p>URL security trả lời endpoint nào cần auth. Method security trả lời business action cụ thể có được phép không. Với multi-tenant SaaS, authorization theo ownership là bắt buộc.</p>
-<pre><code class="language-java">@PreAuthorize("hasRole('ADMIN') or @workspaceSecurity.isMember(#workspaceId, authentication)")
-public List&lt;DocumentDto&gt; listDocuments(String workspaceId) {
-    return documentQuery.findByWorkspace(workspaceId);
+// Hoặc inject
+@GetMapping("/me")
+public User me(@AuthenticationPrincipal String userId) {
+    return userService.findById(userId);
 }</code></pre>
-</section>
 
-<section id="cors">
-<h3>2.5 CORS</h3>
-<p>CORS là browser security model. Khi frontend từ domain khác gọi API, browser gửi preflight <code>OPTIONS</code> để hỏi server có cho origin/method/header đó không. Client không tự "fix CORS" được nếu server không trả header đúng.</p>
-</section>
-
-<section id="status-codes">
-<h3>2.6 401 vs 403, EntryPoint vs AccessDeniedHandler</h3>
-<p>Phân biệt 401 và 403 là kiến thức bắt buộc vì nó cho biết request fail ở authentication hay authorization.</p>
-
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Status</th><th>Nghĩa</th><th>Spring component thường xử lý</th></tr></thead>
-  <tbody>
-    <tr><td>401 Unauthorized</td><td>Chưa xác thực hoặc token invalid/expired</td><td><code>AuthenticationEntryPoint</code></td></tr>
-    <tr><td>403 Forbidden</td><td>Đã xác thực nhưng không đủ quyền</td><td><code>AccessDeniedHandler</code></td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>Nếu user đã login nhưng nhận 401, kiểm tra token parsing/filter. Nếu nhận 403, kiểm tra authority, role prefix, ownership check hoặc method security.</p>
-</section>
-
-<section id="oauth2">
-<h3>2.7 OAuth2/OIDC Vừa Đủ Cho Resource Server</h3>
-<p>Trong nhiều backend, service của bạn là resource server: nhận access token, verify signature qua JWKS, map claims thành authorities, rồi authorization theo endpoint/resource. Không cần thuộc toàn bộ spec để làm daily work, nhưng cần biết token từ đâu đến và verify thế nào.</p>
-
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Flow</th><th>Dùng khi</th><th>Ghi nhớ</th></tr></thead>
-  <tbody>
-    <tr><td>Authorization Code + PKCE</td><td>Web/mobile user login</td><td>Client đổi code lấy token, backend thường chỉ verify access token.</td></tr>
-    <tr><td>Client Credentials</td><td>Service-to-service</td><td>Không có user, authorization dựa vào client/app identity.</td></tr>
-    <tr><td>Refresh token</td><td>Duy trì session dài hơn access token</td><td>Nên lưu/rotate server-side nếu cần revoke.</td></tr>
-    <tr><td>JWKS</td><td>Verify JWT ký bằng asymmetric key</td><td>Cần cache key và xử lý key rotation.</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
-
-<section id="csrf">
-<h3>2.8 CSRF: Khi Nào Tắt, Khi Nào Không</h3>
-<p>CSRF quan trọng khi browser tự gửi credential như cookie/session. Với REST API stateless chỉ dùng bearer token trong <code>Authorization</code> header và không dùng cookie auth, thường tắt CSRF. Nếu app dùng session cookie/form login, không tắt CSRF bừa.</p>
-
-<div class="compare">
-  <div class="col neutral">
-    <div class="col-head">REST bearer token</div>
-    <div class="col-body"><p>Thường <code>csrf.disable()</code>, vì attacker site không tự gắn được Authorization header hợp lệ.</p></div>
+  <div class="callout warn">
+    <div class="ctitle">⚠️ ThreadLocal + Async</div>
+    <p>SecurityContext dùng ThreadLocal. Sang thread mới (CompletableFuture, @Async) → context biến mất.</p>
+    <pre><code class="language-java">// Fix: DelegatingSecurityContextExecutor
+@Bean
+public Executor taskExecutor() {
+    return new DelegatingSecurityContextExecutor(Executors.newFixedThreadPool(10));
+}
+// Hoặc capture + restore thủ công</code></pre>
   </div>
-  <div class="col neutral">
-    <div class="col-head">Session/cookie auth</div>
-    <div class="col-body"><p>Giữ CSRF protection, vì browser tự gửi cookie theo domain.</p></div>
-  </div>
-</div>
-</section>
 </section>
 
-<section id="implementation">
-<h2>3. Production-Grade Implementation</h2>
-
-<h3>3.1 SecurityFilterChain Cho REST API</h3>
-<pre><code class="language-java">@Configuration
+<section id="prod">
+  <h2>6. Production Config <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-java">@Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity   // bật @PreAuthorize
 public class SecurityConfig {
-    private final JwtAuthenticationFilter jwtFilter;
+
+    private final JwtAuthFilter jwtFilter;
 
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-            .csrf(csrf -&gt; csrf.disable())
-            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -&gt;
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -&gt; csrf.disable())                           // stateless API
+            .sessionManagement(s -&gt; s.sessionCreationPolicy(STATELESS))
+            .cors(c -&gt; c.configurationSource(corsSource()))
             .authorizeHttpRequests(auth -&gt; auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
+                .requestMatchers("/api/public/**", "/actuator/health").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated())
-            .exceptionHandling(ex -&gt; ex
-                .authenticationEntryPoint(json401())
-                .accessDeniedHandler(json403()))
+                .anyRequest().authenticated()
+            )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(e -&gt; e
+                .authenticationEntryPoint(jsonAuthEntryPoint())
+                .accessDeniedHandler(jsonAccessDeniedHandler())
+            )
             .build();
     }
-}</code></pre>
 
-<h3>3.2 JWT Filter</h3>
-<pre><code class="language-java">@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
-
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain chain) throws ServletException, IOException {
-
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        String token = header.substring(7);
-        try {
-            String username = jwtService.extractSubject(token);
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails user = userDetailsService.loadUserByUsername(username);
-                if (jwtService.isValid(token, user)) {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                        user, null, user.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
-            }
-        } catch (JwtException ex) {
-            logger.warn("Invalid JWT for path " + request.getRequestURI());
-        }
-
-        chain.doFilter(request, response);
-    }
-}</code></pre>
-
-<h3>3.3 Ownership Check</h3>
-<pre><code class="language-java">@Service("workspaceSecurity")
-public class WorkspaceSecurity {
-    private final WorkspaceMemberRepository members;
-    private final DocumentRepository documents;
-
-    public boolean canRead(String workspaceId, String documentId, Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            return false;
-        }
-        String userId = ((AppUser) auth.getPrincipal()).id();
-        return members.existsByWorkspaceIdAndUserId(workspaceId, userId)
-            &amp;&amp; documents.existsByIdAndWorkspaceId(documentId, workspaceId);
-    }
-}</code></pre>
-
-<h3>3.4 CORS Config</h3>
-<pre><code class="language-java">@Bean
-CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of(
-        "https://app.example-saas.com",
-        "https://admin.example-saas.com"));
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID"));
-    config.setExposedHeaders(List.of("X-Correlation-ID"));
-    config.setAllowCredentials(true);
-    config.setMaxAge(3600L);
-
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/api/**", config);
-    return source;
-}</code></pre>
-
-<section id="security-testing">
-<h3>3.5 Security Testing: Đừng Chỉ Test Happy Path</h3>
-<p>Security rule rất dễ hỏng khi refactor matcher, role name hoặc method security expression. Cần test cả unauthenticated, authenticated nhưng thiếu quyền, và đúng quyền đúng resource.</p>
-
-<pre><code class="language-java">@WebMvcTest(DocumentController.class)
-class DocumentControllerSecurityTest {
-    @Autowired MockMvc mvc;
-
-    @Test
-    void shouldReturnUnauthorizedWithoutToken() throws Exception {
-        mvc.perform(get("/workspaces/ws-1/documents/doc-1"))
-            .andExpect(status().isUnauthorized());
+    @Bean
+    public CorsConfigurationSource corsSource() {
+        CorsConfiguration c = new CorsConfiguration();
+        c.setAllowedOrigins(List.of("https://shop.example.com"));   // explicit, KHÔNG "*"
+        c.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        c.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        c.setAllowCredentials(true);                                 // OK vì allowedOrigins explicit
+        c.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/api/**", c);
+        return src;
     }
 
-    @Test
-    @WithMockUser(roles = "USER")
-    void shouldReturnForbiddenWhenNotWorkspaceMember() throws Exception {
-        mvc.perform(get("/workspaces/ws-2/documents/doc-9"))
-            .andExpect(status().isForbidden());
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);   // cost 12 → ~250ms/hash (anti-brute force)
     }
 }</code></pre>
-
-<p>Với resource server JWT, có thể dùng test support để tạo JWT có claims/authorities mong muốn thay vì gọi identity provider thật trong unit/slice test.</p>
-</section>
 </section>
 
-<section id="debug">
-<h2>4. Debug Lab</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Triệu chứng</th><th>Câu hỏi debug</th><th>Kiểm tra</th></tr></thead>
-  <tbody>
-    <tr><td>Endpoint public ngoài ý muốn</td><td>Matcher nào match trước?</td><td>Rule phải specific trước generic, tránh <code>anyRequest().permitAll()</code>.</td></tr>
-    <tr><td>403 dù đã login</td><td>Authority trong token là gì?</td><td><code>hasRole("ADMIN")</code> tìm <code>ROLE_ADMIN</code>.</td></tr>
-    <tr><td>CORS error</td><td>Preflight OPTIONS có được permit không?</td><td>Kiểm tra allowed origin/header/method và credentials.</td></tr>
-    <tr><td>Method security không chạy</td><td>Đã bật <code>@EnableMethodSecurity</code> chưa?</td><td>Method có được gọi qua Spring bean/proxy không?</td></tr>
-    <tr><td>401 thay vì 403</td><td>Authentication có được tạo trong filter không?</td><td>Kiểm tra token expired/invalid, entry point, anonymous auth.</td></tr>
-    <tr><td>CSRF 403 trên POST</td><td>App dùng cookie/session hay bearer token?</td><td>Giữ CSRF cho cookie; tắt có kiểm soát cho stateless API.</td></tr>
-  </tbody>
-</table>
-</div>
+<section id="method-sec">
+  <h2>7. Method Security với SpEL <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-java">@Service
+public class OrderService {
+
+    // Role-based
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteOrder(String id) { ... }
+
+    // Ownership check — chỉ owner xem được
+    @PreAuthorize("#userId == authentication.principal")
+    public List&lt;Order&gt; getUserOrders(String userId) { ... }
+
+    // Combine
+    @PreAuthorize("hasRole('SUPPORT') or #order.customerId == authentication.principal")
+    public void updateOrderNote(@P("order") Order order, String note) { ... }
+
+    // Post check (sau khi method run, check kết quả)
+    @PostAuthorize("returnObject.customerId == authentication.principal")
+    public Order findById(String id) { ... }
+
+    // Filter list
+    @PostFilter("filterObject.customerId == authentication.principal")
+    public List&lt;Order&gt; findAll() { ... }
+}</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Bẫy</div>
+    <ul>
+      <li><code>@PreAuthorize</code> chỉ work qua Spring proxy → self-invocation bị bypass (giống <code>@Transactional</code>)</li>
+      <li><code>@PostFilter</code> trên list lớn = chậm (filter sau khi load all)</li>
+      <li>SpEL parse runtime → typo không catch lúc compile. Dùng test cover authorization.</li>
+    </ul>
+  </div>
 </section>
 
-<section id="tradeoffs">
-<h2>5. Trade-offs & Anti-Patterns</h2>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP1</span><h4>Log Token</h4></div>
-  <div class="pb"><p>Không log <code>Authorization</code> header, refresh token, cookie session. Log userId, requestId, path, status là đủ cho debug thông thường.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP2</span><h4>Chỉ Check Role, Không Check Resource</h4></div>
-  <div class="pb"><p><code>ROLE_USER</code> không có nghĩa được đọc mọi document. Với multi-tenant app, luôn check workspace membership và resource ownership.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP3</span><h4>CORS <code>*</code> Với Credentials</h4></div>
-  <div class="pb"><p>Browser không cho <code>Access-Control-Allow-Origin: *</code> đi cùng credentials. Dùng explicit origins hoặc origin patterns có kiểm soát.</p></div>
-</div>
+<section id="refresh">
+  <h2>8. Refresh Token Flow <span class="phase-tag">ADVANCED</span></h2>
+  <pre><code class="language-text">Login:
+  POST /auth/login {email, password}
+  → access_token (TTL 15min, in body)
+     refresh_token (TTL 7d, in HttpOnly Secure cookie, single-use)
+
+Access:
+  GET /api/orders   Authorization: Bearer &lt;access_token&gt;
+  → 200
+
+Token expire:
+  GET /api/orders   Authorization: Bearer &lt;expired&gt;
+  → 401
+
+Refresh:
+  POST /auth/refresh   Cookie: refresh_token=&lt;old&gt;
+  → access_token (new)
+     refresh_token (NEW — rotate)
+  Old refresh_token marked used. Reuse = security incident → logout all sessions.
+
+Logout:
+  POST /auth/logout
+  → blacklist access_token (Redis TTL = remaining ttl)
+     delete refresh_token from DB</code></pre>
+
+  <p><strong>Refresh rotation single-use</strong> = nếu attacker dùng stolen refresh trước user → user dùng refresh hợp lệ sẽ fail → detect → force logout. Phòng MITM.</p>
+</section>
+
+<section id="antipatterns">
+  <h2>9. 5 Anti-Patterns <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #1 — Log token / sensitive header</div>
+    <pre><code class="language-java">// ❌
+log.info("Request: {}", request.getHeaders());   // includes Authorization
+log.debug("Token: {}", token);
+
+// ✅ Filter ra
+Set&lt;String&gt; SENSITIVE = Set.of("authorization", "cookie", "x-api-key");
+headers.entrySet().stream()
+    .filter(e -&gt; !SENSITIVE.contains(e.getKey().toLowerCase()))
+    .forEach(...);</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #2 — CORS allowedOrigins("*") + allowCredentials(true)</div>
+    <p>Spec CORS cấm combo này. Browser sẽ reject. Đa số junior copy code, không hiểu — production fail khi browser thật vào.</p>
+    <p><strong>Fix:</strong> list explicit origin: <code>setAllowedOrigins(List.of("https://shop.example.com"))</code>.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #3 — ROLE_ prefix không nhất quán</div>
+    <pre><code class="language-java">// Spring quy ước: hasRole("ADMIN") → check "ROLE_ADMIN" trong authorities
+@PreAuthorize("hasRole('ADMIN')")          // check ROLE_ADMIN
+@PreAuthorize("hasAuthority('ADMIN')")     // check ADMIN literal
+
+// Khi tạo authority:
+new SimpleGrantedAuthority("ROLE_ADMIN")    // dùng với hasRole
+new SimpleGrantedAuthority("ADMIN")         // dùng với hasAuthority
+
+// ❌ Mix → @PreAuthorize fail silent vì naming mismatch</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #4 — Hard-code secret trong code</div>
+    <pre><code class="language-java">// ❌
+private static final String JWT_SECRET = "my-super-secret-key";
+
+// ✅ Env var hoặc Vault
+@Value("${jwt.secret}")
+private String secret;
+// application-prod.yml: jwt.secret: ${JWT_SECRET}</code></pre>
+    <p>Lỡ commit secret: rotate ngay, BFG Repo-Cleaner để xóa history, scan git log có còn không.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #5 — Không validate JWT claims đầy đủ</div>
+    <pre><code class="language-java">// ❌ Chỉ check signature + expiration
+jwt.parse(token).getBody();
+
+// ✅ Validate full
+Claims c = jwt.parse(token).getBody();
+if (!"shop-api".equals(c.getIssuer())) throw new InvalidTokenException();
+if (!c.getAudience().contains("shop-mobile")) throw new InvalidTokenException();
+if (blacklist.contains(c.getId())) throw new RevokedTokenException();</code></pre>
+  </div>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Mastery <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Filter Chain</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Copy <code>SecurityFilterChain</code> bean. Không hiểu order.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Hiểu filter order, viết custom filter, debug 401 qua log DEBUG.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Design multi-tenant filter chain, conditional filter theo header, audit security event.</p></div>
+  </div>
+
+  <h3>JWT</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Issue token, validate signature, biết format header.payload.signature.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Phân biệt HS256 vs RS256, validate iss/aud/jti, implement refresh flow.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Key rotation strategy (JWKS), refresh rotation single-use, detect token reuse, integrate OIDC.</p></div>
+  </div>
+</section>
+
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "401 nhưng không biết filter nào reject"</div>
+    <pre><code class="language-yaml">logging.level.org.springframework.security: DEBUG
+# Log show: Filter X invoked → AuthenticationException → ExceptionTranslationFilter → 401
+# Identify filter exact → fix config / token / header</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "CORS preflight fail"</div>
+    <p><strong>Symptom:</strong> Browser console <code>Access blocked by CORS policy</code>. <code>curl</code> OK vì không gửi <code>Origin</code> header.</p>
+    <p><strong>3 nguyên nhân:</strong></p>
+    <ol>
+      <li><code>allowedOrigins</code> không match origin client (case-sensitive, scheme + port matter)</li>
+      <li><code>allowedMethods</code> không có OPTIONS (preflight)</li>
+      <li><code>allowedHeaders</code> không có <code>Authorization</code></li>
+    </ol>
+    <p><strong>Debug:</strong> <code>curl -v -X OPTIONS -H "Origin: https://x.com" -H "Access-Control-Request-Method: POST" ...</code></p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "@PreAuthorize không work"</div>
+    <p>3 nguyên nhân:</p>
+    <ol>
+      <li>Quên <code>@EnableMethodSecurity</code></li>
+      <li>Self-invocation (this.method)</li>
+      <li>Method <code>private</code> hoặc <code>final</code> — proxy không override được</li>
+    </ol>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "Token leak — phản ứng emergency"</div>
+    <ol>
+      <li>Rotate signing key NGAY (mọi token cũ invalid)</li>
+      <li>Force re-login mọi user (clear refresh DB)</li>
+      <li>Scrub log: ELK API delete documents có Authorization header</li>
+      <li>Audit: identify endpoint nào log token, fix</li>
+      <li>Notify user nếu có data leak</li>
+    </ol>
+  </div>
+</section>
+
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #1 — JWT auth end-to-end (3h)</div>
+    <p>Boot app: <code>/auth/login</code>, <code>JwtAuthFilter</code>, <code>SecurityFilterChain</code>, <code>@PreAuthorize</code> on Service. Test: login → call protected → logout → call fail.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #2 — Refresh rotation (2h)</div>
+    <p>Implement refresh token single-use rotation. Test reuse scenario: refresh 2 lần với cùng token → detect → revoke all session.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #3 — Ownership authorization (1.5h)</div>
+    <p>Endpoint <code>GET /orders/{id}</code> — chỉ owner xem được. Dùng <code>@PostAuthorize</code>. Test với 2 user — user A không xem được order user B.</p></div>
 </section>
 
 <section id="interview">
-<h2>6. Interview Framework</h2>
-<div class="tier t1">
-  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">JWT là gì?</span></div>
-  <p class="a">JWT là token format gồm header, payload và signature. Signature giúp phát hiện token bị sửa. Payload đọc được, không phải encrypted, nên không chứa secret. JWT thường dùng cho stateless authentication.</p>
-</div>
-<div class="tier t2">
-  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">JWT invalid thì filter chain xử lý thế nào?</span></div>
-  <p class="a">JWT filter không set <code>SecurityContext</code> nếu token invalid. Request đi tiếp, anonymous authentication có thể được set, rồi <code>AuthorizationFilter</code> kiểm tra rule. Nếu endpoint cần auth, <code>ExceptionTranslationFilter</code> gọi entry point trả 401.</p>
-</div>
-<div class="tier t3">
-  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế auth cho SaaS multi-tenant</span></div>
-  <p class="a">Access token ngắn hạn chứa userId và high-level roles; workspace membership lấy từ DB/cache server-side để revoke nhanh. Method security gọi service kiểm tra membership/resource ownership. Refresh token lưu server-side theo device, có rotation và revoke. Audit security events nhưng không log token.</p>
-</div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+  <div class="tier-card t1">
+    <h3>Q: JWT 3 phần là gì?</h3>
+    <p>Header (alg + type) + Payload (claims) + Signature (HMAC hoặc RSA sign over header+payload). Base64url encode, ngăn bằng dấu chấm. Payload <strong>không encrypt</strong> — chỉ signature verify integrity.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>Q: Khác stateful session vs stateless JWT?</h3>
+    <p>Session lưu server, scale cần sticky/Redis. Revoke dễ. JWT lưu client, stateless dễ scale, revoke khó (cần blacklist). Production thường combine: JWT short-lived + refresh trong server store có thể revoke.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>Q: Design auth cho 20 microservice + mobile + web + 3rd-party API</h3>
+    <ol>
+      <li><strong>Identity provider</strong>: Keycloak hoặc Auth0 — central</li>
+      <li><strong>Token format</strong>: JWT RS256 (asymmetric — service chỉ cần public key)</li>
+      <li><strong>JWKS endpoint</strong>: service tự fetch + cache public keys, support rotation</li>
+      <li><strong>Mobile/Web</strong>: Authorization Code + PKCE flow → access token (15min) + refresh (7d, single-use rotation)</li>
+      <li><strong>Service-to-service</strong>: Client Credentials flow</li>
+      <li><strong>3rd-party</strong>: API key qua gateway (rate limit + scope)</li>
+      <li><strong>Revoke</strong>: blacklist short-lived (Redis TTL = remaining), refresh DB delete</li>
+      <li><strong>Audit</strong>: log mọi auth event (no token content) + correlate qua traceId</li>
+    </ol>
+  </div>
 </section>
 
-<section id="checklist">
-<h2>Checklist Thành Thạo</h2>
-<ul>
-  <li>Vẽ được request qua SecurityFilterChain và vị trí JWT filter.</li>
-  <li>Giải thích được JWT payload readable, logout/revoke cần cơ chế riêng.</li>
-  <li>Phân biệt <code>hasRole</code> và <code>hasAuthority</code>, đặc biệt prefix <code>ROLE_</code>.</li>
-  <li>Viết được <code>@PreAuthorize</code> check cả role lẫn ownership.</li>
-  <li>Giải thích được CORS preflight và vì sao server phải cấu hình CORS.</li>
-  <li>Phân biệt 401/403 và biết vai trò của <code>AuthenticationEntryPoint</code>/<code>AccessDeniedHandler</code>.</li>
-  <li>Nắm OAuth2/OIDC ở mức resource server: verify JWT qua JWKS, map claims, xử lý key rotation.</li>
-  <li>Viết được security tests cho unauthenticated, forbidden và đúng ownership.</li>
-</ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu</h2>
+  <ol>
+    <li><strong>JWT 3 phần + alg "none" attack?</strong></li>
+    <li><strong>Stateless JWT vs session — revoke khác nhau như nào?</strong></li>
+    <li><strong>CORS preflight là gì? Vì sao <code>allowedOrigins("*")</code> + <code>allowCredentials(true)</code> không work?</strong></li>
+    <li><strong>Refresh token single-use rotation giải vấn đề gì?</strong></li>
+    <li><strong>SecurityContext + ThreadLocal + Async — bẫy là gì?</strong></li>
+  </ol>
+  <div class="callout success">
+    <strong>Next:</strong>
+    <ol>
+      <li><a href="09-spring-data-jpa.html">#09 Spring Data JPA</a></li>
+      <li><a href="29-application-security.html">#29 Application Security</a> (chưa render — broader)</li>
+    </ol>
+  </div>
 </section>
-
-<footer>
-  <span>Phase 2 - Spring Ecosystem</span>
-  <span>Next: #09 Spring Data JPA & Hibernate</span>
-</footer>
 
 </div>
 </main>
@@ -449,6 +568,7 @@ class DocumentControllerSecurityTest {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#50 — Git Daily Workflow | Java Backend Interview Prep</title>
+  <title>#50 — Git Daily Workflow (Junior Survival) | Java Backend Interview Prep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,562 +11,799 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#50 Git Daily Workflow</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Nhóm N · Junior Foundation</span><span class="sep">›</span><span class="current">#50 Git Daily Workflow</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#how-to-read">Cách đọc file này</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
     <a href="#roadmap">🗺️ Roadmap</a>
-    <a href="#intro">Tổng quan</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. Working tree, index, commit</a>
-    <a href="#concept-1">3. Branch and rebase</a>
-    <a href="#concept-2">4. Conflict resolution</a>
-    <a href="#concept-3">5. Reflog recovery</a>
-    <a href="#antipatterns">Anti-patterns</a>
-    <a href="#edge-cases">Edge Cases</a>
-    <a href="#mastery-plan">Mastery Plan</a>
-    <a href="#practice-bank">Practice Bank</a>
-    <a href="#build-projects">Build Projects</a>
-    <a href="#drill-bank">Interview Drill Bank</a>
-    <a href="#self-test">Self-Test</a>
-    <a href="#interview">Interview Framework</a>
-    <a href="#feynman-end">Feynman Closing</a>
+    <a href="#real-problem">1. 5 tình huống thực tế</a>
+    <a href="#mental-model">2. Mental model — DAG</a>
+    <a href="#daily-commands">3. Daily commands 80%</a>
+    <a href="#branching">4. Branching strategies</a>
+    <a href="#merge-rebase">5. Merge / Rebase / Cherry-pick</a>
+    <a href="#conflict">6. Conflict resolution</a>
+    <a href="#undo">7. Undo 5 tình huống</a>
+    <a href="#stash-gitignore">8. Stash + .gitignore</a>
+    <a href="#enterprise">9. Enterprise workflow</a>
+    <a href="#three-level">🎯 3 cấp độ Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 4 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
+    <a href="#checklist">✅ Checklist</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
+
 <section class="hero">
-  <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#50 — Git Daily Workflow</h1>
-  <p class="lead">Git không phải cloud save. Git là DAG commit; hiểu được DAG, branch, index và reflog thì junior không còn sợ conflict hay mất code.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#36 Clean Code, #50 daily work</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">E-commerce feature branch</div></div>
+  <span class="meta-tag">#50 · Junior Foundation</span>
+  <h1>Git Daily Workflow — Survival Kit Cho Junior</h1>
+  <p class="lead">Junior dùng Git mỗi ngày 10+ lần, nhưng 70% chỉ biết 5 lệnh (clone/add/commit/push/pull) — khi gặp conflict / rebase / undo là hoảng loạn. File này biến Git từ "magic" thành mental model rõ ràng.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + practice trên repo thật</span>
+    <span class="phase-tag">Domain: E-commerce / SaaS</span>
   </div>
 </section>
 
-
-<div class="study-banner" id="how-to-read">
-  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
-  <div class="sb-rules">
-    <p>Junior rất dễ đọc trôi chảy rồi tưởng đã hiểu. Dùng file này theo luật học chủ động:</p>
-    <ol>
-      <li>Dừng ở mỗi block Pause &amp; Predict và tự trả lời trước khi xem phần giải.</li>
-      <li>Với mỗi Bad vs Good, tự nói vì sao code sai gây bug thật, không chỉ nói "code xấu".</li>
-      <li>Chạy lại ít nhất 2 ví dụ trên máy cá nhân, đổi input để phá happy path.</li>
-      <li>Sau mỗi section lớn, dùng Feynman: giải thích lại cho một bạn junior trong 90 giây.</li>
-      <li>Làm Build Exercise. Không làm bài tập thì kiến thức vẫn ở mức đọc hiểu, chưa thành kỹ năng.</li>
-    </ol>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — đặc trưng Git</h2>
+  <p>Git là chủ đề "ai cũng biết" nhưng ít người hiểu sâu. Bạn rơi vào hiểu giả nếu:</p>
+  <ul>
+    <li>Dùng <code>git pull</code> mỗi ngày nhưng KHÔNG giải thích được nó = <code>git fetch + git merge</code> hay <code>git fetch + git rebase</code></li>
+    <li>Biết <code>git rebase</code> nhưng KHÔNG giải thích được "Quy tắc vàng" của rebase</li>
+    <li>Biết <code>git reset --hard</code> nhưng làm xong mất code rồi mới hỏi "reflog là gì"</li>
+    <li>Biết <code>git merge</code> conflict nhưng resolve bằng cách chọn 1 bên ngẫu nhiên</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp độ — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> dùng được clone/add/commit/push. Conflict = hoảng. Không biết reflog.<br>
+    <strong>L2 (Explain):</strong> hiểu Git DAG, phân biệt merge vs rebase, dùng được interactive rebase, recover được commit đã reset.<br>
+    <strong>L3 (Apply):</strong> design Git workflow cho team, viết commit hook, biết khi nào dùng squash vs no-ff, recover repo bị force-push xóa branch.</p>
   </div>
-</div>
-
+</section>
 
 <section id="roadmap">
-  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
-  <div class="roadmap">
-    <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Working tree, index, commit — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> Branch and rebase — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> Conflict resolution — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> Reflog recovery — ADV: senior signal.</div></div>
-  </div>
-</section>
-
-<section id="intro">
-  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Git Daily Workflow là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
-  <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
-  <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Git Daily Workflow</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Git Daily Workflow xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
-  </div>
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: sections 1, 2, 3, 6, 7 (tình huống + DAG + daily commands + conflict + undo).</p>
+  <p>Nếu có <strong>1 ngày</strong>: thêm 5, 8 (rebase + stash).</p>
+  <p>Nếu có <strong>1 tuần</strong>: full + 4 exercises.</p>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>5 tình huống junior vướng</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>Mental model — DAG, branch, HEAD</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>3</td><td>Daily commands 80%</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>4</td><td>Branching strategies</td><td>SUPPLEMENTARY</td><td>15min</td></tr>
+      <tr><td>5</td><td>Merge / Rebase / Cherry-pick</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>6</td><td>Conflict resolution</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>7</td><td>Undo 5 tình huống</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>8</td><td>Stash + .gitignore</td><td>SUPPLEMENTARY</td><td>10min</td></tr>
+      <tr><td>9</td><td>Enterprise workflow (PR, hooks, sign)</td><td>ADVANCED</td><td>20min</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Git Daily Workflow sai trong project E-commerce feature branch <span class="k-tag core">CORE</span></h2>
-  <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
-  <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">git checkout .
-git pull
-# local changes biến mất</code></pre>
-  <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
+  <h2>1. Bài toán thực tế — 5 tình huống junior vướng <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #1 — "Em pull mà mất hết code"</div>
+    <p><strong>Bối cảnh:</strong> Junior code 3h chưa commit. Senior bảo "pull đi". Sau pull, code biến mất, replace bằng version trên remote.</p>
+    <p><strong>Root cause:</strong> code chưa commit + <code>git pull</code> = merge từ remote vào working tree → conflict được auto-resolve theo strategy nguy hiểm, hoặc bị overwrite.</p>
+    <p><strong>Đúng cách:</strong> luôn <code>git status</code> trước, commit hoặc stash trước khi pull.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #2 — "Em commit vào nhầm branch main"</div>
+    <p><strong>Bối cảnh:</strong> Junior quên check branch hiện tại, commit 5 file vào main thay vì feature branch.</p>
+    <p><strong>Recovery:</strong> chưa push → <code>git reset HEAD~1</code> (giữ file), checkout branch mới, commit lại. Đã push → tạo branch mới từ HEAD, revert commit trên main.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #3 — "Em rebase mà sợ"</div>
+    <p><strong>Bối cảnh:</strong> Senior nói "rebase trước khi merge", junior nghe xong né tránh, đẩy bừa rồi senior phải fix.</p>
+    <p><strong>Lý do sợ:</strong> không hiểu rebase ghi lại lịch sử như nào, nghĩ "rebase = mất code". Thực tế rebase = replay commit của bạn lên đầu branch đích.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #4 — "Em merge conflict, không biết làm gì"</div>
+    <p><strong>Bối cảnh:</strong> Conflict marker <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> xuất hiện. Junior xóa hết marker, save, commit. Code lệch hoàn toàn.</p>
+    <p><strong>Đúng cách:</strong> đọc cả 2 bên, hiểu intent, merge logic — không phải xóa marker rồi commit liều.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #5 — "Em vô tình xóa branch, mất 200 dòng code"</div>
+    <p><strong>Bối cảnh:</strong> Junior <code>git branch -D feature/x</code> để "dọn dẹp", quên rằng branch chưa merge. 2 ngày code biến mất.</p>
+    <p><strong>Recovery:</strong> <code>git reflog</code> → tìm commit hash cuối của branch → <code>git checkout -b feature/x &lt;hash&gt;</code>. Reflog giữ 90 ngày mặc định.</p>
+  </div>
+
   <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
-    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
-    <ol><li>Failure mode đầu tiên bạn nghĩ tới là gì?</li><li>Nếu data/input/traffic tăng 100 lần thì đoạn này còn ổn không?</li><li>Bạn sẽ test hoặc debug bằng cách nào để chứng minh?</li></ol>
-    <div class="pause-hint">Nếu trả lời còn mơ hồ, đọc kỹ phần concept và tự chạy lại ví dụ.</div>
-  </div>
-</section>
-
-
-<section id="concept-0">
-  <h2>2. Working tree, index, commit <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Ba vùng này giải thích hầu hết command daily.
-  </div>
-  <p>Working tree là file đang sửa; index là staging area; commit là snapshot trong local repo.</p>
-  <p>Không hiểu index thì add/reset/commit đều là thao tác mù.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Daily workflow phụ thuộc vào biết thay đổi đang nằm ở đâu.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Add tất cả không kiểm tra</div>
-    <pre><code class="language-java">git add .
-git commit -m &quot;fix&quot;</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Review trước khi add</div>
-    <pre><code class="language-java">git status
-git diff
-git add src/ProductService.java
-git diff --staged</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-1">
-  <h2>3. Branch and rebase <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Branch là pointer tới commit, không phải folder copy.
-  </div>
-  <p>Rebase tạo commit mới trên base mới, giúp history thẳng nhưng đổi hash.</p>
-  <p>Không rebase branch shared nếu team chưa thống nhất.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Junior hay sợ rebase vì không hiểu commit graph.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Rebase shared branch bừa</div>
-    <pre><code class="language-bash">git checkout main
-git rebase feature/shared</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Rebase feature local</div>
-    <pre><code class="language-bash">git checkout feature/catalog-filter
-git fetch origin
-git rebase origin/main</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-2">
-  <h2>4. Conflict resolution <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Conflict là Git hỏi con người chọn semantic đúng.
-  </div>
-  <p>Không chọn ours/theirs máy móc. Đọc cả hai bên và hiểu intent.</p>
-  <p>Sau resolve phải chạy test liên quan.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Conflict resolved sai có thể compile nhưng phá logic.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Xóa marker bừa</div>
-    <pre><code class="language-java">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-old code
-=======
-new code
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Resolve có ý nghĩa</div>
-    <pre><code class="language-java">// combine intent from both branches
-return filter.and(sort).apply(products);</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-3">
-  <h2>5. Reflog recovery <span class="k-tag advanced">ADVANCED</span></h2>
-  <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Cứu code khi lỡ reset/delete branch.
-  </div>
-  <p>Reflog ghi lịch sử HEAD local. Đây là phao cứu sinh cho nhiều lỗi junior.</p>
-  <p>Reflog không thay backup remote, nhưng đủ cứu đa số lỡ tay local.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Biết reflog giúp junior bình tĩnh khi tưởng mất code.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Panic rồi làm thêm lệnh phá</div>
-    <pre><code class="language-bash">git reset --hard HEAD~3
-# tiếp tục pull/merge lung tung</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Dừng lại, xem reflog</div>
-    <pre><code class="language-bash">git reflog
-git checkout -b recover-work HEAD@{2}</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="antipatterns">
-  <h2>Anti-Patterns — Lỗi junior hay mắc <span class="k-tag core">CORE</span></h2>
-  <div class="table-wrap">
-    <table><thead><tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr></thead><tbody><tr><td>Chỉ học lệnh/API, không học mental model</td><td>High</td><td>Gặp case lạ là panic</td><td>Vẽ state/timeline trước khi gõ lệnh</td></tr>
-<tr><td>Không test edge case</td><td>High</td><td>Bug chỉ lộ ở production</td><td>Thêm test empty/null/large/concurrent</td></tr>
-<tr><td>Copy snippet không hiểu</td><td>Medium</td><td>Không debug được khi fail</td><td>Tự giải thích từng dòng</td></tr>
-<tr><td>Che lỗi bằng try/catch hoặc workaround</td><td>High</td><td>Root cause bị giấu</td><td>Fix mechanism, không chỉ symptom</td></tr>
-<tr><td>Không viết README/runbook</td><td>Medium</td><td>Người sau không vận hành được</td><td>Document workflow và rollback</td></tr></tbody></table>
-  </div>
-</section>
-
-<section id="edge-cases">
-  <h2>🎯 Edge Cases — Production Reality <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="edge-cases">
-    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
-    <p class="ec-intro">Happy path chưa đủ. Junior cần học cách hỏi: input lạ, data lớn, concurrency, security và vận hành thì sao?</p>
-    <ul class="ec-list"><li><strong>Race condition</strong>: Hai thao tác cùng chạy có thể ghi đè state; cần lock/atomic workflow khi phù hợp.</li>
-<li><strong>Scale limit</strong>: Dataset hoặc repo lớn làm thao tác vốn ổn ở local trở nên chậm.</li>
-<li><strong>Security</strong>: Không để lộ secret, token, PII trong log, command history hoặc commit.</li>
-<li><strong>Data integrity</strong>: Phải biết khi nào thao tác làm mất dữ liệu và cách rollback.</li>
-<li><strong>Time/timezone</strong>: Log, file timestamp, commit time và scheduler nên dùng UTC/ISO khi debug.</li>
-<li><strong>Concurrent access</strong>: Nhiều dev/process cùng chạm vào cùng resource cần quy ước rõ.</li>
-<li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
-  </div>
-  <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Git Daily Workflow trong project thật</div>
-    <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
-    <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
-  </div>
-</section>
-
-
-<section id="mastery-plan">
-  <h2>Mastery Plan — 14 ngày biến kiến thức thành phản xạ <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
-  <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Git Daily Workflow.</div>
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc tiếp</div>
+    <div class="pause-q">Viết ra giấy:</div>
     <ol>
-      <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
-      <li>Lúc đó bạn thiếu mental model nào?</li>
-      <li>Nếu gặp lại hôm nay, bạn sẽ debug nhanh hơn bằng bước nào?</li>
+      <li>Tình huống #1: tại sao pull có thể mất code chưa commit? Cơ chế merge của Git làm gì với working tree?</li>
+      <li>Tình huống #5: reflog hoạt động thế nào? Tại sao xóa branch không mất commit?</li>
+      <li>Nếu push commit nhầm lên main và 5 người đã pull, làm gì? (Hint: <code>git revert</code> vs <code>git reset --force</code> — chọn cái nào?)</li>
     </ol>
-    <div class="pause-hint">Nếu không nhớ lỗi thật, hãy tự tạo bug trong Build Exercise.</div>
+    <div class="pause-hint">Đáp án ở Section 2 (mental model) và Section 7 (undo).</div>
   </div>
-  <div class="table-wrap">
-    <table><thead><tr><th>Ngày</th><th>Việc làm</th><th>Evidence phải có</th><th>Rủi ro nếu bỏ qua</th></tr></thead><tbody><tr><td>Day 1</td><td>Đọc Roadmap + Intro, ghi lại 5 câu hỏi chưa chắc</td><td>Có note 5 câu hỏi</td><td>Đọc trôi nhưng không biết mình không biết gì</td></tr>
-<tr><td>Day 2</td><td>Chạy bad code và quan sát lỗi</td><td>Có output lỗi hoặc test fail</td><td>Chỉ đọc code, không thấy failure thật</td></tr>
-<tr><td>Day 3</td><td>Refactor bad code sang good code</td><td>Có commit before/after</td><td>Sửa theo cảm giác, không giữ behavior</td></tr>
-<tr><td>Day 4</td><td>Viết edge case tests</td><td>Ít nhất 5 test edge cases</td><td>Chỉ test happy path</td></tr>
-<tr><td>Day 5</td><td>Giải thích Feynman 5 phút</td><td>Có bản ghi âm/note</td><td>Nói được định nghĩa nhưng không có ví dụ</td></tr>
-<tr><td>Day 6</td><td>Đọc official docs liên quan</td><td>Ghi 3 điểm docs nói khác hiểu ban đầu</td><td>Tin AI/content tóm tắt tuyệt đối</td></tr>
-<tr><td>Day 7</td><td>Tự tạo một bug biến thể</td><td>Có test reproduce bug</td><td>Không biết cách phá code</td></tr>
-<tr><td>Day 8</td><td>Viết mini runbook/debug steps</td><td>Có checklist command/action</td><td>Gặp lỗi thật lại panic</td></tr>
-<tr><td>Day 9</td><td>Review code cũ của bản thân</td><td>Tìm ít nhất 3 anti-patterns</td><td>Không chuyển kiến thức vào code review</td></tr>
-<tr><td>Day 10</td><td>Pair với bạn khác hoặc tự role-play</td><td>Trả lời 5 drill questions</td><td>Không luyện nói nên interview lắp bắp</td></tr>
-<tr><td>Day 11</td><td>Tối ưu hoặc cleanup solution</td><td>Có reasoning trade-off</td><td>Refactor làm code phức tạp hơn</td></tr>
-<tr><td>Day 12</td><td>Chạy với input lớn/concurrent nếu phù hợp</td><td>Có số liệu hoặc observation</td><td>Không biết scale behavior</td></tr>
-<tr><td>Day 13</td><td>Viết README dạy lại topic</td><td>README 500-1000 từ</td><td>Kiến thức chỉ nằm trong đầu</td></tr>
-<tr><td>Day 14</td><td>Làm mock interview 20 phút</td><td>Có feedback list</td><td>Không biết lỗ hổng còn lại</td></tr></tbody></table>
-  </div>
+</section>
 
-  <h3><span class="k-tag core">CORE</span> Code Review Checklist cho topic này</h3>
-  <p>Dùng checklist này khi review PR của chính mình. Nó cố tình cụ thể để tránh câu “nhìn ổn”.</p>
-  <ol><li>Tên biến/method có nói đúng intent không?</li>
-<li>Input null/empty/invalid được xử lý rõ chưa?</li>
-<li>Data lớn có làm complexity đổi cấp không?</li>
-<li>Có shared mutable state không?</li>
-<li>Lỗi có bị swallow hoặc che mất stack trace không?</li>
-<li>Log có đủ context nhưng không lộ secret không?</li>
-<li>Có rollback/recovery path nếu thao tác fail giữa chừng không?</li>
-<li>Có test chứng minh edge case quan trọng không?</li>
-<li>Code có phụ thuộc implementation thay vì abstraction không cần thiết không?</li>
-<li>Có comment giải thích mechanism khó, không comment hiển nhiên không?</li>
-<li>Có source official nào confirm behavior không?</li>
-<li>Có cách reproduce bug nếu người khác hỏi không?</li>
-<li>Có trade-off được ghi trong README/PR description không?</li>
-<li>Có tránh domain-specific assumption quá hẹp không?</li>
-<li>Có thể dạy lại cho junior khác trong 10 phút không?</li></ol>
+<section id="mental-model">
+  <h2>2. Mental Model — Git Là Cây Commit (DAG) <span class="phase-tag">CORE ★</span></h2>
+  <p>Trước khi học command, phải hiểu Git lưu cái gì + branch là gì.</p>
 
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không có evidence</div>
-    <pre><code class="language-text">I think this should work.\nNo test. No command output. No rollback note.</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Có evidence tối thiểu</div>
-    <pre><code class="language-text">Test: passes edge cases.\nCommand/output recorded.\nKnown trade-off documented.\nRollback/recovery step written.</code></pre>
-  </div>
-</div>
+  <h3>3 Khu vực của Git</h3>
+  <pre><code class="language-text">Working tree     ←  file bạn đang sửa trên disk
+   ↓ git add
+Index (staging)  ←  "snapshot dự kiến cho commit tiếp"
+   ↓ git commit
+Local repo       ←  lịch sử commit trên máy bạn
+   ↓ git push
+Remote repo      ←  GitHub / GitLab / Bitbucket</code></pre>
+  <p>Hiểu 3 khu vực này = hiểu 80% command. Mọi command Git đều di chuyển dữ liệu giữa 4 chỗ này.</p>
 
+  <h3>Commit là snapshot, KHÔNG phải diff</h3>
+  <p>Mỗi commit = (snapshot toàn bộ tree, parent commit, author, message, timestamp). Hash SHA-1 tính từ nội dung — đổi 1 byte = hash khác hoàn toàn → immutable.</p>
+  <pre><code class="language-text">commit a1b2c3 (parent: 999888)
+├── README.md       (blob: hash1)
+├── src/
+│   ├── App.java    (blob: hash2)
+│   └── User.java   (blob: hash3)
+└── pom.xml         (blob: hash4)
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Junior → Middle calibration</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Level</th><th>Hiểu biết</th><th>Hành vi thấy được</th><th>Gap còn lại</th></tr></thead><tbody><tr><td>Beginner</td><td>Biết syntax/API</td><td>Code chạy với ví dụ mẫu</td><td>Không giải thích được failure mode</td></tr>
-<tr><td>Junior solid</td><td>Biết mental model</td><td>Chọn đúng pattern cho case thường</td><td>Còn chậm khi gặp edge case</td></tr>
-<tr><td>Middle-ready</td><td>Biết trade-off</td><td>Review được code người khác</td><td>Cần thêm production experience</td></tr>
-<tr><td>Mentor-ready</td><td>Dạy được người khác</td><td>Có runbook, exercises, checklist</td><td>Phải cập nhật theo tool/version mới</td></tr></tbody></table>
+→ Đổi User.java → commit mới có hash khác, tree mới, nhưng các blob unchanged vẫn share.</code></pre>
+
+  <h3>Branch là pointer, không phải copy</h3>
+  <pre><code class="language-text">main      → commit C (head của main)
+              ↓
+              B → A (commit gốc)
+                  ↑
+feature   → commit E → D (head của feature, parent là B)
+
+git checkout feature  → HEAD trỏ vào "feature" → working tree = snapshot của E
+git checkout main     → HEAD trỏ vào "main"    → working tree = snapshot của C</code></pre>
+  <p><strong>Branch chỉ là 1 file text 40 ký tự</strong> (hash của commit head). Tạo branch = tạo pointer, không copy code → nhanh, rẻ.</p>
+
+  <h3>HEAD là con trỏ hiện tại</h3>
+  <p><code>HEAD</code> = "branch tôi đang ở". Khi <code>git commit</code>, commit mới được tạo, branch pointer + HEAD đều move forward.</p>
+
+  <h3>DAG — Directed Acyclic Graph</h3>
+  <p>Mỗi commit có 1+ parent. Merge commit có 2 parent. Toàn bộ history = DAG. Visualize: <code>git log --graph --oneline --all</code>.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trả lời thành lời (không nhìn dưới):</div>
+    <ol>
+      <li>Khi bạn <code>git checkout feature</code>, file trên disk có thay đổi không? Vì sao?</li>
+      <li>Nếu bạn xóa branch <code>feature</code>, các commit của nó còn không?</li>
+      <li>2 commit có cùng nội dung file, hash có giống nhau không?</li>
+    </ol>
+    <div class="pause-hint">Đáp án ngay dưới.</div>
   </div>
 
   <div class="callout success">
-    <div class="ctitle">✅ Definition of done</div>
-    <p>Bạn hoàn thành topic này khi có thể: viết code đúng, phá code bằng edge case, sửa code, giải thích mechanism, và review code người khác mà không cần nhìn lại tài liệu.</p>
+    <div class="ctitle">✅ Đáp án</div>
+    <ol>
+      <li>Có — Git update working tree để match snapshot của commit feature trỏ vào. File chưa commit bị overwrite nếu conflict.</li>
+      <li>Còn — commit là object trong <code>.git/objects/</code>, branch chỉ là pointer. Xóa pointer không xóa object. Reflog vẫn tham chiếu trong 90 ngày → recover được bằng <code>git checkout -b name &lt;hash&gt;</code>.</li>
+      <li>KHÔNG — hash tính từ (snapshot tree + parent + author + timestamp + message). 2 commit cùng diff nhưng khác timestamp → khác hash. Đây là tại sao rebase tạo commit mới (parent khác).</li>
+    </ol>
   </div>
 </section>
 
+<section id="daily-commands">
+  <h2>3. Daily Commands — 80% Junior Cần <span class="phase-tag">CORE ★</span></h2>
 
+  <h3>Setup ban đầu (1 lần)</h3>
+  <pre><code class="language-bash">git config --global user.name "Nguyen Van A"
+git config --global user.email "a@example.com"
+git config --global init.defaultBranch main
+git config --global pull.rebase false  # hoặc 'true' nếu team dùng rebase
+git config --global core.editor "code --wait"  # VS Code cho commit message
+git config --global core.autocrlf input  # macOS/Linux; "true" cho Windows</code></pre>
 
-<section id="practice-bank">
-  <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Git Daily Workflow thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
-<tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
-<tr><td>3</td><td>Fix</td><td>Sửa bad code theo good pattern</td><td>Commit diff phải nhỏ và giải thích được.</td></tr>
-<tr><td>4</td><td>Break</td><td>Tạo input làm solution fail</td><td>Ít nhất một case null/empty hoặc concurrent nếu phù hợp.</td></tr>
-<tr><td>5</td><td>Scale</td><td>Tăng data size 100 lần</td><td>Ghi latency/memory hoặc mô tả behavior.</td></tr>
-<tr><td>6</td><td>Explain</td><td>Dạy lại cho một bạn mới</td><td>Bạn kia phải hỏi lại ít hơn 3 lần.</td></tr>
-<tr><td>7</td><td>Review</td><td>Tìm anti-pattern tương tự trong code cũ</td><td>Có link file/dòng hoặc snippet.</td></tr>
-<tr><td>8</td><td>Rewrite</td><td>Viết lại README cho người đi sau</td><td>Có command, expected output, rollback.</td></tr>
-<tr><td>9</td><td>Compare</td><td>So sánh 2 alternative</td><td>Nói được khi nào dùng A, khi nào dùng B.</td></tr>
-<tr><td>10</td><td>Verify</td><td>Mở official docs kiểm tra một statement</td><td>Ghi lại URL và câu bạn verify.</td></tr>
-<tr><td>11</td><td>Observe</td><td>Thêm log/test/metric nhỏ để nhìn thấy failure</td><td>Không làm lộ secret hoặc data nhạy cảm.</td></tr>
-<tr><td>12</td><td>Refactor</td><td>Giảm coupling hoặc tăng boundary</td><td>Behavior giữ nguyên qua test.</td></tr>
-<tr><td>13</td><td>Recover</td><td>Viết bước recovery khi lỡ làm sai</td><td>Có precheck trước khi chạy lệnh nguy hiểm.</td></tr>
-<tr><td>14</td><td>Pair</td><td>Nhờ người khác review lời giải</td><td>Ghi lại 3 feedback.</td></tr>
-<tr><td>15</td><td>Mock</td><td>Trả lời 5 câu drill không nhìn tài liệu</td><td>Mỗi câu dưới 2 phút, có ví dụ.</td></tr>
-<tr><td>16</td><td>Teach</td><td>Tạo 3 câu hỏi cho junior khác</td><td>Mỗi câu có expected answer.</td></tr>
-<tr><td>17</td><td>Document</td><td>Viết checklist PR cho topic này</td><td>Checklist dùng được ngay trong team.</td></tr>
-<tr><td>18</td><td>Automate</td><td>Tự động hóa một kiểm tra nhỏ</td><td>Script/test chạy lại được.</td></tr>
-<tr><td>19</td><td>Simplify</td><td>Xóa phần code/thao tác thừa</td><td>Giải thích vì sao đơn giản hơn vẫn đúng.</td></tr>
-<tr><td>20</td><td>Retrospective</td><td>Viết 5 dòng: mình hiểu sai gì ban đầu</td><td>Có lesson cụ thể.</td></tr></tbody></table>
+  <h3>Workflow hằng ngày</h3>
+  <pre><code class="language-bash"># 1. Bắt đầu ngày — sync latest
+git checkout main
+git pull
+
+# 2. Tạo branch mới
+git checkout -b feature/checkout-flow
+
+# 3. Code, save, check status thường xuyên
+git status                # XEM 100 lần/ngày — quan trọng nhất
+git diff                  # Xem diff chưa stage
+git diff --staged         # Xem diff đã stage
+
+# 4. Add + commit
+git add src/Checkout.java         # add file cụ thể, KHÔNG dùng `git add .` bừa
+git add -p                        # interactive add (chọn từng hunk)
+git commit -m "feat(checkout): add cart validation"
+
+# 5. Push lên remote
+git push -u origin feature/checkout-flow  # -u set upstream lần đầu
+git push                                  # lần sau
+
+# 6. Mở Pull Request trên GitHub/GitLab UI</code></pre>
+
+  <h3>Xem lịch sử</h3>
+  <pre><code class="language-bash">git log --oneline -10               # 10 commit gần nhất
+git log --graph --oneline --all     # DAG đầy đủ
+git log -p src/User.java            # lịch sử thay đổi của 1 file
+git log --author="An"               # commit của 1 người
+git log --since="2 weeks ago"
+git show &lt;hash&gt;                     # detail 1 commit
+git blame src/User.java             # ai sửa dòng nào, khi nào</code></pre>
+
+  <h3>Chuyển branch / commit</h3>
+  <pre><code class="language-bash">git checkout main                  # về branch
+git checkout &lt;hash&gt;                # về commit cụ thể (detached HEAD)
+git switch main                    # Git 2.23+ — clearer hơn checkout
+git switch -c new-branch           # tạo + chuyển</code></pre>
+</section>
+
+<section id="branching">
+  <h2>4. Branching Strategies <span class="phase-tag">SUPPLEMENTARY</span></h2>
+
+  <h3>GitHub Flow (đơn giản, phổ biến)</h3>
+  <pre><code class="language-text">main (luôn deployable, có CI/CD auto deploy)
+  ├── feature/checkout-validation
+  ├── feature/order-history-pagination
+  ├── bugfix/cart-total-mismatch
+  └── hotfix/critical-payment-bug
+
+Workflow: branch từ main → code → PR → review → merge → delete branch</code></pre>
+
+  <h3>Git Flow (cũ, phức tạp — đa số team không dùng nữa)</h3>
+  <p>main, develop, feature/*, release/*, hotfix/* — quá nhiều branch, overhead lớn. Chỉ dùng khi có scheduled release cứng (game, embedded).</p>
+
+  <h3>Naming convention branch</h3>
+  <pre><code class="language-text">feature/checkout-validation       # tính năng mới
+bugfix/cart-total-mismatch        # bug bình thường
+hotfix/critical-payment-bug       # bug cần fix gấp lên prod
+refactor/extract-payment-service  # refactor không thay đổi behavior
+docs/update-api-readme            # tài liệu
+chore/upgrade-spring-boot         # nâng cấp dependency</code></pre>
+
+  <h3>Commit message — Conventional Commits</h3>
+  <pre><code class="language-text">&lt;type&gt;(&lt;scope&gt;): &lt;subject&gt;
+
+feat(checkout): add cart validation for max items
+fix(payment): handle Stripe timeout gracefully
+refactor(user): extract email validator
+docs(readme): add docker setup guide
+chore(deps): bump spring-boot to 3.2.0
+test(order): add integration test for cancel flow</code></pre>
+  <p>Type: <code>feat</code> / <code>fix</code> / <code>refactor</code> / <code>docs</code> / <code>test</code> / <code>chore</code> / <code>perf</code>. Subject ≤ 50 ký tự, imperative ("add" không phải "added").</p>
+</section>
+
+<section id="merge-rebase">
+  <h2>5. Merge / Rebase / Cherry-pick <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Merge — Tạo merge commit</h3>
+  <pre><code class="language-bash">git checkout main
+git merge feature/checkout
+# Tạo merge commit M, 2 parent (HEAD của main, HEAD của feature)</code></pre>
+  <pre><code class="language-text">    A---B---C  main
+         \      \
+          D---E--M   ← merge commit, parent = C và E
+                feature</code></pre>
+
+  <h3>Fast-forward merge</h3>
+  <pre><code class="language-text">Trước:  A---B  main
+              \
+               C---D  feature
+
+Sau ff: A---B---C---D  main, feature (cả 2 trỏ vào D)</code></pre>
+  <p>Khi main không có commit mới sau khi feature tách ra → merge = move pointer, KHÔNG tạo merge commit. Dùng <code>git merge --no-ff</code> để force merge commit (giữ history rõ).</p>
+
+  <h3>Rebase — Replay commit lên branch khác</h3>
+  <pre><code class="language-bash">git checkout feature
+git rebase main
+# Replay D, E lên đầu main → tạo D', E' với parent mới</code></pre>
+  <pre><code class="language-text">Trước:  A---B---C  main
+              \
+               D---E  feature
+
+Sau rebase:  A---B---C  main
+                      \
+                       D'---E'  feature (commit MỚI, hash khác)</code></pre>
+
+  <h3>🚨 Quy tắc Vàng của Rebase</h3>
+  <div class="callout danger">
+    <div class="ctitle">KHÔNG bao giờ rebase commit đã push lên branch shared</div>
+    <p>Rebase tạo commit mới (hash khác). Nếu commit cũ đã push lên main và người khác pulled → rebase = lịch sử khác nhau giữa local + remote → mỗi người push xong sẽ ghi đè lên nhau, code biến mất, team chửi.</p>
+    <p><strong>Rebase OK khi:</strong> commit chỉ ở local hoặc trên feature branch của bạn (không ai khác đang work trên đó).</p>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Mistake Catalog — 12 lỗi phải tự bắt trước khi senior bắt</h3>
-  <p>Những lỗi này không riêng topic nào; chúng là pattern khiến junior mất thời gian mỗi tuần.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>Lỗi</th><th>Hậu quả</th><th>Thói quen thay thế</th></tr></thead><tbody><tr><td>Không đọc lỗi đầy đủ</td><td>Fix sai dòng đầu tiên nhìn thấy</td><td>Đọc từ root cause/first failing command</td></tr>
-<tr><td>Không ghi lại command đã chạy</td><td>Không reproduce được</td><td>Copy transcript vào note/README</td></tr>
-<tr><td>Không phân biệt symptom và root cause</td><td>Chữa tạm, lỗi quay lại</td><td>Viết hypothesis trước fix</td></tr>
-<tr><td>Không chạy test sau conflict/refactor</td><td>Merge xong mới vỡ</td><td>Run test liên quan trước push</td></tr>
-<tr><td>Dùng dữ liệu quá nhỏ</td><td>Không thấy performance issue</td><td>Tạo dataset đại diện hơn</td></tr>
-<tr><td>Không nghĩ đến người vận hành</td><td>Code khó debug</td><td>Thêm log/runbook/expected output</td></tr>
-<tr><td>Dựa vào IDE hoàn toàn</td><td>Ra server là bí</td><td>Biết command-line equivalent</td></tr>
-<tr><td>Không hỏi trade-off</td><td>Pattern bị dùng máy móc</td><td>Luôn có section khi nào không dùng</td></tr>
-<tr><td>Không kiểm security</td><td>Secret/PII lọt vào log/repo</td><td>Review data nhạy cảm trước commit/log</td></tr>
-<tr><td>Không rollback được</td><td>Sửa lỗi thành incident lớn</td><td>Chuẩn bị restore/revert path</td></tr>
-<tr><td>Không học từ lỗi cũ</td><td>Lặp lại lỗi</td><td>Biến incident thành checklist</td></tr>
-<tr><td>Không dạy lại</td><td>Hiểu mơ hồ</td><td>Feynman hoặc mentor note</td></tr></tbody></table>
-  </div>
+  <h3>Interactive Rebase — Cleanup history trước PR</h3>
+  <pre><code class="language-bash">git rebase -i HEAD~5  # interactive cho 5 commit gần nhất
 
-  <h3><span class="k-tag core">CORE</span> Rubric tự chấm</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Trục</th><th>Câu hỏi</th><th>Evidence</th></tr></thead><tbody><tr><td>Correctness</td><td>Có đúng với input bình thường và edge case không?</td><td>Test pass, invariant rõ</td></tr>
-<tr><td>Clarity</td><td>Người khác đọc có hiểu intent không?</td><td>Tên tốt, README/runbook đủ</td></tr>
-<tr><td>Safety</td><td>Sai thì có làm mất dữ liệu/secret/code không?</td><td>Rollback, mask, backup, guard</td></tr>
-<tr><td>Scalability</td><td>Data lớn hoặc repo lớn có làm vỡ không?</td><td>Big-O/metric/workload đại diện</td></tr>
-<tr><td>Operability</td><td>Production/debug có đủ evidence không?</td><td>Log, command, trace, status</td></tr>
-<tr><td>Teachability</td><td>Bạn có dạy lại được không?</td><td>Feynman + exercise</td></tr></tbody></table>
-  </div>
+# Editor mở ra:
+pick a1b2c3 feat(checkout): add validation
+squash d4e5f6 fix typo
+squash g7h8i9 fix another typo
+reword j0k1l2 refactor: extract method
+drop m3n4o5 wip debug
 
-  <div class="callout why">
-    <div class="ctitle">🎯 Tại sao cần Practice Bank?</div>
-    <p>Junior hay học bằng cảm giác quen mắt. Practice Bank buộc bạn tạo evidence. Khi đi phỏng vấn hoặc review PR, evidence làm câu trả lời chắc hơn nhiều so với “em nghĩ vậy”.</p>
+# Commands: pick / squash (s) / fixup (f) / reword (r) / drop (d) / edit (e)</code></pre>
+  <p>Dùng để: gộp commit "fix typo" / "wip", sửa commit message, xóa commit debug.</p>
+
+  <h3>Cherry-pick — Lấy 1 commit từ branch khác</h3>
+  <pre><code class="language-bash">git checkout main
+git cherry-pick &lt;hash-commit-từ-branch-khác&gt;
+# Apply commit đó lên main, tạo commit mới</code></pre>
+  <p>Use case: hotfix trên feature branch nhưng cần đẩy lên main ngay; backport bugfix sang release branch cũ.</p>
+
+  <h3>Counter-example — Khi nào KHÔNG dùng</h3>
+  <div class="callout warn">
+    <div class="ctitle">❌ KHÔNG dùng rebase khi…</div>
+    <ul>
+      <li>Branch đã push và có người khác work trên đó (Quy tắc Vàng)</li>
+      <li>Bạn không tự tin: nếu lo sợ, dùng merge — an toàn hơn</li>
+      <li>Team chưa thống nhất convention: hỏi senior trước, mỗi team có style khác nhau</li>
+    </ul>
+    <div class="ctitle">❌ KHÔNG dùng cherry-pick khi…</div>
+    <ul>
+      <li>Có thể merge cả branch: cherry-pick từng commit = dễ miss commit, dễ sót dependency</li>
+      <li>Số lượng commit nhiều: nếu cần &gt; 5 commit, dùng rebase hoặc merge</li>
+    </ul>
   </div>
 </section>
 
+<section id="conflict">
+  <h2>6. Conflict Resolution <span class="phase-tag">CORE ★</span></h2>
+  <p>Conflict xảy ra khi 2 branch sửa cùng 1 dòng trong cùng 1 file, hoặc 1 bên xóa file mà bên kia sửa.</p>
 
-<section id="build-projects">
-  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Git Daily Workflow Kata (Beginner)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
-    <p>Requirements:</p>
-    <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Một junior khác làm theo được mà không cần hỏi thêm.</div>
+  <h3>Bước 1: Xem file nào conflict</h3>
+  <pre><code class="language-bash">git status
+# Both modified: src/User.java
+# Both modified: src/Order.java</code></pre>
+
+  <h3>Bước 2: Mở file, resolve</h3>
+  <pre><code class="language-text">// src/User.java
+public class User {
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+    private String email;     ← code của branch hiện tại (main)
+=======
+    private String emailAddress;  ← code đến từ branch merge (feature)
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/rename-email
+}</code></pre>
+  <p><strong>Đọc cả 2 bên</strong>, hiểu ý đồ, viết version đúng:</p>
+  <pre><code class="language-java">public class User {
+    private String emailAddress;  // Quyết: rename theo feature branch, đồng nhất với DB column
+}</code></pre>
+
+  <h3>Bước 3: Mark resolved + commit</h3>
+  <pre><code class="language-bash">git add src/User.java         # mark resolved
+git status                    # verify "All conflicts fixed"
+git commit                    # editor mở với message merge default — accept hoặc edit</code></pre>
+
+  <h3>Tools support</h3>
+  <pre><code class="language-bash">git mergetool                 # mở merge tool config (vimdiff, kdiff3, vscode...)
+git config --global merge.tool vscode  # set vscode làm default</code></pre>
+
+  <h3>Abort nếu rối</h3>
+  <pre><code class="language-bash">git merge --abort       # undo merge, về state trước merge
+git rebase --abort      # tương tự cho rebase</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Anti-pattern: xóa hết marker, commit liều</div>
+    <p>Junior thường thấy <code>&lt;&lt;&lt;</code> đáng sợ → xóa marker + 1 trong 2 bên random + commit. Code chạy được nhưng logic sai.</p>
+    <p><strong>Đúng:</strong> đọc cả 2 bên, hiểu why, ask senior nếu không chắc. 10 phút hỏi tốt hơn 4h debug.</p>
   </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #2 — Production Scenario Lab (Intermediate)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Mô phỏng một incident nhỏ và viết runbook xử lý.</div>
-    <p>Requirements:</p>
-    <ul><li>Có log/output trước và sau.</li><li>Có root cause.</li><li>Có rollback hoặc recovery step.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Bạn giải thích được failure timeline trong 3 phút.</div>
-  </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #3 — Mentor Pack (Advanced)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Chuẩn bị bài hướng dẫn 30 phút cho junior khác.</div>
-    <p>Requirements:</p>
-    <ul><li>5 misconceptions.</li><li>5 exercises.</li><li>Checklist review.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Người học làm đúng 80% bài tập sau buổi hướng dẫn.</div>
-  </div>
-
 </section>
 
-<section id="drill-bank">
-  <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
-  <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Git Daily Workflow quan trọng với junior backend?</h3>
-  <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
-  <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
+<section id="undo">
+  <h2>7. Undo — 5 Tình huống Junior Hoảng Loạn <span class="phase-tag">CORE ★</span></h2>
 
+  <div class="callout tip">
+    <div class="ctitle">A. Sửa file mà chưa add, muốn về như cũ</div>
+    <pre><code class="language-bash">git restore src/User.java        # Git 2.23+
+# hoặc cũ hơn:
+git checkout -- src/User.java</code></pre>
+  </div>
 
-  <h3><span class="k-tag core">CORE</span> Q2. Bạn debug khi không hiểu lỗi bắt đầu từ đâu thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Xác định state hiện tại, input, expected output, command/log gần nhất, rồi thu hẹp từng bước. Không sửa mù khi chưa có bằng chứng.</p>
-  <p><strong>Signal</strong>: Có method điều tra.</p>
+  <div class="callout tip">
+    <div class="ctitle">B. Add rồi nhưng chưa commit, muốn unstage</div>
+    <pre><code class="language-bash">git restore --staged src/User.java
+# hoặc cũ hơn:
+git reset HEAD src/User.java</code></pre>
+  </div>
 
+  <div class="callout tip">
+    <div class="ctitle">C. Commit rồi nhưng message sai</div>
+    <pre><code class="language-bash">git commit --amend -m "feat(checkout): correct message"
+# Chỉ amend khi CHƯA push. Đã push = đổi hash = rewrite history shared.</code></pre>
+  </div>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q3. Khi nào nên viết runbook?</h3>
-  <p><strong>Answer mẫu</strong>: Khi workflow có nhiều bước, có thể fail, hoặc người khác cần lặp lại an toàn. Runbook tốt có precheck, command, expected output và rollback.</p>
-  <p><strong>Signal</strong>: Có tư duy vận hành.</p>
+  <div class="callout warn">
+    <div class="ctitle">D. Commit nhầm vào main (CHƯA push)</div>
+    <pre><code class="language-bash"># Tạo branch giữ commit
+git branch feature/work-in-progress
 
+# Reset main về commit trước
+git reset --hard HEAD~1
 
-  <h3><span class="k-tag advanced">ADVANCED</span> Q4. Dấu hiệu bạn thật sự hiểu một foundation topic?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn giải thích được cơ chế, dự đoán edge case, viết test phá happy path và dạy lại người khác.</p>
-  <p><strong>Signal</strong>: Không chỉ thuộc syntax.</p>
+# Chuyển sang branch mới có commit
+git checkout feature/work-in-progress</code></pre>
+  </div>
 
+  <div class="callout danger">
+    <div class="ctitle">E. Đã push commit nhầm lên main (NGUY HIỂM)</div>
+    <p>KHÔNG dùng <code>git push --force</code> trên main — sẽ xóa commit của người khác đã push sau bạn, team chửi.</p>
+    <pre><code class="language-bash"># Dùng revert — tạo commit "ngược lại"
+git revert &lt;hash-commit-nhầm&gt;
+git push</code></pre>
+    <p>Revert tạo commit mới đảo lại change → an toàn cho shared branch. History dài hơn nhưng đúng.</p>
+  </div>
 
-  <h3><span class="k-tag core">CORE</span> Q5. Nếu code chạy đúng ở local, vì sao senior vẫn có thể reject?</h3>
-  <p><strong>Answer mẫu</strong>: Vì local happy path chỉ chứng minh một input nhỏ chạy được. Senior review failure mode: input bẩn, data lớn, concurrency, rollback, observability, security và maintainability.</p>
-  <p><strong>Signal</strong>: Bạn hiểu code review không phải bắt bẻ style.</p>
+  <h3>🆘 Bonus: Reflog cứu mạng</h3>
+  <pre><code class="language-bash"># "Em vô tình `git reset --hard` mất 3h code"
+git reflog                          # xem mọi HEAD movement (90 ngày)
+# Output:
+# a1b2c3 HEAD@{0}: reset: moving to HEAD~3
+# d4e5f6 HEAD@{1}: commit: WIP checkout flow  ← commit em cần
+# g7h8i9 HEAD@{2}: commit: validation
 
+git checkout d4e5f6                 # về commit đó (detached HEAD)
+git checkout -b recover-branch     # tạo branch để giữ</code></pre>
+  <p><strong>Reflog giữ 90 ngày mặc định</strong>, kể cả khi branch bị xóa. Mọi action local đều log.</p>
 
-  <h3><span class="k-tag core">CORE</span> Q6. Một câu trả lời junior tốt khác gì câu trả lời thuộc lòng?</h3>
-  <p><strong>Answer mẫu</strong>: Nó có ví dụ cụ thể, trade-off, và nói được khi nào cách đó sai. Thuộc lòng thường chỉ có định nghĩa.</p>
-  <p><strong>Signal</strong>: Có thể tự tạo ví dụ mới.</p>
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trả lời:</div>
+    <ol>
+      <li>Khi nào <code>git reset --hard</code> mất code KHÔNG recovery được? (Hint: liên quan add)</li>
+      <li>Push commit có data PII (password) lên public repo. Xóa thế nào? <code>git push --force</code> đủ không?</li>
+    </ol>
+  </div>
 
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Bạn sẽ viết checklist học topic này thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Chia thành concept, code example, edge case, exercise, Feynman explanation và source verification.</p>
-  <p><strong>Signal</strong>: Có cách học có thể lặp lại.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q8. Khi gặp output lạ, bước đầu tiên là gì?</h3>
-  <p><strong>Answer mẫu</strong>: Đóng băng hiện trạng: input, command, log, version, branch, environment. Sau đó thu hẹp bằng reproduction nhỏ.</p>
-  <p><strong>Signal</strong>: Không sửa mù.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Làm sao biết mình đã hiểu thật?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn có thể phá code, sửa code, giải thích mechanism, và dạy người khác tránh lỗi tương tự.</p>
-  <p><strong>Signal</strong>: Hiểu thật gắn với hành động.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q10. Nếu phải mentor junior khác, bạn bắt đầu từ đâu?</h3>
-  <p><strong>Answer mẫu</strong>: Bắt đầu từ lỗi thật họ vừa gặp, vẽ mental model, sửa một ví dụ nhỏ, rồi cho họ tự làm biến thể.</p>
-  <p><strong>Signal</strong>: Biết dạy bằng feedback loop.</p>
-
+  <div class="callout success">
+    <div class="ctitle">✅ Đáp án</div>
+    <ol>
+      <li>Reset --hard mất code KHI: file chưa được <code>git add</code> bao giờ (working tree only, không có trong objects). Reflog chỉ recovery được commit/staged content.</li>
+      <li>Force push KHÔNG đủ — git history bị rewrite local nhưng GitHub vẫn cache, mọi clone trước đó vẫn có commit. Phải: rotate password ngay, dùng <a href="https://rtyley.github.io/bfg-repo-cleaner/">BFG Repo-Cleaner</a> để rewrite history, contact GitHub support để force purge cache.</li>
+    </ol>
+  </div>
 </section>
 
-<section id="self-test">
-  <h2>Self-Test Scenarios <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đọc bối cảnh, tự viết đáp án, rồi mới xem gợi ý. Đây là phần chống đọc hiểu giả mạnh nhất.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Scenario 1 — Local pass, production fail</h3>
-  <p><strong>Bối cảnh</strong>: Feature chạy được trên máy cá nhân nhưng fail khi data lớn hoặc nhiều người dùng.</p>
-  <p><strong>Tự trả lời</strong>: Bạn cần thêm bằng chứng gì?</p>
-  <p><strong>Gợi ý</strong>: So sánh input, environment, concurrency, data size và logs.</p>
+<section id="stash-gitignore">
+  <h2>8. Stash + .gitignore <span class="phase-tag">SUPPLEMENTARY</span></h2>
 
+  <h3>Git Stash — Cất tạm</h3>
+  <pre><code class="language-bash"># Đang code dở, cần pull / switch branch
+git stash                       # cất tạm working tree + index
+git stash push -m "WIP checkout"  # với message
+git checkout main
+git pull                        # OK, không conflict
+git checkout feature
+git stash pop                   # lấy lại + xóa khỏi stash
+# hoặc
+git stash list                  # xem các stash
+git stash apply stash@{0}       # apply nhưng giữ stash
+git stash drop stash@{0}        # xóa stash</code></pre>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Junior panic khi gặp lỗi lạ</h3>
-  <p><strong>Bối cảnh</strong>: Console có stack trace/command output dài.</p>
-  <p><strong>Tự trả lời</strong>: Bạn dạy bạn đó đọc từ đâu?</p>
-  <p><strong>Gợi ý</strong>: Tìm first cause, command gần nhất, state trước/sau, rồi reproduce nhỏ.</p>
+  <h3>.gitignore — File KHÔNG commit</h3>
+  <pre><code class="language-text"># Java
+*.class
+target/
+*.jar
+*.war
 
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
 
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Review PR foundation</h3>
-  <p><strong>Bối cảnh</strong>: Code chạy nhưng thiếu guard/rollback/log.</p>
-  <p><strong>Tự trả lời</strong>: Comment thế nào để người viết học được?</p>
-  <p><strong>Gợi ý</strong>: Nêu failure mode cụ thể, hậu quả và hướng sửa nhỏ.</p>
+# Logs
+logs/
+*.log
 
+# OS
+.DS_Store
+Thumbs.db
 
-  <h3><span class="k-tag core">CORE</span> Scenario 4 — Code review bị hỏi &#x27;vì sao?&#x27;</h3>
-  <p><strong>Bối cảnh</strong>: Bạn chọn một cách implement nhưng chỉ trả lời được &#x27;em thấy người ta hay làm vậy&#x27;.</p>
-  <p><strong>Tự trả lời</strong>: Làm sao nâng câu trả lời?</p>
-  <p><strong>Gợi ý</strong>: Nói problem, constraint, trade-off, alternative và lý do chọn. Nếu chưa nói được, bạn mới copy pattern.</p>
+# Secrets
+.env
+application-secret.yml
+*.pem
+*.key
 
+# Dependencies
+node_modules/</code></pre>
+  <p><strong>Quy tắc:</strong> ignore mọi file generated (build output, IDE config), mọi file secret. Nếu lỡ commit file secret: revert + rotate secret + xóa khỏi history bằng BFG.</p>
+</section>
 
-  <h3><span class="k-tag core">CORE</span> Scenario 5 — Unit test pass nhưng integration fail</h3>
-  <p><strong>Bối cảnh</strong>: Test nhỏ mock hết dependency, lên môi trường thật fail vì data/permission/path khác.</p>
-  <p><strong>Tự trả lời</strong>: Thiếu loại kiểm chứng nào?</p>
-  <p><strong>Gợi ý</strong>: Cần test gần reality hơn: integration, contract, command transcript, hoặc environment checklist.</p>
+<section id="enterprise">
+  <h2>9. Enterprise Workflow <span class="phase-tag">ADVANCED</span></h2>
 
+  <h3>PR Workflow chuẩn</h3>
+  <ol>
+    <li>Branch từ <code>main</code> latest: <code>git checkout main &amp;&amp; git pull &amp;&amp; git checkout -b feature/x</code></li>
+    <li>Code, commit (small, descriptive messages)</li>
+    <li>Push, mở PR trên GitHub/GitLab</li>
+    <li>CI chạy: tests, linter, security scan</li>
+    <li>Code review: ít nhất 1 approver (2 cho production code)</li>
+    <li>Fix review comments, push tiếp (CI re-run)</li>
+    <li>Squash + merge (hoặc rebase + merge tùy team) → delete branch</li>
+  </ol>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bug chỉ xảy ra khi chạy song song</h3>
-  <p><strong>Bối cảnh</strong>: Hai request hoặc hai dev thao tác cùng resource làm state lệch.</p>
-  <p><strong>Tự trả lời</strong>: Bạn sẽ tìm race thế nào?</p>
-  <p><strong>Gợi ý</strong>: Tìm shared mutable state, check-then-act, non-atomic operation, lock/transaction boundary.</p>
+  <h3>Pre-commit Hooks</h3>
+  <pre><code class="language-bash"># .git/hooks/pre-commit (executable)
+#!/bin/bash
+# Run linter trước commit
+mvn spotless:check || exit 1
+mvn test || exit 1
+echo "✅ Pre-commit checks passed"</code></pre>
+  <p>Dùng <a href="https://pre-commit.com/">pre-commit framework</a> để share hooks giữa team qua file <code>.pre-commit-config.yaml</code>.</p>
 
+  <h3>Sign Commit (Enterprise sometimes requires)</h3>
+  <pre><code class="language-bash">git config --global commit.gpgsign true
+git config --global user.signingkey &lt;gpg-key-id&gt;
+git commit -S -m "feat: add audit log"
+# Sign verify trên GitHub: green badge "Verified"</code></pre>
+  <p>Use case: compliance, audit trail, ngăn commit giả mạo identity (impersonation attack).</p>
+</section>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Log không đủ debug</h3>
-  <p><strong>Bối cảnh</strong>: Production chỉ có dòng &#x27;failed&#x27; mà không có id, input, stack trace.</p>
-  <p><strong>Tự trả lời</strong>: Log tối thiểu cần gì?</p>
-  <p><strong>Gợi ý</strong>: Event name, correlation id, business id, outcome, duration, exception cause, không chứa secret.</p>
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
 
+  <h3>Git Daily Workflow</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize (Junior)</h3>
+      <p>Biết clone/add/commit/push/pull. Conflict = hoảng, gọi senior. Không biết reflog. Đôi khi commit nhầm main.</p>
+      <p><em>Symptom:</em> mỗi conflict tốn 30 phút + sự giúp đỡ. Đã từng mất code vì <code>reset --hard</code>.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain (Mid)</h3>
+      <p>Hiểu DAG, phân biệt merge vs rebase, dùng interactive rebase để cleanup history, dùng stash khi switch branch dở, recover commit bằng reflog.</p>
+      <p><em>Symptom:</em> tự resolve conflict trong 10 phút, biết khi nào dùng merge vs rebase theo Quy tắc Vàng.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply (Senior)</h3>
+      <p>Design Git workflow cho team (PR template, branch protection, CODEOWNERS), viết pre-commit hooks, recover repo bị force-push xóa branch, dùng <code>git bisect</code> tìm commit bug.</p>
+      <p><em>Symptom:</em> debug 1 regression bằng <code>git bisect</code> ra commit gây bug trong 5 phút thay vì bisect tay.</p>
+    </div>
+  </div>
 
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Tự viết runbook cho lỗi đã gặp</h3>
-  <p><strong>Bối cảnh</strong>: Bạn vừa được senior cứu một lỗi trong 5 phút.</p>
-  <p><strong>Tự trả lời</strong>: Biến nó thành tài sản học thế nào?</p>
-  <p><strong>Gợi ý</strong>: Ghi symptom, command, expected output, root cause, fix, rollback và prevention checklist.</p>
+  <h3>Merge vs Rebase</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1</h3><p>Mặc định dùng merge. Tránh rebase vì "sợ". Đôi khi rebase nhầm branch shared → team complain.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2</h3><p>Hiểu rebase = replay commit + tạo hash mới. Áp dụng Quy tắc Vàng. Dùng interactive rebase cho local branch trước PR.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3</h3><p>Team standardize policy: feature → rebase trước, squash khi merge vào main. Tùy chỉnh theo team style. Train junior tránh anti-pattern.</p>
+    </div>
+  </div>
 
+  <h3>Recovery & Reflog</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1</h3><p>Không biết reflog. Mất code = chấp nhận viết lại.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2</h3><p>Recover commit bị reset bằng reflog. Recover branch bị xóa bằng <code>git checkout -b &lt;hash&gt;</code>.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3</h3><p>Build script auto-backup branch trước force-push. Recovery từ FSCK orphan objects. Đào tạo team không panic.</p>
+    </div>
+  </div>
+</section>
+
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "Push bị reject: non-fast-forward"</div>
+    <p><strong>Symptom:</strong> <code>! [rejected] main -&gt; main (non-fast-forward)</code></p>
+    <p><strong>Root cause:</strong> Remote có commit mới mà local chưa có. Push của bạn sẽ ghi đè → Git từ chối.</p>
+    <p><strong>Fix:</strong> <code>git pull --rebase</code> (hoặc <code>git fetch &amp;&amp; git rebase origin/main</code>) → resolve conflict nếu có → push lại.</p>
+    <p><strong>Anti-fix:</strong> KHÔNG dùng <code>git push --force</code> trên main — sẽ xóa commit người khác.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "Detached HEAD state"</div>
+    <p><strong>Symptom:</strong> <code>You are in 'detached HEAD' state</code> khi checkout commit hash.</p>
+    <p><strong>Nghĩa là:</strong> HEAD trỏ vào commit, không phải branch. Commit mới không thuộc branch nào — dễ mất khi switch.</p>
+    <p><strong>Fix nếu cần giữ work:</strong> <code>git switch -c new-branch-name</code> ngay. Nếu chỉ xem: <code>git switch -</code> về branch trước.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "Merge conflict mỗi lần pull"</div>
+    <p><strong>Symptom:</strong> Mỗi <code>git pull</code> đều có conflict ở cùng file (ví dụ <code>package-lock.json</code>, <code>pom.xml</code>).</p>
+    <p><strong>Root cause:</strong> File generated được commit + 2 người regenerate cùng lúc.</p>
+    <p><strong>Fix:</strong></p>
+    <ol>
+      <li>Add file vào <code>.gitignore</code> nếu không cần commit (ví dụ build output)</li>
+      <li>Nếu phải commit (ví dụ lock file): team agree về ai regenerate khi nào, dùng <code>.gitattributes</code> với merge driver "ours" hoặc "theirs"</li>
+    </ol>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "Branch xóa nhầm, mất code"</div>
+    <p><strong>Symptom:</strong> <code>git branch -D feature/x</code> chưa merge → mất code.</p>
+    <p><strong>Recover:</strong></p>
+    <pre><code class="language-bash">git reflog                           # tìm last commit của branch
+# Output: a1b2c3 HEAD@{5}: checkout: moving from feature/x to main
+git checkout -b feature/x a1b2c3     # recreate branch từ commit đó</code></pre>
+    <p>Nếu reflog không có (branch chưa từng checkout local): <code>git fsck --lost-found</code> tìm orphan commit.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #5 — "Repo bị corrupt sau crash hệ điều hành"</div>
+    <p><strong>Symptom:</strong> <code>fatal: object &lt;hash&gt; is corrupted</code></p>
+    <p><strong>Fix:</strong></p>
+    <ol>
+      <li>Clone lại từ remote: <code>git clone &lt;url&gt;</code> ở thư mục khác, copy lại working changes</li>
+      <li>Nếu remote cũng có vấn đề: <code>git fsck --full</code> để xem damaged objects</li>
+      <li>Backup objects từ teammate (cùng team clone): copy <code>.git/objects/&lt;hash[:2]&gt;/&lt;hash[2:]&gt;</code> sang</li>
+    </ol>
+  </div>
+</section>
+
+<section id="exercises">
+  <h2>🔧 4 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #1 — Daily Workflow (Easy, 30min)</div>
+    <p>Tạo repo local, làm full workflow:</p>
+    <ol>
+      <li>init, set user.name/email, add remote (GitHub repo trống)</li>
+      <li>Tạo file, commit 5 lần với message theo conventional commits</li>
+      <li>Push, kiểm tra GitHub thấy đủ 5 commit</li>
+      <li>Tạo branch <code>feature/x</code>, commit thêm 2 lần, push, mở PR (vẫn trống nhưng có)</li>
+    </ol>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #2 — Conflict Resolution (Medium, 1h)</div>
+    <p>Tạo 2 branch sửa cùng dòng:</p>
+    <ol>
+      <li><code>main</code>: sửa <code>README.md</code> dòng 1 thành "Hello world"</li>
+      <li><code>feature/greeting</code>: sửa cùng dòng thành "Xin chào"</li>
+      <li>Merge feature vào main → conflict</li>
+      <li>Resolve thành "Hello world / Xin chào" (giữ cả 2)</li>
+      <li>Verify <code>git log --graph</code> show merge commit</li>
+    </ol>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #3 — Undo Scenarios (Hard, 1h)</div>
+    <p>Practice từng scenario:</p>
+    <ol>
+      <li>Sửa file, <code>git restore</code> về cũ</li>
+      <li>Add file, <code>git restore --staged</code> để unstage</li>
+      <li>Commit rồi <code>--amend</code> sửa message</li>
+      <li>Commit 3 lần, <code>reset --hard HEAD~3</code>, recovery bằng reflog</li>
+      <li>Tạo branch, commit, xóa branch <code>-D</code>, recovery bằng reflog</li>
+    </ol>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #4 — Interactive Rebase (Hard, 1.5h)</div>
+    <p>Practice cleanup history:</p>
+    <ol>
+      <li>Tạo branch, commit 5 lần: 1 feature thật + 4 "fix typo"</li>
+      <li><code>git rebase -i HEAD~5</code></li>
+      <li>Squash 4 typo vào feature commit</li>
+      <li>Reword message cho clear</li>
+      <li>Verify <code>git log</code> giờ chỉ có 1 commit clean</li>
+      <li>Bonus: <code>git bisect</code> tìm commit gây bug giả lập</li>
+    </ol>
+  </div>
 </section>
 
 <section id="interview">
-  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Git Daily Workflow: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
-  <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
-  <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Tier 1 — Surface</h3>
+  <div class="tier-card t1">
+    <h3>Q: <code>git pull</code> khác <code>git fetch</code> như nào?</h3>
+    <p><code>fetch</code> = download latest từ remote vào local (origin/main), KHÔNG update branch local. <code>pull</code> = <code>fetch</code> + <code>merge</code> (hoặc <code>rebase</code> nếu config). Fetch an toàn hơn, pull có thể conflict.</p>
+  </div>
+
+  <div class="tier-card t1">
+    <h3>Q: <code>git revert</code> khác <code>git reset</code>?</h3>
+    <p><code>revert</code> tạo commit mới đảo ngược change → an toàn cho shared branch (history forward). <code>reset</code> di chuyển HEAD pointer → rewrite history → chỉ dùng local.</p>
+  </div>
+
+  <h3>Tier 2 — Deep Dive</h3>
+  <div class="tier-card t2">
+    <h3>Q: Quy tắc Vàng của rebase?</h3>
+    <p>KHÔNG rebase commit đã push lên branch shared. Lý do: rebase tạo commit mới với hash khác. Người khác đã pull commit cũ → sau khi bạn force-push rebase, history họ lệch → conflict khủng + có thể mất commit.</p>
+  </div>
+
+  <div class="tier-card t2">
+    <h3>Q: Reflog là gì? Khi nào dùng?</h3>
+    <p>Reflog = log local mọi movement của HEAD và branch pointers (90 ngày default). Dùng để recover commit/branch sau khi <code>reset --hard</code> hoặc <code>branch -D</code> nhầm. Chỉ local — không trên remote.</p>
+  </div>
+
+  <h3>Tier 3 — Architecture</h3>
+  <div class="tier-card t3">
+    <h3>Q: Design Git workflow cho team 20 dev microservices</h3>
+    <p>1. <strong>Trunk-based</strong> hoặc <strong>GitHub Flow</strong>: main luôn deployable, feature branch ngắn (1-3 ngày).</p>
+    <p>2. <strong>Branch protection</strong>: main require PR + 1 review + CI pass + linear history (force rebase trước merge).</p>
+    <p>3. <strong>CODEOWNERS</strong>: auto-assign review theo service ownership.</p>
+    <p>4. <strong>Conventional commits + auto changelog</strong>: tool như <code>release-please</code> tự tạo version + changelog.</p>
+    <p>5. <strong>Pre-commit hooks</strong>: lint + test + secret scan (gitleaks).</p>
+    <p>6. <strong>Squash merge</strong>: PR = 1 commit clean vào main, history dễ đọc.</p>
+    <p>7. <strong>Hotfix process</strong>: branch từ tag release, fix, cherry-pick về main.</p>
+  </div>
 </section>
 
-<section id="feynman-end">
-  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
-  <div class="feynman">
-    <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Git Daily Workflow cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
-    <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
-  </div>
-  <div class="verify-source">
-    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
-    <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://git-scm.com/doc">Git Documentation</a></li>
-<li><a href="https://git-scm.com/book/en/v2">Pro Git Book</a></li>
-<li><a href="https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified">Git reset demystified</a></li></ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu giải thích</h2>
+  <ol>
+    <li>Branch trong Git là gì? Tại sao tạo branch không tốn dung lượng?</li>
+    <li>Phân biệt working tree, index, repo. Mỗi git command move data giữa đâu?</li>
+    <li>Quy tắc Vàng của rebase + tại sao quan trọng?</li>
+    <li>Reflog dùng để làm gì? Cho 2 ví dụ cụ thể cứu mạng.</li>
+    <li>Khi nào dùng revert vs reset? Liên quan shared branch thế nào?</li>
+  </ol>
+  <div class="callout success">
+    <div class="ctitle">✅ Acceptance</div>
+    <p>Pass 5/5 trong 5 phút = sẵn sàng dùng Git production tự tin. Pass &lt; 4/5 → quay lại section yếu.</p>
   </div>
 </section>
 
-<footer>
-  <div>📁 #50 Git Daily Workflow · Junior Foundation</div>
-  <div>Tiếp theo: #51 next junior topic</div>
-</footer>
+<section id="checklist">
+  <h2>✅ Checklist Thành Thạo</h2>
+  <ul>
+    <li>☐ Giải thích được DAG, branch là pointer, HEAD trỏ vào đâu</li>
+    <li>☐ Daily workflow: branch → commit → push → PR thuần thục</li>
+    <li>☐ Resolve conflict không hoảng, biết khi nào abort</li>
+    <li>☐ Dùng interactive rebase squash commit trước PR</li>
+    <li>☐ Recovery commit/branch bằng reflog</li>
+    <li>☐ Phân biệt revert vs reset, biết khi nào dùng cái nào</li>
+    <li>☐ Hiểu Quy tắc Vàng của rebase + tuân thủ</li>
+    <li>☐ Setup .gitignore + pre-commit hooks cho project</li>
+    <li>☐ Hoàn thành 4 exercises</li>
+    <li>☐ Pass Feynman 5/5</li>
+  </ul>
+
+  <h3>📚 Tự học tiếp</h3>
+  <ul>
+    <li><strong>Pro Git Book</strong> (free): <a href="https://git-scm.com/book">git-scm.com/book</a> — chương 2, 3, 7</li>
+    <li><strong>Learn Git Branching</strong>: <a href="https://learngitbranching.js.org/">interactive visualization</a></li>
+    <li><strong>Atlassian Git Tutorials</strong>: <a href="https://www.atlassian.com/git/tutorials">atlassian.com/git/tutorials</a></li>
+    <li><strong>Conventional Commits</strong>: <a href="https://www.conventionalcommits.org/">conventionalcommits.org</a></li>
+  </ul>
+
+  <h3>🛠️ Tools nâng cao</h3>
+  <ul>
+    <li><strong>tig</strong> — terminal Git UI</li>
+    <li><strong>lazygit</strong> — TUI dễ dùng cho conflict + rebase</li>
+    <li><strong>git-absorb</strong> — auto squash fixup</li>
+    <li><strong>BFG Repo-Cleaner</strong> — xóa secret khỏi history</li>
+    <li><strong>gitleaks / git-secrets</strong> — scan commit có secret</li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="51-linux-backend-essentials.html">#51 Linux for Backend Dev</a></li>
+      <li><a href="25-cicd-pipeline.html">#25 CI/CD Pipeline</a> — Git là input cho pipeline</li>
+      <li><a href="27-testing-strategy.html">#27 Testing Strategy</a></li>
+    </ol>
+    <p><strong>Khi sẵn sàng chuyển #51:</strong> 4 exercises xong + Feynman 5/5 + tự confidence resolve conflict không hỏi senior.</p>
+  </div>
+</section>
+
 </div>
 </main>
 </div>
@@ -574,9 +811,6 @@ git checkout -b recover-work HEAD@{2}</code></pre>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

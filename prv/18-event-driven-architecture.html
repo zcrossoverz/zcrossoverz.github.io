@@ -37,6 +37,7 @@
     <a href="#outbox">4. Outbox Pattern</a>
     <a href="#antipatterns">5. Anti-Patterns</a>
     <a href="#interview">6. Interview Framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
   </nav>
 </aside>
 
@@ -126,6 +127,25 @@
 <li>Schema event thay đổi sau 2 năm (thêm field mới), replay event cũ thế nào?</li>
 <li>GDPR yêu cầu xóa data user — event store nên append-only hay allow delete?</li>
 </ol>
+
+<div class="roadmap">
+  <div class="roadmap-head">🗺️ Nếu chỉ có X giờ thì học gì</div>
+  <div class="roadmap-item core"><strong>1.5 giờ (CORE ★):</strong> Event vs Command vs Query (2.1), Idempotent Consumer (2.4), Outbox Pattern (4). Đây là 3 thứ quyết định hệ event-driven của bạn có đúng đắn (không double-process, không mất event) hay không.</div>
+  <div class="roadmap-item core"><strong>+1.5 giờ (CORE ★):</strong> Event Sourcing — lưu events thay state (2.2), reconstruct aggregate (3). Hiểu trade-off "append-only + replay".</div>
+  <div class="roadmap-item supp"><strong>+1.5 giờ (SUPPLEMENTARY):</strong> Snapshot tối ưu replay (2.3), Schema Evolution (2.5), Choreography vs Orchestration (2.6).</div>
+  <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> CQRS read model projection, GDPR + crypto-shredding cho append-only store, test replay tự động.</div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Tập trung câu hỏi #3: Kafka deliver cùng event 2 lần (at-least-once). Trả lời ra giấy:</div>
+  <ol>
+    <li>Vì sao Kafka mặc định là <em>at-least-once</em> chứ không exactly-once? Điều gì gây ra việc gửi lại event đã xử lý?</li>
+    <li>Consumer trừ stock khi nhận <code>OrderPlaced</code>. Nhận 2 lần → trừ 2 lần. Cách chống <strong>ở phía consumer</strong> (không sửa producer) là gì? Cần lưu cái gì, ở đâu?</li>
+    <li>Tình huống ngược: bạn ghi DB thành công nhưng app crash TRƯỚC khi publish event lên Kafka → event mất. Pattern nào đảm bảo "ghi DB và phát event là một đơn vị nguyên tử"?</li>
+  </ol>
+  <div class="pause-hint">Đáp án: retry/rebalance gây redelivery; chống bằng Idempotent Consumer lưu processed-event-id (mục 2.4); chống mất event bằng Outbox Pattern — ghi event vào cùng DB transaction rồi relay sau (mục 4). Đừng đọc tiếp khi chưa phân biệt được 2 vấn đề ngược nhau này.</div>
+</div>
 </section>
 
 <section id="mental-model">
@@ -254,6 +274,35 @@ public record GetOrderHistoryQuery(
   <li><strong>Schema evolution</strong>: event format thay đổi sau 2 năm — phải handle backward compatibility khi replay.</li>
   <li><strong>Eventual consistency</strong>: projection lag write vài ms-s. Không cho "read your write" UX.</li>
   </ul>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔧 Counter-example — khi nào KHÔNG dùng Event Sourcing</div>
+  <div class="bi-answer">
+    <p>Event Sourcing không miễn phí — nó đổi sự đơn giản của CRUD lấy audit trail + time-travel. Đừng dùng khi:</p>
+    <ul>
+      <li><strong>Domain CRUD đơn thuần:</strong> bảng <code>user_profile</code>, <code>product_catalog</code> chỉ cần state hiện tại, ít khi cần lịch sử. Event Sourcing ở đây = phức tạp hóa không lý do.</li>
+      <li><strong>Cần query ad-hoc linh hoạt:</strong> nếu nghiệp vụ liên tục cần query mới theo nhiều chiều, bạn phải dựng projection cho từng cái — chậm và tốn công hơn một bảng SQL bình thường.</li>
+      <li><strong>Team chưa quen eventual consistency:</strong> UX cần "read-your-write" tức thì mà không có giải pháp → user phàn nàn "vừa lưu xong không thấy".</li>
+      <li><strong>Không có nhu cầu audit/temporal:</strong> nếu không ai hỏi "state lúc 14:32" và không có yêu cầu compliance, lợi ích chính của Event Sourcing biến mất.</li>
+    </ul>
+    <p><em>Quy tắc:</em> dùng Event Sourcing cho <strong>aggregate có giá trị lịch sử</strong> (order, payment, inventory ledger), giữ CRUD cho phần còn lại. Hai kiểu sống chung trong một hệ thống là bình thường.</p>
+  </div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Biết tên</h3>
+    <p>Biết "Event Sourcing lưu events thay vì state". <em>Symptom hiểu giả:</em> nghĩ nó chỉ là audit log, không giải thích được làm sao dựng lại state hiện tại hay vì sao cần snapshot.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain được</h3>
+    <p>Giải thích current state = fold(reduce) chuỗi events từ đầu; snapshot để khỏi replay từ event 0; projection/read model để query nhanh; append-only nên không UPDATE/DELETE → kéo theo bài toán GDPR và schema evolution.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply được</h3>
+    <p>Thiết kế event store có optimistic concurrency (version per aggregate), snapshot mỗi N events, projection idempotent, chiến lược schema evolution (upcasting). Quyết định aggregate nào dùng ES, phần nào để CRUD, và xử lý GDPR bằng crypto-shredding.</p>
+  </div>
 </div>
 
 <h3 id="snapshot">Snapshot Pattern — Tối Ưu Replay</h3>
@@ -722,6 +771,14 @@ CREATE TABLE outbox_events (
   <li><strong>Modern alternative</strong>: Debezium (CDC) đọc binlog của DB → publish lên Kafka. Không cần app code thực hiện outbox table.</li>
   </ul>
 </div>
+
+<div class="build-exercise">
+  <div class="be-head">🛠️ Lab bắt buộc — chống double-process &amp; mất event (2 bài)</div>
+  <div class="be-deliverable">
+    <p><strong>Lab 1 — Idempotent Consumer.</strong> Mô phỏng một consumer trừ stock khi nhận <code>OrderPlaced(eventId, sku, qty)</code>. Dùng một bảng/map <code>processed_events(eventId PK)</code>. Logic: trong cùng một transaction, <em>thử insert eventId trước</em>; nếu trùng khóa → bỏ qua (đã xử lý). Test: gửi cùng event 3 lần, assert stock chỉ trừ 1 lần. Tiêu chí: giải thích vì sao phải insert-then-process trong CÙNG transaction, không phải check-then-process.</p>
+    <p><strong>Lab 2 — Outbox + relay.</strong> Service tạo order: trong một DB transaction, ghi <code>orders</code> + ghi <code>outbox(event_json, published=false)</code>. Một relay job poll <code>outbox WHERE published=false</code>, "publish" (in ra/đẩy vào list), rồi set <code>published=true</code>. Inject crash GIỮA publish và set-flag → chạy lại relay → assert event được publish lại (at-least-once) và consumer ở Lab 1 vẫn không double-process. Tiêu chí: nối được Outbox (không mất) + Idempotent Consumer (không double) thành end-to-end "effectively exactly-once".</p>
+  </div>
+</div>
 </section>
 
 <section id="antipatterns">
@@ -823,6 +880,20 @@ public void on(OrderPlacedEventDto event) { ... }</code></pre>
 <strong>7. Observability</strong>: metric per consumer (lag, processing rate, error rate). Alert nếu consumer lag &gt; 1000 messages hoặc error rate &gt; 1%.<br><br>
 <strong>8. Audit + Compliance</strong>: event store là source of truth. GDPR deletion = encrypt event payload with user key, delete key (crypto-shredding) thay vì delete event row → preserve append-only property.<br><br>
 Total: 8 components nhưng standard pattern stack trong production. Mọi cloud (AWS, GCP, Azure) đều có managed equivalents."</div>
+</div>
+</section>
+
+<section id="feynman">
+<div class="feynman">
+  <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+  <ol class="fy-prompt">
+    <li>Phân biệt Event, Command, Query bằng một ví dụ đặt hàng. Vì sao đặt tên event ở thì quá khứ?</li>
+    <li>Event Sourcing dựng lại state hiện tại bằng cách nào? Snapshot giải quyết vấn đề gì?</li>
+    <li>Kafka at-least-once gây double-process. Idempotent Consumer chống bằng cách lưu gì, ở đâu, trong transaction nào?</li>
+    <li>Outbox Pattern giải quyết vấn đề gì mà "ghi DB rồi gọi kafka.send()" không giải quyết được?</li>
+    <li>Outbox + Idempotent Consumer cùng nhau cho bạn "effectively exactly-once" như thế nào?</li>
+  </ol>
+  <div class="fy-rule">Bí câu nào = quay lại đúng section. Câu 3 và 4 là hai mặt ngược nhau (không double vs không mất) — phải tách bạch được.</div>
 </div>
 </section>
 

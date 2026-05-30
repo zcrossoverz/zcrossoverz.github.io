@@ -1,584 +1,715 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#48 — Java OOP Foundation | Java Backend Interview Prep</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <link rel="stylesheet" href="assets/style.css">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#48 — Java OOP Foundation | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#48 Java OOP Foundation</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Nhóm N · Junior Foundation</span><span class="sep">›</span><span class="current">#48 Java OOP Foundation</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#how-to-read">Cách đọc file này</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
     <a href="#roadmap">🗺️ Roadmap</a>
-    <a href="#intro">Tổng quan</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. Encapsulation</a>
-    <a href="#concept-1">3. Abstraction</a>
-    <a href="#concept-2">4. Polymorphism</a>
-    <a href="#concept-3">5. Inheritance vs Composition</a>
-    <a href="#antipatterns">Anti-patterns</a>
-    <a href="#edge-cases">Edge Cases</a>
-    <a href="#mastery-plan">Mastery Plan</a>
-    <a href="#practice-bank">Practice Bank</a>
-    <a href="#build-projects">Build Projects</a>
-    <a href="#drill-bank">Interview Drill Bank</a>
-    <a href="#self-test">Self-Test</a>
-    <a href="#interview">Interview Framework</a>
-    <a href="#feynman-end">Feynman Closing</a>
+    <a href="#real-problem">1. Procedural đội lốt OOP</a>
+    <a href="#pillars">2. 4 trụ cột OOP</a>
+    <a href="#encapsulation">— Encapsulation</a>
+    <a href="#inheritance">— Inheritance</a>
+    <a href="#polymorphism">— Polymorphism</a>
+    <a href="#abstraction">— Abstraction</a>
+    <a href="#concepts">3. Concept junior phải master</a>
+    <a href="#solid">4. SOLID cho junior</a>
+    <a href="#antipatterns">5. 5 anti-patterns</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 3 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
+
 <section class="hero">
-  <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#48 — Java OOP Foundation</h1>
-  <p class="lead">OOP không phải cú pháp class/interface. OOP là cách đặt boundary để object tự bảo vệ state và hành vi nghiệp vụ.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#15 Clean Architecture, #5 Spring Core</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">E-commerce checkout</div></div>
+  <span class="meta-tag">#48 · Junior Foundation</span>
+  <h1>Java OOP Foundation — Vì sao senior reject PR junior</h1>
+  <p class="lead">Junior viết "Service" với <code>public static</code> method khắp nơi, gọi nhau chằng chịt. Code chạy được nhưng senior reject vì "đây là procedural code đội lốt OOP". File này biến từ <em>biết syntax class/interface</em> → <em>hiểu why của OOP</em> + SOLID + 5 anti-patterns junior hay vướng.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + refactor 1 project thật</span>
+    <span class="phase-tag">Domain: E-commerce</span>
   </div>
 </section>
 
-
-<div class="study-banner" id="how-to-read">
-  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
-  <div class="sb-rules">
-    <p>Junior rất dễ đọc trôi chảy rồi tưởng đã hiểu. Dùng file này theo luật học chủ động:</p>
-    <ol>
-      <li>Dừng ở mỗi block Pause &amp; Predict và tự trả lời trước khi xem phần giải.</li>
-      <li>Với mỗi Bad vs Good, tự nói vì sao code sai gây bug thật, không chỉ nói "code xấu".</li>
-      <li>Chạy lại ít nhất 2 ví dụ trên máy cá nhân, đổi input để phá happy path.</li>
-      <li>Sau mỗi section lớn, dùng Feynman: giải thích lại cho một bạn junior trong 90 giây.</li>
-      <li>Làm Build Exercise. Không làm bài tập thì kiến thức vẫn ở mức đọc hiểu, chưa thành kỹ năng.</li>
-    </ol>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <ul>
+    <li>Biết "4 trụ cột OOP" — quote được Encapsulation/Inheritance/Polymorphism/Abstraction nhưng code service vẫn full <code>static</code></li>
+    <li>Hiểu interface — luôn dùng abstract class khi 1 implementation, lý do "để dễ extend sau"</li>
+    <li>Biết SOLID — Single Responsibility = "class chỉ làm 1 thứ" (sai — nên là "class chỉ có 1 lý do để thay đổi")</li>
+    <li>Override <code>equals</code> mà quên <code>hashCode</code> → object "biến mất" khỏi HashMap</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> viết được class + extends + implements. Code chạy nhưng class 500 dòng, static khắp nơi.<br>
+    <strong>L2 (Explain):</strong> chọn abstract vs interface theo case. Apply SRP + DIP. Nhận ra anti-pattern khi review PR.<br>
+    <strong>L3 (Apply):</strong> design domain model rich (không anemic). Refactor procedural → OOP có tactical reason. SOLID là phản xạ, không lookup.</p>
   </div>
-</div>
-
+</section>
 
 <section id="roadmap">
-  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
-  <div class="roadmap">
-    <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Encapsulation — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> Abstraction — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> Polymorphism — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> Inheritance vs Composition — ADV: senior signal.</div></div>
-  </div>
-</section>
-
-<section id="intro">
-  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Java OOP Foundation là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
-  <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
-  <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Java OOP Foundation</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Java OOP Foundation xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
-  </div>
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: section 1, 2, 5 (procedural anti-pattern + 4 trụ cột + 5 anti-patterns).</p>
+  <p>Nếu có <strong>1 tuần</strong>: full + 3 exercises refactor thật.</p>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Procedural đội lốt OOP</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>4 trụ cột OOP — hiểu why</td><td><span class="phase-tag">CORE ★</span></td><td>40min</td></tr>
+      <tr><td>3</td><td>Concept master: this/super/static/final, abstract vs interface, init order, access modifier</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>4</td><td>SOLID cho junior</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>5</td><td>5 anti-patterns</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Java OOP Foundation sai trong project E-commerce checkout <span class="k-tag core">CORE</span></h2>
-  <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
-  <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">public class Cart { public List&lt;Item&gt; items = new ArrayList&lt;&gt;(); public double total; }</code></pre>
-  <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
+  <h2>1. Bài toán thực tế — Procedural Code Đội Lốt OOP <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống — Junior viết "OrderService" cho E-commerce, senior reject PR</div>
+    <pre><code class="language-java">// ❌ Code junior — chạy được nhưng senior reject ngay
+public class OrderService {
+    public static double TAX_RATE = 0.1;
+    public static List&lt;Order&gt; orders = new ArrayList&lt;&gt;();
+
+    public static void createOrder(String customerId, List&lt;Item&gt; items) {
+        double total = 0;
+        for (Item i : items) total += i.price * i.qty;
+        total = total + total * TAX_RATE;
+
+        Order o = new Order();
+        o.id = UUID.randomUUID().toString();
+        o.customerId = customerId;
+        o.items = items;
+        o.total = total;
+        o.status = "PENDING";
+        orders.add(o);
+    }
+
+    public static void payOrder(String orderId) {
+        for (Order o : orders) {
+            if (o.id.equals(orderId)) {
+                o.status = "PAID";
+                return;
+            }
+        }
+    }
+}
+
+public class Order {
+    public String id;
+    public String customerId;
+    public List&lt;Item&gt; items;
+    public double total;
+    public String status;
+}</code></pre>
+
+    <p><strong>5 vấn đề senior thấy ngay:</strong></p>
+    <ol>
+      <li><strong>Static method + static state</strong> = procedural. Không inject được, không test được, không thread-safe.</li>
+      <li><strong>Public field</strong> = no encapsulation. Bất kỳ code nào cũng set <code>o.total = -100</code> mà object không biết.</li>
+      <li><strong>Anemic domain model</strong>: <code>Order</code> chỉ có data, mọi logic ngoài service. Đáng lẽ <code>order.pay()</code> mới là OOP.</li>
+      <li><strong>String status</strong> thay vì enum → typo <code>"PEDNING"</code> không catch lúc compile.</li>
+      <li><strong>Magic number</strong> <code>0.1</code> tax rate → không config được, không multi-region.</li>
+    </ol>
+
+    <p><strong>Refactor đúng OOP:</strong></p>
+    <pre><code class="language-java">public enum OrderStatus { PENDING, PAID, SHIPPED, CANCELLED }
+
+public class Order {
+    private final String id;
+    private final String customerId;
+    private final List&lt;OrderItem&gt; items;
+    private Money total;
+    private OrderStatus status;
+
+    // Constructor enforce invariant (không tạo Order với items rỗng)
+    public Order(String customerId, List&lt;OrderItem&gt; items, TaxPolicy taxPolicy) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Order must have items");
+        }
+        this.id = UUID.randomUUID().toString();
+        this.customerId = customerId;
+        this.items = List.copyOf(items);  // immutable
+        this.total = taxPolicy.applyTo(calculateSubtotal());
+        this.status = OrderStatus.PENDING;
+    }
+
+    // Behavior thuộc về Order, không phải Service
+    public void pay() {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Cannot pay order in status " + status);
+        }
+        this.status = OrderStatus.PAID;
+    }
+
+    public void cancel() {
+        if (status == OrderStatus.SHIPPED) {
+            throw new IllegalStateException("Cannot cancel shipped order");
+        }
+        this.status = OrderStatus.CANCELLED;
+    }
+
+    private Money calculateSubtotal() {
+        return items.stream()
+            .map(OrderItem::lineTotal)
+            .reduce(Money.ZERO, Money::add);
+    }
+
+    // Getters only — no setters (immutable where possible)
+    public String getId() { return id; }
+    public OrderStatus getStatus() { return status; }
+    public Money getTotal() { return total; }
+}
+
+@Service
+public class OrderService {
+    private final OrderRepository orderRepo;
+    private final TaxPolicy taxPolicy;
+
+    public OrderService(OrderRepository orderRepo, TaxPolicy taxPolicy) {
+        this.orderRepo = orderRepo;
+        this.taxPolicy = taxPolicy;
+    }
+
+    public Order create(String customerId, List&lt;OrderItem&gt; items) {
+        Order order = new Order(customerId, items, taxPolicy);
+        return orderRepo.save(order);
+    }
+}</code></pre>
+
+    <p><strong>Khác biệt:</strong> Enum thay String. Field private + immutable. Logic <code>pay/cancel</code> trong domain. TaxPolicy inject (testable). Constructor enforce invariant. Service mỏng — chỉ orchestrate.</p>
+  </div>
+
   <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
-    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
-    <ol><li>Failure mode đầu tiên bạn nghĩ tới là gì?</li><li>Nếu data/input/traffic tăng 100 lần thì đoạn này còn ổn không?</li><li>Bạn sẽ test hoặc debug bằng cách nào để chứng minh?</li></ol>
-    <div class="pause-hint">Nếu trả lời còn mơ hồ, đọc kỹ phần concept và tự chạy lại ví dụ.</div>
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trả lời:</div>
+    <ol>
+      <li>Tại sao "static state" cản trở test? Cho 1 ví dụ cụ thể.</li>
+      <li>"Anemic domain model" — phân biệt với rich domain model bằng test nào?</li>
+      <li>Nếu phải thêm "Order chỉ pay được khi customer KYC verified" — code Junior vs OOP đúng, mỗi cái sửa ở đâu?</li>
+    </ol>
+    <div class="pause-hint">Đáp án ở Section 2 (4 trụ cột) và Section 5 (anti-patterns #2 Anemic).</div>
   </div>
 </section>
 
+<section id="pillars">
+  <h2>2. 4 Trụ Cột OOP — Hiểu Why <span class="phase-tag">CORE ★</span></h2>
+</section>
 
-<section id="concept-0">
-  <h2>2. Encapsulation <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Không có encapsulation thì class chỉ là struct có method.
-  </div>
-  <p>Field private và method có ý nghĩa giúp object giữ invariant.</p>
-  <p>Getter/setter cho mọi field không phải encapsulation; đó chỉ là expose state bằng đường vòng.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Bug state sai thường đến từ object bị mutate ngoài ý muốn.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Cart public items</div>
-    <pre><code class="language-java">class Cart { public List&lt;Item&gt; items = new ArrayList&lt;&gt;(); }
-cart.items.clear();</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Cart tự bảo vệ invariant</div>
-    <pre><code class="language-java">class Cart {
-  private final List&lt;Item&gt; items = new ArrayList&lt;&gt;();
-  void add(Item item) { validate(item); items.add(item); }
-  List&lt;Item&gt; items() { return List.copyOf(items); }
+<section id="encapsulation">
+  <h3>Trụ cột #1 — Encapsulation: "Class là con thú có boundary"</h3>
+  <p><strong>Why:</strong> object phải kiểm soát state của chính nó. Bên ngoài muốn đổi state → phải đi qua method, để class verify + maintain invariant.</p>
+  <pre><code class="language-java">// ❌ No encapsulation
+public class Account {
+    public double balance;     // ai cũng có thể set âm
+}
+acc.balance = -1000;           // OK syntax, sai semantic
+
+// ✅ Encapsulation
+public class Account {
+    private double balance;
+
+    public void withdraw(double amount) {
+        if (amount &lt;= 0) throw new IllegalArgumentException("amount must be positive");
+        if (amount &gt; balance) throw new InsufficientFundsException(balance, amount);
+        balance -= amount;
+    }
 }</code></pre>
-  </div>
-</div>
-
-  
-  <div class="misconception">
-    <div class="mc-head">🧠 Misconception Check — Encapsulation</div>
-    <div class="mc-wrong">"Có getter/setter là đã encapsulated."</div>
-    <div class="mc-right">Nếu setter cho phép set null/invalid list, class vẫn không bảo vệ invariant.</div>
-  </div>
-
+  <p><strong>Rule:</strong> field <code>private</code> + getter selective + behavior method. Setter là code smell — thường có nghĩa "tôi cần đổi state mà không có rule" = no encapsulation.</p>
 </section>
 
+<section id="inheritance">
+  <h3>Trụ cột #2 — Inheritance: "is-a", KHÔNG "has code-a"</h3>
+  <p><strong>Why:</strong> tái sử dụng behavior. Nhưng <strong>chỉ dùng khi quan hệ thật là "is-a"</strong>.</p>
+  <pre><code class="language-java">// ✅ "is-a": PremiumCustomer IS A Customer
+public class Customer { ... }
+public class PremiumCustomer extends Customer {
+    public double discount() { return 0.15; }
+}
 
-<section id="concept-1">
-  <h2>3. Abstraction <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Ẩn chi tiết thay đổi sau interface ổn định.
+// ❌ "has code-a": Order EXTENDS HashMap để dùng code Map
+public class Order extends HashMap&lt;String, Object&gt; { ... }   // SAI
+// Order KHÔNG phải là một Map. Order CHỨA fields.
+// Effective Java: "Favor composition over inheritance"</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">❌ Khi nào KHÔNG dùng inheritance</div>
+    <ul>
+      <li><strong>Chỉ để tái sử dụng code</strong> → dùng composition (helper class) hoặc utility</li>
+      <li><strong>Hierarchy &gt; 3 cấp</strong> — fragile, đổi parent break tất cả con</li>
+      <li><strong>Subclass override gần hết method parent</strong> → wrong abstraction</li>
+      <li><strong>Subclass thêm precondition / yếu postcondition</strong> → vi phạm Liskov (xem SOLID)</li>
+    </ul>
   </div>
-  <p>Abstraction cho caller biết cần làm gì, không cần biết làm thế nào.</p>
-  <p>Interface tốt thường đại diện capability, không phải mọi class đều cần interface.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Spring DI, testing và clean architecture đều dựa vào abstraction đúng.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Service phụ thuộc implementation</div>
-    <pre><code class="language-java">class CheckoutService { new EmailSender().send(...); }</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Phụ thuộc capability</div>
-    <pre><code class="language-java">class CheckoutService {
-  private final Notifier notifier;
-  CheckoutService(Notifier notifier) { this.notifier = notifier; }
+</section>
+
+<section id="polymorphism">
+  <h3>Trụ cột #3 — Polymorphism: "Cùng API, khác behavior"</h3>
+  <pre><code class="language-java">// 1 interface, nhiều implementation
+public interface ShippingCalculator {
+    Money calculate(Order order);
+}
+
+public class StandardShipping implements ShippingCalculator {
+    public Money calculate(Order order) { return Money.of(30_000); }
+}
+public class ExpressShipping implements ShippingCalculator {
+    public Money calculate(Order order) { return order.weight().multiply(50_000); }
+}
+public class PickupAtStore implements ShippingCalculator {
+    public Money calculate(Order order) { return Money.ZERO; }
+}
+
+// Code gọi không cần biết loại nào
+Money fee = shippingCalc.calculate(order);   // polymorphism</code></pre>
+  <p><strong>Why:</strong> code gọi không cần thay đổi khi thêm <code>SameDayShipping</code>. Đây là <strong>Open-Closed Principle</strong> (xem SOLID).</p>
+</section>
+
+<section id="abstraction">
+  <h3>Trụ cột #4 — Abstraction: "Hide complexity, expose intent"</h3>
+  <pre><code class="language-java">// ❌ Lộ implementation detail
+public class OrderRepository {
+    public void save(Order o, Connection conn, boolean autoCommit, int isolationLevel) { ... }
+}
+// Caller phải biết Connection, transaction internals
+
+// ✅ Abstract level intent
+public interface OrderRepository {
+    Order save(Order order);
+    Optional&lt;Order&gt; findById(String id);
+    List&lt;Order&gt; findByCustomer(String customerId);
+}
+// Caller chỉ care "save order" — không care JDBC vs JPA vs MongoDB</code></pre>
+  <p><strong>Rule:</strong> API public expose <em>what</em>, hide <em>how</em>. Đổi implementation (JDBC → JPA) → caller không đổi.</p>
+</section>
+
+<section id="concepts">
+  <h2>3. Concept Junior Phải Master <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>3.1 this / super / static / final</h3>
+  <pre><code class="language-java">public class PremiumCustomer extends Customer {
+    private final int loyaltyPoints;     // final = immutable sau constructor
+
+    public PremiumCustomer(String name, int points) {
+        super(name);                      // gọi constructor parent
+        this.loyaltyPoints = points;      // this để phân biệt với param
+    }
+
+    @Override
+    public Money discount() {
+        Money base = super.discount();    // gọi method parent
+        return base.add(Money.of(50_000));
+    }
+
+    public static PremiumCustomer fromOrder(Order o) {   // static factory
+        return new PremiumCustomer(o.getCustomer().getName(), o.loyaltyPoints());
+    }
 }</code></pre>
-  </div>
-</div>
+  <ul>
+    <li><code>this</code> — reference object hiện tại</li>
+    <li><code>super</code> — reference parent class (gọi method/constructor)</li>
+    <li><code>static</code> — thuộc class, không thuộc instance</li>
+    <li><code>final</code>: final field (immutable), final method (không override được), final class (không extends được)</li>
+  </ul>
 
-  
-</section>
+  <h3>3.2 Abstract Class vs Interface — Khi nào dùng cái nào</h3>
+  <table>
+    <thead><tr><th>Tiêu chí</th><th>Abstract Class</th><th>Interface</th></tr></thead>
+    <tbody>
+      <tr><td>Multiple inheritance</td><td>❌ chỉ 1 parent</td><td>✅ implement nhiều</td></tr>
+      <tr><td>State (field)</td><td>✅ có field</td><td>❌ chỉ const</td></tr>
+      <tr><td>Constructor</td><td>✅</td><td>❌</td></tr>
+      <tr><td>Default method (Java 8+)</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Relationship</td><td>"is-a"</td><td>"can-do" (capability)</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Modern rule:</strong> default <strong>interface</strong>. Chỉ abstract class khi cần share state/constructor logic giữa nhiều subclass.</p>
 
+  <h3>3.3 Constructor &amp; Initialization Order</h3>
+  <pre><code class="language-java">// Thứ tự khi new ChildClass():
+// 1. Static field + static block của Parent (1 lần)
+// 2. Static field + static block của Child (1 lần)
+// 3. Instance field + instance block của Parent
+// 4. Constructor Parent
+// 5. Instance field + instance block của Child
+// 6. Constructor Child</code></pre>
+  <p><strong>Bẫy:</strong> gọi method overridable trong constructor parent → version Child chạy khi Child field chưa init → NPE.</p>
 
-<section id="concept-2">
-  <h2>4. Polymorphism <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Thay switch bằng hành vi của object khi có nhiều biến thể.
-  </div>
-  <p>Polymorphism giúp thêm loại mới ít sửa code cũ hơn.</p>
-  <p>Không lạm dụng nếu chỉ có 2 case đơn giản và không có dấu hiệu mở rộng.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Junior hay viết if/else dài cho từng loại product/shipping.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Switch theo type</div>
-    <pre><code class="language-java">if (shipping.type().equals(&quot;FAST&quot;)) fee=30000;
-else if (shipping.type().equals(&quot;SLOW&quot;)) fee=10000;</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Strategy polymorphism</div>
-    <pre><code class="language-java">interface ShippingFeePolicy { Money fee(Order order); }
-class FastShipping implements ShippingFeePolicy { ... }</code></pre>
-  </div>
-</div>
+  <h3>3.4 Access Modifier — 4 Cấp</h3>
+  <table>
+    <thead><tr><th>Modifier</th><th>Same class</th><th>Same package</th><th>Subclass</th><th>World</th></tr></thead>
+    <tbody>
+      <tr><td><code>private</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+      <tr><td>default (no keyword)</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td><code>protected</code></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+      <tr><td><code>public</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Rule:</strong> default <code>private</code>. Mở rộng khi <em>cần</em>. Public method = API contract, mỗi public method = lời hứa với caller.</p>
 
-  
-</section>
+  <h3>3.5 Inner Class vs Static Nested Class</h3>
+  <pre><code class="language-java">public class Outer {
+    private int x;
 
+    // Inner class (non-static): có reference ngầm tới Outer instance
+    class Inner {
+        int getX() { return x; }   // truy cập field Outer
+    }
 
-<section id="concept-3">
-  <h2>5. Inheritance vs Composition <span class="k-tag advanced">ADVANCED</span></h2>
-  <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Inheritance là is-a, không phải share-code-a.
-  </div>
-  <p>Dùng extends khi subtype thật sự thay thế được parent. Nếu chỉ muốn reuse code, composition thường an toàn hơn.</p>
-  <p>Inheritance sai làm hierarchy cứng, khó test và dễ vi phạm Liskov.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Đây là câu hỏi OOP deep dive phổ biến.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Controller extends Utils</div>
-    <pre><code class="language-java">class ProductController extends StringUtils { }</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Composition utility</div>
-    <pre><code class="language-java">class ProductController {
-  private final SlugGenerator slugGenerator;
+    // Static nested: KHÔNG có reference Outer → ít memory + dễ test
+    static class Helper {
+        // KHÔNG access x
+    }
 }</code></pre>
-  </div>
-</div>
-
-  
+  <p><strong>Default static nested.</strong> Inner class gây memory leak (giữ Outer alive) — chỉ dùng khi thật sự cần.</p>
 </section>
 
+<section id="solid">
+  <h2>4. SOLID Cho Junior <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>S — Single Responsibility Principle</h3>
+  <p><strong>Sai diễn giải:</strong> "class chỉ làm 1 thứ". <strong>Đúng:</strong> "class chỉ có 1 lý do để thay đổi" (Robert Martin).</p>
+  <pre><code class="language-java">// ❌ 3 responsibility: business + email + log
+public class OrderService {
+    public void create(Order o) {
+        validate(o);
+        save(o);
+        sendEmail(o);           // ← thay đổi khi email template đổi
+        writeAuditLog(o);       // ← thay đổi khi audit format đổi
+    }
+}
+
+// ✅ Tách
+public class OrderService {
+    private final OrderValidator validator;
+    private final OrderRepository repo;
+    private final OrderEvents events;     // publish event, listener handle email + log
+
+    public void create(Order o) {
+        validator.validate(o);
+        repo.save(o);
+        events.publish(new OrderCreated(o));
+    }
+}</code></pre>
+
+  <h3>O — Open-Closed Principle</h3>
+  <p>Class <strong>open for extension, closed for modification</strong>. Thêm tính năng = thêm class mới, không sửa class cũ.</p>
+  <pre><code class="language-java">// ❌ Mỗi loại discount = sửa method
+public class DiscountCalculator {
+    public Money calculate(Order o, String type) {
+        if (type.equals("PERCENT")) return ...;
+        else if (type.equals("FLAT")) return ...;
+        else if (type.equals("BOGO")) return ...;   // ← sửa class mỗi lần thêm
+    }
+}
+
+// ✅ Strategy pattern
+public interface DiscountStrategy {
+    Money apply(Order order);
+}
+// Thêm BOGO = tạo class BogoDiscount implements DiscountStrategy, không sửa code cũ</code></pre>
+
+  <h3>L — Liskov Substitution Principle</h3>
+  <p>Subclass phải <strong>thay được</strong> parent mà không break behavior. Vi phạm = "Penguin extends Bird" rồi override <code>fly()</code> throw exception → mọi code dùng <code>Bird.fly()</code> đột nhiên fail.</p>
+  <p><strong>Rule:</strong> subclass <strong>không thêm precondition</strong>, <strong>không yếu postcondition</strong>. Nếu phải vi phạm → abstraction sai từ đầu.</p>
+
+  <h3>I — Interface Segregation Principle</h3>
+  <p>"Caller không bị bắt depend method họ không dùng". Tránh "fat interface".</p>
+  <pre><code class="language-java">// ❌ Fat interface
+interface Worker { void work(); void eat(); void sleep(); }
+class Robot implements Worker {
+    public void work() { ... }
+    public void eat() { throw new UnsupportedOperationException(); }   // ← code smell
+    public void sleep() { throw new UnsupportedOperationException(); }
+}
+
+// ✅ Tách
+interface Workable { void work(); }
+interface Eatable { void eat(); }
+interface Sleepable { void sleep(); }
+class Human implements Workable, Eatable, Sleepable { ... }
+class Robot implements Workable { ... }</code></pre>
+
+  <h3>D — Dependency Inversion Principle</h3>
+  <p>High-level depend abstraction, không depend low-level concrete. Đây là <strong>nền tảng của DI (Spring)</strong>.</p>
+  <pre><code class="language-java">// ❌ High-level (OrderService) depend low-level (MySQLOrderRepo)
+public class OrderService {
+    private MySQLOrderRepo repo = new MySQLOrderRepo();   // hard-coded
+}
+
+// ✅ Depend interface, inject implementation
+public class OrderService {
+    private final OrderRepository repo;     // abstraction
+    public OrderService(OrderRepository repo) { this.repo = repo; }
+}
+// Test dùng InMemoryOrderRepo, prod dùng JpaOrderRepo</code></pre>
+</section>
 
 <section id="antipatterns">
-  <h2>Anti-Patterns — Lỗi junior hay mắc <span class="k-tag core">CORE</span></h2>
-  <div class="table-wrap">
-    <table><thead><tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr></thead><tbody><tr><td>Chỉ học lệnh/API, không học mental model</td><td>High</td><td>Gặp case lạ là panic</td><td>Vẽ state/timeline trước khi gõ lệnh</td></tr>
-<tr><td>Không test edge case</td><td>High</td><td>Bug chỉ lộ ở production</td><td>Thêm test empty/null/large/concurrent</td></tr>
-<tr><td>Copy snippet không hiểu</td><td>Medium</td><td>Không debug được khi fail</td><td>Tự giải thích từng dòng</td></tr>
-<tr><td>Che lỗi bằng try/catch hoặc workaround</td><td>High</td><td>Root cause bị giấu</td><td>Fix mechanism, không chỉ symptom</td></tr>
-<tr><td>Không viết README/runbook</td><td>Medium</td><td>Người sau không vận hành được</td><td>Document workflow và rollback</td></tr></tbody></table>
+  <h2>5. 5 Anti-Patterns Phổ Biến <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #1 — God Class (1000+ dòng, 30+ method)</div>
+    <p><strong>Symptom:</strong> <code>UtilService</code>, <code>BusinessManager</code>, <code>OrderService</code> 2000 dòng. Mọi developer touch đều conflict merge.</p>
+    <p><strong>Fix:</strong> tách theo SRP. <code>OrderCreator</code>, <code>OrderValidator</code>, <code>OrderPricer</code>, <code>OrderShipper</code>.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #2 — Anemic Domain Model</div>
+    <pre><code class="language-java">// ❌ Domain object chỉ là DTO, mọi logic ngoài
+public class Order { public String status; public double total; /* getters/setters */ }
+
+public class OrderService {
+    public void pay(Order o) {
+        if (o.status.equals("PENDING")) o.status = "PAID";   // logic Order ở Service
+    }
+}
+
+// ✅ Rich domain model
+public class Order {
+    private OrderStatus status;
+    public void pay() {
+        if (status != OrderStatus.PENDING) throw new IllegalStateException(...);
+        this.status = OrderStatus.PAID;
+    }
+}</code></pre>
+    <p><strong>Test phân biệt:</strong> nếu xóa hết Service và đặt logic vào domain, business rule còn enforce không? Anemic = không. Rich = có.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #3 — Constructor 10 tham số</div>
+    <pre><code class="language-java">// ❌
+new Order(id, customerId, items, total, tax, discount, shipping, currency, ...);
+
+// ✅ Builder
+Order order = Order.builder()
+    .customerId("CUST_1")
+    .addItem(item1)
+    .discount(percentDiscount(10))
+    .shipping(standardShipping())
+    .build();
+
+// ✅ Hoặc parameter object
+new Order(orderRequest, taxPolicy);</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #4 — Cyclic Dependency</div>
+    <p><strong>Symptom:</strong> <code>A → B → C → A</code>. Spring throw <code>BeanCurrentlyInCreationException</code>. Đổi A break B và C.</p>
+    <p><strong>Fix:</strong></p>
+    <ul>
+      <li>Tách interface chung lên parent module</li>
+      <li>Dùng event-driven (A publish event, C subscribe — không direct call)</li>
+      <li>Lazy injection (<code>@Lazy</code> Spring) — band-aid, không fix root</li>
+    </ul>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #5 — Thiếu equals/hashCode khi làm Map key</div>
+    <p>Override <code>equals</code> mà quên <code>hashCode</code> (hoặc ngược lại) → object "biến mất" khỏi HashMap/HashSet vì 2 object equal có hashCode khác → vào 2 bucket khác.</p>
+    <pre><code class="language-java">// ✅ Java 16+ record auto-generate equals + hashCode đúng contract
+public record OrderKey(String id, int version) { }
+
+// ✅ Hoặc IDE generate (IntelliJ Cmd+N → equals and hashCode)
+// ❌ Tự viết — dễ quên 1 field, dễ sai contract</code></pre>
   </div>
 </section>
 
-<section id="edge-cases">
-  <h2>🎯 Edge Cases — Production Reality <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="edge-cases">
-    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
-    <p class="ec-intro">Happy path chưa đủ. Junior cần học cách hỏi: input lạ, data lớn, concurrency, security và vận hành thì sao?</p>
-    <ul class="ec-list"><li><strong>Race condition</strong>: Hai thao tác cùng chạy có thể ghi đè state; cần lock/atomic workflow khi phù hợp.</li>
-<li><strong>Scale limit</strong>: Dataset hoặc repo lớn làm thao tác vốn ổn ở local trở nên chậm.</li>
-<li><strong>Security</strong>: Không để lộ secret, token, PII trong log, command history hoặc commit.</li>
-<li><strong>Data integrity</strong>: Phải biết khi nào thao tác làm mất dữ liệu và cách rollback.</li>
-<li><strong>Time/timezone</strong>: Log, file timestamp, commit time và scheduler nên dùng UTC/ISO khi debug.</li>
-<li><strong>Concurrent access</strong>: Nhiều dev/process cùng chạm vào cùng resource cần quy ước rõ.</li>
-<li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>4 Trụ cột OOP</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Quote được tên 4 trụ cột. Code class có private field + getter/setter. Vẫn dùng static method khắp nơi.</p>
+      <p><em>Symptom:</em> service class 500 dòng, public field, no constructor injection.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Hiểu why của encapsulation (invariant + boundary). Phân biệt "is-a" vs "has code-a". Dùng interface + polymorphism cho varying behavior.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Design rich domain model (behavior thuộc domain, không Service). Refactor anemic → rich. Pull request bao gồm test cho invariant.</p>
+    </div>
   </div>
-  <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Java OOP Foundation trong project thật</div>
-    <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
-    <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
+
+  <h3>SOLID</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Nhớ tên 5 chữ. Hiểu mơ hồ. Code review không catch được vi phạm SOLID.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>SRP = "1 lý do thay đổi". OCP = strategy pattern. DIP = constructor injection. Catch được vi phạm trong PR đồng nghiệp.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>SOLID là phản xạ. Thấy "if/else type" → reach Strategy. Thấy 3 class share state → tách interface. Refactor legacy code từ procedural → SOLID-compliant.</p></div>
+  </div>
+
+  <h3>Abstract vs Interface choice</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Luôn dùng abstract class. Lý do "có thể thêm state sau".</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Default interface. Abstract class chỉ khi cần share state/constructor. Hiểu default method Java 8+.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Design plugin interface với sealed interface (Java 17+). Cân nhắc Java record cho immutable data carrier.</p></div>
   </div>
 </section>
 
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
 
-<section id="mastery-plan">
-  <h2>Mastery Plan — 14 ngày biến kiến thức thành phản xạ <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
-  <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Java OOP Foundation.</div>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "NPE trong constructor parent khi tạo subclass"</div>
+    <pre><code class="language-java">public class Parent {
+    public Parent() { init(); }                   // gọi method overridable
+    protected void init() { /* default */ }
+}
+public class Child extends Parent {
+    private List&lt;String&gt; data = new ArrayList&lt;&gt;();
+    @Override protected void init() {
+        data.add("x");                            // ← NPE! data chưa init
+    }
+}
+new Child();   // NPE</code></pre>
+    <p><strong>Root cause:</strong> init order — constructor Parent chạy <strong>trước</strong> instance field của Child. Override method chạy version Child khi field Child chưa khởi tạo.</p>
+    <p><strong>Fix:</strong> KHÔNG gọi overridable method trong constructor. Hoặc <code>final</code> method, hoặc lazy init.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "Object biến mất khỏi HashSet"</div>
+    <p><strong>Symptom:</strong> Add object vào Set, vài line sau <code>contains</code> trả false.</p>
+    <p><strong>3 nguyên nhân:</strong></p>
     <ol>
-      <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
-      <li>Lúc đó bạn thiếu mental model nào?</li>
-      <li>Nếu gặp lại hôm nay, bạn sẽ debug nhanh hơn bằng bước nào?</li>
+      <li>Quên override hashCode (đã override equals)</li>
+      <li>Mutate field dùng trong hashCode sau khi add</li>
+      <li>equals + hashCode dùng field khác nhau</li>
     </ol>
-    <div class="pause-hint">Nếu không nhớ lỗi thật, hãy tự tạo bug trong Build Exercise.</div>
-  </div>
-  <div class="table-wrap">
-    <table><thead><tr><th>Ngày</th><th>Việc làm</th><th>Evidence phải có</th><th>Rủi ro nếu bỏ qua</th></tr></thead><tbody><tr><td>Day 1</td><td>Đọc Roadmap + Intro, ghi lại 5 câu hỏi chưa chắc</td><td>Có note 5 câu hỏi</td><td>Đọc trôi nhưng không biết mình không biết gì</td></tr>
-<tr><td>Day 2</td><td>Chạy bad code và quan sát lỗi</td><td>Có output lỗi hoặc test fail</td><td>Chỉ đọc code, không thấy failure thật</td></tr>
-<tr><td>Day 3</td><td>Refactor bad code sang good code</td><td>Có commit before/after</td><td>Sửa theo cảm giác, không giữ behavior</td></tr>
-<tr><td>Day 4</td><td>Viết edge case tests</td><td>Ít nhất 5 test edge cases</td><td>Chỉ test happy path</td></tr>
-<tr><td>Day 5</td><td>Giải thích Feynman 5 phút</td><td>Có bản ghi âm/note</td><td>Nói được định nghĩa nhưng không có ví dụ</td></tr>
-<tr><td>Day 6</td><td>Đọc official docs liên quan</td><td>Ghi 3 điểm docs nói khác hiểu ban đầu</td><td>Tin AI/content tóm tắt tuyệt đối</td></tr>
-<tr><td>Day 7</td><td>Tự tạo một bug biến thể</td><td>Có test reproduce bug</td><td>Không biết cách phá code</td></tr>
-<tr><td>Day 8</td><td>Viết mini runbook/debug steps</td><td>Có checklist command/action</td><td>Gặp lỗi thật lại panic</td></tr>
-<tr><td>Day 9</td><td>Review code cũ của bản thân</td><td>Tìm ít nhất 3 anti-patterns</td><td>Không chuyển kiến thức vào code review</td></tr>
-<tr><td>Day 10</td><td>Pair với bạn khác hoặc tự role-play</td><td>Trả lời 5 drill questions</td><td>Không luyện nói nên interview lắp bắp</td></tr>
-<tr><td>Day 11</td><td>Tối ưu hoặc cleanup solution</td><td>Có reasoning trade-off</td><td>Refactor làm code phức tạp hơn</td></tr>
-<tr><td>Day 12</td><td>Chạy với input lớn/concurrent nếu phù hợp</td><td>Có số liệu hoặc observation</td><td>Không biết scale behavior</td></tr>
-<tr><td>Day 13</td><td>Viết README dạy lại topic</td><td>README 500-1000 từ</td><td>Kiến thức chỉ nằm trong đầu</td></tr>
-<tr><td>Day 14</td><td>Làm mock interview 20 phút</td><td>Có feedback list</td><td>Không biết lỗ hổng còn lại</td></tr></tbody></table>
+    <p><strong>Fix:</strong> dùng record (Java 16+) hoặc IDE generate. Field hashCode phải immutable.</p>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Code Review Checklist cho topic này</h3>
-  <p>Dùng checklist này khi review PR của chính mình. Nó cố tình cụ thể để tránh câu “nhìn ổn”.</p>
-  <ol><li>Tên biến/method có nói đúng intent không?</li>
-<li>Input null/empty/invalid được xử lý rõ chưa?</li>
-<li>Data lớn có làm complexity đổi cấp không?</li>
-<li>Có shared mutable state không?</li>
-<li>Lỗi có bị swallow hoặc che mất stack trace không?</li>
-<li>Log có đủ context nhưng không lộ secret không?</li>
-<li>Có rollback/recovery path nếu thao tác fail giữa chừng không?</li>
-<li>Có test chứng minh edge case quan trọng không?</li>
-<li>Code có phụ thuộc implementation thay vì abstraction không cần thiết không?</li>
-<li>Có comment giải thích mechanism khó, không comment hiển nhiên không?</li>
-<li>Có source official nào confirm behavior không?</li>
-<li>Có cách reproduce bug nếu người khác hỏi không?</li>
-<li>Có trade-off được ghi trong README/PR description không?</li>
-<li>Có tránh domain-specific assumption quá hẹp không?</li>
-<li>Có thể dạy lại cho junior khác trong 10 phút không?</li></ol>
-
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không có evidence</div>
-    <pre><code class="language-text">I think this should work.\nNo test. No command output. No rollback note.</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Có evidence tối thiểu</div>
-    <pre><code class="language-text">Test: passes edge cases.\nCommand/output recorded.\nKnown trade-off documented.\nRollback/recovery step written.</code></pre>
-  </div>
-</div>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Junior → Middle calibration</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Level</th><th>Hiểu biết</th><th>Hành vi thấy được</th><th>Gap còn lại</th></tr></thead><tbody><tr><td>Beginner</td><td>Biết syntax/API</td><td>Code chạy với ví dụ mẫu</td><td>Không giải thích được failure mode</td></tr>
-<tr><td>Junior solid</td><td>Biết mental model</td><td>Chọn đúng pattern cho case thường</td><td>Còn chậm khi gặp edge case</td></tr>
-<tr><td>Middle-ready</td><td>Biết trade-off</td><td>Review được code người khác</td><td>Cần thêm production experience</td></tr>
-<tr><td>Mentor-ready</td><td>Dạy được người khác</td><td>Có runbook, exercises, checklist</td><td>Phải cập nhật theo tool/version mới</td></tr></tbody></table>
-  </div>
-
-  <div class="callout success">
-    <div class="ctitle">✅ Definition of done</div>
-    <p>Bạn hoàn thành topic này khi có thể: viết code đúng, phá code bằng edge case, sửa code, giải thích mechanism, và review code người khác mà không cần nhìn lại tài liệu.</p>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "Spring BeanCurrentlyInCreationException"</div>
+    <p><strong>Symptom:</strong> startup fail với "Requested bean is currently in creation: Is there an unresolvable circular reference?"</p>
+    <p><strong>Root cause:</strong> Cyclic dependency. <code>A → B → A</code> (constructor injection).</p>
+    <p><strong>Fix theo độ ưu tiên:</strong></p>
+    <ol>
+      <li><strong>Best:</strong> refactor — tách common logic vào C, A và B đều depend C</li>
+      <li><strong>Decent:</strong> chuyển sang event-driven (A publish event, B handle)</li>
+      <li><strong>Band-aid:</strong> <code>@Lazy</code> 1 bên — hide problem, không fix</li>
+    </ol>
   </div>
 </section>
 
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
 
-
-<section id="practice-bank">
-  <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Java OOP Foundation thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
-<tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
-<tr><td>3</td><td>Fix</td><td>Sửa bad code theo good pattern</td><td>Commit diff phải nhỏ và giải thích được.</td></tr>
-<tr><td>4</td><td>Break</td><td>Tạo input làm solution fail</td><td>Ít nhất một case null/empty hoặc concurrent nếu phù hợp.</td></tr>
-<tr><td>5</td><td>Scale</td><td>Tăng data size 100 lần</td><td>Ghi latency/memory hoặc mô tả behavior.</td></tr>
-<tr><td>6</td><td>Explain</td><td>Dạy lại cho một bạn mới</td><td>Bạn kia phải hỏi lại ít hơn 3 lần.</td></tr>
-<tr><td>7</td><td>Review</td><td>Tìm anti-pattern tương tự trong code cũ</td><td>Có link file/dòng hoặc snippet.</td></tr>
-<tr><td>8</td><td>Rewrite</td><td>Viết lại README cho người đi sau</td><td>Có command, expected output, rollback.</td></tr>
-<tr><td>9</td><td>Compare</td><td>So sánh 2 alternative</td><td>Nói được khi nào dùng A, khi nào dùng B.</td></tr>
-<tr><td>10</td><td>Verify</td><td>Mở official docs kiểm tra một statement</td><td>Ghi lại URL và câu bạn verify.</td></tr>
-<tr><td>11</td><td>Observe</td><td>Thêm log/test/metric nhỏ để nhìn thấy failure</td><td>Không làm lộ secret hoặc data nhạy cảm.</td></tr>
-<tr><td>12</td><td>Refactor</td><td>Giảm coupling hoặc tăng boundary</td><td>Behavior giữ nguyên qua test.</td></tr>
-<tr><td>13</td><td>Recover</td><td>Viết bước recovery khi lỡ làm sai</td><td>Có precheck trước khi chạy lệnh nguy hiểm.</td></tr>
-<tr><td>14</td><td>Pair</td><td>Nhờ người khác review lời giải</td><td>Ghi lại 3 feedback.</td></tr>
-<tr><td>15</td><td>Mock</td><td>Trả lời 5 câu drill không nhìn tài liệu</td><td>Mỗi câu dưới 2 phút, có ví dụ.</td></tr>
-<tr><td>16</td><td>Teach</td><td>Tạo 3 câu hỏi cho junior khác</td><td>Mỗi câu có expected answer.</td></tr>
-<tr><td>17</td><td>Document</td><td>Viết checklist PR cho topic này</td><td>Checklist dùng được ngay trong team.</td></tr>
-<tr><td>18</td><td>Automate</td><td>Tự động hóa một kiểm tra nhỏ</td><td>Script/test chạy lại được.</td></tr>
-<tr><td>19</td><td>Simplify</td><td>Xóa phần code/thao tác thừa</td><td>Giải thích vì sao đơn giản hơn vẫn đúng.</td></tr>
-<tr><td>20</td><td>Retrospective</td><td>Viết 5 dòng: mình hiểu sai gì ban đầu</td><td>Có lesson cụ thể.</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #1 — Refactor Procedural → OOP (Easy, 1h)</div>
+    <p>Cho code procedural <code>OrderService</code> ở Section 1 (static method + public field + String status).</p>
+    <p>Refactor theo OOP đúng:</p>
+    <ul>
+      <li>Domain object Order có behavior (pay, cancel)</li>
+      <li>Enum cho status</li>
+      <li>Constructor enforce invariant</li>
+      <li>Service mỏng, inject dependency</li>
+      <li>Test cover happy path + 3 invariant violation</li>
+    </ul>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Mistake Catalog — 12 lỗi phải tự bắt trước khi senior bắt</h3>
-  <p>Những lỗi này không riêng topic nào; chúng là pattern khiến junior mất thời gian mỗi tuần.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>Lỗi</th><th>Hậu quả</th><th>Thói quen thay thế</th></tr></thead><tbody><tr><td>Không đọc lỗi đầy đủ</td><td>Fix sai dòng đầu tiên nhìn thấy</td><td>Đọc từ root cause/first failing command</td></tr>
-<tr><td>Không ghi lại command đã chạy</td><td>Không reproduce được</td><td>Copy transcript vào note/README</td></tr>
-<tr><td>Không phân biệt symptom và root cause</td><td>Chữa tạm, lỗi quay lại</td><td>Viết hypothesis trước fix</td></tr>
-<tr><td>Không chạy test sau conflict/refactor</td><td>Merge xong mới vỡ</td><td>Run test liên quan trước push</td></tr>
-<tr><td>Dùng dữ liệu quá nhỏ</td><td>Không thấy performance issue</td><td>Tạo dataset đại diện hơn</td></tr>
-<tr><td>Không nghĩ đến người vận hành</td><td>Code khó debug</td><td>Thêm log/runbook/expected output</td></tr>
-<tr><td>Dựa vào IDE hoàn toàn</td><td>Ra server là bí</td><td>Biết command-line equivalent</td></tr>
-<tr><td>Không hỏi trade-off</td><td>Pattern bị dùng máy móc</td><td>Luôn có section khi nào không dùng</td></tr>
-<tr><td>Không kiểm security</td><td>Secret/PII lọt vào log/repo</td><td>Review data nhạy cảm trước commit/log</td></tr>
-<tr><td>Không rollback được</td><td>Sửa lỗi thành incident lớn</td><td>Chuẩn bị restore/revert path</td></tr>
-<tr><td>Không học từ lỗi cũ</td><td>Lặp lại lỗi</td><td>Biến incident thành checklist</td></tr>
-<tr><td>Không dạy lại</td><td>Hiểu mơ hồ</td><td>Feynman hoặc mentor note</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #2 — Polymorphism Shipping Calculator (Medium, 1.5h)</div>
+    <p>Implement 4 shipping strategy: Standard, Express, SameDay, PickupAtStore.</p>
+    <ul>
+      <li>Interface <code>ShippingCalculator</code></li>
+      <li>4 implementation với behavior khác</li>
+      <li>Factory hoặc Spring Map injection để lookup theo type</li>
+      <li>Thêm SameDayShipping mới — verify <strong>không sửa</strong> code cũ (OCP)</li>
+    </ul>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Rubric tự chấm</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Trục</th><th>Câu hỏi</th><th>Evidence</th></tr></thead><tbody><tr><td>Correctness</td><td>Có đúng với input bình thường và edge case không?</td><td>Test pass, invariant rõ</td></tr>
-<tr><td>Clarity</td><td>Người khác đọc có hiểu intent không?</td><td>Tên tốt, README/runbook đủ</td></tr>
-<tr><td>Safety</td><td>Sai thì có làm mất dữ liệu/secret/code không?</td><td>Rollback, mask, backup, guard</td></tr>
-<tr><td>Scalability</td><td>Data lớn hoặc repo lớn có làm vỡ không?</td><td>Big-O/metric/workload đại diện</td></tr>
-<tr><td>Operability</td><td>Production/debug có đủ evidence không?</td><td>Log, command, trace, status</td></tr>
-<tr><td>Teachability</td><td>Bạn có dạy lại được không?</td><td>Feynman + exercise</td></tr></tbody></table>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #3 — SOLID Refactoring (Hard, 2-3h)</div>
+    <p>Pick 1 service class trong project hiện tại của bạn (≥ 200 dòng).</p>
+    <ol>
+      <li>Đếm responsibility (đếm số lý do nó thay đổi)</li>
+      <li>Tách theo SRP — thường ra 3-5 class nhỏ</li>
+      <li>Identify chỗ vi phạm OCP (if/else type) → refactor strategy</li>
+      <li>Verify test vẫn pass sau refactor</li>
+      <li>Đo: line count giảm? Cyclomatic complexity giảm?</li>
+    </ol>
   </div>
-
-  <div class="callout why">
-    <div class="ctitle">🎯 Tại sao cần Practice Bank?</div>
-    <p>Junior hay học bằng cảm giác quen mắt. Practice Bank buộc bạn tạo evidence. Khi đi phỏng vấn hoặc review PR, evidence làm câu trả lời chắc hơn nhiều so với “em nghĩ vậy”.</p>
-  </div>
-</section>
-
-
-<section id="build-projects">
-  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Java OOP Foundation Kata (Beginner)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
-    <p>Requirements:</p>
-    <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Một junior khác làm theo được mà không cần hỏi thêm.</div>
-  </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #2 — Production Scenario Lab (Intermediate)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Mô phỏng một incident nhỏ và viết runbook xử lý.</div>
-    <p>Requirements:</p>
-    <ul><li>Có log/output trước và sau.</li><li>Có root cause.</li><li>Có rollback hoặc recovery step.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Bạn giải thích được failure timeline trong 3 phút.</div>
-  </div>
-
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #3 — Mentor Pack (Advanced)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Chuẩn bị bài hướng dẫn 30 phút cho junior khác.</div>
-    <p>Requirements:</p>
-    <ul><li>5 misconceptions.</li><li>5 exercises.</li><li>Checklist review.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Người học làm đúng 80% bài tập sau buổi hướng dẫn.</div>
-  </div>
-
-</section>
-
-<section id="drill-bank">
-  <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
-  <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Java OOP Foundation quan trọng với junior backend?</h3>
-  <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
-  <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q2. Bạn debug khi không hiểu lỗi bắt đầu từ đâu thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Xác định state hiện tại, input, expected output, command/log gần nhất, rồi thu hẹp từng bước. Không sửa mù khi chưa có bằng chứng.</p>
-  <p><strong>Signal</strong>: Có method điều tra.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q3. Khi nào nên viết runbook?</h3>
-  <p><strong>Answer mẫu</strong>: Khi workflow có nhiều bước, có thể fail, hoặc người khác cần lặp lại an toàn. Runbook tốt có precheck, command, expected output và rollback.</p>
-  <p><strong>Signal</strong>: Có tư duy vận hành.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q4. Dấu hiệu bạn thật sự hiểu một foundation topic?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn giải thích được cơ chế, dự đoán edge case, viết test phá happy path và dạy lại người khác.</p>
-  <p><strong>Signal</strong>: Không chỉ thuộc syntax.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q5. Nếu code chạy đúng ở local, vì sao senior vẫn có thể reject?</h3>
-  <p><strong>Answer mẫu</strong>: Vì local happy path chỉ chứng minh một input nhỏ chạy được. Senior review failure mode: input bẩn, data lớn, concurrency, rollback, observability, security và maintainability.</p>
-  <p><strong>Signal</strong>: Bạn hiểu code review không phải bắt bẻ style.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q6. Một câu trả lời junior tốt khác gì câu trả lời thuộc lòng?</h3>
-  <p><strong>Answer mẫu</strong>: Nó có ví dụ cụ thể, trade-off, và nói được khi nào cách đó sai. Thuộc lòng thường chỉ có định nghĩa.</p>
-  <p><strong>Signal</strong>: Có thể tự tạo ví dụ mới.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Bạn sẽ viết checklist học topic này thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Chia thành concept, code example, edge case, exercise, Feynman explanation và source verification.</p>
-  <p><strong>Signal</strong>: Có cách học có thể lặp lại.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q8. Khi gặp output lạ, bước đầu tiên là gì?</h3>
-  <p><strong>Answer mẫu</strong>: Đóng băng hiện trạng: input, command, log, version, branch, environment. Sau đó thu hẹp bằng reproduction nhỏ.</p>
-  <p><strong>Signal</strong>: Không sửa mù.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Làm sao biết mình đã hiểu thật?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn có thể phá code, sửa code, giải thích mechanism, và dạy người khác tránh lỗi tương tự.</p>
-  <p><strong>Signal</strong>: Hiểu thật gắn với hành động.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q10. Nếu phải mentor junior khác, bạn bắt đầu từ đâu?</h3>
-  <p><strong>Answer mẫu</strong>: Bắt đầu từ lỗi thật họ vừa gặp, vẽ mental model, sửa một ví dụ nhỏ, rồi cho họ tự làm biến thể.</p>
-  <p><strong>Signal</strong>: Biết dạy bằng feedback loop.</p>
-
-</section>
-
-<section id="self-test">
-  <h2>Self-Test Scenarios <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đọc bối cảnh, tự viết đáp án, rồi mới xem gợi ý. Đây là phần chống đọc hiểu giả mạnh nhất.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Scenario 1 — Local pass, production fail</h3>
-  <p><strong>Bối cảnh</strong>: Feature chạy được trên máy cá nhân nhưng fail khi data lớn hoặc nhiều người dùng.</p>
-  <p><strong>Tự trả lời</strong>: Bạn cần thêm bằng chứng gì?</p>
-  <p><strong>Gợi ý</strong>: So sánh input, environment, concurrency, data size và logs.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Junior panic khi gặp lỗi lạ</h3>
-  <p><strong>Bối cảnh</strong>: Console có stack trace/command output dài.</p>
-  <p><strong>Tự trả lời</strong>: Bạn dạy bạn đó đọc từ đâu?</p>
-  <p><strong>Gợi ý</strong>: Tìm first cause, command gần nhất, state trước/sau, rồi reproduce nhỏ.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Review PR foundation</h3>
-  <p><strong>Bối cảnh</strong>: Code chạy nhưng thiếu guard/rollback/log.</p>
-  <p><strong>Tự trả lời</strong>: Comment thế nào để người viết học được?</p>
-  <p><strong>Gợi ý</strong>: Nêu failure mode cụ thể, hậu quả và hướng sửa nhỏ.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 4 — Code review bị hỏi &#x27;vì sao?&#x27;</h3>
-  <p><strong>Bối cảnh</strong>: Bạn chọn một cách implement nhưng chỉ trả lời được &#x27;em thấy người ta hay làm vậy&#x27;.</p>
-  <p><strong>Tự trả lời</strong>: Làm sao nâng câu trả lời?</p>
-  <p><strong>Gợi ý</strong>: Nói problem, constraint, trade-off, alternative và lý do chọn. Nếu chưa nói được, bạn mới copy pattern.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 5 — Unit test pass nhưng integration fail</h3>
-  <p><strong>Bối cảnh</strong>: Test nhỏ mock hết dependency, lên môi trường thật fail vì data/permission/path khác.</p>
-  <p><strong>Tự trả lời</strong>: Thiếu loại kiểm chứng nào?</p>
-  <p><strong>Gợi ý</strong>: Cần test gần reality hơn: integration, contract, command transcript, hoặc environment checklist.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bug chỉ xảy ra khi chạy song song</h3>
-  <p><strong>Bối cảnh</strong>: Hai request hoặc hai dev thao tác cùng resource làm state lệch.</p>
-  <p><strong>Tự trả lời</strong>: Bạn sẽ tìm race thế nào?</p>
-  <p><strong>Gợi ý</strong>: Tìm shared mutable state, check-then-act, non-atomic operation, lock/transaction boundary.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Log không đủ debug</h3>
-  <p><strong>Bối cảnh</strong>: Production chỉ có dòng &#x27;failed&#x27; mà không có id, input, stack trace.</p>
-  <p><strong>Tự trả lời</strong>: Log tối thiểu cần gì?</p>
-  <p><strong>Gợi ý</strong>: Event name, correlation id, business id, outcome, duration, exception cause, không chứa secret.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Tự viết runbook cho lỗi đã gặp</h3>
-  <p><strong>Bối cảnh</strong>: Bạn vừa được senior cứu một lỗi trong 5 phút.</p>
-  <p><strong>Tự trả lời</strong>: Biến nó thành tài sản học thế nào?</p>
-  <p><strong>Gợi ý</strong>: Ghi symptom, command, expected output, root cause, fix, rollback và prevention checklist.</p>
-
 </section>
 
 <section id="interview">
-  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Java OOP Foundation: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
-  <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
-  <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Tier 1 — Surface</h3>
+  <div class="tier-card t1">
+    <h3>Q: Abstract class vs Interface — khi nào dùng?</h3>
+    <p>Default interface (Java modern). Abstract class khi cần share state/constructor giữa nhiều subclass. Interface = "can-do" (capability), abstract = "is-a". Java 8+ interface có default method nên ranh giới mờ — chọn interface nếu chỉ define contract, abstract nếu cần partial implementation + state.</p>
+  </div>
+
+  <h3>Tier 2 — Deep Dive</h3>
+  <div class="tier-card t2">
+    <h3>Q: Single Responsibility Principle — "1 thứ" hay "1 lý do"?</h3>
+    <p>Đúng là "1 lý do để thay đổi" (Robert Martin). Ví dụ <code>Employee</code> với <code>calculatePay()</code> + <code>save()</code> + <code>printReport()</code> = 3 responsibility vì 3 stakeholder khác nhau (HR, IT, Finance) yêu cầu thay đổi. Tách theo audience.</p>
+  </div>
+
+  <h3>Tier 3 — Architecture</h3>
+  <div class="tier-card t3">
+    <h3>Q: Phân biệt Anemic vs Rich Domain Model — kèm ví dụ</h3>
+    <p><strong>Anemic:</strong> domain object chỉ có getter/setter, mọi logic ở Service. Service trở thành "transaction script" — procedural.</p>
+    <p><strong>Rich:</strong> behavior thuộc domain (<code>order.pay()</code>, <code>account.withdraw()</code>). Service chỉ orchestrate.</p>
+    <p><strong>Test phân biệt:</strong> nếu xóa Service và dùng domain trực tiếp, business rule còn enforce không? Anemic = không (logic ở Service). Rich = có (logic trong domain).</p>
+    <p><strong>Khi nào Anemic OK:</strong> DTO truyền giữa layer, project CRUD đơn giản. Project có business logic phức tạp → bắt buộc Rich (DDD).</p>
+  </div>
 </section>
 
-<section id="feynman-end">
-  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
-  <div class="feynman">
-    <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Java OOP Foundation cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
-    <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
-  </div>
-  <div class="verify-source">
-    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
-    <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/classes.html">Java Classes and Objects</a></li>
-<li><a href="https://docs.oracle.com/javase/tutorial/java/IandI/createinterface.html">Java Interfaces</a></li>
-<li><a href="https://en.wikipedia.org/wiki/SOLID">SOLID principles overview</a></li></ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu</h2>
+  <ol>
+    <li><strong>"Procedural đội lốt OOP" — cho 1 ví dụ code và explain 5 vấn đề.</strong></li>
+    <li><strong>Encapsulation: tại sao public field là code smell?</strong></li>
+    <li><strong>"is-a" vs "has code-a" — cho 1 ví dụ sai inheritance, fix bằng composition.</strong></li>
+    <li><strong>Anemic vs Rich domain model — test phân biệt là gì?</strong></li>
+    <li><strong>SOLID — chọn 1 letter giải thích cho non-tech qua e-commerce example.</strong></li>
+  </ol>
+  <div class="callout success"><strong>Pass:</strong> 5/5 trong &lt; 10 phút.</div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="49-exception-logging.html">#49 Exception &amp; Logging</a></li>
+      <li><a href="52-collections-deep-dive.html">#52 Collections Deep Dive</a></li>
+      <li><a href="15-clean-architecture-ddd.html">#15 Clean Architecture &amp; DDD</a> — apply OOP ở scale lớn</li>
+    </ol>
+    <p><strong>Khi sẵn sàng chuyển:</strong> 3 exercises xong + Feynman 5/5 + refactor 1 service class trong project thật.</p>
   </div>
 </section>
 
-<footer>
-  <div>📁 #48 Java OOP Foundation · Junior Foundation</div>
-  <div>Tiếp theo: #49 next junior topic</div>
-</footer>
 </div>
 </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

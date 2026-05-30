@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#3 AI Agent Engineering | Cổ Trùng Chi Tiết</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="crumb"><a href="index.html">Cổ Trùng</a><span class="sep">›</span><span>TIER S</span><span class="sep">›</span><span class="current">#3 AI Agent Engineering</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+</div>
+<div class="layout">
+<aside class="sidebar">
+  <nav class="toc">
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
+    <a href="#essence">1. Bản chất — Agent ≠ Chatbot</a>
+    <a href="#concepts">2. 9 khái niệm cốt lõi</a>
+    <a href="#tool-use">— Function Calling / Tool Use</a>
+    <a href="#rag">— RAG</a>
+    <a href="#embedding">— Vector Embedding + DB</a>
+    <a href="#rerank">— Reranking + Chunking</a>
+    <a href="#prompt">— Prompt Engineering</a>
+    <a href="#mcp">— MCP</a>
+    <a href="#eval">— Eval / Observability</a>
+    <a href="#roadmap">3. Roadmap 6 tháng</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#lab">🧪 4 Labs</a>
+    <a href="#feynman">🧠 Feynman</a>
+  </nav>
+</aside>
+<main><div class="content">
+
+<section class="hero">
+  <span class="meta-tag">#3 · TIER S · Niche nghề nghiệp</span>
+  <h1>AI Agent Engineering — Cổ trùng niche</h1>
+  <p class="lead">Nghề 5-10 năm tới. Build agent cho doanh nghiệp = đứng top 5% AI builder. Nhân đã có background Java backend → AI agent là next-level natural.</p>
+  <div class="hero-tags"><span class="phase-tag">TIER S · CORE ★</span><span class="phase-tag">6 tháng roadmap</span></div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo hiểu giả</h2>
+  <ul>
+    <li>Biết "RAG" — nhưng không phân biệt được RAG vs fine-tuning vs context loading</li>
+    <li>Dùng LangChain — nhưng không build được agent thuần Python không framework</li>
+    <li>Hiểu "function calling" — nhưng chưa từng write 1 tool spec đúng schema</li>
+    <li>Demo agent works — nhưng không có eval, không biết quality bao nhiêu %</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp</div>
+    <p><strong>L1:</strong> dùng OpenAI API, biết tên LangChain, demo được chatbot.<br>
+    <strong>L2:</strong> build RAG từ scratch không framework, hiểu chunking strategy + reranker.<br>
+    <strong>L3:</strong> ship production AI cho khách enterprise — có eval, observability, cost optimization. Charge $80-150/h.</p>
+  </div>
+</section>
+
+<section id="essence">
+  <h2>1. Bản chất — Agent ≠ Chatbot <span class="phase-tag">CORE ★</span></h2>
+  <table>
+    <thead><tr><th>Type</th><th>Flow</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Chatbot</strong></td><td>Hỏi → Trả lời → Xong</td></tr>
+      <tr><td><strong>Agent</strong></td><td>Hỏi → Suy nghĩ → Gọi tool → Quan sát → Suy nghĩ → ... → Trả lời cuối</td></tr>
+    </tbody>
+  </table>
+  <p><strong>AI Agent</strong> = cổ trùng đặc biệt: có thể suy nghĩ ra bước cần làm, gọi tool, quan sát kết quả, lặp đến khi đạt mục tiêu. Nghề Nhân là build các agent này cho doanh nghiệp.</p>
+</section>
+
+<section id="concepts"><h2>2. 9 khái niệm cốt lõi <span class="phase-tag">CORE ★</span></h2></section>
+
+<section id="tool-use">
+  <h3>#1 Function Calling / Tool Use</h3>
+  <p>Cho phép LLM <strong>gọi hàm bên ngoài</strong> thay vì chỉ trả text. Đây là <strong>bước nối</strong> giữa LLM và thế giới thật.</p>
+  <ol>
+    <li>Bạn cho LLM biết: <em>"Có 3 tool: get_weather(city), book_meeting(time, person), send_email(to, subject, body)"</em></li>
+    <li>User hỏi: <em>"Đặt lịch họp với John ngày mai 3pm"</em></li>
+    <li>LLM trả JSON: <code>{"tool":"book_meeting","args":{"time":"tomorrow 3pm","person":"John"}}</code></li>
+    <li>Code của bạn gọi function thật → đặt lịch</li>
+    <li>LLM nhận kết quả → trả lời user</li>
+  </ol>
+  <p>OpenAI: "function calling". Anthropic: "tool use". <strong>Cùng concept</strong>.</p>
+</section>
+
+<section id="rag">
+  <h3>#2 RAG — Retrieval-Augmented Generation</h3>
+  <p>Cho LLM trả lời dựa trên <strong>dữ liệu riêng</strong> không có trong training data (FAQ công ty, docs riêng, code repo).</p>
+  <div class="callout info">
+    <div class="ctitle">📐 Setup (offline)</div>
+    <p>Documents → chunk (200-1000 từ) → embed → vector DB</p>
+  </div>
+  <div class="callout info">
+    <div class="ctitle">🔍 Query (online)</div>
+    <p>Question → embed → semantic search top 3-5 chunks → đưa vào prompt → LLM trả lời</p>
+  </div>
+  <p><strong>Khi nào KHÔNG dùng RAG:</strong> data nhỏ &lt; 50KB (cho hết vào context), hoặc data thay đổi liên tục (không kịp index).</p>
+</section>
+
+<section id="embedding">
+  <h3>#3 Vector Embedding + Vector DB</h3>
+  <p><strong>Embedding</strong>: biến text thành vector số 1500 chiều sao cho <strong>text nghĩa giống → vector gần nhau</strong>.</p>
+  <pre><code class="language-text">"tôi yêu mèo"   → [0.23, -0.45, 0.67, ..., 0.12]
+"tôi thích mèo" → [0.21, -0.43, 0.65, ..., 0.11]  ← gần
+"đường về quê"  → [-0.55, 0.78, ..., -0.34]       ← xa</code></pre>
+  <p><strong>Provider:</strong> OpenAI text-embedding-3-small ($0.02/1M tokens), Voyage AI (chất lượng cao domain-specific), Cohere embed.</p>
+  <p><strong>Vector DB</strong>: managed (Pinecone, Weaviate Cloud) hoặc self-host (Qdrant, Milvus, ChromaDB, <strong>pgvector</strong>).</p>
+  <div class="callout tip">
+    <div class="ctitle">💡 Đề xuất cho Nhân</div>
+    <p>Bắt đầu với <strong>pgvector</strong> (Postgres extension) — bạn đã biết Postgres. Không học DB mới. Production ready, sub-100ms search trên 1M vectors.</p>
+  </div>
+</section>
+
+<section id="rerank">
+  <h3>#4 Reranking + #5 Chunking Strategy</h3>
+  <p><strong>Reranker</strong>: sau vector search top 20, model rerank xếp lại sao cho chunk thực sự phù hợp lên đầu. Vector nhanh nhưng không chính xác hoàn toàn → rerank chậm hơn nhưng chính xác hơn → combo = nhanh + chính xác.</p>
+  <p><strong>Provider:</strong> Cohere Rerank, Jina Reranker.</p>
+  <p><strong>Chunking</strong> ảnh hưởng RỄ chất lượng RAG:</p>
+  <ul>
+    <li><strong>Quá nhỏ</strong> (50 từ): mất context</li>
+    <li><strong>Quá lớn</strong> (5000 từ): vector "loãng", search không trỏ đúng</li>
+    <li><strong>Theo ý</strong>: chia ở paragraph/header — giữ nghĩa</li>
+  </ul>
+  <p>Tools: LangChain Text Splitters, LlamaIndex parsers.</p>
+</section>
+
+<section id="prompt">
+  <h3>#6 Prompt Engineering</h3>
+  <p>Không phải "tip & trick" — là <strong>discipline</strong>. 6 kỹ thuật chính:</p>
+  <ol>
+    <li><strong>Few-shot examples</strong>: 2-3 ví dụ trong prompt → LLM bắt chước</li>
+    <li><strong>Chain of Thought</strong>: <em>"think step by step"</em> — chính xác hơn</li>
+    <li><strong>Role prompting</strong>: <em>"Bạn là chuyên gia X..."</em></li>
+    <li><strong>Output format</strong>: yêu cầu JSON/XML schema cụ thể → dễ parse</li>
+    <li><strong>Negative examples</strong>: <em>"đừng làm như thế này"</em></li>
+    <li><strong>System vs User</strong>: tách system (bối cảnh) vs user (câu hỏi)</li>
+  </ol>
+  <p><strong>Đọc:</strong> Anthropic prompt engineering guide + OpenAI cookbook.</p>
+</section>
+
+<section id="mcp">
+  <h3>#7 MCP — Model Context Protocol</h3>
+  <p><strong>MCP</strong> = chuẩn Anthropic công bố cuối 2024, cho LLM kết nối nguồn dữ liệu/tool theo cách <strong>chuẩn hoá</strong>. Trước: mỗi integration custom code. Có MCP: tool exposes 1 MCP server → bất kỳ LLM nào support đều dùng được. <strong>USB cho AI tools.</strong></p>
+  <div class="callout success">
+    <div class="ctitle">🎯 Vì sao quan trọng cho Nhân (2026)</div>
+    <p>Rất ít dev hiểu MCP lúc này. Đây là <strong>edge của edge</strong> — rành MCP + build MCP servers = top 5% AI builder. Charge premium.</p>
+  </div>
+</section>
+
+<section id="eval">
+  <h3>#8 Eval + #9 Observability</h3>
+  <p><strong>Eval</strong> ≠ test code:</p>
+  <ul>
+    <li>Code test: input → output đúng/sai (deterministic)</li>
+    <li>AI eval: input → output đúng nhiều cách → phải đo: relevance, accuracy, safety, latency, cost</li>
+  </ul>
+  <p><strong>Tools:</strong> Promptfoo (open source, local), DSPy (auto-optimize prompt), Langfuse (observability + eval), Phoenix/Arize.</p>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Quy tắc vàng</div>
+    <p><strong>Production AI không có eval = code clean nhưng deploy là chết.</strong> Enterprise hỏi <em>"how do you measure quality?"</em> → không trả lời = mất deal.</p>
+  </div>
+  <p><strong>Observability</strong>: log mỗi LLM call (prompt, response, latency, cost), trace tool chain, alert cost/latency spike, dashboard tổng hợp.</p>
+</section>
+
+<section id="roadmap">
+  <h2>3. Roadmap 6 tháng <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Cấp 1 (tháng 1-2) — Foundation</h3>
+  <ul>
+    <li><strong>Tuần 1:</strong> Hello world agent với OpenAI/Claude API trực tiếp (không framework)</li>
+    <li><strong>Tuần 2:</strong> Thêm function calling — 1 tool <code>get_weather()</code></li>
+    <li><strong>Tuần 3:</strong> Build MVP RAG <strong>từ scratch</strong> (1 PDF, OpenAI embed, pgvector, top 3) — KHÔNG framework</li>
+    <li><strong>Tuần 4:</strong> Prompt engineering — đọc Anthropic guide, test 5 kỹ thuật, đo khác biệt</li>
+  </ul>
+
+  <h3>Cấp 2 (tháng 3-4) — Framework + Standard</h3>
+  <ul>
+    <li><strong>Tuần 5-6:</strong> LangGraph — build planner + executor agent</li>
+    <li><strong>Tuần 7-8:</strong> MCP — build 1 MCP server (vd: Notion API), connect Claude Desktop</li>
+    <li><strong>Tuần 9-10:</strong> Eval — Promptfoo + 20 test case + regression test</li>
+  </ul>
+
+  <h3>Cấp 3 (tháng 5-6) — Production</h3>
+  <ul>
+    <li><strong>Tuần 11-12:</strong> Observability — Langfuse local + trace agent + dashboard</li>
+    <li><strong>Tuần 13-14:</strong> Multi-agent — đọc MetaGPT paper, AutoGPT postmortem, build supervisor pattern</li>
+    <li><strong>Tuần 15-16:</strong> Cost optimization — prompt caching, model routing (Haiku vs Sonnet)</li>
+  </ul>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
+  <h3>RAG</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Biết khái niệm, dùng LangChain RAG template. Không hiểu chunking/reranker.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Build RAG từ scratch, tune chunk size + overlap, dùng reranker. Đo recall/precision.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Hybrid search (vector + BM25), multi-vector embeddings, parent-child chunking, eval pipeline tự động.</p></div>
+  </div>
+  <h3>Tool Use / Agent Loop</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Biết schema function calling, demo 1 tool.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Multi-tool agent, handle tool error, retry strategy, hierarchical planner.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Multi-agent với role + handoff, MCP server cho custom tool, eval suite cho tool selection accuracy.</p></div>
+  </div>
+</section>
+
+<section id="lab">
+  <h2>🧪 4 Labs Bắt Buộc <span class="phase-tag">CORE ★</span></h2>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #1 — Hello agent + 1 tool (Cấp 1, 1 buổi)</div>
+    <p>Python script gọi Claude API, 1 tool get_weather(city). Test 5 query khác.</p>
+  </div>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #2 — RAG from scratch (Cấp 1-2, 1 tuần)</div>
+    <p>1 PDF (vd: ebook 200 trang) → chunk → embed OpenAI → pgvector → search top 3 → đưa prompt. Đo: trả lời được 10 câu hỏi về PDF không?</p>
+  </div>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #3 — MCP server (Cấp 2, 2 tuần)</div>
+    <p>Build MCP server expose Notion API (read page, create page). Connect Claude Desktop, chat: <em>"Read page X và summary"</em>.</p>
+  </div>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #4 — Production agent + eval + observability (Cấp 3, 1 tháng)</div>
+    <p>Build agent giải task thật (vd: research helper). Promptfoo eval suite 20 case. Langfuse trace mỗi call. Dashboard cost/latency.</p>
+  </div>
+</section>
+
+<section id="feynman">
+  <h2>🧠 Feynman Test</h2>
+  <ol>
+    <li>Agent ≠ Chatbot ở đâu? Cho ví dụ.</li>
+    <li>RAG vs fine-tuning khi nào dùng cái nào?</li>
+    <li>Vì sao pgvector tốt cho người mới start hơn Pinecone?</li>
+    <li>MCP giải vấn đề gì? Tại sao bây giờ chưa nhiều dev biết = cơ hội?</li>
+    <li>Production AI không có eval = chết. Tại sao?</li>
+  </ol>
+  <div class="callout success"><strong>Pass:</strong> 5/5 &lt; 10 phút.</div>
+
+  <div class="callout success">
+    <strong>Next:</strong>
+    <ol><li><a href="04-written-communication.html">#4 Written Communication</a></li><li><a href="index.html">← Index</a></li></ol>
+  </div>
+</section>
+
+</div></main></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body></html>

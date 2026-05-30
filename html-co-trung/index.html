@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cổ Trùng Chi Tiết — Tu Luyện Chỉ Nam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .content { max-width: 1060px; }
+  .home-hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr); gap: 24px; align-items: end; }
+  .home-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .search-wrap { margin: 28px 0 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .search-input { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; background: var(--bg-elev); color: var(--text); font: inherit; }
+  .search-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .count-pill { min-width: 76px; text-align: center; border: 1px solid var(--border); border-radius: 999px; padding: 9px 12px; color: var(--text-muted); background: var(--bg-elev); font-size: 13px; font-weight: 600; }
+  .module-section { margin-top: 28px; }
+  .module-section h2 { margin-top: 34px; }
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+  .module-card { display: flex; min-height: 180px; flex-direction: column; justify-content: space-between; gap: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); padding: 18px; text-decoration: none; color: var(--text); box-shadow: var(--shadow-sm); transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease; }
+  .module-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow-md); text-decoration: none; }
+  .module-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .module-number { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+  .module-card h3 { margin: 0 0 8px; font-size: 1.08rem; line-height: 1.35; color: var(--text); }
+  .module-card p { margin: 0; color: var(--text-muted); font-size: .94rem; line-height: 1.55; }
+  .module-foot { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; color: var(--text-muted); font-size: 13px; }
+  .phase-tag { display: inline-flex; align-items: center; min-height: 24px; border-radius: 999px; padding: 3px 9px; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; }
+  .tier-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; border: 1px solid transparent; }
+  .tier-s { background: #fef3c7; color: #92400e; border-color: #fbbf24; }
+  .tier-a { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .tier-b { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+  [data-theme="dark"] .tier-s { background: rgba(245,158,11,.15); color: #fbbf24; border-color: rgba(245,158,11,.4); }
+  [data-theme="dark"] .tier-a { background: rgba(59,130,246,.15); color: #93c5fd; border-color: rgba(59,130,246,.4); }
+  [data-theme="dark"] .tier-b { background: rgba(168,85,247,.15); color: #d8b4fe; border-color: rgba(168,85,247,.4); }
+  .legend { margin: 18px 0 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  .legend-title { font-size: 13px; font-weight: 700; color: var(--text); margin-right: 6px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .empty-state { display: none; margin-top: 20px; border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 18px; color: var(--text-muted); background: var(--bg-elev); }
+  .empty-state.show { display: block; }
+  .stub { opacity: .55; pointer-events: none; }
+  .stub-tag { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  [data-theme="dark"] .stub-tag { background: rgba(107,114,128,.2); color: #9ca3af; border-color: rgba(107,114,128,.4); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb"><strong>Cổ Trùng Chi Tiết</strong><span class="sep">/</span><strong>Tu Luyện Chỉ Nam</strong></div>
+  <button class="theme-toggle" id="themeToggle" type="button">🌓</button>
+</div>
+
+<main>
+<div class="content">
+
+<section class="hero home-hero">
+  <div>
+    <span class="meta-tag">Personal · Cổ Trùng</span>
+    <h1>Cổ Trùng Chi Tiết — Tu Luyện Chỉ Nam</h1>
+    <p class="lead">13 cổ trùng (mental model + skill foundation) cần luyện cho 3 năm tới. Mỗi cổ trùng là một bộ kiến thức nuôi nó lớn lên, biến thành phản xạ chứ không phải "kiến thức đọc".</p>
+  </div>
+  <div class="home-actions">
+    <span class="phase-tag">13 cổ trùng</span>
+    <span class="phase-tag">Vol 1 + Vol 2</span>
+  </div>
+</section>
+
+<div class="legend" aria-label="Phân tier">
+  <span class="legend-title">Tier phân loại:</span>
+  <span class="legend-item"><span class="tier-badge tier-s">TIER S</span> Nền tảng — luyện trước, không skip</span>
+  <span class="legend-item"><span class="tier-badge tier-a">TIER A</span> Khuếch đại — luyện sau khi S xong</span>
+  <span class="legend-item"><span class="tier-badge tier-b">VOL 2</span> Bổ sung — hạ tầng vật lý + chiến lược</span>
+</div>
+
+<div class="search-wrap">
+  <input class="search-input" id="moduleSearch" type="search" placeholder="Tìm theo tên cổ trùng hoặc từ khoá..." autocomplete="off">
+  <div class="count-pill" id="resultCount">13 cổ trùng</div>
+</div>
+<div class="empty-state" id="emptyState">Không có cổ trùng nào khớp từ khoá.</div>
+
+<section class="module-section">
+  <h2 class="no-border">TIER S — 4 Nền Tảng</h2>
+  <p class="lead" style="margin-top:6px;color:var(--text-muted)">4 cổ trùng này luyện trước. Thiếu 1 trong 4 = mọi tier sau lệch hết.</p>
+  <div class="module-grid">
+
+    <a class="module-card" href="01-stoicism-daoism.html" data-search="01 stoicism daoism khắc kỷ đạo gia epictetus marcus aurelius lão tử anxiety">
+      <div>
+        <div class="module-top"><span class="module-number">#1</span><span class="tier-badge tier-s">TIER S</span></div>
+        <h3>Stoicism × Daoism</h3>
+        <p>Khắc Kỷ + Đạo Gia — chống lo âu và cầu toàn. Phân nhị kiểm soát, Amor Fati, Vô vi, Bất tranh.</p>
+      </div>
+      <div class="module-foot"><span>4 khái niệm Stoic + 4 Dao</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="02-systems-thinking.html" data-search="02 systems thinking stock flow feedback loop leverage point emergence bottleneck">
+      <div>
+        <div class="module-top"><span class="module-number">#2</span><span class="tier-badge tier-s">TIER S</span></div>
+        <h3>Systems Thinking</h3>
+        <p>Formalize trực giác hệ thống: Stock/Flow, Feedback Loop, Leverage Point, Emergence, Bottleneck.</p>
+      </div>
+      <div class="module-foot"><span>5 khái niệm cốt lõi</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="03-ai-agent-engineering.html" data-search="03 ai agent engineering function calling rag retrieval vector embedding tool use llm">
+      <div>
+        <div class="module-top"><span class="module-number">#3</span><span class="tier-badge tier-s">TIER S</span></div>
+        <h3>AI Agent Engineering</h3>
+        <p>Niche nghề nghiệp tới 2028: function calling, RAG, vector embedding, tool use, agent orchestration.</p>
+      </div>
+      <div class="module-foot"><span>5+ concept production</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="04-written-communication.html" data-search="04 written communication design doc rfc technical writing async memo introvert">
+      <div>
+        <div class="module-top"><span class="module-number">#4</span><span class="tier-badge tier-s">TIER S</span></div>
+        <h3>Written Communication</h3>
+        <p>Vũ khí introvert: design doc, RFC, async memo, technical writing. Viết rõ = nghĩ rõ.</p>
+      </div>
+      <div class="module-foot"><span>BLUF, RFC, narrative</span><span>Mở →</span></div>
+    </a>
+
+  </div>
+</section>
+
+<section class="module-section">
+  <h2>TIER A — 4 Khuếch Đại</h2>
+  <p class="lead" style="margin-top:6px;color:var(--text-muted)">Sau khi S vững, 4 cổ trùng này nhân kết quả lên nhiều lần.</p>
+  <div class="module-grid">
+
+    <a class="module-card" href="05-mental-models.html" data-search="05 mental models charlie munger second order inversion opportunity cost">
+      <div>
+        <div class="module-top"><span class="module-number">#5</span><span class="tier-badge tier-a">TIER A</span></div>
+        <h3>Mental Models</h3>
+        <p>12 mental model bắt buộc thuộc: inversion, second-order, opportunity cost, Hanlon, Goodhart…</p>
+      </div>
+      <div class="module-foot"><span>12 model + áp dụng</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="06-sales-productize.html" data-search="06 sales productize positioning pricing niche freelance escape treadmill">
+      <div>
+        <div class="module-top"><span class="module-number">#6</span><span class="tier-badge tier-a">TIER A</span></div>
+        <h3>Sales / Productize</h3>
+        <p>Thoát treadmill thuần technical: positioning, pricing, niche, sales without selling.</p>
+      </div>
+      <div class="module-foot"><span>Productize knowledge work</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="07-anxiety-hygiene.html" data-search="07 anxiety hygiene cognitive defusion exposure body sigh box breathing">
+      <div>
+        <div class="module-top"><span class="module-number">#7</span><span class="tier-badge tier-a">TIER A</span></div>
+        <h3>Anxiety Hygiene Practical</h3>
+        <p>Kỹ thuật cụ thể: cognitive defusion, exposure, breath protocol, body scan. Không "tự ám thị".</p>
+      </div>
+      <div class="module-foot"><span>5+ kỹ thuật cụ thể</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="08-decision-theory.html" data-search="08 decision theory bayesian probability calibration expected value brier score">
+      <div>
+        <div class="module-top"><span class="module-number">#8</span><span class="tier-badge tier-a">TIER A</span></div>
+        <h3>Decision Theory + Bayesian</h3>
+        <p>Quyết định calibrated: expected value, prior/posterior, base rate, Brier score, calibration.</p>
+      </div>
+      <div class="module-foot"><span>EV + Bayesian update</span><span>Mở →</span></div>
+    </a>
+
+  </div>
+</section>
+
+<section class="module-section">
+  <h2>VOL 2 — 5 Bổ Sung</h2>
+  <p class="lead" style="margin-top:6px;color:var(--text-muted)">Hạ tầng vật lý + chiến lược macro. Không có những cái này, S/A cũng vô dụng.</p>
+  <div class="module-grid">
+
+    <a class="module-card" href="09-personal-finance.html" data-search="09 personal finance vn freelancer tax saving investing emergency fund">
+      <div>
+        <div class="module-top"><span class="module-number">#9</span><span class="tier-badge tier-b">VOL 2</span></div>
+        <h3>Personal Finance VN Freelancer</h3>
+        <p>Quản lý tiền + diệt sợ: emergency fund, tax, runway, đầu tư cơ bản cho VN freelancer.</p>
+      </div>
+      <div class="module-foot"><span>Runway + tax + invest</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="10-body-tu-luyen.html" data-search="10 body sleep exercise nutrition knowledge worker zone 2 strength">
+      <div>
+        <div class="module-top"><span class="module-number">#10</span><span class="tier-badge tier-b">VOL 2</span></div>
+        <h3>Body Tu Luyện</h3>
+        <p>Hạ tầng vật lý cho bộ óc: sleep protocol, Zone 2 cardio, strength, nutrition cho knowledge worker.</p>
+      </div>
+      <div class="module-foot"><span>Sleep + Z2 + strength</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="11-relationships-work.html" data-search="11 relationships work family colleagues network deep work shallow">
+      <div>
+        <div class="module-top"><span class="module-number">#11</span><span class="tier-badge tier-b">VOL 2</span></div>
+        <h3>Relationships Work</h3>
+        <p>Vận hành quan hệ con người: family, colleagues, networking, conflict, deep vs shallow.</p>
+      </div>
+      <div class="module-foot"><span>Family + work + network</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="12-learning-how-to-learn.html" data-search="12 learning meta skill spaced repetition deliberate practice feynman retrieval">
+      <div>
+        <div class="module-top"><span class="module-number">#12</span><span class="tier-badge tier-b">VOL 2</span></div>
+        <h3>Learning How to Learn</h3>
+        <p>Meta-skill nhân tất cả lên: spaced repetition, deliberate practice, Feynman, retrieval, interleaving.</p>
+      </div>
+      <div class="module-foot"><span>Meta-skill foundation</span><span>Mở →</span></div>
+    </a>
+
+    <a class="module-card" href="13-ai-industry-macro.html" data-search="13 ai industry macro strategy 2026 market positioning anthropic openai">
+      <div>
+        <div class="module-top"><span class="module-number">#13</span><span class="tier-badge tier-b">VOL 2</span></div>
+        <h3>AI Industry Macro</h3>
+        <p>Bản đồ chiến lược: ai trả tiền, ai thắng, ai chết, vị trí của individual contributor trong AI 2026+.</p>
+      </div>
+      <div class="module-foot"><span>Strategic landscape</span><span>Mở →</span></div>
+    </a>
+
+  </div>
+</section>
+
+<footer>
+  <span>Trang chủ: html-co-trung/index.html</span>
+  <span>Nguồn: co-trung-chi-tiet.md (vol 1) + co-trung-chi-tiet-vol2.md</span>
+</footer>
+
+</div>
+</main>
+
+<script>
+(function () {
+  const root = document.documentElement;
+  const saved = localStorage.getItem('theme-cotrung');
+  if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme-cotrung', next);
+  });
+
+  const input = document.getElementById('moduleSearch');
+  const cards = Array.from(document.querySelectorAll('.module-card'));
+  const count = document.getElementById('resultCount');
+  const empty = document.getElementById('emptyState');
+
+  function normalize(v) { return v.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function updateFilter() {
+    const q = normalize(input.value.trim());
+    let visible = 0;
+    cards.forEach(function (card) {
+      const text = normalize(card.textContent + ' ' + card.dataset.search);
+      const matched = text.includes(q);
+      card.style.display = matched ? '' : 'none';
+      if (matched) visible += 1;
+    });
+    count.textContent = visible + ' cổ trùng';
+    empty.classList.toggle('show', visible === 0);
+  }
+  input.addEventListener('input', updateFilter);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#35 — Payment Systems &amp; Reconciliation (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm K · Domain</span>
+    <span class="sep">›</span>
+    <span class="current">#35 Payment Systems</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: reconciliation lệch</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#flow">2. Payment flow: authorize → capture → settle</a>
+      <a href="#double-entry">3. Double-entry ledger</a>
+      <a href="#reconciliation">4. Reconciliation</a>
+      <a href="#settlement">5. Settlement windows</a>
+      <a href="#states">6. Payment state machine</a>
+      <div class="toc-section">Production</div>
+      <a href="#impl">7. Idempotent capture + ledger</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="content">
+
+<section class="hero">
+  <div class="meta-tag">Nhóm K · Payment Domain · File chống hiểu giả</div>
+  <h1>Payment Systems — Authorize, Capture, Settle, Reconcile</h1>
+  <p class="lead">
+    Tích hợp thanh toán nhìn đơn giản ("gọi API Stripe") nhưng là nơi tiền thật chạy — hiểu giả ở đây = mất tiền hoặc lệch sổ. "Authorize và capture khác gì?", "vì sao số tiền trong ledger của bạn không khớp settlement của PSP cuối ngày?", "vì sao phải double-entry?" là các câu lộ ngay. File này dạy luồng tiền &amp; reconciliation cho <strong>ShopFlow</strong> — sàn e-commerce thu tiền qua payment provider (PSP).
+  </p>
+  <div class="meta-grid">
+    <div><strong>🎯 Mục tiêu</strong><br>Hiểu luồng tiền, ledger double-entry, reconciliation &amp; settlement</div>
+    <div><strong>📅 Thời lượng</strong><br>1 tuần · Sau #33 Idempotency, #39 Consistency</div>
+    <div><strong>📚 Prereq</strong><br>Transaction · idempotency · state machine</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟡 Cao nếu làm fintech/e-commerce thu tiền</div>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Thanh toán = gọi API charge, trả về success là xong."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Có nhiều bước: <em>authorize</em> (giữ tiền, chưa trừ), <em>capture</em> (thực trừ), <em>settle</em> (PSP chuyển tiền về tài khoản bạn sau T+1/T+2), <em>refund/chargeback</em>. Coi "charge = xong" → không xử lý được hoàn tiền, capture trễ, hay tiền chưa về.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Lưu số dư bằng một cột <code>balance</code>, cộng trừ trực tiếp là đủ."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Tiền cần <em>double-entry ledger</em> (mỗi giao dịch ghi 2 bút toán nợ/có, tổng = 0) để audit được và phát hiện lệch. Cột balance đơn lẻ không truy vết được "tiền đi đâu" và dễ sai âm thầm.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Hệ thống mình ghi đã thu 100 đơn thì PSP cũng phải báo đúng 100, lệch là bug."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Lệch là <em>bình thường</em> và phải có quy trình reconciliation: timing (đơn capture sát nửa đêm rơi sang ngày sau), refund/chargeback, phí PSP trừ trước khi settle. Không có reconciliation = không biết mình mất/thiếu tiền.</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Payment flow authorize→capture→settle (2), double-entry ledger (3), payment state machine + idempotency (6,7). Đây là phần quyết định đúng/sai khi xử lý tiền.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Reconciliation — vì sao lệch &amp; cách dò (4), settlement windows (5).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Webhook xử lý bất đồng bộ, refund/chargeback flow, phí PSP.</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> multi-currency, payout/escrow cho marketplace, ISO 8583 (nếu chạm card rail).</div>
+  </div>
+</section>
+
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — reconciliation lệch <span class="k-tag core">CORE ★</span></h2>
+  <p>Cuối ngày, sổ nội bộ ShopFlow ghi thu 1.000 đơn = 500 triệu. Báo cáo settlement từ PSP về 498,5 triệu cho 998 giao dịch. Đội tài chính hoảng: "mất 1,5 triệu? thiếu 2 đơn?". Thực ra: 2 đơn capture lúc 23:59 rơi sang settlement ngày sau, và PSP đã trừ phí 0,3% trước khi chuyển.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>Liệt kê ít nhất 3 lý do <em>hợp lệ</em> khiến sổ nội bộ ≠ settlement PSP (không phải bug).</li>
+      <li>Nếu chỉ lưu một cột <code>balance</code> cộng trừ, làm sao bạn truy ra "1,5 triệu chênh do đâu"? Double-entry giúp gì?</li>
+      <li>Một giao dịch capture 2 lần do retry mạng → ledger nên chống thế nào để không thu đôi?</li>
+    </ol>
+    <div class="pause-hint">Đáp án: timing settlement, phí PSP, refund/chargeback, làm tròn tiền tệ (mục 4,5); double-entry cho phép truy từng bút toán (mục 3); idempotency key cho capture (mục 7). Đừng đọc tiếp khi chưa nêu được 3 lý do lệch.</div>
+  </div>
+</section>
+
+<section id="flow">
+  <h2>2. Payment flow: authorize → capture → settle <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-text">1. AUTHORIZE : PSP giữ (hold) tiền trên thẻ, kiểm tra hợp lệ — chưa trừ thật
+2. CAPTURE   : xác nhận trừ tiền (có thể trễ sau authorize, vd khi ship hàng)
+3. SETTLE    : PSP gom các capture, trừ phí, chuyển về tài khoản bạn (T+1/T+2)
+4. REFUND / CHARGEBACK : hoàn tiền (bạn chủ động) / khách khiếu nại qua ngân hàng</code></pre>
+  <p>Tách authorize/capture cho phép "giữ tiền lúc đặt, trừ lúc giao" — quan trọng cho pre-order, marketplace.</p>
+</section>
+
+<section id="double-entry">
+  <h2>3. Double-entry ledger <span class="k-tag core">CORE ★</span></h2>
+  <p>Mỗi sự kiện tiền ghi <strong>2 bút toán</strong> (debit + credit), tổng mọi bút toán của một giao dịch = 0. Số dư = tổng bút toán của một account. Không UPDATE cột balance — chỉ <em>append</em> bút toán (immutable).</p>
+  <pre><code class="language-text">Khách trả 100 cho đơn #A (phí PSP 3):
+  debit  customer_clearing  100
+  credit merchant_revenue    97
+  credit psp_fee              3
+  → tổng = 0; truy được tiền đi đâu</code></pre>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Biết "double-entry ghi nợ/có". <em>Symptom hiểu giả:</em> vẫn lưu balance một cột, không giải thích được vì sao append-only.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Mỗi giao dịch cân bằng (tổng = 0) → bất biến cho phép phát hiện lệch (sum toàn hệ thống phải = 0); append-only → audit trail đầy đủ, không mất lịch sử; balance = projection từ bút toán.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Thiết kế ledger immutable + reconciliation job kiểm tổng nợ=có hằng đêm; refund là bút toán mới (không xoá bút toán cũ); dùng account "clearing" để mô hình tiền đang trên đường (authorized chưa settle).</p>
+    </div>
+  </div>
+</section>
+
+<section id="reconciliation">
+  <h2>4. Reconciliation <span class="k-tag core">CORE ★</span></h2>
+  <p>Đối soát sổ nội bộ với report của PSP/ngân hàng. Quy trình: match theo transaction id, phân loại chênh lệch (matched / chỉ có ở nội bộ / chỉ có ở PSP / lệch số tiền), điều tra nguyên nhân hợp lệ (timing, fee, refund) vs bất thường (cần alert).</p>
+  <pre><code class="language-text">Chạy hằng đêm:
+  SUM(ledger nội bộ, ngày D) so SUM(settlement PSP, ngày D)
+  lệch != 0 → phân loại từng dòng:
+    - timing (capture sát nửa đêm) → khớp ngày sau, OK
+    - fee PSP → tách account psp_fee, OK
+    - thiếu hẳn 1 giao dịch ở 1 phía → ALERT, điều tra</code></pre>
+</section>
+
+<section id="settlement">
+  <h2>5. Settlement windows <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>PSP không chuyển tiền tức thì mà theo cửa sổ (T+1, T+2...). Capture trong cửa sổ hôm nay → settle ngày mai. Đây là lý do "tiền đã thu" (captured) ≠ "tiền đã về tài khoản" (settled). Hệ thống phải mô hình cả hai trạng thái, không gộp làm một.</p>
+</section>
+
+<section id="states">
+  <h2>6. Payment state machine <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-text">CREATED → AUTHORIZED → CAPTURED → SETTLED
+              |           |           |
+            VOIDED     REFUNDED    CHARGEBACK
+Chuyển trạng thái phải hợp lệ (không CAPTURED → AUTHORIZED) và idempotent.</code></pre>
+  <p>Webhook từ PSP đến bất đồng bộ &amp; có thể trùng/đảo thứ tự → xử lý theo state machine + idempotency, không giả định thứ tự.</p>
+</section>
+
+<section id="impl">
+  <h2>7. Idempotent capture + ledger <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-java">// capture với idempotency key; webhook có thể đến 2 lần
+@Transactional
+void onCaptured(String paymentId, String eventId, Money amount) {
+    if (!processedEvents.add(eventId)) return;        // đã xử lý → bỏ qua
+    Payment p = repo.find(paymentId);
+    p.transitionTo(CAPTURED);                          // state machine validate
+    ledger.append(debit("customer_clearing", amount),
+                  credit("merchant_revenue", amount.minus(fee)),
+                  credit("psp_fee", fee));             // double-entry, tổng=0
+}</code></pre>
+</section>
+
+<section id="antipatterns">
+  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — khi "tối ưu" lại làm sai sổ tiền</div>
+    <div class="bi-answer">
+      <ul>
+        <li><strong>Dùng <code>float/double</code> cho tiền:</strong> sai số nhị phân → lệch xu tích luỹ. Dùng <code>BigDecimal</code>/integer minor units (cent).</li>
+        <li><strong>UPDATE balance trực tiếp:</strong> mất audit trail, không reconcile được. Append bút toán immutable.</li>
+        <li><strong>Coi webhook là đáng tin &amp; đúng thứ tự:</strong> webhook trùng/đảo → xử lý không idempotent → thu đôi/sai trạng thái.</li>
+        <li><strong>Gộp captured = settled:</strong> báo "tiền đã về" khi PSP chưa chuyển → quyết định tài chính sai.</li>
+      </ul>
+      <p><em>Quy tắc:</em> tiền là immutable ledger + BigDecimal + idempotent state machine; lệch reconciliation là chuyện thường, phải có quy trình phân loại, không phải bug để giấu.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>float cho tiền</td><td>Lệch xu</td><td>BigDecimal / minor units</td></tr>
+      <tr><td>UPDATE balance</td><td>Mất audit, khó reconcile</td><td>Double-entry append-only</td></tr>
+      <tr><td>Webhook không idempotent</td><td>Thu đôi</td><td>Idempotency key + state machine</td></tr>
+      <tr><td>Không reconciliation</td><td>Mất tiền âm thầm</td><td>Đối soát hằng ngày + alert</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>🎯 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+    <p><strong>Q:</strong> Authorize và capture khác gì?</p>
+    <p class="a">Authorize = giữ tiền/kiểm tra hợp lệ, chưa trừ thật. Capture = thực sự trừ (có thể trễ, vd khi ship). Tách ra cho phép giữ tiền lúc đặt, trừ lúc giao. Settle = PSP chuyển tiền về sau T+1/T+2.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Vì sao sổ nội bộ lệch settlement PSP? Reconcile thế nào?</p>
+    <p class="a">Lệch do timing (capture sát nửa đêm), phí PSP trừ trước, refund/chargeback, làm tròn. Reconcile: match theo txn id, phân loại matched/only-internal/only-PSP/amount-diff, giải thích nguyên nhân hợp lệ vs alert bất thường. Double-entry cho phép truy từng bút toán.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Thiết kế hệ thu tiền marketplace nhiều seller, payout đúng.</p>
+    <p class="a">Double-entry ledger với account per seller + clearing; authorize/capture tách; webhook idempotent + state machine; reconciliation hằng ngày; payout theo settlement window, giữ escrow tới khi giao hàng; BigDecimal; multi-currency tách rate. Mọi tiền là bút toán immutable.</p>
+  </div>
+</section>
+
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — ledger &amp; reconcile (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Double-entry ledger.</strong> Cài một ledger append-only: mỗi payment ghi 3 bút toán (clearing/revenue/fee) tổng=0. Tính balance bằng SUM bút toán. Thêm một refund (bút toán mới, không xoá). Tiêu chí: chứng minh tổng toàn hệ thống luôn=0 và truy được lịch sử.</p>
+      <p><strong>Lab 2 — Reconciliation + idempotent webhook.</strong> Mô phỏng report PSP lệch (1 giao dịch timing, 1 phí). Viết job match và phân loại chênh lệch. Gửi cùng webhook "captured" 2 lần → chứng minh ledger chỉ ghi 1 lần. Tiêu chí: phân biệt lệch hợp lệ vs cần alert.</p>
+    </div>
+  </div>
+</section>
+
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Authorize, capture, settle khác nhau ra sao? Vì sao tách authorize/capture?</li>
+      <li>Double-entry ledger là gì? Vì sao không UPDATE một cột balance?</li>
+      <li>Nêu 3 lý do hợp lệ khiến sổ nội bộ lệch settlement PSP.</li>
+      <li>Vì sao webhook phải idempotent? Hậu quả nếu không?</li>
+      <li>Vì sao không dùng float cho tiền?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = sẵn sàng làm hệ thống tiền.</div>
+  </div>
+
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="33-idempotency.html">#33 Idempotency</a> — chống thu đôi qua webhook/retry.</li>
+    <li><a href="39-database-consistency.html">#39 Consistency</a> — lost update khi trừ tiền.</li>
+    <li><a href="34-audit-logging.html">#34 Audit Logging</a> — ledger immutable, tamper-evident.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

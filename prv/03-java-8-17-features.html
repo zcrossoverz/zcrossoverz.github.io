@@ -54,6 +54,7 @@
     <a href="#implementation">7. Code production</a>
     <a href="#tradeoffs">8. Trade-offs</a>
     <a href="#interview">9. Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
     <a href="#checklist">Checklist</a>
   </nav>
 </aside>
@@ -130,6 +131,25 @@
 <div class="callout why">
   <div class="ctitle">Không phải ngắn hơn là tốt hơn</div>
   <p>Stream tốt khi pipeline là transform/filter/reduce rõ ràng. Nếu logic cần nhiều nhánh, debug từng bước, break phức tạp, mutate state có kiểm soát, for-loop vẫn là lựa chọn tốt.</p>
+</div>
+
+<div class="roadmap">
+  <div class="roadmap-head">🗺️ Nếu chỉ có X giờ thì học gì</div>
+  <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Stream lazy + terminal operation (2.1), Collectors groupingBy/toMap (2.4), Optional.map/flatMap đúng cách (3.1-3.2). Đây là phần code hằng ngày + hỏi nhiều nhất.</div>
+  <div class="roadmap-item core"><strong>+1.5 giờ (CORE ★):</strong> Record cho DTO/value object (5.1), sealed + pattern matching cho state hữu hạn (5.2-5.3). Java 17 interview gần như chắc chắn hỏi.</div>
+  <div class="roadmap-item supp"><strong>+1.5 giờ (SUPPLEMENTARY):</strong> Primitive streams tránh boxing (2.3), lambda capture/effectively final (4.2), default methods (4.3), HashMap/ConcurrentHashMap internals (6).</div>
+  <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> JPMS modules (5.4), parallelStream cost model, StampedLock-style optimization.</div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Nhìn pipeline <code>paidInvoiceIds</code> ở trên. Trả lời ra giấy:</div>
+  <ol>
+    <li>Nếu list có 1 triệu invoice mà chỉ 3 cái PAID, pipeline duyệt list mấy lần? (lazy hay eager?)</li>
+    <li>Đổi <code>.map(Invoice::id)</code> thành <code>.peek(System.out::println)</code> mà KHÔNG có terminal operation thì in ra gì? Vì sao?</li>
+    <li>Bản imperative bắt được <code>null</code> phần tử bằng <code>invoice != null</code>. Bản stream <code>.filter(Objects::nonNull)</code> đặt SAI vị trí (sau <code>map</code>) thì lỗi gì xảy ra?</li>
+  </ol>
+  <div class="pause-hint">Gợi ý: stream chỉ duyệt 1 lần và lazy — không có terminal op thì không chạy gì. Đáp án ở 2.1.</div>
 </div>
 </section>
 
@@ -333,6 +353,34 @@ public String displayName(String id) {
   </tbody>
 </table>
 </div>
+
+<div class="break-it">
+  <div class="bi-head">🔧 Counter-example — khi nào KHÔNG dùng Optional</div>
+  <div class="bi-answer">
+    <ul>
+      <li><strong>Field của entity/DTO:</strong> <code>private Optional&lt;String&gt; middleName;</code> là anti-pattern — <code>Optional</code> không <code>Serializable</code>, tốn thêm 1 object mỗi field, và Jackson/JPA xử lý lúng túng. Dùng <code>null</code> + <code>@Nullable</code> hoặc giá trị mặc định.</li>
+      <li><strong>Tham số method:</strong> <code>void update(Optional&lt;X&gt; x)</code> bắt caller bọc <code>Optional.of(...)</code> mỗi lần. Thà overload method hoặc nhận <code>null</code>.</li>
+      <li><strong>Collection rỗng:</strong> <code>Optional&lt;List&lt;T&gt;&gt;</code> là thừa — trả <code>List</code> rỗng đã đủ "không có gì".</li>
+      <li><strong>Trong vòng lặp nóng:</strong> mỗi <code>Optional</code> là một allocation; ở hot path đếm bằng triệu lần/giây, nó tạo GC pressure thật.</li>
+    </ul>
+    <p><em>Quy tắc Brian Goetz:</em> Optional sinh ra <strong>chỉ</strong> để làm return type cho "có thể không có kết quả", không phải để thay thế <code>null</code> ở mọi nơi.</p>
+  </div>
+</div>
+
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Biết tên</h3>
+    <p>Biết <code>Optional</code> "tránh NullPointerException". <em>Symptom hiểu giả:</em> gọi <code>.get()</code> ngay sau khi nhận Optional, hoặc nhét Optional vào field — vẫn NPE/ngược mục đích.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain được</h3>
+    <p>Giải thích Optional là <em>kiểu trả về</em> báo "có thể vắng kết quả"; phân biệt <code>map</code> (T→R) vs <code>flatMap</code> (T→Optional&lt;R&gt;); biết <code>orElse</code> (luôn eval) vs <code>orElseGet</code> (lazy) khác nhau ở đâu.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply được</h3>
+    <p>Thiết kế contract cả service: <code>findBySlug</code> trả Optional, <code>getRequired</code> throw domain exception, validation nhiều lỗi dùng sealed result type. Chọn đúng kiểu theo "missing là expected hay là lỗi use case".</p>
+  </div>
+</div>
 </section>
 
 <section id="lambda">
@@ -420,7 +468,18 @@ invoices.forEach(invoice -&gt; {
 </section>
 
 <section id="modern">
-<h2>5. Java 14-17: Record, Sealed, Pattern Matching</h2>
+<h2>5. Java 14-17: Record, Sealed, Pattern Matching <span class="k-tag core">CORE ★</span></h2>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Bạn định biến entity JPA <code>Order</code> và DTO <code>InvoiceSummary</code> thành <code>record</code>. Trả lời:</div>
+  <ol>
+    <li>Cái nào HỢP record, cái nào KHÔNG? Nêu đúng 2 lý do kỹ thuật record không hợp JPA entity.</li>
+    <li><code>record Money(BigDecimal amount, List&lt;Fee&gt; fees)</code> có thật sự immutable không, nếu caller giữ tham chiếu tới <code>fees</code> rồi <code>add()</code>? Sửa thế nào?</li>
+    <li>Với một state máy có đúng 3 trạng thái (Pending/Paid/Failed), <code>sealed interface</code> + pattern matching cho bạn lợi gì mà enum + if-else không cho?</li>
+  </ol>
+  <div class="pause-hint">Gợi ý: entity cần no-arg constructor + mutable + proxy → record cấm. Record chỉ shallow-immutable → cần defensive copy. Sealed cho compiler exhaustiveness check. Đáp án ở 5.1-5.3.</div>
+</div>
 
 <section id="records">
 <h3>5.1 Record Cho DTO Và Value Object</h3>
@@ -876,6 +935,30 @@ List&lt;String&gt; ids = invoices.stream()
 <div class="tier t3">
   <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Model result import file lớn</span></div>
   <p class="a">Dùng sealed result để biểu diễn success, validation failure, system failure. Stream file theo dòng/chunk để không load hết memory. Dùng record cho row DTO immutable. Enrich DB theo batch thay vì gọi repository từng dòng.</p>
+</div>
+</section>
+
+<section id="lab">
+<div class="build-exercise">
+  <div class="be-head">🛠️ Lab bắt buộc — viết &amp; đo (2 bài)</div>
+  <div class="be-deliverable">
+    <p><strong>Lab 1 — Refactor + chứng minh lazy.</strong> Lấy một vòng for lồng 3 tầng (filter + map + collect) trong code thật của bạn, refactor sang stream. Sau đó thêm <code>.peek(x -&gt; count++)</code> vào pipeline KHÔNG có terminal operation, chạy, và quan sát <code>count</code> vẫn = 0. Tiêu chí: giải thích được "không terminal op = pipeline không chạy".</p>
+    <p><strong>Lab 2 — Bẫy mutable record.</strong> Viết <code>record Cart(List&lt;Item&gt; items)</code>. Tạo cart từ một list bên ngoài, rồi <code>add()</code> vào list gốc và in cart ra → thấy cart bị đổi. Sửa bằng defensive copy trong compact constructor (<code>List.copyOf(items)</code>), chạy lại, assert cart không đổi. Tiêu chí: giải thích "record chỉ shallow-immutable".</p>
+  </div>
+</div>
+</section>
+
+<section id="feynman">
+<div class="feynman">
+  <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+  <ol class="fy-prompt">
+    <li>Stream "lazy" nghĩa là gì? Vì sao một pipeline không có terminal operation thì không chạy?</li>
+    <li><code>map</code> vs <code>flatMap</code> khác nhau ở đâu? Cho một ví dụ với Optional và một với Stream.</li>
+    <li>Nêu 3 chỗ KHÔNG nên dùng Optional và lý do.</li>
+    <li>Vì sao record không hợp làm JPA entity? Vì sao record vẫn có thể bị mutate?</li>
+    <li>Sealed interface + pattern matching cho compiler khả năng gì mà if-else thường không có?</li>
+  </ol>
+  <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = nắm chắc Java 8-17 ở mức phỏng vấn senior.</div>
 </div>
 </section>
 

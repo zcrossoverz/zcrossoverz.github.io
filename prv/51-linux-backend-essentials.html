@@ -1,574 +1,726 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>#51 — Linux for Backend Dev | Java Backend Interview Prep</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  <link rel="stylesheet" href="assets/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#51 — Linux for Backend Dev | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Junior Foundation<span class="sep">/</span><strong>#51 Linux for Backend Dev</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Nhóm N · Junior Foundation</span><span class="sep">›</span><span class="current">#51 Linux for Backend Dev</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#how-to-read">Cách đọc file này</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
     <a href="#roadmap">🗺️ Roadmap</a>
-    <a href="#intro">Tổng quan</a>
-    <a href="#real-problem">1. Bài toán thực tế</a>
-    <a href="#concept-0">2. Process and port</a>
-    <a href="#concept-1">3. Logs and grep</a>
-    <a href="#concept-2">4. Disk and file handles</a>
-    <a href="#concept-3">5. Network debugging</a>
-    <a href="#antipatterns">Anti-patterns</a>
-    <a href="#edge-cases">Edge Cases</a>
-    <a href="#mastery-plan">Mastery Plan</a>
-    <a href="#practice-bank">Practice Bank</a>
-    <a href="#build-projects">Build Projects</a>
-    <a href="#drill-bank">Interview Drill Bank</a>
-    <a href="#self-test">Self-Test</a>
-    <a href="#interview">Interview Framework</a>
-    <a href="#feynman-end">Feynman Closing</a>
+    <a href="#real-problem">1. 5 tình huống production</a>
+    <a href="#mental-model">2. Mental model — "Everything is a file"</a>
+    <a href="#daily-commands">3. Daily commands 80%</a>
+    <a href="#debug">4. Production debug workflow</a>
+    <a href="#shell">5. Shell scripting essentials</a>
+    <a href="#env">6. Env var + dotfiles</a>
+    <a href="#docker">7. Docker basics</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 3 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
+    <a href="#cheatsheet">📋 Cheatsheet 1 trang</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
+
 <section class="hero">
-  <span class="meta-tag">Junior Foundation · CORE</span>
-  <h1>#51 — Linux for Backend Dev</h1>
-  <p class="lead">Linux là bàn điều khiển production. Junior không cần thành sysadmin, nhưng phải đọc được process, port, log, disk, memory và network.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Junior Foundation</div></div>
-    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">1 tuần + practice</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#24 Docker/K8s, #26 Observability</div></div>
-    <div class="meta-item"><div class="k">Domain</div><div class="v">Food delivery production app</div></div>
+  <span class="meta-tag">#51 · Junior Foundation</span>
+  <h1>Linux for Backend Dev — Production Survival Kit</h1>
+  <p class="lead">Junior backend chỉ dùng Linux khi ssh vào server. Khi gặp incident 3h sáng — CPU 100%, disk full, app không respond — biết 5 lệnh không đủ. File này biến Linux từ "lệnh thuộc lòng" thành <strong>mental model + workflow debug production</strong>.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần reflex + practice trên server thật</span>
+    <span class="phase-tag">Domain: E-commerce / SaaS production</span>
   </div>
 </section>
 
-
-<div class="study-banner" id="how-to-read">
-  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
-  <div class="sb-rules">
-    <p>Junior rất dễ đọc trôi chảy rồi tưởng đã hiểu. Dùng file này theo luật học chủ động:</p>
-    <ol>
-      <li>Dừng ở mỗi block Pause &amp; Predict và tự trả lời trước khi xem phần giải.</li>
-      <li>Với mỗi Bad vs Good, tự nói vì sao code sai gây bug thật, không chỉ nói "code xấu".</li>
-      <li>Chạy lại ít nhất 2 ví dụ trên máy cá nhân, đổi input để phá happy path.</li>
-      <li>Sau mỗi section lớn, dùng Feynman: giải thích lại cho một bạn junior trong 90 giây.</li>
-      <li>Làm Build Exercise. Không làm bài tập thì kiến thức vẫn ở mức đọc hiểu, chưa thành kỹ năng.</li>
-    </ol>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <ul>
+    <li>Biết <code>ls / cd / cat / grep</code> — nhưng gặp <code>kill -9 PID</code> không hiểu khác <code>kill PID</code> gì</li>
+    <li>Dùng <code>tail -f log</code> — không biết <code>tail -f | grep ERROR</code> với <code>--line-buffered</code> để hot filter</li>
+    <li>Biết <code>top</code> — không đọc được <code>load average</code> 1/5/15 phút nghĩa gì</li>
+    <li>Biết tên <code>ss / netstat</code> — không biết LISTEN vs ESTABLISHED vs TIME_WAIT trong output</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> biết tên 10 lệnh. Production incident gọi senior ngay.<br>
+    <strong>L2 (Explain):</strong> reflex 30 lệnh. Dùng pipe chained. Diagnose CPU/disk/network bằng workflow chuẩn.<br>
+    <strong>L3 (Apply):</strong> debug production 3h sáng &lt;15 phút. Write shell script automation. Đọc systemd unit + log journalctl thuần thục.</p>
   </div>
-</div>
-
+</section>
 
 <section id="roadmap">
-  <h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
-  <div class="roadmap">
-    <div class="roadmap-head">Đọc theo thứ tự này để tránh học lan man. Nếu chỉ có một buổi, hoàn thành các mục CORE trước.</div>
-    <div class="roadmap-path"><div class="roadmap-item core"><span class="step">1</span> Process and port — CORE: nền bắt buộc.</div>
-<div class="roadmap-item core"><span class="step">2</span> Logs and grep — CORE: dùng hằng ngày.</div>
-<div class="roadmap-item supp"><span class="step">3</span> Disk and file handles — SUPP: giúp code/project sạch hơn.</div>
-<div class="roadmap-item adv"><span class="step">4</span> Network debugging — ADV: senior signal.</div></div>
-  </div>
-</section>
-
-<section id="intro">
-  <h2>Tổng quan &amp; Vì sao quan trọng <span class="k-tag core">CORE</span></h2>
-  <p>Linux for Backend Dev là nền junior phải dùng hằng ngày. Nếu chỉ thuộc syntax mà không hiểu boundary, failure mode và trade-off, code sẽ pass demo nhưng khó maintain.</p>
-  <p>File này viết theo hướng production-first: bắt đầu từ lỗi thật, sau đó mới đi vào mental model và API.</p>
-  <div class="history-block">
-    <div class="hist-head">📜 Lịch sử ra đời / bối cảnh của Linux for Backend Dev</div>
-    <div class="hist-timeline"><strong>Early software engineering</strong> — Linux for Backend Dev xuất hiện vì codebase lớn cần quy ước và công cụ để nhiều người cùng làm việc.<br><br><strong>Modern backend</strong> — Khi service chạy production, lỗi nhỏ ở foundation có thể thành incident lớn.<br><br><strong>Insight</strong>: junior giỏi là người biến kiến thức cơ bản thành phản xạ an toàn.</div>
-  </div>
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: section 1, 2, 3, 4 (tình huống + mental model + daily commands + debug workflow).</p>
+  <p>Nếu có <strong>1 tuần</strong>: full + 3 exercises.</p>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>5 tình huống production</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>Mental model — Linux as system</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>3</td><td>30 daily commands</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>4</td><td>Production debug workflow</td><td><span class="phase-tag">CORE ★</span></td><td>30min</td></tr>
+      <tr><td>5</td><td>Shell scripting essentials</td><td>SUPPLEMENTARY</td><td>20min</td></tr>
+      <tr><td>6</td><td>Env var + dotfiles</td><td>SUPPLEMENTARY</td><td>10min</td></tr>
+      <tr><td>7</td><td>Docker basics — Linux internals</td><td>ADVANCED</td><td>20min</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="real-problem">
-  <h2>1. Bài Toán Thực Tế — Linux for Backend Dev sai trong project Food delivery production app <span class="k-tag core">CORE</span></h2>
-  <p>Một team junior viết feature chạy được ở local nhưng fail khi review hoặc production vì thiếu mental model. Senior không reject vì style, mà vì code không bảo vệ invariant, không recover được, hoặc không debug được.</p>
-  <div class="code-label">Code junior viết — chạy được nhưng dễ gây lỗi</div>
-<pre><code class="language-java">curl http://localhost:8080/health
-# connection refused, nhưng junior không kiểm PID/port/log</code></pre>
-  <div class="callout danger"><div class="ctitle">🔥 Hậu quả</div><p>Happy path chạy được nhưng khi input xấu, conflict, traffic lớn hoặc production incident xảy ra, team mất nhiều giờ để hiểu chuyện gì đang diễn ra.</p></div>
+  <h2>1. 5 Tình huống production junior vướng <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #1 — "App chậm, CPU 100%"</div>
+    <p><strong>Bối cảnh:</strong> 9h sáng peak traffic, app response 5-10s. Junior ssh vào server, không biết bắt đầu từ đâu.</p>
+    <p><strong>Senior workflow:</strong></p>
+    <pre><code class="language-bash">top -o %CPU                       # sort theo CPU
+# PID 1234 java 99% CPU  ← thủ phạm
+
+# Dive vào process Java đó
+top -H -p 1234                    # show thread của process
+# PID 5678 99% CPU  ← thread cụ thể
+
+# Convert thread ID sang hex (cho Java thread dump)
+printf '%x\n' 5678                # → 0x162e
+
+# Java thread dump
+jstack 1234 | grep -A 30 'nid=0x162e'
+# → 1 thread đang infinite loop ở OrderService.search()</code></pre>
+    <p><strong>Bài học:</strong> CPU 100% trên Java thường = 1 thread loop. Không phải tăng tài nguyên — phải tìm thread đó.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #2 — "Disk đầy"</div>
+    <pre><code class="language-bash">df -h                             # disk usage tổng
+# /dev/sda1   80G   78G   2G  98%  ← gần full
+
+# Tìm folder ngốn nhất
+du -h --max-depth=1 /var | sort -hr | head
+# 50G /var/log
+# 20G /var/lib/docker
+
+# Tìm file lớn nhất trong /var/log
+find /var/log -type f -size +1G -exec ls -lh {} \;
+# 30G /var/log/app/access.log
+
+# Fix tạm: truncate log (KHÔNG rm — app còn write)
+truncate -s 0 /var/log/app/access.log
+
+# Hoặc setup logrotate (long-term fix)
+# /etc/logrotate.d/app: rotate daily, keep 7 days, compress</code></pre>
+    <p><strong>Bonus pattern:</strong> <code>lsof | grep deleted</code> → tìm file đã xóa nhưng process còn giữ handle (memory leak điển hình — disk full nhưng <code>du</code> không thấy).</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #3 — "App không respond"</div>
+    <pre><code class="language-bash"># 1. App có chạy không?
+ps aux | grep java
+systemctl status myapp
+
+# 2. App listen đúng port không?
+ss -tlnp | grep :8080
+# nothing — app chết
+
+# 3. Tại sao chết? Check log
+journalctl -u myapp -n 100 --no-pager
+# OutOfMemoryError: Java heap space
+# Process killed by OOM killer
+
+# 4. Diagnose: OOM. Cần tăng heap hoặc fix memory leak.
+# Quick fix: tăng -Xmx
+# Long-term: heap dump on OOM, MAT analyze
+dmesg | grep -i "killed process"  # confirm OOM kill</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #4 — "Tìm log lỗi hôm qua"</div>
+    <pre><code class="language-bash"># Log rotated daily — tìm trong log cũ
+zgrep "ERROR" /var/log/app/app.log.1.gz | head -20
+
+# Hoặc tất cả log trong tuần
+zgrep -h "ERROR" /var/log/app/app.log*.gz | wc -l
+
+# Filter theo time range
+journalctl -u myapp --since "2026-05-23 00:00" --until "2026-05-24 00:00" | grep ERROR
+
+# Pattern phổ biến: top 10 error message
+grep ERROR /var/log/app/*.log | awk -F': ' '{print $NF}' | sort | uniq -c | sort -rn | head</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống #5 — "Service A không gọi được service B"</div>
+    <pre><code class="language-bash"># 1. DNS resolve được không?
+dig service-b.internal
+nslookup service-b.internal
+
+# 2. Connect TCP được không?
+nc -zv service-b.internal 8080
+# Connection refused → service B chết
+# Connection timed out → network firewall
+
+# 3. HTTP response thế nào?
+curl -v http://service-b.internal:8080/health
+# 200 OK → service B ok, vấn đề khác
+# 503 / timeout → service B down
+
+# 4. Trace network path
+traceroute service-b.internal
+mtr service-b.internal              # interactive trace
+
+# 5. Nếu service A bị block:
+ss -anp | grep ESTABLISHED | grep service-b   # connection từ A
+tcpdump -i any port 8080 -nn       # capture packet (cần root)</code></pre>
+  </div>
+
   <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
-    <div class="pause-q">Trước khi đọc tiếp, tự trả lời:</div>
-    <ol><li>Failure mode đầu tiên bạn nghĩ tới là gì?</li><li>Nếu data/input/traffic tăng 100 lần thì đoạn này còn ổn không?</li><li>Bạn sẽ test hoặc debug bằng cách nào để chứng minh?</li></ol>
-    <div class="pause-hint">Nếu trả lời còn mơ hồ, đọc kỹ phần concept và tự chạy lại ví dụ.</div>
-  </div>
-</section>
-
-
-<section id="concept-0">
-  <h2>2. Process and port <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Biết app có chạy và listen port nào.
-  </div>
-  <p>ps/top/ss/lsof giúp trả lời app còn sống không, PID nào, port nào, connection nào.</p>
-  <p>Đừng debug Spring khi process đã chết hoặc port không listen.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Incident đầu tiên luôn hỏi: service có sống không?</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không biết kiểm tra PID</div>
-    <pre><code class="language-bash">java -jar app.jar
-# app fail nhưng không kiểm process</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Kiểm process/port</div>
-    <pre><code class="language-bash">ps -ef | grep java
-ss -ltnp | grep 8080</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-1">
-  <h2>3. Logs and grep <span class="k-tag core">CORE</span></h2>
-  <div class="k-banner core">
-    <strong>★ CORE</strong>: Log là nguồn evidence đầu tiên.
-  </div>
-  <p>tail, grep, awk, journalctl là reflex production.</p>
-  <p>Tìm first error và context trước/sau, không chỉ dòng cuối.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Không đọc log được thì không debug được.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Mở file log khổng lồ bằng editor</div>
-    <pre><code class="language-bash">vim /var/log/app.log</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Tail/grep có context</div>
-    <pre><code class="language-bash">tail -200 /var/log/app.log
-grep -A 20 -B 5 &quot;ERROR&quot; /var/log/app.log</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-2">
-  <h2>4. Disk and file handles <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="k-banner supplementary">
-    <strong>SUPPLEMENTARY</strong>: Disk full làm app chết rất nhanh.
-  </div>
-  <p>df xem filesystem, du xem folder, lsof deleted xem file đã xóa nhưng process còn giữ.</p>
-  <p>Không rm log đang mở nếu không hiểu file handle.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Disk full là incident junior gặp rất nhiều.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ rm log đang mở</div>
-    <pre><code class="language-bash">rm /var/log/app.log</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ truncate hoặc logrotate</div>
-    <pre><code class="language-bash">truncate -s 0 /var/log/app.log
-lsof | grep deleted</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="concept-3">
-  <h2>5. Network debugging <span class="k-tag advanced">ADVANCED</span></h2>
-  <div class="k-banner advanced">
-    <strong>ADVANCED</strong>: Phân biệt DNS, TCP và HTTP.
-  </div>
-  <p>ping/nslookup kiểm DNS/ICMP, nc/telnet kiểm TCP, curl kiểm HTTP.</p>
-  <p>Một service không gọi được service khác có thể fail ở nhiều layer.</p>
-  <div class="callout why">
-    <div class="ctitle">🎯 Vì sao phải nắm?</div>
-    <p>Backend microservices không tránh khỏi network issue.</p>
-  </div>
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Chỉ nói service B down</div>
-    <pre><code class="language-bash">curl service-b:8080/health
-# failed, kết luận service B chết</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Tách DNS/TCP/HTTP</div>
-    <pre><code class="language-bash">nslookup service-b
-nc -zv service-b 8080
-curl -v http://service-b:8080/health</code></pre>
-  </div>
-</div>
-
-  
-</section>
-
-
-<section id="antipatterns">
-  <h2>Anti-Patterns — Lỗi junior hay mắc <span class="k-tag core">CORE</span></h2>
-  <div class="table-wrap">
-    <table><thead><tr><th>Anti-pattern</th><th>Severity</th><th>Consequence</th><th>Fix</th></tr></thead><tbody><tr><td>Chỉ học lệnh/API, không học mental model</td><td>High</td><td>Gặp case lạ là panic</td><td>Vẽ state/timeline trước khi gõ lệnh</td></tr>
-<tr><td>Không test edge case</td><td>High</td><td>Bug chỉ lộ ở production</td><td>Thêm test empty/null/large/concurrent</td></tr>
-<tr><td>Copy snippet không hiểu</td><td>Medium</td><td>Không debug được khi fail</td><td>Tự giải thích từng dòng</td></tr>
-<tr><td>Che lỗi bằng try/catch hoặc workaround</td><td>High</td><td>Root cause bị giấu</td><td>Fix mechanism, không chỉ symptom</td></tr>
-<tr><td>Không viết README/runbook</td><td>Medium</td><td>Người sau không vận hành được</td><td>Document workflow và rollback</td></tr></tbody></table>
-  </div>
-</section>
-
-<section id="edge-cases">
-  <h2>🎯 Edge Cases — Production Reality <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <div class="edge-cases">
-    <div class="ec-head">🎯 Edge Cases — Production Reality</div>
-    <p class="ec-intro">Happy path chưa đủ. Junior cần học cách hỏi: input lạ, data lớn, concurrency, security và vận hành thì sao?</p>
-    <ul class="ec-list"><li><strong>Race condition</strong>: Hai thao tác cùng chạy có thể ghi đè state; cần lock/atomic workflow khi phù hợp.</li>
-<li><strong>Scale limit</strong>: Dataset hoặc repo lớn làm thao tác vốn ổn ở local trở nên chậm.</li>
-<li><strong>Security</strong>: Không để lộ secret, token, PII trong log, command history hoặc commit.</li>
-<li><strong>Data integrity</strong>: Phải biết khi nào thao tác làm mất dữ liệu và cách rollback.</li>
-<li><strong>Time/timezone</strong>: Log, file timestamp, commit time và scheduler nên dùng UTC/ISO khi debug.</li>
-<li><strong>Concurrent access</strong>: Nhiều dev/process cùng chạm vào cùng resource cần quy ước rõ.</li>
-<li><strong>Recovery</strong>: Luôn có đường quay lại: backup, reflog, rollback, restore point hoặc test reproduction.</li></ul>
-  </div>
-  <div class="break-it">
-    <div class="bi-head">🔬 Thử Phá Vỡ — Linux for Backend Dev trong project thật</div>
-    <p>Câu hỏi: tìm 3 cách làm đoạn code hoặc workflow trên fail trong production.</p>
-    <details><summary>Click để xem analysis (sau khi đã nghĩ)</summary><div class="bi-answer"><ol><li>Input hoặc state không giống local happy path.</li><li>Người khác chạy cùng lúc làm conflict/race.</li><li>Thiếu log/runbook khiến không biết đã fail ở bước nào.</li></ol><p><strong>Insight</strong>: Foundation tốt là biết cách thất bại an toàn và recover được.</p></div></details>
-  </div>
-</section>
-
-
-<section id="mastery-plan">
-  <h2>Mastery Plan — 14 ngày biến kiến thức thành phản xạ <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đừng đọc file này một lần rồi chuyển topic. Junior foundation chỉ thành kỹ năng khi có vòng lặp: đọc → phá → sửa → giải thích → verify → dạy lại.</p>
-  <div class="pause-block">
-    <div class="pause-head">⏸ Pause &amp; Predict — Trước khi luyện</div>
-    <div class="pause-q">Tự viết ra giấy 3 lỗi bạn từng mắc liên quan tới Linux for Backend Dev.</div>
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trả lời:</div>
     <ol>
-      <li>Lỗi đó xảy ra ở local, PR review hay production?</li>
-      <li>Lúc đó bạn thiếu mental model nào?</li>
-      <li>Nếu gặp lại hôm nay, bạn sẽ debug nhanh hơn bằng bước nào?</li>
+      <li>Tình huống #1: tại sao <code>jstack</code> cần thread ID hex (0x162e) thay vì decimal (5678)?</li>
+      <li>Tình huống #2: tại sao <code>truncate -s 0</code> tốt hơn <code>rm</code> trên file đang ghi?</li>
+      <li>Tình huống #5: <code>curl -v</code> trả 200 nhưng app A vẫn fail — 3 nguyên nhân tiềm năng?</li>
     </ol>
-    <div class="pause-hint">Nếu không nhớ lỗi thật, hãy tự tạo bug trong Build Exercise.</div>
+    <div class="pause-hint">Đáp án ở Section 2 (mental model "everything is a file") và Section 4 (debug workflow).</div>
   </div>
-  <div class="table-wrap">
-    <table><thead><tr><th>Ngày</th><th>Việc làm</th><th>Evidence phải có</th><th>Rủi ro nếu bỏ qua</th></tr></thead><tbody><tr><td>Day 1</td><td>Đọc Roadmap + Intro, ghi lại 5 câu hỏi chưa chắc</td><td>Có note 5 câu hỏi</td><td>Đọc trôi nhưng không biết mình không biết gì</td></tr>
-<tr><td>Day 2</td><td>Chạy bad code và quan sát lỗi</td><td>Có output lỗi hoặc test fail</td><td>Chỉ đọc code, không thấy failure thật</td></tr>
-<tr><td>Day 3</td><td>Refactor bad code sang good code</td><td>Có commit before/after</td><td>Sửa theo cảm giác, không giữ behavior</td></tr>
-<tr><td>Day 4</td><td>Viết edge case tests</td><td>Ít nhất 5 test edge cases</td><td>Chỉ test happy path</td></tr>
-<tr><td>Day 5</td><td>Giải thích Feynman 5 phút</td><td>Có bản ghi âm/note</td><td>Nói được định nghĩa nhưng không có ví dụ</td></tr>
-<tr><td>Day 6</td><td>Đọc official docs liên quan</td><td>Ghi 3 điểm docs nói khác hiểu ban đầu</td><td>Tin AI/content tóm tắt tuyệt đối</td></tr>
-<tr><td>Day 7</td><td>Tự tạo một bug biến thể</td><td>Có test reproduce bug</td><td>Không biết cách phá code</td></tr>
-<tr><td>Day 8</td><td>Viết mini runbook/debug steps</td><td>Có checklist command/action</td><td>Gặp lỗi thật lại panic</td></tr>
-<tr><td>Day 9</td><td>Review code cũ của bản thân</td><td>Tìm ít nhất 3 anti-patterns</td><td>Không chuyển kiến thức vào code review</td></tr>
-<tr><td>Day 10</td><td>Pair với bạn khác hoặc tự role-play</td><td>Trả lời 5 drill questions</td><td>Không luyện nói nên interview lắp bắp</td></tr>
-<tr><td>Day 11</td><td>Tối ưu hoặc cleanup solution</td><td>Có reasoning trade-off</td><td>Refactor làm code phức tạp hơn</td></tr>
-<tr><td>Day 12</td><td>Chạy với input lớn/concurrent nếu phù hợp</td><td>Có số liệu hoặc observation</td><td>Không biết scale behavior</td></tr>
-<tr><td>Day 13</td><td>Viết README dạy lại topic</td><td>README 500-1000 từ</td><td>Kiến thức chỉ nằm trong đầu</td></tr>
-<tr><td>Day 14</td><td>Làm mock interview 20 phút</td><td>Có feedback list</td><td>Không biết lỗ hổng còn lại</td></tr></tbody></table>
-  </div>
+</section>
 
-  <h3><span class="k-tag core">CORE</span> Code Review Checklist cho topic này</h3>
-  <p>Dùng checklist này khi review PR của chính mình. Nó cố tình cụ thể để tránh câu “nhìn ổn”.</p>
-  <ol><li>Tên biến/method có nói đúng intent không?</li>
-<li>Input null/empty/invalid được xử lý rõ chưa?</li>
-<li>Data lớn có làm complexity đổi cấp không?</li>
-<li>Có shared mutable state không?</li>
-<li>Lỗi có bị swallow hoặc che mất stack trace không?</li>
-<li>Log có đủ context nhưng không lộ secret không?</li>
-<li>Có rollback/recovery path nếu thao tác fail giữa chừng không?</li>
-<li>Có test chứng minh edge case quan trọng không?</li>
-<li>Code có phụ thuộc implementation thay vì abstraction không cần thiết không?</li>
-<li>Có comment giải thích mechanism khó, không comment hiển nhiên không?</li>
-<li>Có source official nào confirm behavior không?</li>
-<li>Có cách reproduce bug nếu người khác hỏi không?</li>
-<li>Có trade-off được ghi trong README/PR description không?</li>
-<li>Có tránh domain-specific assumption quá hẹp không?</li>
-<li>Có thể dạy lại cho junior khác trong 10 phút không?</li></ol>
+<section id="mental-model">
+  <h2>2. Mental Model — Linux as System <span class="phase-tag">CORE ★</span></h2>
 
-  
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">❌ Không có evidence</div>
-    <pre><code class="language-text">I think this should work.\nNo test. No command output. No rollback note.</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">✅ Có evidence tối thiểu</div>
-    <pre><code class="language-text">Test: passes edge cases.\nCommand/output recorded.\nKnown trade-off documented.\nRollback/recovery step written.</code></pre>
-  </div>
-</div>
+  <h3>2.1 "Everything is a file"</h3>
+  <p>Triết lý Unix: device, socket, pipe, process — đều biểu diễn dưới dạng file. Cùng API (read/write/close) cho mọi thứ.</p>
+  <pre><code class="language-text">/proc/1234/        ← Process 1234 info "as file"
+/proc/1234/status     basic info
+/proc/1234/limits     ulimit settings
+/proc/1234/fd/        open file descriptors
 
+/sys/                 ← Kernel state as file
+/dev/                 ← Device as file
+/dev/null               discard sink
+/dev/urandom            random source</code></pre>
+  <p><strong>Insight:</strong> <code>echo "data" &gt; /proc/sys/net/...</code> = config kernel runtime. <code>cat /proc/1234/limits</code> = xem limit của process. Không cần "tool đặc biệt" — chỉ cần biết path.</p>
 
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Junior → Middle calibration</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Level</th><th>Hiểu biết</th><th>Hành vi thấy được</th><th>Gap còn lại</th></tr></thead><tbody><tr><td>Beginner</td><td>Biết syntax/API</td><td>Code chạy với ví dụ mẫu</td><td>Không giải thích được failure mode</td></tr>
-<tr><td>Junior solid</td><td>Biết mental model</td><td>Chọn đúng pattern cho case thường</td><td>Còn chậm khi gặp edge case</td></tr>
-<tr><td>Middle-ready</td><td>Biết trade-off</td><td>Review được code người khác</td><td>Cần thêm production experience</td></tr>
-<tr><td>Mentor-ready</td><td>Dạy được người khác</td><td>Có runbook, exercises, checklist</td><td>Phải cập nhật theo tool/version mới</td></tr></tbody></table>
-  </div>
+  <h3>2.2 Process Tree</h3>
+  <p>Mọi process có parent (PPID). PID 1 = <code>init</code> (hoặc <code>systemd</code>). Tree visualize:</p>
+  <pre><code class="language-bash">pstree -p
+ps -ef --forest
+htop                              # F5 = tree view</code></pre>
+  <p><strong>Khi process die:</strong> con thành "orphan", PPID tự reassign về 1 (init adopt). Pattern này = phát hiện service crash khi PPID đổi đột ngột.</p>
+
+  <h3>2.3 File Permissions</h3>
+  <pre><code class="language-text">-rwxr-xr--  user group  file
+^^^                       file type: - file, d dir, l link
+   ^^^                    owner: rwx
+      ^^^                 group: r-x
+         ^^^              other: r--</code></pre>
+  <p>Octal: r=4, w=2, x=1. <code>755</code> = rwxr-xr-x. <code>chmod 600 ~/.ssh/id_rsa</code> = chỉ owner đọc/ghi.</p>
+
+  <h3>2.4 stdin / stdout / stderr</h3>
+  <pre><code class="language-bash">command > output.txt              # stdout → file
+command 2> error.log              # stderr → file
+command > out 2> err              # split
+command > out 2>&1                # merge stderr vào stdout
+command &> all.log                # bash shortcut cho cả 2
+command 2>/dev/null               # ignore stderr (silence warnings)</code></pre>
+  <p><strong>Bẫy production:</strong> Docker container default redirect <code>stderr → /dev/null</code>. Đây là tại sao <code>e.printStackTrace()</code> trong Java mất log. Phải dùng SLF4J → stdout.</p>
+</section>
+
+<section id="daily-commands">
+  <h2>3. Daily Commands — 30 Lệnh Reflex <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Navigation &amp; File Ops</h3>
+  <pre><code class="language-bash">ls -lah                # list all, human-readable size
+cd -                   # về thư mục trước
+pwd                    # path hiện tại
+find /path -name "*.log" -mtime -7   # file .log sửa trong 7 ngày
+find /path -size +100M               # file > 100MB
+cp -r src dst          # copy recursive
+mv old new             # rename / move
+rm -rf folder          # ⚠️ recursive force — kiểm path TRƯỚC khi enter</code></pre>
+
+  <h3>Search &amp; Process Text</h3>
+  <pre><code class="language-bash"># Tìm file
+find . -name "*.java" | xargs grep -l "OrderService"
+# Tìm trong content
+grep -rn "TODO" src/                # recursive, line number
+grep -A 3 -B 3 "ERROR" app.log      # 3 line trước+sau
+
+# Process text
+cut -d',' -f2 data.csv | sort -u    # column 2, unique
+awk '{print $5, $9}' access.log     # column 5+9
+sed 's/old/new/g' file > file.new   # replace
+sort | uniq -c | sort -rn           # đếm + sort giảm dần</code></pre>
+
+  <h3>Pipes &amp; Redirection — Sức Mạnh Thật Sự</h3>
+  <pre><code class="language-bash"># Top 10 IP gọi nhiều nhất
+awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -10
+
+# Đếm số lỗi mỗi giờ trong app.log
+grep ERROR app.log | awk '{print $2}' | cut -d':' -f1 | sort | uniq -c
+
+# Tìm 5 file lớn nhất trong /var
+find /var -type f -exec du -h {} + | sort -rh | head -5
+
+# Disk usage subfolder, sort
+du -h --max-depth=1 /var | sort -hr
+
+# Số connection theo state
+ss -tan | awk 'NR>1 {print $1}' | sort | uniq -c</code></pre>
+
+  <h3>Process Management</h3>
+  <pre><code class="language-bash">ps aux | grep java                  # tìm process
+ps -ef --forest                     # tree
+kill PID                            # SIGTERM (graceful)
+kill -9 PID                         # SIGKILL (force, KHÔNG cleanup)
+kill -HUP PID                       # reload config (nhiều app support)
+pkill -f "java.*OrderApp"           # kill by name pattern
+
+# Background / foreground
+nohup ./script.sh &                 # chạy background, không die khi logout
+disown                              # detach từ shell
+jobs                                # list background
+fg %1                               # foreground job 1
+
+# Run với priority
+nice -n 19 ./heavy-job              # low priority (19 thấp nhất)
+ionice -c 3 ./io-job                # low I/O priority</code></pre>
+
+  <h3>Resource Monitoring</h3>
+  <pre><code class="language-bash">top                                 # real-time, q quit
+htop                                # nicer top, F5 tree
+free -h                             # memory
+df -h                               # disk usage
+du -sh *                            # size từng folder
+iostat -x 1                         # disk I/O detailed
+vmstat 1                            # cpu + memory + IO
+uptime                              # load avg 1/5/15 min
+# load avg 0.5 → CPU 50% busy với 1 core. >1 = oversubscribed</code></pre>
+
+  <h3>Networking</h3>
+  <pre><code class="language-bash"># Listening ports
+ss -tlnp                            # t=TCP, l=listening, n=numeric, p=process
+# All connections
+ss -tan
+# Connect test
+nc -zv host 8080                    # zero IO + verbose
+curl -v http://host:8080/health
+curl -w "@curl-format.txt" -o /dev/null http://host  # timing breakdown
+
+# DNS
+dig service.internal
+nslookup service.internal
+host service.internal
+
+# Trace
+traceroute host
+mtr host                            # interactive
+
+# Open files / sockets per process
+lsof -p PID                         # all
+lsof -i :8080                       # who use port 8080</code></pre>
+
+  <h3>Archive &amp; Compression</h3>
+  <pre><code class="language-bash">tar -czf out.tar.gz folder          # create + gzip
+tar -xzf out.tar.gz                 # extract
+tar -tzf out.tar.gz | head          # list contents
+
+gzip file                           # → file.gz, xóa original
+gunzip file.gz                      # ngược lại
+zcat file.gz | grep ERROR           # đọc gz không extract
+zgrep ERROR /var/log/*.gz           # grep multi gz files</code></pre>
+
+  <h3>SSH &amp; SCP</h3>
+  <pre><code class="language-bash">ssh user@host                       # login
+ssh -i ~/.ssh/key.pem user@host     # với key
+ssh -L 8080:localhost:8080 host     # local port forward
+ssh -J jump-host target             # ssh qua jump host
+
+scp file user@host:/path            # copy lên server
+scp -r folder user@host:/path       # recursive
+rsync -avz src/ user@host:/dst/     # tốt hơn scp — incremental</code></pre>
+
+  <h3>Systemd &amp; Cron</h3>
+  <pre><code class="language-bash"># Systemd
+systemctl status myapp
+systemctl restart myapp
+systemctl enable myapp              # auto-start at boot
+journalctl -u myapp -f              # log realtime
+journalctl -u myapp --since "1h ago"
+
+# Cron
+crontab -l                          # list
+crontab -e                          # edit
+# Format: minute hour day month dayofweek command
+# Mỗi 5 phút:   */5 * * * * /script.sh
+# 3:00 AM daily: 0 3 * * * /backup.sh</code></pre>
+</section>
+
+<section id="debug">
+  <h2>4. Production Debug Workflow — Senior style <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Workflow chuẩn — 3 phút đầu khi nhận alert</h3>
+  <pre><code class="language-bash"># 1. Quick health check (10 giây)
+uptime                              # load avg cao?
+free -h                             # mem dùng?
+df -h /var /tmp                     # disk?
+
+# 2. Top consumers (30 giây)
+top -bn1 -o %CPU | head -20         # top CPU
+top -bn1 -o %MEM | head -20         # top MEM
+
+# 3. App status (30 giây)
+systemctl status myapp
+ss -tlnp | grep :8080               # port listen?
+
+# 4. Recent log (1 phút)
+journalctl -u myapp -n 200 --no-pager | grep -iE "error|exception|killed"
+
+# 5. Now you have signal — dive deeper based on what found</code></pre>
 
   <div class="callout success">
-    <div class="ctitle">✅ Definition of done</div>
-    <p>Bạn hoàn thành topic này khi có thể: viết code đúng, phá code bằng edge case, sửa code, giải thích mechanism, và review code người khác mà không cần nhìn lại tài liệu.</p>
+    <div class="ctitle">🎯 Workflow theo symptom</div>
+    <p><strong>CPU spike:</strong> <code>top -H -p PID</code> → <code>jstack PID</code> (Java) → tìm hot thread</p>
+    <p><strong>Memory leak:</strong> <code>jmap -histo:live PID</code> → <code>jmap -dump:file=heap.hprof PID</code> → MAT</p>
+    <p><strong>Disk full:</strong> <code>du -h --max-depth=1 /var | sort -hr</code> → tìm folder ngốn nhất → <code>find -size +1G</code></p>
+    <p><strong>Network slow:</strong> <code>mtr</code> → identify hop chậm → <code>tcpdump</code> nếu cần packet</p>
+    <p><strong>App không respond:</strong> <code>ss -tlnp</code> → <code>journalctl -u app</code> → <code>dmesg | grep killed</code></p>
   </div>
 </section>
 
+<section id="shell">
+  <h2>5. Shell Scripting Essentials <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-bash">#!/bin/bash
+set -euo pipefail                   # exit on error, undefined var, pipe fail
 
+# Variables
+NAME="world"
+echo "Hello, $NAME"
 
-<section id="practice-bank">
-  <h2>Practice Bank — 20 bài luyện bắt buộc <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Phần này biến Linux for Backend Dev thành thói quen. Mỗi bài nhỏ nhưng có evidence rõ. Đừng làm trong đầu; phải có output, commit, note hoặc test.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>#</th><th>Mode</th><th>Nhiệm vụ</th><th>Done khi</th></tr></thead><tbody><tr><td>1</td><td>Read</td><td>Đọc lại concept CORE đầu tiên và viết lại bằng lời của bạn</td><td>Không copy câu trong file; dùng ví dụ mới.</td></tr>
-<tr><td>2</td><td>Run</td><td>Chạy bad code hoặc command sai trong môi trường an toàn</td><td>Ghi lại output thật, không ghi mô tả chung.</td></tr>
-<tr><td>3</td><td>Fix</td><td>Sửa bad code theo good pattern</td><td>Commit diff phải nhỏ và giải thích được.</td></tr>
-<tr><td>4</td><td>Break</td><td>Tạo input làm solution fail</td><td>Ít nhất một case null/empty hoặc concurrent nếu phù hợp.</td></tr>
-<tr><td>5</td><td>Scale</td><td>Tăng data size 100 lần</td><td>Ghi latency/memory hoặc mô tả behavior.</td></tr>
-<tr><td>6</td><td>Explain</td><td>Dạy lại cho một bạn mới</td><td>Bạn kia phải hỏi lại ít hơn 3 lần.</td></tr>
-<tr><td>7</td><td>Review</td><td>Tìm anti-pattern tương tự trong code cũ</td><td>Có link file/dòng hoặc snippet.</td></tr>
-<tr><td>8</td><td>Rewrite</td><td>Viết lại README cho người đi sau</td><td>Có command, expected output, rollback.</td></tr>
-<tr><td>9</td><td>Compare</td><td>So sánh 2 alternative</td><td>Nói được khi nào dùng A, khi nào dùng B.</td></tr>
-<tr><td>10</td><td>Verify</td><td>Mở official docs kiểm tra một statement</td><td>Ghi lại URL và câu bạn verify.</td></tr>
-<tr><td>11</td><td>Observe</td><td>Thêm log/test/metric nhỏ để nhìn thấy failure</td><td>Không làm lộ secret hoặc data nhạy cảm.</td></tr>
-<tr><td>12</td><td>Refactor</td><td>Giảm coupling hoặc tăng boundary</td><td>Behavior giữ nguyên qua test.</td></tr>
-<tr><td>13</td><td>Recover</td><td>Viết bước recovery khi lỡ làm sai</td><td>Có precheck trước khi chạy lệnh nguy hiểm.</td></tr>
-<tr><td>14</td><td>Pair</td><td>Nhờ người khác review lời giải</td><td>Ghi lại 3 feedback.</td></tr>
-<tr><td>15</td><td>Mock</td><td>Trả lời 5 câu drill không nhìn tài liệu</td><td>Mỗi câu dưới 2 phút, có ví dụ.</td></tr>
-<tr><td>16</td><td>Teach</td><td>Tạo 3 câu hỏi cho junior khác</td><td>Mỗi câu có expected answer.</td></tr>
-<tr><td>17</td><td>Document</td><td>Viết checklist PR cho topic này</td><td>Checklist dùng được ngay trong team.</td></tr>
-<tr><td>18</td><td>Automate</td><td>Tự động hóa một kiểm tra nhỏ</td><td>Script/test chạy lại được.</td></tr>
-<tr><td>19</td><td>Simplify</td><td>Xóa phần code/thao tác thừa</td><td>Giải thích vì sao đơn giản hơn vẫn đúng.</td></tr>
-<tr><td>20</td><td>Retrospective</td><td>Viết 5 dòng: mình hiểu sai gì ban đầu</td><td>Có lesson cụ thể.</td></tr></tbody></table>
+# Conditionals
+if [ -f /etc/passwd ]; then
+    echo "exists"
+elif [ -d /tmp ]; then
+    echo "tmp is dir"
+else
+    echo "neither"
+fi
+
+# Loop
+for f in *.log; do
+    echo "Processing $f"
+    gzip "$f"
+done
+
+# Function
+log_info() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $1"
+}
+log_info "App started"
+
+# Error handling
+if ! mysqldump db > backup.sql; then
+    log_info "Backup failed"
+    exit 1
+fi
+
+# Trap (cleanup on exit)
+trap 'rm -f /tmp/work.lock' EXIT</code></pre>
+  <p><strong>Rule:</strong> mọi script production phải có <code>set -euo pipefail</code> ở đầu — bắt lỗi sớm thay vì silent fail.</p>
+</section>
+
+<section id="env">
+  <h2>6. Env Var + Dotfiles <span class="phase-tag">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-bash">export DB_HOST=localhost            # set env var (chỉ shell hiện tại)
+env | grep DB                       # list env
+echo $PATH                          # show var
+
+# Persistent: thêm vào ~/.bashrc hoặc ~/.zshrc
+# export JAVA_HOME=/usr/lib/jvm/java-17
+# export PATH=$JAVA_HOME/bin:$PATH
+
+# Source file env (load var)
+source .env
+. .env                              # shorthand
+
+# Dotfiles quan trọng
+~/.bashrc        bash config (interactive)
+~/.bash_profile  bash login config
+~/.zshrc         zsh config
+~/.ssh/config    ssh shortcuts
+~/.gitconfig     git settings
+~/.vimrc         vim config</code></pre>
+</section>
+
+<section id="docker">
+  <h2>7. Docker Basics — Container = Linux Namespace <span class="phase-tag">ADVANCED</span></h2>
+  <p>Docker container KHÔNG phải VM — chỉ là <strong>process Linux với namespace + cgroup isolation</strong>. Hiểu Linux = hiểu Docker.</p>
+  <pre><code class="language-bash">docker ps -a                        # list all containers
+docker logs -f myapp                # follow log
+docker exec -it myapp bash          # shell vào container
+docker inspect myapp                # full config + state
+docker stats                        # resource per container
+
+# Debug container chạy chậm
+docker top myapp                    # processes inside
+docker exec myapp top               # tương tự, từ inside
+
+# Container chết — vì sao?
+docker logs myapp --tail 50
+docker inspect myapp | grep -A 5 State
+# OOMKilled: true → container vượt memory limit
+# ExitCode: 137 → killed by SIGKILL (thường là OOM)
+# ExitCode: 1   → app crash với exception
+
+# Disk: image + container layer
+docker system df                    # disk usage
+docker system prune -af             # cleanup unused</code></pre>
+  <p><strong>Insight:</strong> <code>OOMKilled: true</code> trong <code>docker inspect</code> = container vượt <code>--memory</code> limit. Khác với JVM OOM (heap full). 2 loại khác nhau, fix khác nhau.</p>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Daily commands + pipes</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Biết 10 lệnh cơ bản (ls, cd, cat, grep, ps, top). Mỗi lệnh dùng riêng. Không biết pipe.</p>
+      <p><em>Symptom:</em> để filter log, copy log về máy rồi mở notepad++.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Reflex 30 lệnh. Dùng pipe chained 3-4 command. Biết awk basic. Đọc được output <code>top</code>, <code>ss</code>, <code>df</code>.</p>
+      <p><em>Symptom:</em> 1-liner để analyze log production trong 30 giây.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Build shell script automation. Đọc <code>/proc</code> + <code>/sys</code> trực tiếp. Debug Docker bằng namespace + cgroup mindset. Write systemd unit cho service.</p>
+      <p><em>Symptom:</em> production debug 3h sáng &lt;15 phút từ alert → root cause.</p>
+    </div>
   </div>
 
-  <h3><span class="k-tag core">CORE</span> Mistake Catalog — 12 lỗi phải tự bắt trước khi senior bắt</h3>
-  <p>Những lỗi này không riêng topic nào; chúng là pattern khiến junior mất thời gian mỗi tuần.</p>
-  <div class="table-wrap">
-    <table><thead><tr><th>Lỗi</th><th>Hậu quả</th><th>Thói quen thay thế</th></tr></thead><tbody><tr><td>Không đọc lỗi đầy đủ</td><td>Fix sai dòng đầu tiên nhìn thấy</td><td>Đọc từ root cause/first failing command</td></tr>
-<tr><td>Không ghi lại command đã chạy</td><td>Không reproduce được</td><td>Copy transcript vào note/README</td></tr>
-<tr><td>Không phân biệt symptom và root cause</td><td>Chữa tạm, lỗi quay lại</td><td>Viết hypothesis trước fix</td></tr>
-<tr><td>Không chạy test sau conflict/refactor</td><td>Merge xong mới vỡ</td><td>Run test liên quan trước push</td></tr>
-<tr><td>Dùng dữ liệu quá nhỏ</td><td>Không thấy performance issue</td><td>Tạo dataset đại diện hơn</td></tr>
-<tr><td>Không nghĩ đến người vận hành</td><td>Code khó debug</td><td>Thêm log/runbook/expected output</td></tr>
-<tr><td>Dựa vào IDE hoàn toàn</td><td>Ra server là bí</td><td>Biết command-line equivalent</td></tr>
-<tr><td>Không hỏi trade-off</td><td>Pattern bị dùng máy móc</td><td>Luôn có section khi nào không dùng</td></tr>
-<tr><td>Không kiểm security</td><td>Secret/PII lọt vào log/repo</td><td>Review data nhạy cảm trước commit/log</td></tr>
-<tr><td>Không rollback được</td><td>Sửa lỗi thành incident lớn</td><td>Chuẩn bị restore/revert path</td></tr>
-<tr><td>Không học từ lỗi cũ</td><td>Lặp lại lỗi</td><td>Biến incident thành checklist</td></tr>
-<tr><td>Không dạy lại</td><td>Hiểu mơ hồ</td><td>Feynman hoặc mentor note</td></tr></tbody></table>
-  </div>
-
-  <h3><span class="k-tag core">CORE</span> Rubric tự chấm</h3>
-  <div class="table-wrap">
-    <table><thead><tr><th>Trục</th><th>Câu hỏi</th><th>Evidence</th></tr></thead><tbody><tr><td>Correctness</td><td>Có đúng với input bình thường và edge case không?</td><td>Test pass, invariant rõ</td></tr>
-<tr><td>Clarity</td><td>Người khác đọc có hiểu intent không?</td><td>Tên tốt, README/runbook đủ</td></tr>
-<tr><td>Safety</td><td>Sai thì có làm mất dữ liệu/secret/code không?</td><td>Rollback, mask, backup, guard</td></tr>
-<tr><td>Scalability</td><td>Data lớn hoặc repo lớn có làm vỡ không?</td><td>Big-O/metric/workload đại diện</td></tr>
-<tr><td>Operability</td><td>Production/debug có đủ evidence không?</td><td>Log, command, trace, status</td></tr>
-<tr><td>Teachability</td><td>Bạn có dạy lại được không?</td><td>Feynman + exercise</td></tr></tbody></table>
-  </div>
-
-  <div class="callout why">
-    <div class="ctitle">🎯 Tại sao cần Practice Bank?</div>
-    <p>Junior hay học bằng cảm giác quen mắt. Practice Bank buộc bạn tạo evidence. Khi đi phỏng vấn hoặc review PR, evidence làm câu trả lời chắc hơn nhiều so với “em nghĩ vậy”.</p>
+  <h3>Production Debug Workflow</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Nhận alert → ssh vào server → <code>top</code> → không biết tiếp gì. Gọi senior.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>3-phút health check chuẩn (uptime/free/df/top/journalctl). Identify được symptom group (CPU/MEM/DISK/NET).</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Workflow theo symptom là phản xạ. CPU spike → thread dump. Mem leak → heap dump. Disk full → find big files + lsof deleted.</p></div>
   </div>
 </section>
 
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
 
-<section id="build-projects">
-  <h2>Build Projects <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #1 — Linux for Backend Dev Kata (Beginner)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Repo nhỏ luyện 10 tình huống thường gặp.</div>
-    <p>Requirements:</p>
-    <ul><li>Có README giải thích mental model.</li><li>Có test hoặc transcript command.</li><li>Có phần lỗi cố tình và cách fix.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Một junior khác làm theo được mà không cần hỏi thêm.</div>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "App start nhưng port không listen"</div>
+    <p><strong>Symptom:</strong> <code>systemctl status myapp</code> show running. <code>curl localhost:8080</code> connection refused.</p>
+    <pre><code class="language-bash">ss -tlnp | grep :8080            # có ai listen 8080?
+# Empty → app chưa bind port hoặc bind sai
+
+journalctl -u myapp -n 50         # check log
+# "Port 8080 already in use" → port conflict
+# "Bind to 127.0.0.1" → bind localhost, không accept external
+
+lsof -i :8080                     # ai chiếm port?</code></pre>
+    <p><strong>3 root cause:</strong> port conflict (process khác chiếm), bind sai IP (127.0.0.1 vs 0.0.0.0), firewall block.</p>
   </div>
 
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "Disk full nhưng <code>du</code> không thấy"</div>
+    <p><strong>Symptom:</strong> <code>df -h</code> show 95% full. <code>du -sh /</code> tổng chỉ 30G. Đâu ra 50G?</p>
+    <pre><code class="language-bash"># Tìm file đã delete nhưng process còn handle
+lsof | grep deleted | head
+# COMMAND  PID  USER  FD  TYPE  SIZE  NAME
+# java     1234 app   23  REG   50G   /var/log/app.log (deleted)
 
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #2 — Production Scenario Lab (Intermediate)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Mô phỏng một incident nhỏ và viết runbook xử lý.</div>
-    <p>Requirements:</p>
-    <ul><li>Có log/output trước và sau.</li><li>Có root cause.</li><li>Có rollback hoặc recovery step.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Bạn giải thích được failure timeline trong 3 phút.</div>
+# Process đang giữ 50G của file đã rm
+# Fix: restart process HOẶC truncate via /proc
+> /proc/1234/fd/23                # truncate file qua fd</code></pre>
+    <p><strong>Pattern:</strong> ai đó <code>rm</code> log file đang ghi → inode còn vì process giữ handle → disk không free.</p>
   </div>
 
-
-  <div class="build-exercise">
-    <div class="be-head">🔨 Build #3 — Mentor Pack (Advanced)</div>
-    <div class="be-deliverable"><strong>Deliverable</strong>: Chuẩn bị bài hướng dẫn 30 phút cho junior khác.</div>
-    <p>Requirements:</p>
-    <ul><li>5 misconceptions.</li><li>5 exercises.</li><li>Checklist review.</li></ul>
-    <div class="be-criteria"><strong>Acceptance</strong>: Người học làm đúng 80% bài tập sau buổi hướng dẫn.</div>
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "load avg cao nhưng CPU không cao"</div>
+    <p><strong>Symptom:</strong> <code>uptime</code> show load avg 8.0 trên 4-core. <code>top</code> show CPU chỉ 30%.</p>
+    <p><strong>Root cause:</strong> load avg = CPU running + I/O waiting. Cao mà CPU thấp = process đang chờ I/O.</p>
+    <pre><code class="language-bash">vmstat 1                          # check 'b' column (blocked, waiting IO)
+iostat -x 1                       # %iowait cao? device nào busy?
+ps -eo pid,stat,cmd | grep ' D '  # process trong state D (uninterruptible IO wait)</code></pre>
+    <p>Thường là DB slow query, network drive lag, hoặc disk dying.</p>
   </div>
 
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "Service A timeout khi gọi service B trong cùng K8s cluster"</div>
+    <p><strong>Symptom:</strong> Service A báo timeout. <code>kubectl exec -it pod-a -- curl service-b:8080</code> hoạt động. Reproduce khi load cao.</p>
+    <pre><code class="language-bash"># Trong pod A
+ss -tan | awk '{print $1}' | sort | uniq -c
+# nhiều TIME_WAIT → connection pool exhausted
+
+# Check connection limit
+cat /proc/sys/net/netfilter/nf_conntrack_max
+cat /proc/sys/net/netfilter/nf_conntrack_count    # current
+# count gần max → conntrack table full → drop connection</code></pre>
+    <p><strong>3 nguyên nhân thường:</strong> connection pool nhỏ, conntrack table full, ephemeral port range hết.</p>
+  </div>
 </section>
 
-<section id="drill-bank">
-  <h2>Interview Drill Bank <span class="k-tag core">CORE</span></h2>
-  <p>Luyện nói thành tiếng. Mỗi câu nên trả lời trong 1-3 phút, có ví dụ và trade-off.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Q1. Vì sao Linux for Backend Dev quan trọng với junior backend?</h3>
-  <p><strong>Answer mẫu</strong>: Vì nó xuất hiện trong daily work và là nền để không gây lỗi khó debug. Nắm concept này giúp bạn tự xử lý lỗi thay vì chờ senior cứu.</p>
-  <p><strong>Signal</strong>: Nối được kiến thức với production failure.</p>
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
 
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #1 — Log analysis 1-liner (1h)</div>
+    <p>Nginx access.log mẫu. Viết 1-liner cho:</p>
+    <ol>
+      <li>Top 10 IP request nhiều nhất</li>
+      <li>Top 10 URL bị 500 nhiều nhất</li>
+      <li>Số request mỗi giờ trong 24h qua</li>
+      <li>Average response size theo status code</li>
+    </ol>
+    <p><strong>Exit:</strong> mọi 1-liner ≤ 1 line, dùng pipe + awk + sort + uniq.</p>
+  </div>
 
-  <h3><span class="k-tag core">CORE</span> Q2. Bạn debug khi không hiểu lỗi bắt đầu từ đâu thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Xác định state hiện tại, input, expected output, command/log gần nhất, rồi thu hẹp từng bước. Không sửa mù khi chưa có bằng chứng.</p>
-  <p><strong>Signal</strong>: Có method điều tra.</p>
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #2 — Production debug simulation (2h)</div>
+    <p>Setup Docker container chạy Spring Boot app. Tạo 3 bug:</p>
+    <ol>
+      <li>Infinite loop in 1 endpoint → CPU 100%</li>
+      <li>Memory leak (giữ list grow) → OOM</li>
+      <li>Block in 1 endpoint → connection pool exhausted</li>
+    </ol>
+    <p>Practice 3 phút workflow: diagnose mỗi bug từ outside container.</p>
+  </div>
 
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q3. Khi nào nên viết runbook?</h3>
-  <p><strong>Answer mẫu</strong>: Khi workflow có nhiều bước, có thể fail, hoặc người khác cần lặp lại an toàn. Runbook tốt có precheck, command, expected output và rollback.</p>
-  <p><strong>Signal</strong>: Có tư duy vận hành.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q4. Dấu hiệu bạn thật sự hiểu một foundation topic?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn giải thích được cơ chế, dự đoán edge case, viết test phá happy path và dạy lại người khác.</p>
-  <p><strong>Signal</strong>: Không chỉ thuộc syntax.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q5. Nếu code chạy đúng ở local, vì sao senior vẫn có thể reject?</h3>
-  <p><strong>Answer mẫu</strong>: Vì local happy path chỉ chứng minh một input nhỏ chạy được. Senior review failure mode: input bẩn, data lớn, concurrency, rollback, observability, security và maintainability.</p>
-  <p><strong>Signal</strong>: Bạn hiểu code review không phải bắt bẻ style.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Q6. Một câu trả lời junior tốt khác gì câu trả lời thuộc lòng?</h3>
-  <p><strong>Answer mẫu</strong>: Nó có ví dụ cụ thể, trade-off, và nói được khi nào cách đó sai. Thuộc lòng thường chỉ có định nghĩa.</p>
-  <p><strong>Signal</strong>: Có thể tự tạo ví dụ mới.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q7. Bạn sẽ viết checklist học topic này thế nào?</h3>
-  <p><strong>Answer mẫu</strong>: Chia thành concept, code example, edge case, exercise, Feynman explanation và source verification.</p>
-  <p><strong>Signal</strong>: Có cách học có thể lặp lại.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Q8. Khi gặp output lạ, bước đầu tiên là gì?</h3>
-  <p><strong>Answer mẫu</strong>: Đóng băng hiện trạng: input, command, log, version, branch, environment. Sau đó thu hẹp bằng reproduction nhỏ.</p>
-  <p><strong>Signal</strong>: Không sửa mù.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q9. Làm sao biết mình đã hiểu thật?</h3>
-  <p><strong>Answer mẫu</strong>: Bạn có thể phá code, sửa code, giải thích mechanism, và dạy người khác tránh lỗi tương tự.</p>
-  <p><strong>Signal</strong>: Hiểu thật gắn với hành động.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Q10. Nếu phải mentor junior khác, bạn bắt đầu từ đâu?</h3>
-  <p><strong>Answer mẫu</strong>: Bắt đầu từ lỗi thật họ vừa gặp, vẽ mental model, sửa một ví dụ nhỏ, rồi cho họ tự làm biến thể.</p>
-  <p><strong>Signal</strong>: Biết dạy bằng feedback loop.</p>
-
-</section>
-
-<section id="self-test">
-  <h2>Self-Test Scenarios <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
-  <p>Đọc bối cảnh, tự viết đáp án, rồi mới xem gợi ý. Đây là phần chống đọc hiểu giả mạnh nhất.</p>
-  
-  <h3><span class="k-tag core">CORE</span> Scenario 1 — Local pass, production fail</h3>
-  <p><strong>Bối cảnh</strong>: Feature chạy được trên máy cá nhân nhưng fail khi data lớn hoặc nhiều người dùng.</p>
-  <p><strong>Tự trả lời</strong>: Bạn cần thêm bằng chứng gì?</p>
-  <p><strong>Gợi ý</strong>: So sánh input, environment, concurrency, data size và logs.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 2 — Junior panic khi gặp lỗi lạ</h3>
-  <p><strong>Bối cảnh</strong>: Console có stack trace/command output dài.</p>
-  <p><strong>Tự trả lời</strong>: Bạn dạy bạn đó đọc từ đâu?</p>
-  <p><strong>Gợi ý</strong>: Tìm first cause, command gần nhất, state trước/sau, rồi reproduce nhỏ.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 3 — Review PR foundation</h3>
-  <p><strong>Bối cảnh</strong>: Code chạy nhưng thiếu guard/rollback/log.</p>
-  <p><strong>Tự trả lời</strong>: Comment thế nào để người viết học được?</p>
-  <p><strong>Gợi ý</strong>: Nêu failure mode cụ thể, hậu quả và hướng sửa nhỏ.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 4 — Code review bị hỏi &#x27;vì sao?&#x27;</h3>
-  <p><strong>Bối cảnh</strong>: Bạn chọn một cách implement nhưng chỉ trả lời được &#x27;em thấy người ta hay làm vậy&#x27;.</p>
-  <p><strong>Tự trả lời</strong>: Làm sao nâng câu trả lời?</p>
-  <p><strong>Gợi ý</strong>: Nói problem, constraint, trade-off, alternative và lý do chọn. Nếu chưa nói được, bạn mới copy pattern.</p>
-
-
-  <h3><span class="k-tag core">CORE</span> Scenario 5 — Unit test pass nhưng integration fail</h3>
-  <p><strong>Bối cảnh</strong>: Test nhỏ mock hết dependency, lên môi trường thật fail vì data/permission/path khác.</p>
-  <p><strong>Tự trả lời</strong>: Thiếu loại kiểm chứng nào?</p>
-  <p><strong>Gợi ý</strong>: Cần test gần reality hơn: integration, contract, command transcript, hoặc environment checklist.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 6 — Bug chỉ xảy ra khi chạy song song</h3>
-  <p><strong>Bối cảnh</strong>: Hai request hoặc hai dev thao tác cùng resource làm state lệch.</p>
-  <p><strong>Tự trả lời</strong>: Bạn sẽ tìm race thế nào?</p>
-  <p><strong>Gợi ý</strong>: Tìm shared mutable state, check-then-act, non-atomic operation, lock/transaction boundary.</p>
-
-
-  <h3><span class="k-tag supplementary">SUPPLEMENTARY</span> Scenario 7 — Log không đủ debug</h3>
-  <p><strong>Bối cảnh</strong>: Production chỉ có dòng &#x27;failed&#x27; mà không có id, input, stack trace.</p>
-  <p><strong>Tự trả lời</strong>: Log tối thiểu cần gì?</p>
-  <p><strong>Gợi ý</strong>: Event name, correlation id, business id, outcome, duration, exception cause, không chứa secret.</p>
-
-
-  <h3><span class="k-tag advanced">ADVANCED</span> Scenario 8 — Tự viết runbook cho lỗi đã gặp</h3>
-  <p><strong>Bối cảnh</strong>: Bạn vừa được senior cứu một lỗi trong 5 phút.</p>
-  <p><strong>Tự trả lời</strong>: Biến nó thành tài sản học thế nào?</p>
-  <p><strong>Gợi ý</strong>: Ghi symptom, command, expected output, root cause, fix, rollback và prevention checklist.</p>
-
+  <div class="callout warn">
+    <div class="ctitle">🧪 Exercise #3 — Shell script automation (1.5h)</div>
+    <p>Viết script <code>backup.sh</code>:</p>
+    <ul>
+      <li>Backup folder <code>/app/data</code> thành tar.gz timestamp</li>
+      <li>Upload S3 (dùng <code>aws s3 cp</code>)</li>
+      <li>Giữ local chỉ 7 backup gần nhất</li>
+      <li>Có <code>set -euo pipefail</code> + log timestamp</li>
+      <li>Cron schedule 3:00 AM daily</li>
+      <li>Alert qua webhook nếu fail</li>
+    </ul>
+  </div>
 </section>
 
 <section id="interview">
-  <h2>Interview Framework <span class="k-tag core">CORE</span></h2>
-  <div class="tier t1"><div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div><div class="q">Q: Linux for Backend Dev: concept chính là gì?</div><div class="a">Trả lời bằng mental model trước, API sau. Nói được vấn đề nó giải quyết và lỗi nếu dùng sai.</div></div>
-  <div class="tier t2"><div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Cơ chế bên trong</span></div><div class="q">Q: Edge case nguy hiểm nhất là gì?</div><div class="a">Edge case nguy hiểm nhất thường là cái không xuất hiện ở local: data lớn, concurrency, permission, recovery hoặc input bẩn.</div></div>
-  <div class="tier t3"><div class="tier-head"><span class="badge">Tầng 3 — Practical</span><span class="tier-title">Áp dụng vào project</span></div><div class="q">Q: Áp dụng vào team/project thế nào?</div><div class="a">Đưa vào checklist review, bài tập nhỏ, runbook và convention để junior khác không lặp lại lỗi.</div></div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Tier 1 — Surface</h3>
+  <div class="tier-card t1">
+    <h3>Q: <code>kill</code> vs <code>kill -9</code>?</h3>
+    <p><code>kill PID</code> gửi SIGTERM — process catch + cleanup (close file, flush log). <code>kill -9 PID</code> gửi SIGKILL — kernel kill ngay, KHÔNG cleanup. Dùng <code>-9</code> chỉ khi SIGTERM không work sau 30s.</p>
+  </div>
+
+  <h3>Tier 2 — Deep Dive</h3>
+  <div class="tier-card t2">
+    <h3>Q: load average 1.5 trên 4-core nghĩa là gì?</h3>
+    <p>Load avg = số process running + waiting I/O. 1.5/4 = ~37% busy. &gt;1.0 PER CORE = oversubscribed. Cao mà CPU thấp = process chờ I/O. Phân biệt bằng <code>vmstat</code> column 'b' và <code>iostat %iowait</code>.</p>
+  </div>
+
+  <h3>Tier 3 — Architecture</h3>
+  <div class="tier-card t3">
+    <h3>Q: Production incident — "service A timeout khi gọi service B". Debug workflow?</h3>
+    <p>Layer-by-layer:</p>
+    <ol>
+      <li><strong>Service B alive?</strong> systemctl status + port listen check (ss)</li>
+      <li><strong>Network reachable?</strong> nc/curl từ pod A → mtr nếu có hop</li>
+      <li><strong>Connection pool?</strong> ss -tan đếm TIME_WAIT / ESTABLISHED</li>
+      <li><strong>Conntrack?</strong> /proc/sys/net/netfilter/nf_conntrack_count vs max</li>
+      <li><strong>Ephemeral port?</strong> /proc/sys/net/ipv4/ip_local_port_range</li>
+      <li><strong>DNS?</strong> dig + check /etc/resolv.conf timeout</li>
+      <li><strong>App-level?</strong> jstack pool size, JFR for downstream latency</li>
+    </ol>
+  </div>
 </section>
 
-<section id="feynman-end">
-  <h2>Closing — Feynman Check <span class="k-tag optional">OPTIONAL</span></h2>
-  <div class="feynman">
-    <div class="fy-head">🎓 Feynman Check</div>
-    <div class="fy-prompt">"Giải thích Linux for Backend Dev cho một junior mới vào team trong 5 phút, có ví dụ sai và ví dụ đúng."</div>
-    <div class="fy-rule">Quy tắc: không xem file. Nói ra to hoặc viết 500 từ. Lắp bắp ở đâu thì quay lại section đó.</div>
-  </div>
-  <div class="verify-source">
-    <div class="vs-head">📚 Verify Against Source — đừng tin AI mô tả</div>
-    <p>Cross-check với official sources:</p>
-    <ul><li><a href="https://www.gnu.org/software/coreutils/manual/">GNU Coreutils Manual</a></li>
-<li><a href="https://curl.se/docs/">curl Documentation</a></li>
-<li><a href="https://www.freedesktop.org/software/systemd/man/latest/journalctl.html">systemd journalctl</a></li></ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu</h2>
+  <ol>
+    <li><strong>"Everything is a file" — giải thích bằng 1 ví dụ /proc.</strong></li>
+    <li><strong>load avg vs CPU% khác gì? Khi nào load cao mà CPU thấp?</strong></li>
+    <li><strong>SIGTERM vs SIGKILL — khi nào dùng cái nào?</strong></li>
+    <li><strong>Disk full nhưng <code>du</code> không thấy — recipe debug?</strong></li>
+    <li><strong>Docker container OOMKilled khác Java heap OOM thế nào?</strong></li>
+  </ol>
+  <div class="callout success"><strong>Pass:</strong> 5/5 trong &lt; 10 phút.</div>
+</section>
+
+<section id="cheatsheet">
+  <h2>📋 Cheatsheet 1 Trang Production Debug</h2>
+  <pre><code class="language-bash"># === HEALTH CHECK 3 PHÚT ===
+uptime                              # load avg
+free -h                             # mem
+df -h /var /tmp                     # disk
+top -bn1 -o %CPU | head -10         # top CPU
+top -bn1 -o %MEM | head -10         # top MEM
+systemctl status myapp              # service
+ss -tlnp | grep :8080               # port
+journalctl -u myapp -n 100 | grep -iE "error|killed"
+
+# === CPU SPIKE (Java) ===
+top -H -p PID                       # thread list
+printf '%x\n' THREAD_ID             # → hex
+jstack PID | grep -A 30 'nid=0xHEX' # find hot thread
+
+# === MEMORY LEAK ===
+jmap -histo:live PID | head -20     # object count
+jmap -dump:file=/tmp/heap.hprof PID # dump for MAT
+free -h && cat /proc/meminfo | head
+
+# === DISK FULL ===
+du -h --max-depth=1 /var | sort -hr | head
+find /var -type f -size +1G -exec ls -lh {} \;
+lsof | grep deleted | head          # deleted but held
+
+# === NETWORK ===
+ss -tlnp | grep :PORT               # who listens
+ss -tan | awk '{print $1}' | sort | uniq -c   # state count
+nc -zv host PORT                    # connect test
+mtr host                            # network path
+cat /proc/sys/net/netfilter/nf_conntrack_count
+
+# === LOG ===
+journalctl -u app --since "1h ago" | grep ERROR
+zgrep ERROR /var/log/app/*.gz | wc -l
+tail -f app.log | grep --line-buffered ERROR</code></pre>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="52-collections-deep-dive.html">#52 Collections Deep Dive</a></li>
+      <li><a href="50-git-daily-workflow.html">#50 Git Daily Workflow</a></li>
+      <li><a href="24-docker-kubernetes.html">#24 Docker &amp; K8s</a> (chưa render)</li>
+    </ol>
+    <p><strong>Khi sẵn sàng chuyển #52:</strong> 3 exercises xong + Feynman 5/5 + đã practice 3-phút health check trên server thật.</p>
   </div>
 </section>
 
-<footer>
-  <div>📁 #51 Linux for Backend Dev · Junior Foundation</div>
-  <div>Tiếp theo: #52 Collections Deep Dive</div>
-</footer>
 </div>
 </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

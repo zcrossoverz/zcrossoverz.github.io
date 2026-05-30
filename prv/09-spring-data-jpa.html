@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#09 - Spring Data JPA & Hibernate | Java Backend Interview Prep</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#09 — Spring Data JPA &amp; Hibernate | Java Backend Interview Prep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,452 +10,466 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#09 Spring Data JPA & Hibernate</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb"><a href="index.html">Index</a><span class="sep">›</span><span>Spring Ecosystem</span><span class="sep">›</span><span class="current">#09 Spring Data JPA</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
 </div>
-
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
+<aside class="sidebar" id="sidebar">
   <nav class="toc">
-    <a href="#intro">Tổng quan</a>
-    <a href="#anti-fake">Chống hiểu giả</a>
-    <a href="#scope-map">Cần nắm vs phụ</a>
-    <a href="#problem">1. Bài toán thực tế</a>
-    <a href="#mental-model">2. Mental model</a>
-    <div class="sub">
-      <a href="#nplusone">N+1</a>
-      <a href="#session">Session & cache</a>
-      <a href="#dirty">Dirty checking</a>
-      <a href="#locking">Locking</a>
-      <a href="#entity-lifecycle">Entity lifecycle</a>
-      <a href="#flush-commit">Flush vs commit</a>
-    </div>
-    <a href="#implementation">3. Code production</a>
-    <div class="sub">
-      <a href="#entitygraph">EntityGraph</a>
-      <a href="#bulk-update">Bulk update</a>
-      <a href="#query-count-test">Query count test</a>
-    </div>
-    <a href="#debug">4. Debug lab</a>
-    <a href="#tradeoffs">5. Trade-offs</a>
-    <a href="#interview">6. Interview framework</a>
-    <a href="#checklist">Checklist</a>
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#real-problem">1. Dashboard 30s — N+1</a>
+    <a href="#n-plus-one">2. N+1 internals</a>
+    <a href="#session">3. Session + L1/L2 cache</a>
+    <a href="#lock">4. Optimistic vs Pessimistic Lock</a>
+    <a href="#dirty">5. Dirty Checking</a>
+    <a href="#fix-n1">6. 4 strategies fix N+1</a>
+    <a href="#antipatterns">7. 5 Anti-patterns</a>
+    <a href="#three-level">🎯 3 cấp Mastery</a>
+    <a href="#symptom">🚨 Symptom → Debug</a>
+    <a href="#exercises">🔧 3 Exercises</a>
+    <a href="#interview">🎤 Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
   </nav>
 </aside>
-
 <main>
 <div class="content">
 
 <section class="hero">
-  <span class="meta-tag">Phase 2 - Daily work - Very high priority</span>
-  <h1>#09 - Spring Data JPA & Hibernate: N+1, Lazy/Eager, Cache, Locking</h1>
-  <p class="lead">JPA giúp code nhanh, nhưng Hibernate không đoán được intent performance của bạn. Senior phải biết lúc nào dùng entity, lúc nào dùng DTO projection, lúc nào fetch join nguy hiểm, và vì sao 400 query nhỏ có thể làm endpoint chậm 30 giây.</p>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">Query shape & persistence context</div></div>
-    <div class="meta-item"><div class="k">Bẫy chính</div><div class="v">N+1, LazyInitialization, pagination</div></div>
-    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">Catalog dashboard</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#7 Transaction, #11 SQL, #23 Performance</div></div>
+  <span class="meta-tag">#09 · Spring Ecosystem</span>
+  <h1>Spring Data JPA &amp; Hibernate — N+1, Lazy/Eager, Lock, Cache</h1>
+  <p class="lead">Junior dùng JPA repository mỗi ngày. Khi dashboard load 30s, không biết "DB không có vấn đề gì" thực ra là 500 query. Khi 2 user cùng update balance → race condition. File này bóc N+1, dirty checking, lock strategy, L2 cache + 5 anti-pattern junior hay vướng.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">CORE ★</span>
+    <span class="phase-tag">1 tuần đọc + fix N+1 production</span>
+    <span class="phase-tag">Domain: E-commerce</span>
   </div>
 </section>
 
-<section id="intro">
-<h2 class="no-border">JPA Là ORM, Không Phải Performance Shield</h2>
-<p>Spring Data JPA giúp tạo repository nhanh, Hibernate giúp map object sang table, nhưng endpoint nhanh hay chậm vẫn phụ thuộc vào SQL cuối cùng được chạy. Nếu không nhìn được query shape, bạn sẽ tưởng code Java sạch là đủ.</p>
-<p>Nguyên tắc học: mỗi repository method phải trả lời được 3 câu: chạy bao nhiêu SQL, load bao nhiêu row/column, entity có còn attached trong transaction không?</p>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <ul>
+    <li>Dùng <code>@OneToMany</code> mỗi ngày — không biết default EAGER fetch là bom hẹn giờ</li>
+    <li>Biết "lazy loading" — không nhận ra <code>LazyInitializationException</code> khi access ngoài transaction</li>
+    <li>Hiểu "JOIN FETCH" — không biết kết hợp với pagination = <code>HHH000104</code> warning + in-memory pagination</li>
+    <li>Dùng <code>save()</code> — không hiểu Hibernate dirty checking tự auto-update entity khi commit (không cần gọi save lại)</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp</div>
+    <p><strong>L1:</strong> CRUD repository, default fetch. Endpoint chậm = "DB issue".<br>
+    <strong>L2:</strong> Detect + fix N+1. Hiểu LAZY vs EAGER. Dùng <code>@EntityGraph</code> hoặc JOIN FETCH. Optimistic lock cho update.<br>
+    <strong>L3:</strong> Tune L2 cache, design read model riêng cho dashboard, dùng projection DTO native. Hiểu Hibernate Session lifecycle qua transaction boundary.</p>
+  </div>
 </section>
 
-<section id="anti-fake">
-<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
-<div class="pillar-grid">
-  <div class="pillar"><div class="num">1</div><h4>Đếm query</h4><p>Không đoán. Bật SQL log/test query count để biết endpoint chạy bao nhiêu query.</p></div>
-  <div class="pillar"><div class="num">2</div><h4>Vẽ object graph</h4><p>Entity nào kéo association nào, lazy hay eager, collection có thể nhân row không?</p></div>
-  <div class="pillar"><div class="num">3</div><h4>Chọn read model</h4><p>Dashboard/report thường nên dùng DTO projection, không load nguyên aggregate.</p></div>
-  <div class="pillar"><div class="num">4</div><h4>Hiểu session</h4><p>L1 cache, dirty checking và LazyInitializationException đều xoay quanh persistence context.</p></div>
-</div>
+<section id="roadmap">
+  <h2>🗺️ Roadmap</h2>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Bài toán — dashboard 30s</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>2</td><td>N+1 internals</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>3</td><td>Session + L1/L2 cache</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>4</td><td>Optimistic vs Pessimistic Lock</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>5</td><td>Dirty Checking</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>6</td><td>4 strategies fix N+1</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+      <tr><td>7</td><td>5 anti-patterns</td><td><span class="phase-tag">CORE ★</span></td><td>25min</td></tr>
+    </tbody>
+  </table>
 </section>
 
-<section id="scope-map">
-<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
-  <tbody>
-    <tr><td><strong>A - Bắt buộc</strong></td><td>N+1, lazy/eager, persistence context, dirty checking, fetch join, projection, locking</td><td>Nhìn code và dự đoán SQL/query count.</td></tr>
-    <tr><td><strong>B - Nên biết</strong></td><td>Entity lifecycle, flush vs commit, EntityGraph, bulk update bypass context, OSIV, query-count test</td><td>Debug được bug performance và stale entity.</td></tr>
-    <tr><td><strong>C - Bonus</strong></td><td>L2 cache tuning sâu, Hibernate internals, custom type phức tạp</td><td>Chỉ nhắc khi có use case rõ.</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
+<section id="real-problem">
+  <h2>1. Bài toán — Dashboard 30s, "DB không có vấn đề" <span class="phase-tag">CORE ★</span></h2>
 
-<section id="problem">
-<h2>1. Bài Toán Thực Tế - Catalog Dashboard Load 25 Giây</h2>
-<p>Admin dashboard hiển thị 200 sản phẩm, mỗi sản phẩm gồm tên brand, 3 review mới nhất và số lượng tồn kho. DBA báo không có slow query nào quá 15ms, nhưng API vẫn mất 25 giây.</p>
-
-<pre><code class="language-java">@Service
-public class CatalogDashboardService {
-    @Transactional(readOnly = true)
-    public List&lt;ProductCard&gt; loadDashboard(String categoryId) {
-        List&lt;Product&gt; products = productRepository.findByCategoryId(categoryId);
-
-        return products.stream()
-            .map(product -&gt; {
-                Brand brand = product.getBrand(); // có thể trigger query
-                List&lt;Review&gt; reviews = reviewRepository
-                    .findTop3ByProductIdOrderByCreatedAtDesc(product.getId());
-                Stock stock = stockRepository.findBySku(product.getSku());
-                return ProductCard.of(product, brand, reviews, stock);
-            })
-            .toList();
-    }
+  <div class="callout danger">
+    <div class="ctitle">📖 Tình huống — Order dashboard chậm</div>
+    <pre><code class="language-java">// Endpoint: list 100 order với customer + items
+@GetMapping("/orders")
+public List&lt;OrderDto&gt; list() {
+    return orderRepo.findAll().stream()
+        .map(o -&gt; new OrderDto(
+            o.getId(),
+            o.getCustomer().getName(),     // ← lazy load customer
+            o.getItems().stream()           // ← lazy load items
+                .map(i -&gt; i.getProduct().getName())   // ← lazy load product
+                .toList()
+        ))
+        .toList();
 }</code></pre>
 
-<div class="log-card">
-1 query products<br>
-200 queries brand/review/stock pattern<br>
-Tổng 401-601 round-trips nhỏ, mỗi query nhanh nhưng tổng network + pool wait rất lớn.
-</div>
+    <p><strong>Đo:</strong> 1 request = 30 giây. DB CPU 15%, app CPU 80%. "DB không có vấn đề".</p>
 
-<div class="callout danger">
-  <div class="ctitle">Tại sao DBA không thấy slow query?</div>
-  <p>Vì từng query riêng lẻ nhanh. N+1 là latency do số lượng round-trip, không nhất thiết do một câu SQL chậm.</p>
-</div>
+    <p><strong>Bật Hibernate SQL log:</strong></p>
+    <pre><code class="language-yaml">spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate.format_sql: true</code></pre>
+
+    <pre><code class="language-text">SELECT * FROM orders                          ← 1 query
+SELECT * FROM customers WHERE id = ?          ← 100 queries (1/order)
+SELECT * FROM order_items WHERE order_id = ?  ← 100 queries
+SELECT * FROM products WHERE id = ?           ← 500+ queries (5 item/order trung bình)
+-------
+TỔNG: 700+ queries cho 1 request</code></pre>
+
+    <p><strong>Root cause:</strong> N+1. Lazy load mỗi association = 1 query thêm. Network roundtrip 1ms × 700 = 700ms minimum. Với connection pool wait + JDBC overhead → 30s.</p>
+
+    <p><strong>Fix (1 dòng):</strong></p>
+    <pre><code class="language-java">@EntityGraph(attributePaths = {"customer", "items.product"})
+List&lt;Order&gt; findAll();</code></pre>
+    <p>1 query JOIN. Latency 30s → 200ms.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <ol>
+      <li>Vì sao endpoint chậm 30s mà DB CPU chỉ 15%? App CPU làm gì?</li>
+      <li>JOIN FETCH 3 association: customer + items + product. Risk gì với 100 order × 5 item × 1 product?</li>
+      <li>Nếu thêm pagination <code>.limit(20)</code> vào endpoint — JOIN FETCH có work không?</li>
+    </ol>
+  </div>
 </section>
 
-<section id="mental-model">
-<h2>2. Mental Model</h2>
+<section id="n-plus-one">
+  <h2>2. N+1 Problem — Internals <span class="phase-tag">CORE ★</span></h2>
 
-<section id="nplusone">
-<h3>2.1 N+1 Problem</h3>
-<p>N+1 là: 1 query lấy N parent rows, rồi N query phụ để lấy association hoặc dữ liệu liên quan cho từng parent.</p>
-<div class="diagram">
-<svg viewBox="0 0 760 260" role="img" aria-label="N plus one query diagram">
-  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"></path></marker></defs>
-  <rect x="35" y="95" width="140" height="70" rx="8" fill="#eef2ff" stroke="#4f46e5"></rect>
-  <text x="105" y="123" text-anchor="middle" font-size="13">Query 1</text>
-  <text x="105" y="145" text-anchor="middle" font-size="12" fill="#475569">200 products</text>
-  <line x1="175" y1="130" x2="245" y2="130" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="245" y="35" width="190" height="190" rx="8" fill="#f8fafc" stroke="#cbd5e1"></rect>
-  <text x="340" y="65" text-anchor="middle" font-size="13">Loop products</text>
-  <text x="340" y="100" text-anchor="middle" font-size="12">product 1 -> query reviews</text>
-  <text x="340" y="125" text-anchor="middle" font-size="12">product 2 -> query reviews</text>
-  <text x="340" y="150" text-anchor="middle" font-size="12">...</text>
-  <text x="340" y="175" text-anchor="middle" font-size="12">product 200 -> query reviews</text>
-  <line x1="435" y1="130" x2="510" y2="130" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
-  <rect x="510" y="95" width="190" height="70" rx="8" fill="#fef2f2" stroke="#dc2626"></rect>
-  <text x="605" y="123" text-anchor="middle" font-size="13">201+ queries</text>
-  <text x="605" y="145" text-anchor="middle" font-size="12" fill="#475569">latency grows with N</text>
-</svg>
-<div class="caption">N càng lớn, endpoint càng chậm tuyến tính dù mỗi query nhỏ.</div>
-</div>
+  <pre><code class="language-java">// Entity
+@Entity
+class Order {
+    @Id Long id;
+    @ManyToOne(fetch = LAZY) Customer customer;        // default LAZY cho @ManyToOne là EAGER!
+    @OneToMany(mappedBy = "order") List&lt;OrderItem&gt; items;  // default LAZY
+}
+
+// Repo
+orderRepo.findAll();    // 1 query: SELECT * FROM orders
+// Khi access o.getCustomer().getName() → Hibernate fire query SELECT customer WHERE id=?
+// 100 order = 100 query thêm</code></pre>
+
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Default fetch type — học thuộc</div>
+    <table>
+      <thead><tr><th>Annotation</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>@OneToMany</code></td><td>LAZY ✅</td></tr>
+        <tr><td><code>@ManyToMany</code></td><td>LAZY ✅</td></tr>
+        <tr><td><strong><code>@ManyToOne</code></strong></td><td><strong>EAGER ⚠️</strong> (bom hẹn giờ)</td></tr>
+        <tr><td><strong><code>@OneToOne</code></strong></td><td><strong>EAGER ⚠️</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Rule:</strong> <strong>luôn explicit</strong> <code>fetch = LAZY</code> cho mọi association. EAGER mặc định cho ManyToOne/OneToOne là 1 trong những default tệ nhất của JPA.</p>
+  </div>
 </section>
 
 <section id="session">
-<h3>2.2 Hibernate Session, L1 Cache, L2 Cache</h3>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Cache</th><th>Scope</th><th>Bật mặc định?</th><th>Dùng cho</th></tr></thead>
-  <tbody>
-    <tr><td>L1 cache</td><td>EntityManager/Session hiện tại</td><td>Luôn bật</td><td>Đảm bảo cùng ID trong 1 transaction là cùng object instance.</td></tr>
-    <tr><td>L2 cache</td><td>SessionFactory, share toàn app</td><td>Tắt mặc định</td><td>Reference data ít đổi: category, country, shipping method.</td></tr>
-    <tr><td>Query cache</td><td>Query result ids</td><td>Tắt mặc định</td><td>Query lặp lại, data ít đổi, invalidation rõ.</td></tr>
-  </tbody>
-</table>
-</div>
-<p>L1 cache không giải quyết N+1 review query vì mỗi product có query khác nhau. L2 cache cũng không nên dùng để che query shape xấu; trước hết phải sửa fetch/projection.</p>
-</section>
+  <h2>3. Hibernate Session + L1/L2 Cache <span class="phase-tag">CORE ★</span></h2>
+  <p><strong>Session</strong> = Hibernate's unit of work, tương đương <code>EntityManager</code> trong JPA. Lifecycle = transaction.</p>
+  <pre><code class="language-text">@Transactional method:
+  ┌─ Session open
+  │   ├─ L1 cache (per-session): entity loaded lưu key=id
+  │   ├─ Dirty checking: track changes auto-flush at commit
+  │   └─ Lazy load proxy: fire query khi access
+  └─ Session close (commit)
+         └─ Lazy proxy access SAU đây → LazyInitializationException</code></pre>
 
-<section id="dirty">
-<h3>2.3 Dirty Checking</h3>
-<p>Trong transaction, Hibernate giữ snapshot của entity. Khi flush/commit, nó so sánh entity hiện tại với snapshot để generate update.</p>
-<pre><code class="language-java">@Transactional
-public void renameProduct(String productId, String newName) {
-    Product product = productRepository.findById(productId).orElseThrow();
-    product.renameTo(newName);
-    // không bắt buộc gọi save(); Hibernate dirty checking sẽ flush UPDATE khi commit
-}</code></pre>
-<p>Dirty checking tiện nhưng có cost nếu bạn load hàng chục nghìn entity chỉ để read. Với read path lớn, dùng <code>@Transactional(readOnly = true)</code> và DTO projection.</p>
-</section>
-
-<section id="locking">
-<h3>2.4 Optimistic vs Pessimistic Lock</h3>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Lock</th><th>Cơ chế</th><th>Dùng khi</th><th>Trade-off</th></tr></thead>
-  <tbody>
-    <tr><td>Optimistic</td><td><code>@Version</code>, update kèm <code>WHERE version=?</code></td><td>Conflict hiếm: product description, profile, document edit</td><td>Cần retry/handle conflict.</td></tr>
-    <tr><td>Pessimistic</td><td><code>SELECT ... FOR UPDATE</code></td><td>Conflict thường: giữ ghế cuối, decrement stock flash sale</td><td>Giữ lock, giảm throughput, có deadlock risk.</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
-
-<section id="entity-lifecycle">
-<h3>2.5 Entity Lifecycle: transient, managed, detached, removed</h3>
-<p>Rất nhiều bug JPA đến từ việc không biết entity hiện đang ở trạng thái nào. Hibernate chỉ dirty-check entity <em>managed</em> trong persistence context. Entity detached thay đổi field không tự update DB nếu không merge/save lại đúng cách.</p>
-
-<div class="table-wrap">
-<table>
-  <thead><tr><th>State</th><th>Nghĩa</th><th>Ví dụ</th></tr></thead>
-  <tbody>
-    <tr><td>Transient</td><td>Object mới, chưa gắn DB/session</td><td><code>new Product()</code> trước khi save.</td></tr>
-    <tr><td>Managed</td><td>Đang nằm trong persistence context</td><td>Entity load trong <code>@Transactional</code>.</td></tr>
-    <tr><td>Detached</td><td>Từng managed nhưng session đã đóng</td><td>Entity trả ra ngoài transaction.</td></tr>
-    <tr><td>Removed</td><td>Được đánh dấu delete khi flush</td><td><code>repository.delete(entity)</code>.</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>API layer nên trả DTO, không trả entity detached. Nếu controller serialize entity, lazy association có thể gây <code>LazyInitializationException</code> hoặc kéo thêm query ngoài ý muốn nếu OSIV bật.</p>
-</section>
-
-<section id="flush-commit">
-<h3>2.6 Flush vs Commit</h3>
-<p><code>flush</code> gửi SQL pending xuống database nhưng transaction vẫn chưa commit. <code>commit</code> mới xác nhận thay đổi. Hibernate có thể flush trước commit, hoặc trước một query cần thấy thay đổi pending để đảm bảo consistency.</p>
-
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">Hiểu sai</div>
-    <div class="col-body"><p>"Gọi <code>save()</code> là DB đã commit" hoặc "flush xong là không rollback được".</p></div>
-  </div>
-  <div class="col good">
-    <div class="col-head">Hiểu đúng</div>
-    <div class="col-body"><p><code>save()</code> làm entity managed/pending. Flush gửi SQL. Commit xác nhận. Exception trước commit vẫn rollback.</p></div>
-  </div>
-</div>
-
-<p>Trong batch import lớn, flush/clear theo chunk giúp tránh persistence context giữ quá nhiều entity managed và làm dirty checking chậm dần.</p>
-</section>
-</section>
-
-<section id="implementation">
-<h2>3. Production-Grade Implementation</h2>
-
-<h3>3.1 JOIN FETCH Cho Many-to-One</h3>
-<pre><code class="language-java">public interface ProductRepository extends JpaRepository&lt;Product, String&gt; {
-    @Query("""
-        select p
-        from Product p
-        join fetch p.brand
-        where p.categoryId = :categoryId
-        """)
-    List&lt;Product&gt; findByCategoryWithBrand(String categoryId);
+  <h3>L1 Cache — Per Session</h3>
+  <pre><code class="language-java">@Transactional
+public void demo() {
+    Order o1 = orderRepo.findById(1L).get();   // SELECT
+    Order o2 = orderRepo.findById(1L).get();   // L1 HIT — không query
+    assert o1 == o2;                            // same instance!
 }</code></pre>
 
-<h3>3.2 DTO Projection Cho Dashboard</h3>
-<pre><code class="language-java">public record ProductCardRow(
-    String productId,
-    String productName,
-    String brandName,
-    int availableQuantity
-) {}
+  <h3>L2 Cache — Cross-Session</h3>
+  <pre><code class="language-java">// Entity
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Entity class Country { ... }   // reference data, ít đổi
 
-public interface ProductDashboardRepository extends Repository&lt;Product, String&gt; {
-    @Query("""
-        select new com.example.ProductCardRow(
-            p.id, p.name, b.name, s.availableQuantity
-        )
-        from Product p
-        join p.brand b
-        join Stock s on s.sku = p.sku
-        where p.categoryId = :categoryId
-        """)
-    List&lt;ProductCardRow&gt; findCards(String categoryId);
-}</code></pre>
-<p>Projection chỉ lấy cột cần thiết, không tạo full entity graph, không dirty-check. Đây là lựa chọn tốt cho dashboard/report.</p>
-
-<h3>3.3 Batch Fetch Cho Collection</h3>
-<pre><code class="language-java">@Entity
-public class Product {
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    @BatchSize(size = 50)
-    private List&lt;Review&gt; reviews = new ArrayList&lt;&gt;();
-}</code></pre>
-
-<pre><code class="language-yaml">spring:
+// Config
+spring:
   jpa:
     properties:
       hibernate:
-        default_batch_fetch_size: 50</code></pre>
-<p>Batch fetch giảm 200 query collection thành khoảng 4 query với <code>WHERE product_id IN (...)</code>.</p>
+        cache:
+          use_second_level_cache: true
+          region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory</code></pre>
+  <p><strong>Khi dùng:</strong> reference data (country, currency, config) — đọc nhiều, update rất hiếm.</p>
+  <p><strong>Khi KHÔNG dùng:</strong> data có write concurrent từ nhiều JVM (sẽ stale), data thay đổi thường xuyên (invalidation overhead).</p>
+</section>
 
-<h3>3.4 Pagination An Toàn Với Collection Fetch</h3>
-<div class="compare">
-  <div class="col bad">
-    <div class="col-head">Sai</div>
-<pre><code class="language-java">@Query("""
-    select p from Product p
-    join fetch p.reviews
-    where p.categoryId = :categoryId
-    """)
-Page&lt;Product&gt; findPageWithReviews(String categoryId, Pageable pageable);</code></pre>
-  </div>
-  <div class="col good">
-    <div class="col-head">Đúng: 2-step fetch</div>
-<pre><code class="language-java">@Query("select p.id from Product p where p.categoryId = :categoryId")
-Page&lt;String&gt; findPageIds(String categoryId, Pageable pageable);
+<section id="lock">
+  <h2>4. Optimistic vs Pessimistic Lock <span class="phase-tag">CORE ★</span></h2>
 
-@Query("""
-    select distinct p from Product p
-    left join fetch p.reviews
-    where p.id in :ids
-    """)
-List&lt;Product&gt; findByIdsWithReviews(List&lt;String&gt; ids);</code></pre>
-  </div>
-</div>
-
-<h3>3.5 Optimistic Lock</h3>
-<pre><code class="language-java">@Entity
-public class ProductDraft {
-    @Id
-    private String id;
-
-    private String title;
-
-    @Version
-    private long version;
-
-    public void rename(String title) {
-        this.title = title;
-    }
-}</code></pre>
-
-<h3>3.6 Pessimistic Lock Cho Stock</h3>
-<pre><code class="language-java">public interface StockRepository extends JpaRepository&lt;Stock, String&gt; {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select s from Stock s where s.sku = :sku")
-    Optional&lt;Stock&gt; findBySkuForUpdate(String sku);
+  <h3>Optimistic Lock — @Version</h3>
+  <pre><code class="language-java">@Entity
+class Account {
+    @Id Long id;
+    BigDecimal balance;
+    @Version Long version;   // Hibernate tự manage
 }
 
-@Transactional(timeout = 5)
-public void reserve(String sku, int quantity) {
-    Stock stock = stockRepository.findBySkuForUpdate(sku).orElseThrow();
-    stock.reserve(quantity);
-}</code></pre>
+// Hibernate add WHERE version=? vào UPDATE
+// UPDATE accounts SET balance=?, version=version+1 WHERE id=? AND version=?
+// Nếu 0 row affected → OptimisticLockException (ai đó đã update trước)</code></pre>
+  <p><strong>Khi dùng:</strong> conflict hiếm (e.g., user edit profile). Read-heavy, write occasional. Không block DB.</p>
+  <p><strong>Khi KHÔNG dùng:</strong> high contention (mọi user update cùng hot row). Conflict rate cao → retry storm.</p>
 
-<section id="entitygraph">
-<h3>3.7 EntityGraph: Fetch Plan Theo Use Case</h3>
-<p><code>@EntityGraph</code> cho phép định nghĩa association cần fetch cho một repository method mà không viết JPQL fetch join dài. Nó hợp với case fetch graph vừa phải, nhất là many-to-one/one-to-one hoặc một vài association rõ ràng.</p>
+  <h3>Pessimistic Lock — SELECT FOR UPDATE</h3>
+  <pre><code class="language-java">@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("SELECT a FROM Account a WHERE a.id = :id")
+Account findByIdForUpdate(@Param("id") Long id);
 
-<pre><code class="language-java">public interface ProductRepository extends JpaRepository&lt;Product, String&gt; {
-    @EntityGraph(attributePaths = {"brand", "category"})
-    Optional&lt;Product&gt; findDetailedById(String id);
-}</code></pre>
+// Generates: SELECT ... FOR UPDATE
+// DB lock row, các tx khác wait đến khi commit/rollback</code></pre>
+  <p><strong>Khi dùng:</strong> high-value transaction (transfer tiền, inventory deduct). Conflict thường xuyên. Cần guarantee no lost update.</p>
+  <p><strong>Bẫy:</strong> giữ lock lâu = block khác. Timeout deadlock cao.</p>
 
-<p>Đừng dùng EntityGraph như cách kéo toàn bộ object graph. Với dashboard/list/report, DTO projection vẫn thường rõ và nhanh hơn.</p>
+  <div class="callout warn">
+    <div class="ctitle">🎯 Decision guide</div>
+    <ul>
+      <li><strong>User profile, settings</strong> → optimistic (low conflict)</li>
+      <li><strong>Inventory deduction, payment, balance</strong> → pessimistic hoặc atomic SQL (<code>UPDATE ... SET stock = stock - 1 WHERE stock &gt;= 1</code>)</li>
+      <li><strong>Cart update</strong> → optimistic + retry 3 lần</li>
+    </ul>
+  </div>
 </section>
 
-<section id="bulk-update">
-<h3>3.8 Bulk Update Bypass Persistence Context</h3>
-<p>JPQL bulk update/delete chạy trực tiếp trên database và bypass entity managed trong persistence context. Nếu trong cùng transaction bạn đang giữ entity cũ, object trong memory có thể stale.</p>
+<section id="dirty">
+  <h2>5. Dirty Checking — Auto Update <span class="phase-tag">CORE ★</span></h2>
+  <pre><code class="language-java">@Transactional
+public void changeName(Long id, String newName) {
+    Order o = orderRepo.findById(id).get();
+    o.setNote(newName);
+    // KHÔNG cần gọi orderRepo.save(o)
+    // Hibernate compare snapshot lúc load vs lúc commit
+    // Khác nhau → tự generate UPDATE
+}</code></pre>
+  <p><strong>Cơ chế:</strong> khi entity load qua Session, Hibernate lưu snapshot. Cuối transaction, compare current vs snapshot, nếu khác → fire UPDATE chỉ field thay đổi.</p>
 
-<pre><code class="language-java">@Modifying(clearAutomatically = true, flushAutomatically = true)
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Bẫy</div>
+    <ul>
+      <li>Detached entity (ngoài session) → dirty checking KHÔNG hoạt động. Phải <code>merge()</code> để attach lại</li>
+      <li>Field collection (List, Set) — modify in place mới detect, replace reference mới không</li>
+      <li>Performance: dirty checking O(n) trên field count. Entity 50 field × 10K entity loaded = chậm</li>
+    </ul>
+  </div>
+</section>
+
+<section id="fix-n1">
+  <h2>6. 4 Strategies Fix N+1 <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Strategy 1 — @EntityGraph (đơn giản nhất)</h3>
+  <pre><code class="language-java">@EntityGraph(attributePaths = {"customer", "items.product"})
+List&lt;Order&gt; findByStatus(OrderStatus status);
+// 1 query LEFT JOIN</code></pre>
+
+  <h3>Strategy 2 — JOIN FETCH (JPQL)</h3>
+  <pre><code class="language-java">@Query("SELECT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.items i JOIN FETCH i.product")
+List&lt;Order&gt; findAllWithDetails();</code></pre>
+
+  <h3>Strategy 3 — Batch fetching</h3>
+  <pre><code class="language-java">@OneToMany(fetch = LAZY)
+@BatchSize(size = 50)   // Hibernate gom 50 id, IN query 1 lần
+List&lt;OrderItem&gt; items;
+// 1 query orders + 1 query (IN 50 ids) thay vì N query</code></pre>
+
+  <h3>Strategy 4 — DTO projection (best cho list view)</h3>
+  <pre><code class="language-java">interface OrderListView {
+    Long getId();
+    String getCustomerName();
+    int getItemCount();
+}
+
 @Query("""
-    update Product p
-    set p.status = :status
-    where p.categoryId = :categoryId
-    """)
-int updateStatusByCategory(String categoryId, ProductStatus status);</code></pre>
+    SELECT o.id AS id,
+           o.customer.name AS customerName,
+           SIZE(o.items) AS itemCount
+    FROM Order o
+""")
+List&lt;OrderListView&gt; findAllForList();
+// Chỉ load fields cần, không load full entity → nhanh hơn JOIN FETCH</code></pre>
 
-<div class="callout warn">
-  <div class="ctitle">Bẫy stale state</div>
-  <p>Sau bulk update, đừng tiếp tục tin entity đã load trước đó vẫn phản ánh DB. Dùng <code>clearAutomatically</code>, tách transaction, hoặc reload entity cần dùng tiếp.</p>
-</div>
+  <div class="callout warn">
+    <div class="ctitle">⚠️ Khi nào dùng cái nào</div>
+    <ul>
+      <li><strong>List view (dashboard)</strong> → DTO projection (chỉ load field cần)</li>
+      <li><strong>Detail view (1 entity + đầy đủ relationship)</strong> → @EntityGraph hoặc JOIN FETCH</li>
+      <li><strong>Multiple collection</strong> → @BatchSize (tránh Cartesian product)</li>
+      <li><strong>Pagination</strong> → KHÔNG dùng JOIN FETCH (in-memory pagination). Dùng @EntityGraph trên query đã paginate.</li>
+    </ul>
+  </div>
 </section>
 
-<section id="query-count-test">
-<h3>3.9 Query Count Test: Chống N+1 Tái Phát</h3>
-<p>N+1 dễ quay lại sau refactor. Ngoài review code, nên có integration test đếm query cho endpoint quan trọng bằng datasource-proxy/p6spy hoặc helper nội bộ.</p>
+<section id="antipatterns">
+  <h2>7. 5 Anti-Patterns <span class="phase-tag">CORE ★</span></h2>
 
-<pre><code class="language-java">@Test
-void dashboardShouldNotTriggerNPlusOne() {
-    queryCounter.clear();
+  <div class="callout danger">
+    <div class="ctitle">❌ #1 — EAGER mặc định trên @OneToMany</div>
+    <pre><code class="language-java">// ❌ Mỗi lần load Customer = load all orders
+@OneToMany(fetch = EAGER) List&lt;Order&gt; orders;
 
-    List&lt;ProductCard&gt; cards = service.loadDashboard("camera");
+// ✅ LAZY + fetch theo nhu cầu
+@OneToMany(fetch = LAZY) List&lt;Order&gt; orders;</code></pre>
+  </div>
 
-    assertThat(cards).hasSize(200);
-    assertThat(queryCounter.selectCount()).isLessThanOrEqualTo(5);
+  <div class="callout danger">
+    <div class="ctitle">❌ #2 — JOIN FETCH + pagination</div>
+    <pre><code class="language-java">// ❌ Warning HHH000104, in-memory pagination
+@Query("SELECT o FROM Order o JOIN FETCH o.items")
+List&lt;Order&gt; findAll(Pageable p);   // load ALL rồi paginate in JVM = OOM</code></pre>
+    <p><strong>Fix:</strong> Query 2 phase — query 1 paginate IDs, query 2 fetch với JOIN FETCH theo IDs đó.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #3 — LazyInitializationException</div>
+    <pre><code class="language-java">// ❌ Controller access ngoài @Transactional
+@GetMapping("/orders/{id}")
+public Order get(Long id) {
+    Order o = orderService.findById(id);    // tx kết thúc
+    o.getItems().size();                     // LazyInitializationException
+    return o;
+}
+
+// ✅ DTO mapping trong service (trong tx)
+@GetMapping("/orders/{id}")
+public OrderDto get(Long id) {
+    return orderService.findById(id);   // service trả DTO đã map
 }</code></pre>
+    <p><strong>Anti-fix tệ:</strong> <code>spring.jpa.open-in-view: true</code> — extend tx tới controller. Tiện nhưng giấu bug + lock connection cả request lifetime.</p>
+  </div>
 
-<p>Con số threshold phụ thuộc use case, nhưng test phải bảo vệ shape chính: không từ 3 query nhảy thành 403 query mà CI vẫn xanh.</p>
-</section>
+  <div class="callout danger">
+    <div class="ctitle">❌ #4 — Cartesian product (JOIN FETCH nhiều collection)</div>
+    <pre><code class="language-java">// ❌ JOIN FETCH 2 collection cùng level
+@Query("SELECT o FROM Order o JOIN FETCH o.items JOIN FETCH o.payments")
+List&lt;Order&gt; findAll();
+// Order có 5 item + 3 payment → 1 order = 15 row trong result
+// 100 order = 1500 row → memory + parse chậm</code></pre>
+    <p><strong>Fix:</strong> JOIN FETCH 1 collection + @BatchSize cho cái còn lại. Hoặc 2 query riêng.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">❌ #5 — Không pessimistic lock cho high-value transaction</div>
+    <pre><code class="language-java">// ❌ Race condition: 2 user cùng update inventory
+Inventory inv = repo.findById(productId).get();
+inv.setStock(inv.getStock() - quantity);
+repo.save(inv);
+// 2 tx cùng read stock=10, cùng set stock=8 → lost update
+
+// ✅ Atomic SQL hoặc pessimistic lock
+@Modifying
+@Query("UPDATE Inventory i SET i.stock = i.stock - :qty WHERE i.id = :id AND i.stock &gt;= :qty")
+int decreaseStock(@Param("id") Long id, @Param("qty") int qty);
+// Return 0 nếu không đủ stock → throw business exception</code></pre>
+  </div>
 </section>
 
-<section id="debug">
-<h2>4. Debug Lab</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Triệu chứng</th><th>Câu hỏi</th><th>Công cụ</th></tr></thead>
-  <tbody>
-    <tr><td>Endpoint chậm nhưng không có slow query</td><td>Có N+1 không?</td><td>SQL log, datasource-proxy, p6spy, query count test.</td></tr>
-    <tr><td>LazyInitializationException</td><td>Entity còn attached không?</td><td>Map sang DTO trong transaction hoặc fetch đúng dữ liệu.</td></tr>
-    <tr><td>OOM khi list page</td><td>JOIN FETCH collection + pagination?</td><td>Check Hibernate warning, dùng 2-step fetch.</td></tr>
-    <tr><td>Duplicate rows</td><td>Multiple collection fetch gây cartesian product?</td><td>Fetch một collection, collection khác dùng batch size.</td></tr>
-    <tr><td>Update xong nhưng entity vẫn là giá trị cũ</td><td>Có dùng bulk update bypass persistence context?</td><td>Clear context hoặc reload entity.</td></tr>
-    <tr><td>Query count tăng sau refactor</td><td>Có test bảo vệ query shape không?</td><td>Thêm query count test cho endpoint trọng yếu.</td></tr>
-  </tbody>
-</table>
-</div>
+<section id="three-level">
+  <h2>🎯 3 Cấp Mastery <span class="phase-tag">CORE ★</span></h2>
+  <h3>N+1 detection + fix</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Repository CRUD. Default fetch. "Slow endpoint = DB issue".</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>Bật SQL log → đếm query. Dùng @EntityGraph hoặc JOIN FETCH. Hiểu bẫy pagination + Cartesian.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>DTO projection cho list view. @BatchSize cho many collection. Build read model riêng (CQRS) cho dashboard phức tạp.</p></div>
+  </div>
+
+  <h3>Lock strategy</h3>
+  <div class="three-level">
+    <div class="tier-card t1"><h3>L1</h3><p>Không biết lock. Update kiểu read-modify-write naive.</p></div>
+    <div class="tier-card t2"><h3>L2</h3><p>@Version cho optimistic. Pessimistic cho high-contention. Atomic SQL khi possible.</p></div>
+    <div class="tier-card t3"><h3>L3</h3><p>Hybrid: optimistic + retry 3 lần, fallback pessimistic. Monitor deadlock rate. Design partition để giảm contention.</p></div>
+  </div>
 </section>
 
-<section id="tradeoffs">
-<h2>5. Trade-offs & Anti-Patterns</h2>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP1</span><h4>EAGER Mặc Định</h4></div>
-  <div class="pb"><p><code>@ManyToOne</code> và <code>@OneToOne</code> mặc định EAGER. Trong app lớn, nên explicit LAZY và fetch đúng theo use case.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP2</span><h4>Trả Entity Ra Controller</h4></div>
-  <div class="pb"><p>Entity có lazy association, bidirectional graph, field nội bộ và lifecycle attached/detached. API nên trả DTO.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP3</span><h4>L2 Cache Cho Data Hay Đổi</h4></div>
-  <div class="pb"><p>L2 cache hợp với reference data. Với stock, price realtime, availability, cache sai có thể làm user thấy trạng thái cũ.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP4</span><h4>Open Session In View Để Che Lazy Error</h4></div>
-  <div class="pb"><p>OSIV giữ session mở tới view/controller serialization, làm lazy load xảy ra ngoài service boundary và giấu N+1. Tốt hơn là fetch/map DTO rõ trong transaction.</p></div>
-</div>
+<section id="symptom">
+  <h2>🚨 Symptom → Debug Recipes <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #1 — "Endpoint chậm dù DB không tải"</div>
+    <pre><code class="language-yaml">spring.jpa.show-sql: true
+spring.jpa.properties.hibernate.format_sql: true
+logging.level.org.hibernate.SQL: DEBUG
+# Reproduce → đếm query/request. &gt; 5 query = nghi N+1</code></pre>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #2 — "LazyInitializationException trong production"</div>
+    <p>Access lazy field ngoài transaction. Fix: map sang DTO trong service. Không dùng <code>open-in-view: true</code>.</p>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #3 — "OptimisticLockException rate cao"</div>
+    <p><strong>Symptom:</strong> log show OptimisticLockException 30%+ của update.</p>
+    <p><strong>Fix:</strong></p>
+    <ol>
+      <li>Conflict thực sự high → switch sang pessimistic lock hoặc atomic SQL</li>
+      <li>Hoặc retry 3 lần với exponential backoff (Spring Retry)</li>
+      <li>Hoặc redesign: nếu nhiều user update cùng hot row → partition (split aggregate)</li>
+    </ol>
+  </div>
+
+  <div class="callout danger">
+    <div class="ctitle">🚨 Recipe #4 — "Deadlock detected"</div>
+    <p>2 tx lock 2 row theo thứ tự ngược. Fix: luôn lock theo thứ tự cố định (ORDER BY id). Hoặc <code>SELECT FOR UPDATE NOWAIT</code> + retry.</p>
+  </div>
+</section>
+
+<section id="exercises">
+  <h2>🔧 3 Exercises BẮT BUỘC <span class="phase-tag">CORE ★</span></h2>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #1 — Detect + fix N+1 (2h)</div>
+    <p>Tạo Order + Customer + Items entity. Endpoint list 50 order. Bật SQL log → đếm query. Fix bằng 3 strategy: @EntityGraph, JOIN FETCH, DTO. Đo latency mỗi cách.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #2 — Optimistic lock với retry (1.5h)</div>
+    <p>Entity Account với @Version. 2 thread cùng update balance. Verify OptimisticLockException. Wrap với Spring Retry → succeed eventually.</p></div>
+  <div class="callout warn"><div class="ctitle">🧪 Exercise #3 — Pessimistic vs Atomic SQL (1h)</div>
+    <p>Inventory deduct stock. Test 100 concurrent thread mua 1 product (stock=50). Verify final stock = 0 (không bán quá). So 2 cách: SELECT FOR UPDATE vs atomic UPDATE.</p></div>
 </section>
 
 <section id="interview">
-<h2>6. Interview Framework</h2>
-<div class="tier t1">
-  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">N+1 là gì?</span></div>
-  <p class="a">Là pattern 1 query lấy N parent rows, sau đó N query phụ để load association hoặc data liên quan từng parent. Từng query có thể nhanh nhưng tổng round-trip lớn khiến endpoint chậm.</p>
-</div>
-<div class="tier t2">
-  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">L1 cache khác L2 cache?</span></div>
-  <p class="a">L1 cache thuộc một EntityManager/Session, luôn bật, sống trong transaction/request. L2 cache thuộc SessionFactory, optional, share toàn application. L1 phục vụ identity map và dirty checking; L2 chỉ nên dùng cho data ít đổi và invalidation rõ.</p>
-</div>
-<div class="tier t3">
-  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế read path cho catalog lớn</span></div>
-  <p class="a">Tách write model entity khỏi read model projection. API list/dashboard dùng DTO projection/native query nếu cần window function. Detail page fetch aggregate có kiểm soát. Report nặng chạy trên read replica hoặc async export. Theo dõi query count và index theo query thực tế.</p>
-</div>
+  <h2>🎤 Interview Framework <span class="phase-tag">CORE ★</span></h2>
+  <div class="tier-card t1">
+    <h3>Q: N+1 problem là gì?</h3>
+    <p>1 query parent + N query con cho lazy load association. Vd: load 100 order, mỗi order access customer → 1 + 100 = 101 query. Fix: @EntityGraph, JOIN FETCH, @BatchSize, DTO projection.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>Q: Optimistic vs Pessimistic lock — khi nào dùng?</h3>
+    <p>Optimistic (@Version) — conflict hiếm, read-heavy. Không block DB. Pessimistic (SELECT FOR UPDATE) — high contention, cần guarantee no lost update. Block DB, deadlock risk. Cart update = optimistic + retry. Inventory deduct = atomic SQL hoặc pessimistic.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>Q: Design read model cho dashboard analytics e-commerce</h3>
+    <ol>
+      <li><strong>Read vs write model tách</strong> (CQRS lite): repo read trả DTO, không entity</li>
+      <li><strong>DTO projection</strong> cho list view — chỉ field cần</li>
+      <li><strong>Materialized view</strong> hoặc denormalized table cho aggregate (revenue, top customer)</li>
+      <li><strong>L2 cache</strong> cho reference data ít đổi</li>
+      <li><strong>Read replica</strong> route dashboard query, master cho write</li>
+      <li><strong>JPA only cho transactional write</strong>. Dashboard query dùng jOOQ / native SQL — kiểm soát plan</li>
+      <li><strong>Monitor</strong>: slow query log + pg_stat_statements alert top SQL by time</li>
+    </ol>
+  </div>
 </section>
 
-<section id="checklist">
-<h2>Checklist Thành Thạo</h2>
-<ul>
-  <li>Nhìn code loop + repository/lazy access và chỉ ra N+1.</li>
-  <li>Chọn được JOIN FETCH, EntityGraph, BatchSize hoặc DTO projection theo use case.</li>
-  <li>Giải thích được L1 cache, dirty checking và LazyInitializationException.</li>
-  <li>Biết vì sao JOIN FETCH collection với pagination nguy hiểm.</li>
-  <li>Viết được <code>@Version</code> optimistic lock và <code>@Lock(PESSIMISTIC_WRITE)</code>.</li>
-  <li>Phân biệt entity transient, managed, detached, removed và hệ quả với dirty checking.</li>
-  <li>Biết bulk update bypass persistence context và cần clear/reload sau đó.</li>
-  <li>Viết được query count test để ngăn N+1 quay lại.</li>
-</ul>
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu</h2>
+  <ol>
+    <li><strong>N+1 — cho 1 ví dụ + 2 cách fix.</strong></li>
+    <li><strong>Default fetch của @ManyToOne là gì? Tại sao đây là default tệ?</strong></li>
+    <li><strong>Dirty checking — tại sao không cần gọi save() sau khi sửa field?</strong></li>
+    <li><strong>Optimistic vs Pessimistic lock — quyết định theo factor nào?</strong></li>
+    <li><strong>JOIN FETCH + pagination — vì sao warning HHH000104?</strong></li>
+  </ol>
+  <div class="callout success">
+    <strong>Next:</strong>
+    <ol>
+      <li><a href="10-spring-webflux.html">#10 Spring WebFlux</a></li>
+      <li><a href="11-sql-advanced.html">#11 SQL Advanced</a> — query level optimization</li>
+    </ol>
+  </div>
 </section>
-
-<footer>
-  <span>Phase 2 - Spring Ecosystem</span>
-  <span>Next: #10 Spring WebFlux</span>
-</footer>
 
 </div>
 </main>
@@ -464,6 +477,7 @@ void dashboardShouldNotTriggerNPlusOne() {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>

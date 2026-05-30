@@ -48,6 +48,7 @@
     </div>
     <a href="#decision">5. Decision matrix</a>
     <a href="#interview">6. Interview framework</a>
+    <a href="#feynman">🧠 Feynman test</a>
     <a href="#checklist">Checklist</a>
   </nav>
 </aside>
@@ -80,6 +81,25 @@
   <div class="pillar"><div class="num">Layer 2</div><h4>Guarantee trước keyword</h4><p><code>synchronized</code>, <code>volatile</code>, <code>AtomicInteger</code> không phải "cho thread-safe". Mỗi thứ cho guarantee khác nhau.</p></div>
   <div class="pillar"><div class="num">Layer 3</div><h4>Backpressure trước throughput</h4><p>Thread pool không chỉ để chạy nhanh hơn. Nó còn để giới hạn tải, queue và từ chối task khi hệ thống quá tải.</p></div>
   <div class="pillar"><div class="num">Layer 4</div><h4>Debug bằng evidence</h4><p>Thread dump, pool metrics, queue depth, blocked time và log thread name đáng tin hơn phỏng đoán.</p></div>
+</div>
+
+<div class="roadmap">
+  <div class="roadmap-head">🗺️ Nếu chỉ có X giờ thì học gì</div>
+  <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Race condition vs deadlock (2.3) → 3 guarantee của synchronized/volatile/Atomic (2.4) → đọc thread dump theo state (2.2). Đủ để không viết code sai và đọc được incident.</div>
+  <div class="roadmap-item core"><strong>+2 giờ (CORE ★):</strong> ThreadPoolExecutor 4 tham số + backpressure (2.5, 3.1) → CompletableFuture fan-out có timeout (2.8, 3.3). Đây là phần xuất hiện 95% phỏng vấn senior.</div>
+  <div class="roadmap-item supp"><strong>+2 giờ (SUPPLEMENTARY):</strong> Concurrent collections (2.6), coordination tools (2.7), ThreadLocal leak (2.10), lock contention vs deadlock (4.2).</div>
+  <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> ForkJoin/parallelStream (2.9), virtual threads (2.11), pool starvation (4.3).</div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc tiếp</div>
+  <div class="pause-q">Nhìn lại đoạn code <code>SeatService</code> bán quá 100 ghế ở phần 1. Trả lời ra giấy:</div>
+  <ol>
+    <li>Trong <code>remainingSeats--</code>, đâu là 3 bước máy thực sự làm? Hai thread interleave ở bước nào thì bán dư vé?</li>
+    <li>Nếu thay <code>int</code> bằng <code>volatile int remainingSeats</code> thì có hết bán dư không? Vì sao?</li>
+    <li>Bản <code>AtomicInteger</code> chạy đúng trên 1 JVM. Khi scale lên 3 pod, nó SAI ở đâu?</li>
+  </ol>
+  <div class="pause-hint">Đáp án nằm rải ở 2.1 (3 bước read-modify-write), 2.4 (visibility ≠ atomicity), và câu cuối phần 1. Đừng đọc tiếp khi chưa viết được 3 câu trả lời.</div>
 </div>
 </section>
 
@@ -276,6 +296,34 @@ Thread B: synchronized (lockCoupon) {
 </table>
 </div>
 
+<div class="three-level">
+  <div class="tier-card t1">
+    <h3>L1 — Biết tên</h3>
+    <p>Đọc bảng trên và nhớ được <code>volatile</code>, <code>synchronized</code>, <code>AtomicInteger</code> "đều giúp thread-safe". <em>Symptom hiểu giả:</em> chọn công cụ theo thói quen, hỏi "tại sao volatile không đủ cho count++" thì ấp úng.</p>
+  </div>
+  <div class="tier-card t2">
+    <h3>L2 — Explain được</h3>
+    <p>Tách rõ <strong>visibility</strong> (thread khác có thấy giá trị mới không) khỏi <strong>atomicity</strong> (thao tác có bị chen ngang không). Giải thích: <code>volatile</code> cho visibility nhưng <code>count++</code> vẫn race vì gồm 3 bước; <code>AtomicInteger</code> dùng CAS nên atomic mà không cần lock.</p>
+  </div>
+  <div class="tier-card t3">
+    <h3>L3 — Apply được</h3>
+    <p>Đứng trước một bug thật, chọn đúng guarantee tối thiểu cần: flag dừng worker → <code>volatile</code>; counter thống kê → <code>AtomicLong</code>; invariant nhiều field → <code>synchronized</code>/<code>ReentrantLock</code>; cần timeout để né deadlock → <code>tryLock</code>. Giải thích được trade-off throughput của mỗi lựa chọn.</p>
+  </div>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔧 Counter-example — khi nào KHÔNG nên thêm lock</div>
+  <div class="bi-answer">
+    <p>Lock không phải lúc nào cũng đúng. Ba trường hợp thêm lock là <em>sai hướng</em>:</p>
+    <ul>
+      <li><strong>State vốn không chia sẻ:</strong> biến local trong method đã thread-safe sẵn (mỗi thread có stack riêng). Thêm <code>synchronized</code> chỉ làm chậm, không tăng an toàn.</li>
+      <li><strong>Read-only sau khi khởi tạo:</strong> immutable object (mọi field <code>final</code>, không setter) không cần đồng bộ — đây là cách rẻ nhất để thread-safe. Bọc lock quanh nó là thừa.</li>
+      <li><strong>Chỉ cần atomic 1 biến:</strong> dùng <code>synchronized</code> cho một <code>counter++</code> đơn giản nặng hơn <code>AtomicInteger</code> (lock vs CAS). Chọn lock ở đây = bỏ phí.</li>
+    </ul>
+    <p><em>Quy tắc:</em> trước khi thêm lock, hỏi "có thể loại bỏ shared state / mutability thay vì khóa nó không?". Lock là phương án cuối, không phải đầu tiên.</p>
+  </div>
+</div>
+
 <h4>synchronized vs ReentrantLock</h4>
 <div class="compare">
   <div class="col neutral">
@@ -359,7 +407,19 @@ public boolean addLine(LineItem item) throws InterruptedException {
 </section>
 
 <section id="thread-pool">
-<h3>2.5 ThreadPoolExecutor</h3>
+<h3>2.5 ThreadPoolExecutor <span class="k-tag core">CORE ★</span></h3>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Bạn config <code>new ThreadPoolExecutor(core=10, max=50, queue=LinkedBlockingQueue())</code> (queue mặc định không giới hạn). Lúc cao điểm có 1.000 task đến cùng lúc:</div>
+  <ol>
+    <li>Pool sẽ chạy bao nhiêu thread? 10, 50, hay khác? Vì sao <code>maxPoolSize=50</code> gần như vô dụng ở đây?</li>
+    <li>1.000 task chưa chạy đang nằm ở đâu? Điều gì xảy ra với memory nếu task tiếp tục đến?</li>
+    <li>Đổi sang <code>ArrayBlockingQueue(200)</code> + <code>CallerRunsPolicy</code> thì hành vi thay đổi thế nào khi quá tải?</li>
+  </ol>
+  <div class="pause-hint">Bẫy kinh điển: với unbounded queue, pool KHÔNG bao giờ vượt corePoolSize → max bị bỏ qua, và queue phình tới OOM. Đáp án đầy đủ ở 2.5 và 3.1.</div>
+</div>
+
 <p>Thread pool không tạo thread vô hạn. Nó có core threads, queue, max threads và rejected handler. Câu hỏi phỏng vấn quan trọng: khi nào pool tạo thêm thread? Với nhiều queue implementation, pool sẽ queue task trước, chỉ tạo thêm thread khi queue đầy.</p>
 
 <div class="diagram">
@@ -583,6 +643,17 @@ assertThat(repository.count()).isEqualTo(1);</code></pre>
 
 <section id="future">
 <h3>2.8 CompletableFuture</h3>
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict</div>
+  <div class="pause-q">Một endpoint product page gọi 3 service: product, reviews, recommendation. Trả lời:</div>
+  <ol>
+    <li>Gọi tuần tự mất 300+200+250ms. Gọi song song bằng CompletableFuture mất bao lâu (lý tưởng)? Công thức?</li>
+    <li>Bạn viết <code>supplyAsync(...)</code> không truyền executor. Task chạy trên pool nào, và vì sao điều đó nguy hiểm khi có nhiều blocking call?</li>
+    <li><code>thenApply</code> vs <code>thenApplyAsync</code> khác nhau ở thread nào chạy stage? Khi nào sự khác biệt này gây bug khó tìm?</li>
+  </ol>
+  <div class="pause-hint">Gợi ý: song song ≈ max(300,200,250)=300ms. <code>supplyAsync</code> không executor → <code>ForkJoinPool.commonPool()</code> (số thread = CPU-1), blocking call sẽ làm cạn pool dùng chung toàn JVM. Đáp án ở 2.8 và 3.3.</div>
+</div>
+
 <p><code>CompletableFuture</code> giúp compose async tasks. Hãy nhớ ba cặp khái niệm:</p>
 <ul>
   <li><code>thenApply</code>: biến <code>T</code> thành <code>R</code>; <code>thenCompose</code>: biến <code>T</code> thành <code>CompletableFuture&lt;R&gt;</code> rồi flatten.</li>
@@ -1111,6 +1182,14 @@ private static void await(CountDownLatch latch) {
     }
 }</code></pre>
 
+<div class="build-exercise">
+  <div class="be-head">🛠️ Lab bắt buộc — reproduce &amp; fix (2 bài)</div>
+  <div class="be-deliverable">
+    <p><strong>Lab 1 — Bắt race condition tận mắt.</strong> Viết <code>UnsafeCounter</code> với <code>int count; void increment(){count++;}</code>. Chạy 10 thread, mỗi thread <code>increment()</code> 100.000 lần. Assert kết quả &lt; 1.000.000 (chứng minh mất update). Sau đó đổi sang <code>AtomicInteger</code>, chạy lại, assert == 1.000.000. Tiêu chí: giải thích được vì sao bản đầu mất update bằng đúng 3 bước read-modify-write.</p>
+    <p><strong>Lab 2 — Gây và quan sát pool saturation.</strong> Tạo <code>ThreadPoolExecutor(core=2, max=2, ArrayBlockingQueue(2), AbortPolicy)</code>. Submit 10 task mỗi task <code>sleep(1s)</code>. Quan sát: bao nhiêu task chạy, bao nhiêu vào queue, bao nhiêu bị <code>RejectedExecutionException</code>. Tiêu chí: dự đoán đúng con số (2 chạy + 2 queue + 6 reject) <em>trước</em> khi chạy, rồi đổi sang <code>CallerRunsPolicy</code> và giải thích hành vi đổi thế nào.</p>
+  </div>
+</div>
+
 <h3>4.5 Checklist Khi Thread Pool Saturated</h3>
 <ol>
   <li>Xác định pool nào saturated qua thread name và metric.</li>
@@ -1151,6 +1230,20 @@ private static void await(CountDownLatch latch) {
 <div class="tier t3">
   <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Thiết kế checkout không oversell trong multi-instance</span></div>
   <p class="a">Không dựa vào lock trong JVM. Đưa consistency về database bằng optimistic/pessimistic lock trên row stock, hoặc dùng atomic reservation command ở storage chung. Thêm idempotency key để request retry không tạo reservation đôi. Thread pool chỉ điều tiết tải, không thay thế consistency boundary.</p>
+</div>
+</section>
+
+<section id="feynman">
+<div class="feynman">
+  <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+  <ol class="fy-prompt">
+    <li>Vì sao bug concurrency lại "khó reproduce" trong khi code không hề đổi? Giải thích bằng từ <em>interleaving</em>.</li>
+    <li>Phân biệt race condition và deadlock bằng một ví dụ flash-sale, và nói cách nhận ra mỗi loại trong thread dump.</li>
+    <li><code>volatile</code> cho bạn cái gì và KHÔNG cho cái gì? Vì sao nó không cứu được <code>count++</code>?</li>
+    <li>Khi nào ThreadPoolExecutor tạo thread thứ 11 (với core=10)? Vì sao <code>newFixedThreadPool</code> có thể OOM?</li>
+    <li>Một service chạy 3 instance. Vì sao <code>synchronized</code> không còn chống được oversell, và bạn đưa consistency về đâu?</li>
+  </ol>
+  <div class="fy-rule">Bí một câu = quay lại đúng section đó. Nói trôi cả 5 câu không nhìn tài liệu = nắm chắc bài này.</div>
 </div>
 </section>
 

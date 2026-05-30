@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#2 Systems Thinking | Cổ Trùng Chi Tiết</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="crumb"><a href="index.html">Cổ Trùng</a><span class="sep">›</span><span>TIER S</span><span class="sep">›</span><span class="current">#2 Systems Thinking</span></div>
+  <button class="theme-toggle" id="themeToggle">🌓</button>
+  <button class="menu-toggle" id="menuToggle">☰</button>
+</div>
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <nav class="toc">
+    <div class="toc-title">Trong file</div>
+    <a href="#illusion">⚠️ Cảnh báo hiểu giả</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#essence">1. Bản chất + Bài toán</a>
+    <a href="#concepts">2. 5 Khái niệm cốt lõi</a>
+    <a href="#stock-flow">— Stock &amp; Flow</a>
+    <a href="#feedback">— Feedback Loop</a>
+    <a href="#leverage">— Leverage Point</a>
+    <a href="#emergence">— Emergence</a>
+    <a href="#bottleneck">— Bottleneck</a>
+    <a href="#start">3. Khởi điểm</a>
+    <a href="#practice">4. 30/60/90 ngày</a>
+    <a href="#three-level">🎯 3 cấp độ Mastery</a>
+    <a href="#lab">🧪 3 Lab áp dụng</a>
+    <a href="#feynman">🧠 Feynman test</a>
+    <a href="#pin">📌 Câu nói ghim</a>
+  </nav>
+</aside>
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">#2 · TIER S · Cổ Trùng Nền Tảng</span>
+  <h1>Systems Thinking — Formalize trực giác hệ thống</h1>
+  <p class="lead">Nhân đã có "composability instinct" tự nhiên (yêu Cổ Chân Nhân, yêu cách Phương Nguyên build cổ trận). Nhưng instinct chưa formalize → khi gặp vấn đề mới không apply được. Cổ trùng này biến instinct thành toolkit dùng được trên mọi project.</p>
+  <div class="hero-tags">
+    <span class="phase-tag">TIER S · CORE ★</span>
+    <span class="phase-tag">90 ngày tu luyện</span>
+    <span class="phase-tag">Stock-Flow-Loop-Leverage-Emergence-Bottleneck</span>
+  </div>
+</section>
+
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả"</h2>
+  <p>Systems Thinking là 1 trong những chủ đề bị lạm dụng buzzword nhiều nhất. Bạn rơi vào hiểu giả nếu:</p>
+  <ul>
+    <li>Biết "feedback loop" — nhưng vẽ workflow chỉ là chuỗi tuyến tính A→B→C, không có mạch quay lại</li>
+    <li>Biết "bottleneck" — nhưng vẫn lao vào tăng skill phần đã giỏi, thay vì fix phần yếu nhất</li>
+    <li>Biết "leverage point" — nhưng tốn 80% năng lượng vào parameter (hạng 12) thay vì paradigm (hạng 2)</li>
+    <li>Vẽ system map đẹp trên Miro — nhưng không dùng nó để ra quyết định khác</li>
+  </ul>
+  <div class="callout danger">
+    <div class="ctitle">🚨 3 cấp độ — bạn đang ở đâu?</div>
+    <p><strong>L1 (Recognize):</strong> nhớ tên 5 khái niệm, gật gù khi đọc Donella Meadows.<br>
+    <strong>L2 (Explain):</strong> trước project mới, tự vẽ Stock-Flow-Loop. Phát hiện 1 reinforcing loop hoặc bottleneck trước khi code.<br>
+    <strong>L3 (Apply):</strong> Khi nói chuyện với khách Upwork, bạn dùng "leverage point của workflow này là X" — họ trả thêm tiền vì insight đó. Bạn đã thoát hạng $20/h.</p>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>🗺️ Roadmap — Đọc theo độ ưu tiên</h2>
+  <p>Nếu chỉ có <strong>1 buổi 2h</strong>: bản chất + 5 khái niệm cốt lõi + 1 Lab (system map cho project hiện tại).</p>
+  <p>Nếu có <strong>2 tuần</strong>: thêm đọc <em>Thinking in Systems</em>.</p>
+  <p>Nếu có <strong>3 tháng</strong>: full 30/60/90 + 4 quyển sách.</p>
+  <table>
+    <thead><tr><th>#</th><th>Section</th><th>Priority</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Bản chất + Bài toán tuyến tính vs hệ thống</td><td><span class="phase-tag">CORE ★</span></td><td>10min</td></tr>
+      <tr><td>2</td><td>Stock &amp; Flow</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>3</td><td>Feedback Loop (Reinforcing + Balancing)</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+      <tr><td>4</td><td>Leverage Point (12 hạng)</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>5</td><td>Emergence</td><td>SUPPLEMENTARY</td><td>10min</td></tr>
+      <tr><td>6</td><td>Bottleneck (TOC)</td><td><span class="phase-tag">CORE ★</span></td><td>15min</td></tr>
+      <tr><td>7</td><td>Practice 30/60/90 + Lab</td><td><span class="phase-tag">CORE ★</span></td><td>20min</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="essence">
+  <h2>1. Bản chất — Tư duy tuyến tính vs tư duy hệ thống <span class="phase-tag">CORE ★</span></h2>
+  <p><strong>Systems Thinking</strong> = "Tư duy hệ thống". Là cách nhìn thế giới như <strong>các hệ thống có nhiều phần móc nối nhau</strong>, thay vì chuỗi nhân-quả tuyến tính.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0;">
+    <div class="callout warn">
+      <div class="ctitle">❌ Tư duy tuyến tính</div>
+      <p><em>"Tôi tăng quảng cáo → có nhiều khách → có nhiều tiền."</em></p>
+      <p>3 mũi tên thẳng, hết.</p>
+    </div>
+    <div class="callout success">
+      <div class="ctitle">✅ Tư duy hệ thống</div>
+      <p><em>"Tôi tăng quảng cáo → có nhiều khách → đội support quá tải → khách trải nghiệm tệ → review xấu → khách mới tin tưởng giảm → tổng khách giảm sau 3 tháng."</em></p>
+      <p>Mạch xoay vòng, có balancing loop tự huỷ.</p>
+    </div>
+  </div>
+
+  <p>→ 2 cách nhìn dẫn đến <strong>2 quyết định khác nhau hoàn toàn</strong>. Tuyến tính sẽ đề xuất "tăng ngân sách quảng cáo gấp đôi". Hệ thống sẽ đề xuất "fix bottleneck support trước, rồi mới tăng quảng cáo".</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Project gần nhất của bạn</div>
+    <div class="pause-q">Pick 1 project / workflow đang làm. Trả lời:</div>
+    <ol>
+      <li>Bạn đang nghĩ về nó như chuỗi tuyến tính hay hệ thống?</li>
+      <li>Output ở đâu có thể quay lại làm input (feedback loop ẩn)?</li>
+      <li>Tăng X có thể làm Y giảm theo cách bạn chưa nghĩ tới?</li>
+    </ol>
+    <div class="pause-hint">Nếu không trả lời được câu 2-3 = đang tư duy tuyến tính.</div>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>2. Khái niệm cốt lõi — terminology phải thuộc lòng <span class="phase-tag">CORE ★</span></h2>
+</section>
+
+<section id="stock-flow">
+  <h3>Khái niệm #1 — Stock &amp; Flow (Kho và Dòng)</h3>
+  <ul>
+    <li><strong>Stock</strong> = "Kho" — số lượng tích luỹ tại một thời điểm. Ví dụ: số tiền trong tài khoản, số khách hàng, số code lines, số follower.</li>
+    <li><strong>Flow</strong> = "Dòng" — tốc độ thay đổi của Stock. Ví dụ: tiền vào/ra mỗi tháng, khách mới/khách rời, code thêm/xoá, follower mới/unfollow.</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="ctitle">🎯 Quy tắc vàng</div>
+    <p>Muốn Stock tăng → tăng Flow vào HOẶC giảm Flow ra. <strong>80% người làm sai vì chỉ chú ý Flow vào.</strong></p>
+  </div>
+
+  <h4>Áp dụng cho Nhân</h4>
+  <ul>
+    <li><strong>"Stock kỹ năng AI" tăng</strong> → có 2 cách: <em>học thêm</em> (Flow vào) HOẶC <em>dùng skill đã có thật nhiều</em> (giảm forgetting — Flow ra).</li>
+    <li>Người chỉ học mãi nhưng không dùng → Stock không tăng vì Flow ra (forgetting) cao bằng Flow vào.</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="ctitle">❌ Counter-example — Khi chỉ optimize Flow vào</div>
+    <p>Học course mới mỗi tháng (Flow vào tăng) nhưng không ship project (Flow ra = forgetting cao) → 6 tháng sau Stock vẫn 0.</p>
+    <p><strong>Đúng:</strong> Học 1 thứ → ship 3 lần → mới học cái tiếp. Tỷ lệ học/dùng ~1:3.</p>
+  </div>
+</section>
+
+<section id="feedback">
+  <h3>Khái niệm #2 — Feedback Loop (Vòng phản hồi)</h3>
+  <p>Là <strong>mạch xoay vòng</strong> — output của hệ thống quay lại làm input. Có 2 loại.</p>
+
+  <div class="callout danger">
+    <div class="ctitle">🔁 Reinforcing Loop (Vòng gia cố) = "Càng nhiều càng nhiều"</div>
+    <ul>
+      <li><strong>Tích cực:</strong> Tiền có lãi → có nhiều tiền hơn → lãi nhiều hơn → ... (compound interest)</li>
+      <li><strong>Tiêu cực:</strong> Ít sleep → mệt → cafe nhiều → khó ngủ → ít sleep hơn nữa</li>
+    </ul>
+  </div>
+
+  <div class="callout info">
+    <div class="ctitle">⚖️ Balancing Loop (Vòng cân bằng) = "Tự điều chỉnh về điểm cố định"</div>
+    <ul>
+      <li>Ăn nhiều → no → ngừng ăn → đói → ăn lại</li>
+      <li>Nhiệt độ cơ thể: nóng → đổ mồ hôi → mát → ngừng đổ mồ hôi</li>
+      <li>Market share tăng → đối thủ phản ứng → market share giảm về cân bằng</li>
+    </ul>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">💡 Áp dụng cho Nhân</div>
+    <p><strong>Vòng gia cố tích cực cần build:</strong></p>
+    <p>ship 1 thứ → có feedback → improve → ship cái tiếp tốt hơn → có khán giả → có khách → có nhiều ship cơ hội</p>
+    <p><strong>Vòng gia cố tiêu cực cần phá (đã viết trong Sổ tay):</strong></p>
+    <p>lo âu → TikTok escape → guilt → lo âu lớn hơn → escape lớn hơn → ...</p>
+    <p><em>Cách phá vòng tiêu cực:</em> không phải "cố gắng hơn" mà <strong>chèn 1 hành động khác vào mạch</strong>. Ví dụ: thay TikTok bằng 5 phút breath protocol → mạch tự gãy.</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict</div>
+    <div class="pause-q">Trong 1 tuần gần đây của bạn, identify:</div>
+    <ol>
+      <li>1 reinforcing loop tích cực bạn đang có (kể cả nhỏ)</li>
+      <li>1 reinforcing loop tiêu cực bạn đang vướng</li>
+      <li>1 balancing loop bạn không nhận ra (ví dụ: cố push hard → mệt → push ít hơn → mọi thứ vẫn về cân bằng cũ)</li>
+    </ol>
+  </div>
+</section>
+
+<section id="leverage">
+  <h3>Khái niệm #3 — Leverage Point (Điểm đòn bẩy)</h3>
+  <p>Donella Meadows liệt kê <strong>12 điểm đòn bẩy</strong> trong 1 hệ thống, sắp xếp theo <strong>độ tác động tăng dần</strong>:</p>
+
+  <table>
+    <thead><tr><th>Hạng</th><th>Loại</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td>12 <em>(yếu nhất)</em></td><td>Thông số (constants, parameters)</td><td>Tăng giá 10%</td></tr>
+      <tr><td>9</td><td>Buffer / Stock size</td><td>Mở thêm chi nhánh</td></tr>
+      <tr><td>6</td><td>Feedback loop strength</td><td>Cải thiện hệ thống review</td></tr>
+      <tr><td>4</td><td>Self-organization</td><td>Cho team tự quyết định cách làm</td></tr>
+      <tr><td>3</td><td>Goals</td><td>Đổi mục tiêu công ty</td></tr>
+      <tr><td>2</td><td>Mindset / Paradigm</td><td>Đổi cách công ty nghĩ về thành công</td></tr>
+      <tr><td>1 <em>(mạnh nhất)</em></td><td>Khả năng vượt qua paradigm</td><td>Sẵn sàng từ bỏ mọi assumption</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout danger">
+    <div class="ctitle">🎯 Insight quan trọng nhất</div>
+    <p><strong>90% người làm việc ở hạng 9-12 (parameter)</strong>. Hiệu quả nhất là hạng 1-3 (mindset, goals, paradigm).</p>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">💡 Áp dụng cho Upwork của Nhân</div>
+    <ul>
+      <li><strong>Hạng 12 (parameter):</strong> tăng 10 connects/ngày. Tốn năng lượng, kết quả nhỏ.</li>
+      <li><strong>Hạng 6 (loop):</strong> cải thiện template proposal, follow-up tốt hơn. Tốt hơn.</li>
+      <li><strong>Hạng 3 (goals):</strong> đổi positioning từ "Backend Java dev generic" sang "AI Voice Agent specialist". Leverage gấp 100 lần — vì sân chơi khác, đối thủ khác, giá khác.</li>
+      <li><strong>Hạng 2 (paradigm):</strong> đổi từ "tôi bán giờ" sang "tôi bán outcome (X% conversion uplift)". Đột phá pricing $200-500/h.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="emergence">
+  <h3>Khái niệm #4 — Emergence (Đột hiện) <span class="phase-tag">SUPPLEMENTARY</span></h3>
+  <p><strong>Emergence</strong> = tính chất xuất hiện ở hệ thống tổng nhưng không có ở các phần. Tức tổng &gt; tổng các phần.</p>
+
+  <h4>Ví dụ</h4>
+  <ul>
+    <li>1 con kiến không thông minh. 1 đàn kiến <strong>emergent</strong> thông minh tập thể (xây tổ phức tạp).</li>
+    <li>1 nơ-ron không có ý thức. 100 tỷ nơ-ron <strong>emergent</strong> ý thức.</li>
+    <li>1 cổ trùng riêng lẻ yếu. 1 cổ trận <strong>emergent</strong> sát chiêu mạnh.</li>
+    <li>1 tool LLM giới hạn. Multi-agent với role + memory <strong>emergent</strong> được task complex.</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="ctitle">💡 Vì sao đây là composability instinct của Nhân</div>
+    <p>Bạn yêu Cổ Chân Nhân vì hệ này = pure emergence. Phương Nguyên build cổ trận = compose cổ trùng đơn để có sát chiêu hệ thống. Đây là <strong>cùng nguyên lý với multi-agent AI system</strong> bạn sắp build (Upwork niche).</p>
+    <p>Khi nói với khách: "Tôi không build single AI agent, tôi compose system of agents để emergent outcome bạn cần" — đây là language của senior, không phải freelancer thường.</p>
+  </div>
+</section>
+
+<section id="bottleneck">
+  <h3>Khái niệm #5 — Bottleneck (Cổ chai)</h3>
+  <p><strong>Bottleneck</strong> = phần yếu nhất hạn chế toàn bộ hệ thống. <strong>Tốc độ hệ thống = tốc độ của bottleneck.</strong></p>
+
+  <p><strong>Theory of Constraints (TOC)</strong> của Eli Goldratt:</p>
+  <div class="callout quote">
+    <p><em>"Tăng năng lực bất kỳ phần nào ngoài bottleneck là vô ích, có khi còn hại."</em></p>
+  </div>
+
+  <div class="callout success">
+    <div class="ctitle">💡 Áp dụng cho hệ thống "Nhân kiếm tiền AI"</div>
+    <p>Hệ thống có những phần:</p>
+    <ol>
+      <li>Skill kỹ thuật (Java/AI) — đã rất mạnh</li>
+      <li>Profile/portfolio — mỏng</li>
+      <li>Marketing/visibility — gần như 0</li>
+      <li>Sales/proposal — chưa từng làm</li>
+      <li>Delivery — giỏi</li>
+    </ol>
+    <p><strong>Bottleneck = visibility/ship</strong>, KHÔNG phải skill.</p>
+    <p>→ Học thêm skill lúc này = <strong>vô ích</strong>. Tốc độ kiếm tiền = tốc độ ship public + visibility, không phải tốc độ skill.</p>
+    <p>→ Action đúng: 1 project ship public/tuần > 10h học skill mới.</p>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">❌ Counter-example — Khi sai bottleneck</div>
+    <p>Junior dev có skill tốt nhưng giao tiếp kém với khách. Họ học thêm framework mới. Wrong bottleneck — phải fix communication trước.</p>
+    <p>Restaurant đông khách nhưng bếp chậm. Chủ thuê thêm waiter (parameter). Wrong — phải scale bếp (bottleneck).</p>
+  </div>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — Tìm bottleneck của hệ thống bạn</div>
+    <div class="pause-q">Pick 1 mục tiêu hiện tại (ví dụ: kiếm 25-40tr/tháng). List 5-7 phần của hệ thống. Đánh giá mỗi phần "mạnh/yếu". Identify:</div>
+    <ol>
+      <li>Bottleneck là phần nào?</li>
+      <li>1 tuần qua bạn đã tốn năng lượng vào bottleneck hay phần khác?</li>
+      <li>Nếu fix bottleneck, output hệ thống tăng bao nhiêu %?</li>
+    </ol>
+    <div class="pause-hint">Nếu &gt; 70% năng lượng vào phần đã giỏi = wrong bottleneck = wasted effort.</div>
+  </div>
+</section>
+
+<section id="start">
+  <h2>3. Khởi điểm cụ thể <span class="phase-tag">CORE ★</span></h2>
+  <p><strong>Đọc theo thứ tự:</strong></p>
+  <ol>
+    <li><em>Thinking in Systems</em> — Donella Meadows. ~200 trang. Gấp gáp đọc trong 2 tuần. <strong>Đây là nền tảng.</strong></li>
+    <li><em>The Goal</em> — Eliyahu Goldratt. Tiểu thuyết về Theory of Constraints. Đọc nhanh, dễ tiêu hoá.</li>
+    <li><em>The Fifth Discipline</em> — Peter Senge. Chỉ chương 1-7 (phần systems). Bỏ phần management.</li>
+    <li><em>Complexity: A Guided Tour</em> — Melanie Mitchell. Cấp cao hơn, đọc khi muốn đào sâu emergence.</li>
+  </ol>
+</section>
+
+<section id="practice">
+  <h2>4. Thực hành 30/60/90 ngày <span class="phase-tag">SUPPLEMENTARY</span></h2>
+
+  <h3>30 ngày</h3>
+  <ul>
+    <li>Đọc <em>Thinking in Systems</em>. Mỗi chương, vẽ ra 1 hệ thống trong đời mình bằng diagram (Stock-Flow-Loop).</li>
+  </ul>
+
+  <h3>60 ngày</h3>
+  <ul>
+    <li>Apply tools: với mỗi project, vẽ system map <strong>trước khi code</strong>. Lý do: bạn sẽ phát hiện vấn đề thiết kế trước khi tốn thời gian build.</li>
+    <li>Find your bottleneck. Mỗi tuần hỏi: <em>"Bottleneck của hệ thống Nhân-kiếm-tiền lúc này là gì? Tôi đang tốn năng lượng vào bottleneck hay cái khác?"</em></li>
+  </ul>
+
+  <h3>90 ngày</h3>
+  <ul>
+    <li>Khi nói chuyện với khách Upwork: <em>"Tôi vẽ system map của workflow hiện tại của bạn"</em> + <em>"Đây là leverage point mà nhiều người miss"</em>. Đây là ngôn ngữ của senior consultant — charge $50-100/h thay vì $20.</li>
+  </ul>
+</section>
+
+<section id="three-level">
+  <h2>🎯 3 Cấp Độ Mastery <span class="phase-tag">CORE ★</span></h2>
+
+  <h3>Feedback Loop</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Biết khái niệm. Nhận diện được khi đọc case study. Nhưng trong life của mình vẽ flow vẫn chuỗi tuyến tính.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Tự identify 1 reinforcing loop tiêu cực mình đang vướng. Tự design intervention (chèn action khác vào mạch) để phá vòng.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Trước mọi quyết định lớn, brain tự hỏi "output có quay lại làm input ở đâu không?". Build vòng gia cố tích cực có chủ đích (ship → feedback → improve → ship lớn hơn).</p>
+    </div>
+  </div>
+
+  <h3>Bottleneck (TOC)</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Biết "bottleneck = phần yếu nhất". Vẫn lao vào improve phần đã giỏi vì nó vui hơn.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Mỗi tuần tự audit "bottleneck tuần này là gì?". Chống lại impulse improve phần dễ. Chuyển effort sang phần khó nhưng đúng bottleneck.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Khi review system của khách, identify bottleneck của họ trong &lt; 15 phút. Đây là leverage để charge premium price — họ không thấy được điều bạn thấy.</p>
+    </div>
+  </div>
+
+  <h3>Leverage Point</h3>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Recognize</h3>
+      <p>Đọc 12 hạng của Meadows, gật gù. Nhưng vẫn dùng 80% effort ở hạng 9-12 (tweak parameter).</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain</h3>
+      <p>Trước action, tự hỏi "đây là hạng mấy?". Ưu tiên hạng 3-6 hơn hạng 9-12. Đôi khi dừng action ở parameter để move lên goals/loops.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply</h3>
+      <p>Identify hạng 2-3 (mindset/goals) trong hệ thống của khách. Sell consulting based on paradigm shift, không phải parameter tune. Đột phá giá.</p>
+    </div>
+  </div>
+</section>
+
+<section id="lab">
+  <h2>🧪 3 Lab Áp Dụng <span class="phase-tag">CORE ★</span></h2>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #1 — System Map cho project hiện tại (2h)</div>
+    <ol>
+      <li>Pick 1 project / workflow bạn đang làm</li>
+      <li>Vẽ tay trên giấy: identify all Stocks (số) và Flows (mũi tên)</li>
+      <li>Tìm 2 feedback loop ẩn (output quay lại đâu)</li>
+      <li>Identify bottleneck (phần yếu nhất hạn chế tổng)</li>
+      <li>So sánh: trước khi vẽ map vs sau — quyết định bạn sẽ khác không?</li>
+    </ol>
+    <p><strong>Exit:</strong> Map identify ≥ 1 thứ bạn chưa nghĩ tới trước đó.</p>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #2 — Bottleneck Audit (1 tuần)</div>
+    <ol>
+      <li>Định mục tiêu chính của bạn lúc này (ví dụ: ship 1 Upwork project)</li>
+      <li>List 5-7 phần của hệ thống</li>
+      <li>Đánh giá mỗi phần "mạnh/yếu" — identify bottleneck</li>
+      <li>1 tuần: ghi mỗi block 25 phút work — đang spend cho phần nào?</li>
+      <li>Cuối tuần: % effort spent on bottleneck vs other?</li>
+    </ol>
+    <p><strong>Exit:</strong> &gt; 60% effort cho bottleneck. Nếu &lt;, refactor cách prioritize.</p>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">🧪 Lab #3 — Leverage Point Decision (3 ngày)</div>
+    <ol>
+      <li>Pick 1 area đang stuck (vd: Upwork không có khách)</li>
+      <li>List 5 action bạn nghĩ làm sẽ giúp</li>
+      <li>Đánh hạng Meadows (12-1) cho mỗi action</li>
+      <li>Nếu phần lớn ở hạng 9-12 → bạn đang tweak parameter</li>
+      <li>Tự forced: chọn 1 action hạng 1-4 thay vào → commit 3 ngày làm cái đó</li>
+    </ol>
+    <p><strong>Exit:</strong> Sau 3 ngày, có insight về paradigm/goals/loop mới mà 5 parameter tweak không cho được.</p>
+  </div>
+</section>
+
+<section id="feynman">
+  <h2>🧠 Feynman Test — 5 câu giải thích</h2>
+  <ol>
+    <li><strong>Tư duy hệ thống khác tư duy tuyến tính ở đâu? Cho 1 ví dụ trong đời sống VN.</strong></li>
+    <li><strong>Reinforcing loop khác Balancing loop. Cho 1 ví dụ mỗi loại từ chính cuộc sống bạn.</strong></li>
+    <li><strong>Theory of Constraints nói gì? Tại sao "improve phần đã giỏi" là wasted effort?</strong></li>
+    <li><strong>Tại sao Meadows xếp paradigm (hạng 2) cao hơn parameter (hạng 12)?</strong></li>
+    <li><strong>Composability instinct của bạn (yêu Cổ Chân Nhân) liên quan emergence như nào?</strong></li>
+  </ol>
+  <div class="callout success">
+    <div class="ctitle">✅ Pass criteria</div>
+    <p>5/5 trong &lt; 10 phút = sẵn sàng dùng Systems Thinking trong consulting + own project. &lt; 4/5 → quay lại section bí.</p>
+  </div>
+</section>
+
+<section id="pin">
+  <h2>📌 Câu nói ghim</h2>
+  <div class="callout quote">
+    <p><em>"You think because you understand 'one' you must understand 'two', because one and one make two. But you forget that you must also understand 'and'."</em></p>
+    <p>— Sufi proverb</p>
+  </div>
+  <div class="callout quote">
+    <p><em>"Structure produces behavior."</em></p>
+    <p>— Donella Meadows. Nghĩa: <strong>muốn đổi hành vi của hệ thống → đổi cấu trúc, không phải ép thêm ý chí</strong>.</p>
+  </div>
+
+  <div class="callout success">
+    <strong>Next steps:</strong>
+    <ol>
+      <li><a href="03-ai-agent-engineering.html">#3 AI Agent Engineering</a> — niche nghề nghiệp</li>
+      <li><a href="01-stoicism-daoism.html">#1 Stoicism × Daoism</a> — back to nền tảng cảm xúc</li>
+      <li><a href="index.html">← Về Index Cổ Trùng</a></li>
+    </ol>
+    <p><strong>Khi sẵn sàng chuyển #3:</strong> 3 labs xong + Feynman ≥ 4/5 + Đã đọc 50 trang Thinking in Systems.</p>
+  </div>
+</section>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

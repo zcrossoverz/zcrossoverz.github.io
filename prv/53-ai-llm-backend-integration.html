@@ -32,7 +32,7 @@
       <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
       <a href="#real-problem">1. Bài toán: chatbot bịa &amp; tốn token</a>
       <div class="toc-section">Mental models</div>
-      <a href="#llm">2.1 LLM cho backend dev</a>
+      <a href="#llm">2.1 LLM là gì cho backend dev</a>
       <a href="#embedding">2.2 Embedding + vector DB</a>
       <a href="#rag">2.3 RAG pipeline</a>
       <a href="#prompt">2.4 Prompt engineering</a>
@@ -57,7 +57,7 @@
   <div class="meta-tag">Nhóm L · AI Integration · File chống hiểu giả</div>
   <h1>AI/LLM Backend — RAG, Embedding, Function Calling</h1>
   <p class="lead">
-    "Gọi API OpenAI là xong AI" là hiểu giả tốn tiền &amp; bịa đặt. Backend dev cần hiểu: LLM <em>stateless &amp; không có kiến thức riêng của bạn</em> → vì sao chatbot bịa; <em>embedding/vector search</em> để đưa đúng context; <em>RAG</em> để trả lời theo dữ liệu thật; <em>function calling</em> để LLM gọi API thật. File này dạy các mảnh đó kèm code Spring AI/pgvector, cho <strong>ShopFlow</strong> — chatbot hỗ trợ khách của sàn e-commerce.
+    "Gọi API OpenAI là xong AI" là hiểu giả tốn tiền &amp; bịa đặt. File này giải thích vì sao LLM <em>stateless &amp; không biết dữ liệu của bạn</em> nên hay bịa, embedding/vector search hoạt động ra sao, RAG đưa đúng context thế nào, và function calling thực ra ai chạy code — đọc một lần là hiểu kiến trúc sản phẩm AI. Domain: <strong>ShopFlow</strong> — chatbot hỗ trợ khách của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Build RAG chatbot + agent đúng, kiểm soát hallucination &amp; cost</div>
@@ -71,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Hỏi LLM về dữ liệu công ty mình, nó tự biết trả lời."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> LLM chỉ biết dữ liệu lúc train, KHÔNG biết DB/tài liệu của bạn → nó <em>bịa</em> (hallucinate) một cách tự tin. Phải đưa context liên quan vào prompt (RAG). LLM là "bộ suy luận theo context", không phải "kho kiến thức của bạn".</div>
+    <div class="mc-right"><strong>Thực tế:</strong> LLM chỉ "biết" những gì có trong dữ liệu lúc train (tới một mốc thời gian) — nó KHÔNG truy cập DB/tài liệu nội bộ của bạn. Khi bị hỏi điều nó không biết, vì LLM sinh văn bản theo xác suất (đoán từ tiếp theo có khả năng cao nhất), nó <em>bịa</em> (hallucinate) một câu trả lời nghe rất thuyết phục mà sai. LLM là "bộ suy luận theo context", không phải "kho kiến thức của bạn".</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "RAG = nhét cả tài liệu vào prompt cho chắc."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Context window có hạn + tính tiền theo token. Phải <em>tìm đúng đoạn liên quan</em> bằng embedding + vector search (semantic), rồi chỉ đưa top-K đoạn vào prompt. Nhét hết = đắt, chậm, và "lost in the middle" làm LLM bỏ sót.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Context window (lượng text LLM nhận được) có hạn, và tính tiền theo token. Nhét hết tài liệu → đắt, chậm, và hiện tượng "lost in the middle" (LLM chú ý kém phần giữa context dài) làm nó bỏ sót. RAG đúng là <em>tìm đúng vài đoạn liên quan nhất</em> bằng embedding + vector search rồi chỉ đưa top-K đoạn đó vào prompt.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Function calling là LLM tự chạy code của mình."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> LLM KHÔNG chạy gì. Nó chỉ <em>trả về JSON</em> nói "nên gọi hàm X với tham số Y"; <em>code backend của bạn</em> mới thực thi, rồi đưa kết quả lại cho LLM. Bạn kiểm soát mọi side-effect — và phải validate vì LLM có thể chọn sai hàm/tham số hoặc bị prompt injection.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> LLM KHÔNG chạy gì cả. Nó chỉ <em>trả về một JSON</em> nói "nên gọi hàm X với tham số Y". <em>Code backend của bạn</em> mới quyết định có thực thi không, thực thi thế nào, rồi đưa kết quả lại cho LLM viết câu trả lời. Bạn kiểm soát mọi side-effect — và phải validate vì LLM có thể chọn sai hàm/tham số hoặc bị prompt injection.</div>
   </div>
 </section>
 
@@ -96,7 +96,7 @@
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — chatbot bịa &amp; tốn token <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow build chatbot hỗ trợ "chính sách đổi trả, tình trạng đơn". Bản đầu gọi thẳng LLM → nó bịa chính sách không có thật, không biết đơn của khách. Bản hai nhét toàn bộ FAQ + lịch sử đơn vào prompt → đúng hơn nhưng mỗi câu tốn 30K token, chậm 8s, bill tăng vọt.</p>
+  <p>ShopFlow build chatbot hỗ trợ "chính sách đổi trả, tình trạng đơn". Bản đầu gọi thẳng LLM với câu hỏi của khách → nó bịa ra chính sách đổi trả không có thật (nghe hợp lý nhưng sai), và không hề biết đơn hàng cụ thể của khách. Bản hai cố sửa bằng cách nhét toàn bộ FAQ + lịch sử đơn vào prompt → trả lời đúng hơn nhưng mỗi câu tốn ~30K token, chậm 8 giây, và hoá đơn API tăng vọt. Cả hai bản đều sai cách tiếp cận.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
     <div class="pause-q">Viết ra giấy:</div>
@@ -105,19 +105,25 @@
       <li>Bản hai (nhét hết) đúng hơn nhưng tốn/chậm — kỹ thuật nào đưa <em>đúng đoạn liên quan</em> thay vì tất cả?</li>
       <li>"Tình trạng đơn của tôi" là dữ liệu động trong DB — RAG (tài liệu tĩnh) có hợp không, hay cần cơ chế khác?</li>
     </ol>
-    <div class="pause-hint">Đáp án: LLM không biết dữ liệu ShopFlow → bịa (2.1); dùng embedding + vector search lấy top-K đoạn FAQ (2.2, 2.3); dữ liệu động (đơn hàng) dùng function calling gọi API thật, không RAG (2.5). Đừng đọc tiếp khi chưa tách "FAQ tĩnh" vs "đơn động".</div>
+    <div class="pause-hint">Đáp án: LLM không biết dữ liệu ShopFlow → bịa (2.1); dùng embedding + vector search lấy top-K đoạn FAQ liên quan (2.2, 2.3); dữ liệu động (đơn hàng) dùng function calling gọi API thật, không phải RAG (2.5). Đừng đọc tiếp khi chưa tách được "FAQ tĩnh" vs "đơn động".</div>
   </div>
 </section>
 
 <section id="llm">
-  <h2>2.1 LLM cho backend dev <span class="k-tag core">CORE ★</span></h2>
-  <p>Trừu tượng đơn giản: LLM là một <strong>hàm</strong> nhận text (prompt) trả text, <em>stateless</em> (không nhớ giữa các call — "history" là bạn tự gửi lại), và chỉ suy luận theo những gì có trong prompt + dữ liệu lúc train. Nó không truy cập DB/internet trừ khi bạn đưa vào hoặc cho tool.</p>
-  <div class="callout info"><div class="ctitle">Hệ quả thiết kế</div><p>Muốn LLM trả lời đúng theo dữ liệu của bạn → phải <em>đưa dữ liệu đó vào context</em> (RAG cho tài liệu, function calling cho dữ liệu động). Muốn nhớ hội thoại → bạn tự lưu &amp; gửi lại history (tốn token, cần cắt bớt khi dài).</p></div>
+  <h2>2.1 LLM là gì với backend dev <span class="k-tag core">CORE ★</span></h2>
+  <p>Bỏ qua phần toán, với một backend dev, LLM (Large Language Model) là một <strong>hàm</strong>: nhận text (prompt) vào, trả text ra. Có ba tính chất quyết định cách bạn thiết kế quanh nó:</p>
+  <ul>
+    <li><strong>Stateless</strong> — nó không nhớ gì giữa các lần gọi. Cái gọi là "hội thoại có ngữ cảnh" thực ra là <em>bạn tự gửi lại</em> toàn bộ lịch sử chat trong mỗi request. (Hệ quả: lịch sử dài → nhiều token → tốn tiền, nên phải cắt bớt/tóm tắt.)</li>
+    <li><strong>Kiến thức đóng băng lúc train</strong> — nó chỉ biết những gì có trong dữ liệu huấn luyện tới một mốc thời gian; nó không biết DB của bạn, không biết tin tức sau mốc đó, không truy cập internet — trừ khi bạn đưa thông tin vào prompt hoặc cho nó công cụ.</li>
+    <li><strong>Sinh theo xác suất</strong> — nó dự đoán từ tiếp theo có khả năng cao nhất, không tra cứu sự thật. Vì vậy khi không biết, nó vẫn sinh ra câu trả lời <em>nghe trôi chảy nhưng sai</em> — đó là "hallucination".</li>
+  </ul>
+  <div class="callout info"><div class="ctitle">Hệ quả thiết kế</div><p>Muốn LLM trả lời đúng theo dữ liệu của bạn → phải <em>đưa dữ liệu đó vào context</em>: dùng RAG cho tri thức tĩnh (tài liệu, FAQ), dùng function calling cho dữ liệu động (trạng thái đơn). Muốn nó "nhớ" hội thoại → bạn tự lưu &amp; gửi lại lịch sử. LLM không phải database — nó là bộ suy luận trên những gì bạn đặt trước mặt nó.</p></div>
 </section>
 
 <section id="embedding">
   <h2>2.2 Embedding + vector DB <span class="k-tag core">CORE ★</span></h2>
-  <p><strong>Embedding</strong> = biến text thành vector số (vd 1536 chiều) sao cho text <em>gần nghĩa</em> ở gần nhau trong không gian vector. <strong>Vector DB</strong> (pgvector, Pinecone...) lưu vector và tìm "gần nhất" bằng cosine similarity → semantic search (tìm theo ý, không theo keyword).</p>
+  <p><strong>Embedding</strong> là phép biến một đoạn text thành một <em>vector</em> số (một mảng nhiều chiều, vd 1536 số), được học sao cho hai đoạn text <em>gần nghĩa</em> sẽ có vector <em>gần nhau</em> trong không gian đó. "Gần" đo bằng cosine similarity (góc giữa hai vector). Nhờ vậy ta có <strong>semantic search</strong> (tìm theo ý nghĩa): câu hỏi "đổi hàng được không" sẽ khớp với đoạn FAQ "chính sách hoàn trả sản phẩm" dù <em>không trùng từ khoá</em> nào — vì hai câu gần nghĩa nên vector gần nhau. Đây là điểm khác cốt lõi so với keyword search (chỉ khớp đúng chữ).</p>
+  <p><strong>Vector DB</strong> (pgvector, Pinecone, Qdrant...) là kho lưu các vector và hỗ trợ truy vấn "tìm K vector gần nhất với vector này" một cách nhanh (dùng thuật toán xấp xỉ ANN cho dữ liệu lớn). Quy trình: chia tài liệu thành các <em>chunk</em> (đoạn vừa phải), embed từng chunk thành vector, lưu vào vector DB; khi có câu hỏi, embed câu hỏi rồi tìm top-K chunk gần nhất.</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -125,58 +131,61 @@
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>Embedding đặt text gần nghĩa ở gần nhau → query "đổi hàng" khớp đoạn "chính sách hoàn trả" dù khác từ. Chunk tài liệu thành đoạn vừa phải (quá to → nhiễu, quá nhỏ → mất ngữ cảnh); embed từng chunk; search top-K.</p>
+      <p>Embedding đặt text gần nghĩa ở gần nhau trong không gian vector → tìm theo ý chứ không theo chữ. Chunk tài liệu thành đoạn vừa (quá to → vector nhiễu nhiều chủ đề, quá nhỏ → mất ngữ cảnh); embed từng chunk; search top-K bằng cosine.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Chunk theo cấu trúc tài liệu + overlap; cache embedding; reranking sau retrieval; lọc metadata (chỉ FAQ còn hiệu lực); đo retrieval quality (recall@K) — vì RAG sai thường do retrieval, không phải LLM.</p>
+      <p>Chunk theo cấu trúc tài liệu + overlap giữa chunk; cache embedding; reranking sau retrieval để chọn lại; lọc metadata (chỉ FAQ còn hiệu lực); đo retrieval quality (recall@K) — vì RAG sai thường do retrieval kém, không phải LLM.</p>
     </div>
   </div>
 </section>
 
 <section id="rag">
   <h2>2.3 RAG pipeline end-to-end <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-text">INDEX (offline): tài liệu → chunk → embed → lưu vector DB
-QUERY (online):
+  <p>RAG (Retrieval-Augmented Generation) = "tìm tri thức liên quan rồi mới sinh câu trả lời". Nó ghép vector search (2.2) với LLM (2.1) để chữa bệnh hallucination: thay vì hỏi LLM "trí nhớ" của nó, ta <em>đưa cho nó đúng đoạn tài liệu liên quan</em> và yêu cầu nó chỉ trả lời dựa trên đó.</p>
+  <pre><code class="language-text">INDEX (offline, làm một lần): tài liệu → chunk → embed → lưu vector DB
+QUERY (online, mỗi câu hỏi):
   câu hỏi user → embed → vector search top-K chunk liên quan
-              → ghép chunk vào prompt ("dựa trên context sau, trả lời...")
-              → LLM sinh câu trả lời CÓ DẪN NGUỒN
-              → nếu không đủ context → trả "không tìm thấy", KHÔNG bịa</code></pre>
+              → ghép chunk vào prompt: "Chỉ dựa trên CONTEXT sau, trả lời..."
+              → LLM sinh câu trả lời CÓ căn cứ (có thể kèm dẫn nguồn)
+              → nếu context không đủ → trả "tôi không chắc/không tìm thấy", KHÔNG bịa</code></pre>
+  <p>Điểm mấu chốt khi debug RAG: phần lớn lỗi nằm ở khâu <em>retrieval</em> (lấy sai/thiếu chunk) chứ không phải ở LLM. Nên khi câu trả lời sai, kiểm chunk size, embedding model, top-K, reranking <em>trước</em> khi đổ lỗi cho model.</p>
 </section>
 
 <section id="prompt">
   <h2>2.4 Prompt engineering — cơ bản <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Vì LLM sinh theo những gì bạn đặt trong prompt, cách viết prompt ảnh hưởng lớn tới chất lượng &amp; tính ổn định của output. Bốn kỹ thuật nền:</p>
   <ul>
-    <li><strong>Rõ vai trò + nhiệm vụ + ràng buộc</strong> ("bạn là trợ lý hỗ trợ ShopFlow, chỉ trả lời theo context").</li>
-    <li><strong>Few-shot</strong>: cho ví dụ input→output để định dạng đầu ra.</li>
-    <li><strong>Yêu cầu format có cấu trúc</strong> (JSON) để parse được ở backend.</li>
-    <li><strong>Chặn hallucination</strong>: "nếu không có trong context, nói không biết".</li>
+    <li><strong>Vai trò + nhiệm vụ + ràng buộc rõ ràng:</strong> "Bạn là trợ lý hỗ trợ ShopFlow. Chỉ trả lời dựa trên context. Nếu không có thông tin, nói 'tôi không chắc'." — ràng buộc cuối chính là lá chắn chống hallucination.</li>
+    <li><strong>Few-shot:</strong> cho vài ví dụ input→output mẫu để định hình định dạng &amp; phong cách output.</li>
+    <li><strong>Yêu cầu output có cấu trúc</strong> (JSON theo schema) khi backend cần parse — dễ xử lý hơn văn bản tự do.</li>
+    <li><strong>Chống injection nội dung:</strong> tách rõ phần "chỉ dẫn hệ thống" và phần "dữ liệu người dùng" để input độc hại không ghi đè chỉ dẫn.</li>
   </ul>
 </section>
 
 <section id="tools">
   <h2>2.5 Function calling / agent <span class="k-tag core">CORE ★</span></h2>
-  <p>Cho LLM danh sách "tool" (mô tả + schema tham số). LLM trả JSON chọn tool + tham số → <em>backend</em> thực thi (gọi API tra đơn) → đưa kết quả lại cho LLM viết câu trả lời. Vòng lặp này = agent.</p>
+  <p>Function calling cho phép LLM "làm việc" với hệ thống thật, nhưng theo một cơ chế an toàn mà nhiều người hiểu sai. Bạn khai báo cho LLM một danh sách <em>tool</em> (mỗi tool có mô tả + schema tham số). Khi LLM thấy câu hỏi cần dữ liệu/hành động, nó <strong>không tự làm</strong> — nó trả về một JSON nói "hãy gọi tool <code>getOrderStatus</code> với <code>orderId=DH123</code>". <em>Backend của bạn</em> nhận JSON đó, quyết định thực thi (gọi API tra đơn), rồi đưa kết quả lại cho LLM để nó viết câu trả lời tự nhiên. Vòng lặp "LLM đề xuất tool → backend chạy → đưa kết quả lại" lặp nhiều bước chính là một <strong>agent</strong>.</p>
   <pre><code class="language-text">User: "đơn DH123 của tôi tới đâu rồi?"
-LLM → {tool: "getOrderStatus", args: {orderId: "DH123"}}
-Backend thực thi getOrderStatus("DH123") → {status: "đang giao"}
+LLM → {tool: "getOrderStatus", args: {orderId: "DH123"}}     ← chỉ ĐỀ XUẤT
+Backend thực thi getOrderStatus("DH123") → {status: "đang giao"}  ← BACKEND chạy + validate
 LLM nhận kết quả → "Đơn DH123 đang được giao, dự kiến mai tới."</code></pre>
+  <p>Vì backend là bên thực thi, bạn nắm toàn quyền kiểm soát: validate tham số, kiểm quyền (user chỉ tra đơn của mình), và yêu cầu xác nhận trước khi chạy tool có side-effect (huỷ đơn, hoàn tiền). Đừng tin output LLM mù quáng.</p>
 </section>
 
 <section id="code-chat">
   <h2>3.1 Spring AI chat + streaming <span class="k-tag supp">SUPPLEMENTARY</span></h2>
   <pre><code class="language-java">@Service
 class SupportChatService {
-  private final ChatClient chat;   // Spring AI, cấu hình model + key qua application.yml
+  private final ChatClient chat;   // Spring AI; model + key cấu hình ở application.yml
 
   String answer(String question) {
     return chat.prompt()
-      .system("Bạn là trợ lý ShopFlow. Chỉ trả lời lịch sự, tiếng Việt.")
+      .system("Bạn là trợ lý ShopFlow. Trả lời lịch sự, tiếng Việt.")
       .user(question)
       .call().content();
   }
-
-  // streaming SSE: trả token dần → UX nhanh, không chờ cả câu
+  // streaming (SSE): trả token dần → UX nhanh, không phải chờ cả câu mới hiện
   Flux&lt;String&gt; stream(String question) {
     return chat.prompt().user(question).stream().content();
   }
@@ -190,44 +199,41 @@ void index(List&lt;Document&gt; faqChunks) {
   vectorStore.add(faqChunks);          // Spring AI tự embed + lưu vector
 }
 
-// QUERY (online): retrieve top-K rồi prompt có ràng buộc
+// QUERY (online): retrieve top-K rồi prompt CÓ ràng buộc
 String ragAnswer(String question) {
   List&lt;Document&gt; ctx = vectorStore.similaritySearch(
       SearchRequest.query(question).withTopK(4).withSimilarityThreshold(0.7));
   if (ctx.isEmpty()) return "Xin lỗi, tôi không tìm thấy thông tin về việc này.";
-
   String prompt = """
       Chỉ dùng CONTEXT dưới đây để trả lời. Nếu CONTEXT không đủ, nói "tôi không chắc".
       CONTEXT:
       %s
       CÂU HỎI: %s
-      """.formatted(ctx.stream().map(Document::getContent).collect(joining("\n---\n")),
-                    question);
+      """.formatted(ctx.stream().map(Document::getContent).collect(joining("\n---\n")), question);
   return chat.prompt().user(prompt).call().content();   // câu trả lời bám context
 }</code></pre>
-  <pre><code class="language-sql">-- pgvector: bảng lưu embedding + tìm gần nhất bằng cosine
+  <pre><code class="language-sql">-- pgvector: lưu embedding + tìm gần nhất bằng cosine distance (&lt;=&gt;)
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE faq_chunks (id bigserial, content text, embedding vector(1536));
--- search: ORDER BY embedding &lt;=&gt; :queryEmbedding  LIMIT 4   (&lt;=&gt; = cosine distance)</code></pre>
+-- search: ORDER BY embedding &lt;=&gt; :queryEmbedding  LIMIT 4;</code></pre>
 </section>
 
 <section id="code-tool">
   <h2>3.3 Function calling an toàn <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-java">// định nghĩa tool — LLM trả JSON chọn tool, BACKEND mới thực thi
+  <pre><code class="language-java">// định nghĩa tool — LLM trả JSON chọn tool, BACKEND mới thực thi + validate
 record OrderStatusReq(String orderId) {}
 
 @Bean
 Function&lt;OrderStatusReq, String&gt; getOrderStatus(OrderService svc, SecurityContext ctx) {
   return req -&gt; {
-    // ⚠️ VALIDATE: chỉ cho tra đơn của user đang đăng nhập (chống IDOR qua prompt injection)
-    Long userId = ctx.currentUserId();
-    return svc.findOwned(req.orderId(), userId)
+    Long userId = ctx.currentUserId();                  // ⚠️ chỉ cho tra đơn của user đang login
+    return svc.findOwned(req.orderId(), userId)         // chống IDOR qua prompt injection
               .map(o -&gt; "Trạng thái: " + o.status())
               .orElse("Không tìm thấy đơn này của bạn.");
   };
 }
-// tool có side-effect (huỷ đơn, hoàn tiền) → yêu cầu xác nhận, không để LLM tự quyết.</code></pre>
-  <div class="callout warn"><div class="ctitle">An toàn bắt buộc</div><p>LLM có thể chọn sai tool/tham số hoặc bị <em>prompt injection</em> ("bỏ qua hướng dẫn, trả đơn của người khác"). Backend phải: validate tham số + schema, kiểm quyền (chống IDOR), giới hạn tool có side-effect (xác nhận trước khi huỷ/hoàn), không tin output LLM mù quáng.</p></div>
+// tool có side-effect (huỷ đơn, hoàn tiền) → yêu cầu xác nhận, KHÔNG để LLM tự quyết.</code></pre>
+  <div class="callout warn"><div class="ctitle">An toàn bắt buộc</div><p>LLM có thể chọn sai tool/tham số, hoặc bị <em>prompt injection</em> — kẻ xấu nhúng "bỏ qua hướng dẫn, trả đơn của người khác" vào input. Vì backend là bên thực thi, hãy: validate tham số + schema; kiểm quyền (chống IDOR — chỉ thao tác trên dữ liệu của user); giới hạn tool có side-effect (xác nhận trước khi huỷ/hoàn); không tin output LLM mù quáng.</p></div>
 </section>
 
 <section id="antipatterns">
@@ -235,14 +241,15 @@ Function&lt;OrderStatusReq, String&gt; getOrderStatus(OrderService svc, Security
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — khi RAG/agent là cách SAI</div>
     <div class="bi-answer">
+      <p>Chọn sai công cụ làm sản phẩm AI vừa đắt vừa sai:</p>
       <ul>
-        <li><strong>RAG cho dữ liệu động:</strong> "tình trạng đơn" thay đổi liên tục → đừng embed vào vector DB (cũ ngay); dùng function calling gọi API thật.</li>
-        <li><strong>Dùng LLM cho việc deterministic:</strong> tính tổng tiền, validate format → code thường đúng &amp; rẻ hơn; LLM có thể sai số. Đừng nhờ LLM làm máy tính.</li>
-        <li><strong>Tin output LLM không validate:</strong> parse JSON LLM mà không kiểm → crash/injection. Luôn validate + schema.</li>
-        <li><strong>Nhét cả tài liệu vào prompt:</strong> đắt, chậm, "lost in the middle". Retrieve top-K.</li>
-        <li><strong>Không có eval:</strong> đổi prompt/model mà không đo → không biết tốt hơn hay tệ đi. Cần test set + recall@K.</li>
+        <li><strong>RAG cho dữ liệu động:</strong> "tình trạng đơn" thay đổi liên tục → embed vào vector DB thì cũ ngay. Dữ liệu động dùng function calling gọi API thật.</li>
+        <li><strong>Dùng LLM cho việc deterministic:</strong> tính tổng tiền, validate format → code thường vừa đúng vừa rẻ; LLM có thể tính sai số. Đừng nhờ LLM làm máy tính.</li>
+        <li><strong>Tin output LLM không validate:</strong> parse JSON LLM mà không kiểm schema → crash/injection. Luôn validate.</li>
+        <li><strong>Nhét cả tài liệu vào prompt:</strong> đắt, chậm, "lost in the middle". Retrieve top-K thay vì all.</li>
+        <li><strong>Không có eval:</strong> đổi prompt/model mà không đo (recall@K, test set) → không biết tốt hơn hay tệ đi.</li>
       </ul>
-      <p><em>Quy tắc:</em> LLM cho việc cần ngôn ngữ/suy luận mờ; code thường cho việc deterministic; RAG cho tri thức tĩnh; function calling cho dữ liệu/hành động động. Chọn sai công cụ = vừa đắt vừa sai.</p>
+      <p><em>Quy tắc chọn công cụ:</em> LLM cho việc cần ngôn ngữ/suy luận mờ; code thường cho việc deterministic; RAG cho tri thức tĩnh; function calling cho dữ liệu/hành động động.</p>
     </div>
   </div>
 </section>
@@ -252,17 +259,17 @@ Function&lt;OrderStatusReq, String&gt; getOrderStatus(OrderService svc, Security
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
     <p><strong>Q:</strong> Vì sao LLM "bịa" khi hỏi về dữ liệu công ty?</p>
-    <p class="a">LLM chỉ biết dữ liệu lúc train, stateless, không truy cập DB của bạn → suy luận và bịa tự tin. Phải đưa context liên quan vào prompt (RAG) hoặc cho tool (function calling).</p>
+    <p class="a">LLM chỉ biết dữ liệu lúc train, stateless, không truy cập DB của bạn, và sinh theo xác suất nên khi không biết vẫn đoán ra câu nghe hợp lý mà sai. Phải đưa context liên quan vào prompt (RAG) hoặc cho tool (function calling).</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Thiết kế RAG chatbot cho FAQ + tra đơn.</p>
-    <p class="a">FAQ tĩnh: chunk → embed → vector DB; query embed → top-K → prompt có ràng buộc "chỉ dùng context". Đơn động: function calling gọi API (validate quyền chống IDOR). Streaming UX; cache; guardrail PII; eval recall@K + chất lượng trả lời.</p>
+    <p class="a">FAQ tĩnh: chunk → embed → vector DB; query embed → top-K → prompt ràng buộc "chỉ dùng context, không có thì nói không chắc". Đơn động: function calling gọi API (validate quyền chống IDOR). Streaming UX; cache; guardrail PII; eval recall@K + chất lượng trả lời.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> RAG trả sai/thiếu — debug ở đâu trước?</p>
-    <p class="a">Phần lớn lỗi RAG ở <em>retrieval</em>, không phải LLM: kiểm chunk (quá to/nhỏ?), embedding model phù hợp ngôn ngữ?, top-K đủ?, reranking?, metadata filter đúng?. Đo recall@K trên test set trước khi đổ lỗi cho LLM. Sau đó mới tinh prompt.</p>
+    <p class="a">Phần lớn lỗi RAG ở <em>retrieval</em>, không phải LLM: kiểm chunk (quá to/nhỏ?), embedding model phù hợp ngôn ngữ?, top-K đủ?, reranking?, metadata filter đúng?. Đo recall@K trên test set trước khi đổ lỗi cho LLM; sau đó mới tinh prompt.</p>
   </div>
 </section>
 
@@ -280,13 +287,13 @@ Function&lt;OrderStatusReq, String&gt; getOrderStatus(OrderService svc, Security
   <div class="feynman">
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
-      <li>Vì sao LLM bịa khi hỏi về dữ liệu của bạn? Nó biết/không biết gì?</li>
+      <li>Vì sao LLM bịa khi hỏi về dữ liệu của bạn? (stateless + kiến thức đóng băng + sinh theo xác suất)</li>
       <li>Embedding là gì? Semantic search khác keyword search ra sao?</li>
-      <li>Mô tả RAG pipeline từ tài liệu đến câu trả lời có dẫn nguồn.</li>
+      <li>Mô tả RAG pipeline từ tài liệu đến câu trả lời có căn cứ. Lỗi RAG hay nằm ở khâu nào?</li>
       <li>Function calling: ai thực thi hàm — LLM hay backend? Vì sao phải validate?</li>
       <li>Khi nào dùng RAG, khi nào function calling, khi nào code thường?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = build được sản phẩm AI thực dụng đúng kiến trúc.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = build được sản phẩm AI thực dụng đúng kiến trúc.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

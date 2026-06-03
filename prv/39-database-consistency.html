@@ -30,18 +30,18 @@
       <div class="toc-title">Trong file này</div>
       <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
       <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
-      <a href="#real-problem">1. Bài toán: store credit trừ 1 lần dù dùng 2 lần</a>
+      <a href="#real-problem">1. Bài toán: store credit trừ 1 lần</a>
       <div class="toc-section">Mental models</div>
-      <a href="#cap">2.1 CAP &amp; PACELC đúng cách</a>
-      <a href="#models">2.2 Consistency models (spectrum)</a>
+      <a href="#cap">2.1 CAP &amp; PACELC</a>
+      <a href="#models">2.2 Consistency models</a>
       <a href="#mvcc">2.3 MVCC: PostgreSQL vs Oracle</a>
       <a href="#anomalies">2.4 6 isolation anomalies</a>
       <a href="#levels">2.5 Isolation levels theo vendor</a>
-      <a href="#writeskew">2.6 Write Skew — SI không fix</a>
-      <div class="toc-section">Production code</div>
+      <a href="#writeskew">2.6 Write Skew</a>
+      <div class="toc-section">Giải pháp</div>
       <a href="#optimistic">3.1 Optimistic lock (@Version)</a>
       <a href="#pessimistic">3.2 Pessimistic lock + deadlock</a>
-      <a href="#serializable">3.3 SERIALIZABLE (SSI) fix write skew</a>
+      <a href="#serializable">3.3 SERIALIZABLE (SSI)</a>
       <a href="#idempotency">3.4 Idempotency key</a>
       <a href="#reconciliation">3.5 Reconciliation</a>
       <div class="toc-section">Pitfalls</div>
@@ -60,7 +60,7 @@
   <div class="meta-tag">Nhóm C · Database · File chống hiểu giả</div>
   <h1>Database Consistency — CAP, MVCC, Isolation Anomalies</h1>
   <p class="lead">
-    "READ COMMITTED tránh dirty read" là câu ai cũng thuộc — nhưng vì sao hai transaction cùng commit mà số dư vẫn sai? Vì sao <code>REPEATABLE_READ</code> của PostgreSQL khác hẳn <code>SERIALIZABLE</code> của Oracle dù tên giống? File này tách <strong>anomaly có tên cụ thể</strong> (lost update, write skew, read skew) khỏi cách nói mơ hồ "race condition", dạy MVCC tận xmin/xmax + UNDO/SCN, kèm code optimistic/pessimistic/SSI/idempotency thật, trên domain <strong>ShopFlow</strong> — ví store-credit &amp; tồn kho của sàn e-commerce.
+    "READ COMMITTED tránh dirty read" là câu ai cũng thuộc — nhưng vì sao hai transaction cùng commit mà số dư vẫn sai? Vì sao <code>REPEATABLE_READ</code> của PostgreSQL khác hẳn <code>SERIALIZABLE</code> của Oracle dù tên giống? File này tách <strong>anomaly có tên cụ thể</strong> (lost update, write skew, read skew) khỏi cách nói mơ hồ "race condition", và giải thích cơ chế MVCC tới tận xmin/xmax + UNDO/SCN — đọc một lần là đủ ôn phỏng vấn. Domain minh hoạ: <strong>ShopFlow</strong> — ví store-credit &amp; tồn kho của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Đặt tên đúng anomaly, chọn isolation/lock đúng, hiểu MVCC 2 vendor</div>
@@ -82,7 +82,7 @@
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "CAP nói chọn 2 trong 3 (C, A, P)."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Phát biểu đúng: <em>khi có partition (P)</em> mới phải chọn giữa C và A. P không phải thứ "chọn" — nó là sự cố. Single-node DB không có P nên CAP không áp dụng; dùng PACELC để nói cả lúc bình thường (Latency vs Consistency).</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Phát biểu đúng: <em>khi có partition (P)</em> mới phải chọn giữa C và A. P không phải thứ "chọn" — nó là sự cố mạng. Single-node DB không có P nên CAP không áp dụng; dùng PACELC để nói cả lúc bình thường (Latency vs Consistency).</div>
   </div>
 </section>
 
@@ -99,7 +99,7 @@
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — store credit trừ 1 lần dù dùng 2 lần <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow cho khách dùng "store credit" (ví khuyến mãi) khi checkout. Mặc định PostgreSQL READ COMMITTED.</p>
+  <p>ShopFlow cho khách dùng "store credit" (ví khuyến mãi) khi checkout. Mặc định PostgreSQL READ COMMITTED. Code trông hoàn toàn hợp lý:</p>
   <pre><code class="language-java">@Transactional(isolation = Isolation.READ_COMMITTED)
 public void spendCredit(Long walletId, BigDecimal amount) {
     Wallet w = walletRepo.findById(walletId).orElseThrow();   // Bước 1: đọc balance
@@ -108,7 +108,7 @@ public void spendCredit(Long walletId, BigDecimal amount) {
     w.setBalance(w.getBalance().subtract(amount));            // Bước 3: trừ (tính trong app)
     walletRepo.save(w);                                       // Bước 4: ghi
 }</code></pre>
-  <p>Khách double-click checkout → 2 request song song, mỗi cái dùng 500K. Ví có 600K. <strong>Kết quả: cả 2 thành công, ví âm 400K.</strong></p>
+  <p>Khách double-click checkout → 2 request song song, mỗi cái dùng 500K. Ví có 600K. Trực giác nói "request thứ hai phải bị từ chối vì không đủ tiền". <strong>Nhưng kết quả thực tế: cả 2 thành công, ví âm 400K.</strong> Lý do: cả hai transaction <em>đọc balance = 600K</em> ở Bước 1 <em>trước khi</em> bất kỳ ai ghi xong ở Bước 4. Mỗi transaction tính "600 − 500 = 100" một cách độc lập rồi ghi đè lẫn nhau. Kết quả cuối là 100K thay vì đúng phải là một transaction fail.</p>
 
   <div class="diagram">
   <svg viewBox="0 0 760 220" role="img" aria-label="Lost update timeline">
@@ -126,7 +126,7 @@ public void spendCredit(Long walletId, BigDecimal amount) {
     <text x="660" y="140" text-anchor="middle" font-size="12">write 100K</text>
     <text x="380" y="195" text-anchor="middle" font-size="13" fill="#475569">Cả hai đọc 600K trước khi ai ghi → mỗi cái trừ 500K độc lập → mất 500K.</text>
   </svg>
-  <div class="caption">Lost Update: hai TX đọc cùng giá trị, ghi đè nhau. READ COMMITTED KHÔNG chặn.</div>
+  <div class="caption">Lost Update: hai TX đọc cùng giá trị, ghi đè nhau. READ COMMITTED KHÔNG chặn vì nó chỉ chặn dirty read.</div>
   </div>
 
   <div class="pause-block">
@@ -152,54 +152,60 @@ public void spendCredit(Long walletId, BigDecimal amount) {
 
 <section id="cap">
   <h2>2.1 CAP &amp; PACELC đúng cách <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <div class="callout why"><div class="ctitle">Phát biểu đúng của CAP</div><p>Khi xảy ra network partition (P), hệ phân tán buộc chọn giữa Consistency (C) và Availability (A). Không có chuyện "chọn 2 trong 3" lúc bình thường — P là sự cố, không phải lựa chọn.</p></div>
-  <pre><code class="language-text">PACELC (đầy đủ hơn CAP):
-  if Partition: chọn Availability vs Consistency
-  else (bình thường): chọn Latency vs Consistency
+  <p>CAP theorem (Eric Brewer, 2000) là chủ đề bị hiểu sai nhiều nhất. Ba chữ cái: <strong>C</strong>onsistency (mọi node đọc thấy cùng dữ liệu mới nhất — lưu ý đây là "linearizability", khác với chữ C trong ACID), <strong>A</strong>vailability (mọi request đều nhận được phản hồi không lỗi, dù có thể là dữ liệu cũ), <strong>P</strong>artition tolerance (hệ thống vẫn chạy khi mạng giữa các node bị đứt).</p>
+  <div class="callout why"><div class="ctitle">Phát biểu đúng của CAP</div><p>Cách nói "chọn 2 trong 3" là sai. Phát biểu đúng: <strong>khi xảy ra network partition (P), hệ phân tán buộc phải chọn giữa C và A</strong>. P không phải một lựa chọn thiết kế — nó là sự cố mạng <em>chắc chắn sẽ xảy ra</em> trong hệ phân tán, nên thực chất bạn luôn phải "tolerant P". Lựa chọn thật chỉ là: <em>khi mạng đứt</em>, bạn muốn node tiếp tục trả lời với dữ liệu có thể cũ (chọn A, hy sinh C), hay từ chối trả lời để không lộ dữ liệu sai (chọn C, hy sinh A)?</p></div>
+  <p>Hệ quả: CAP <em>không áp dụng cho database một node</em> vì không có partition giữa các node. Khi interviewer hỏi "CAP của PostgreSQL" họ thực ra muốn hỏi về <em>cụm</em> PostgreSQL (primary + replica). Một PostgreSQL đơn lẻ thì câu hỏi đúng là về isolation level, không phải CAP.</p>
+  <p>CAP còn thiếu sót: nó chỉ nói về lúc <em>có</em> partition, không nói gì về lúc bình thường (99.9% thời gian). <strong>PACELC</strong> bổ sung phần đó:</p>
+  <pre><code class="language-text">PACELC:
+  if Partition:  chọn Availability vs Consistency   (giống CAP)
+  else (E = Else, lúc bình thường): chọn Latency vs Consistency
 
-DynamoDB                : PA/EL  (ưu tiên A khi partition, L khi bình thường)
-Spanner                 : PC/EC  (ưu tiên C luôn, đánh đổi latency qua TrueTime)
-PostgreSQL 1 node       : không có P → CAP không áp dụng
-PostgreSQL sync replica : PC/EC  (sync replica làm chậm write nhưng đảm bảo consistency)
-MongoDB replica set     : PA/EL  (eventual trên secondary)</code></pre>
-  <p><strong>Vì sao tiền/tồn kho chọn PC/EC:</strong> thà không available còn hơn inconsistent — partition mà chọn AP → hai DC cùng trừ một ví/kho → double-spend/oversell mất tiền thật. Dữ liệu analytics/notification thì PA/EL chấp nhận được.</p>
+DynamoDB                : PA/EL  — partition thì ưu tiên A; bình thường ưu tiên Latency (chấp nhận đọc cũ)
+Spanner (Google)        : PC/EC  — luôn ưu tiên Consistency, đánh đổi latency (dùng TrueTime + đồng hồ nguyên tử)
+PostgreSQL 1 node       : không có P → CAP không áp dụng; chỉ bàn isolation
+PostgreSQL sync replica : PC/EC  — write phải chờ replica ack (chậm hơn) nhưng không mất dữ liệu
+MongoDB replica set     : PA/EL  — đọc từ secondary có thể thấy dữ liệu cũ (eventual)</code></pre>
+  <p><strong>Vì sao tiền/tồn kho phải chọn phía Consistency (PC/EC):</strong> nếu chọn A khi partition, hai data center có thể cùng cho phép trừ một ví hoặc bán một món tồn kho → double-spend / oversell → mất tiền thật. Thà tạm từ chối giao dịch (mất A vài giây) còn hơn ghi sai vĩnh viễn. Ngược lại, dữ liệu như "số lượt xem sản phẩm", "gợi ý", "thông báo" thì eventual consistency (PA/EL) hoàn toàn ổn — trễ vài giây không ai chết.</p>
 </section>
 
 <section id="models">
   <h2>2.2 Consistency models — một phổ, không nhị phân <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>"Consistency" không phải có/không, mà là một <em>phổ</em> các mức bảo đảm, càng mạnh càng tốn latency / giảm availability:</p>
   <pre><code class="language-text">Strong (Linearizability)   ← Paxos/Raft/2PC, single-master sync replica
-   ↓  giảm latency / tăng availability
-Sequential
+   ↓  (giảm dần độ chặt, tăng dần hiệu năng/khả dụng)
+Sequential Consistency
    ↓
-Causal
+Causal Consistency
    ↓
-Eventual                   ← DynamoDB, Cassandra default
+Eventual Consistency       ← DynamoDB, Cassandra (mặc định)
    ↓
 No consistency</code></pre>
-  <ul>
-    <li><strong>Linearizability:</strong> write X=5 xong lúc T → mọi read sau T thấy X=5 (hoặc mới hơn). Mỗi op như xảy ra tại một thời điểm giữa invocation và response.</li>
-    <li><strong>Snapshot Isolation:</strong> đọc từ snapshot lúc transaction bắt đầu; write không block read (MVCC) — nhưng <em>không</em> linearizable (2 TX song song có thể không thấy nhau).</li>
-    <li><strong>Eventual:</strong> rồi sẽ hội tụ, không hứa khi nào.</li>
-  </ul>
+  <p><strong>Linearizability (strong):</strong> mạnh nhất. Mỗi thao tác như thể xảy ra <em>tức thời tại một điểm</em> nằm giữa lúc gửi request và lúc nhận response. Hệ quả thực tế: nếu write X=5 hoàn tất lúc T, thì <em>mọi</em> read bắt đầu sau T phải thấy X=5 (hoặc giá trị mới hơn) — không thể đọc lại giá trị cũ. Đạt được qua đồng thuận (Raft/Paxos), 2PC, hoặc single-master với sync replication. Đây là thứ bạn muốn cho số dư tiền.</p>
+  <p><strong>Snapshot Isolation:</strong> mỗi transaction làm việc trên một "ảnh chụp" (snapshot) của database tại thời điểm nó bắt đầu. Reader không bao giờ bị block bởi writer và ngược lại (nhờ MVCC, xem 2.3). Tuy nhiên SI <em>không</em> linearizable: hai transaction chạy song song mỗi cái nhìn snapshot riêng, có thể không thấy thay đổi của nhau — đây chính là kẽ hở dẫn tới Write Skew (2.6).</p>
+  <p><strong>Causal Consistency:</strong> đảm bảo thứ tự của các thao tác <em>có quan hệ nhân quả</em> (bạn comment sau khi đọc post thì người khác cũng thấy post trước comment), nhưng các thao tác không liên quan thì có thể thấy theo thứ tự khác nhau.</p>
+  <p><strong>Eventual Consistency:</strong> yếu nhất nhưng khả dụng/nhanh nhất. Đảm bảo duy nhất: nếu ngừng ghi, <em>cuối cùng</em> mọi replica sẽ hội tụ về cùng giá trị — nhưng không hứa khi nào, và trong lúc đó các replica có thể trả về giá trị khác nhau. Hợp cho dữ liệu chịu được "trễ" như analytics, feed.</p>
 </section>
 
 <section id="mvcc">
-  <h2>2.3 MVCC — PostgreSQL vs Oracle <span class="k-tag core">CORE ★</span></h2>
-  <p><strong>Ý tưởng:</strong> thay vì lock row khi write, tạo <em>version mới</em>. Reader đọc version cũ, writer tạo version mới → không ai block ai ("writers don't block readers").</p>
-  <p><strong>PostgreSQL:</strong> mỗi row ẩn 2 cột <code>xmin</code> (transaction tạo) và <code>xmax</code> (transaction xoá).</p>
-  <pre><code class="language-text">balance = 600K (xmin=50, xmax=NULL → visible cho mọi snapshot sau 50)
+  <h2>2.3 MVCC — cơ chế bên dưới (PostgreSQL vs Oracle) <span class="k-tag core">CORE ★</span></h2>
+  <p><strong>Vấn đề MVCC giải:</strong> nếu mỗi lần đọc phải lấy read-lock, thì reader block writer và writer block reader → throughput sụp dưới tải đọc-nhiều. <strong>MVCC (Multi-Version Concurrency Control)</strong> giải bằng ý tưởng: khi update, <em>không</em> ghi đè lên row cũ mà tạo một <em>phiên bản (version) mới</em>. Reader đang chạy vẫn đọc phiên bản cũ phù hợp với snapshot của nó; writer tạo phiên bản mới. Nhờ vậy "readers don't block writers, writers don't block readers".</p>
+  <p><strong>PostgreSQL làm thế nào:</strong> mỗi row có hai cột ẩn — <code>xmin</code> = id của transaction đã <em>tạo</em> phiên bản này, <code>xmax</code> = id của transaction đã <em>xoá/thay</em> nó (NULL nếu còn sống). Mỗi transaction khi bắt đầu chụp một "snapshot" = tập các transaction đã commit tại thời điểm đó. Quy tắc visibility: một row version hiển thị với tôi nếu <code>xmin</code> đã commit trước snapshot của tôi VÀ <code>xmax</code> chưa commit (hoặc NULL). Khi update, PostgreSQL đánh dấu <code>xmax</code> của row cũ = id của tôi và chèn một row mới với <code>xmin</code> = id của tôi.</p>
+  <pre><code class="language-text">balance = 600K (xmin=50, xmax=NULL → visible cho mọi snapshot bắt đầu sau khi tx 50 commit)
 
-TX1 (xid=100) update → 100K:
-   row cũ: 600K, xmin=50,  xmax=100   (TX1 đánh dấu xoá)
-   row mới: 100K, xmin=100, xmax=NULL
+TX1 (xid=100) update balance → 100K:
+   row CŨ: 600K, xmin=50,  xmax=100   (TX1 đánh dấu "tôi xoá row này")
+   row MỚI: 100K, xmin=100, xmax=NULL  (phiên bản mới của TX1)
 TX1 commit.
 
-TX2 (REPEATABLE_READ, snapshot lúc bắt đầu) update dựa trên 600K:
-   → PostgreSQL: ERROR: could not serialize access due to concurrent update
-   → application phải RETRY (optimistic concurrency control)
+TX2 (REPEATABLE_READ, snapshot chụp TRƯỚC khi TX1 commit) đọc → vẫn thấy 600K (row cũ).
+Nếu TX2 update dựa trên 600K:
+   → PostgreSQL phát hiện row đã bị TX khác sửa & commit sau snapshot của TX2
+   → ERROR: could not serialize access due to concurrent update  → app phải RETRY
 
-READ COMMITTED thì TX2 đọc LẠI row mới (100K) trước khi update → không lỗi nhưng dễ logic sai
-nếu app đã tính toán dựa trên giá trị cũ.</code></pre>
+READ COMMITTED khác: mỗi câu lệnh chụp snapshot MỚI → TX2 đọc lại thấy 100K trước khi update.
+Không lỗi, nhưng nếu app đã tính toán dựa trên giá trị cũ ở câu trước thì vẫn logic sai (chính là Lost Update).</code></pre>
+  <p><strong>Hệ quả 1 — dead tuple &amp; VACUUM:</strong> row cũ (đã bị thay) không biến mất ngay; nó nằm lại trong table như "dead tuple" cho đến khi không còn transaction nào cần đọc nó. Tiến trình <strong>VACUUM</strong> (thường tự động — autovacuum) dọn các dead tuple này. Nếu VACUUM không kịp (ghi nhiều, hoặc có transaction dài giữ snapshot lâu ngăn dọn), table phình to ("bloat") → query chậm dần. Đây là lý do <em>long-running transaction là kẻ thù của PostgreSQL</em>: nó giữ snapshot cũ, chặn VACUUM dọn dead tuple.</p>
+  <p><strong>Oracle làm khác:</strong> Oracle update <em>in-place</em> (ghi đè row trực tiếp), và đẩy giá trị cũ vào một vùng riêng gọi là <strong>UNDO segment</strong>. Mỗi thay đổi có một <strong>SCN</strong> (System Change Number — đồng hồ logic tăng dần). Khi một query bắt đầu, nó ghi nhớ SCN hiện tại; nếu gặp row đã bị sửa sau SCN đó, Oracle dùng UNDO để <em>dựng lại</em> phiên bản cũ đúng với SCN của query (read consistency). Vì UNDO có kích thước hữu hạn và bị tái sử dụng (ghi đè), nếu một query chạy quá lâu mà phiên bản cũ nó cần đã bị ghi đè trong UNDO → lỗi kinh điển <code>ORA-01555: snapshot too old</code>. Khắc phục: tăng <code>UNDO_RETENTION</code> / kích thước UNDO tablespace, hoặc rút ngắn query (tách reporting khỏi OLTP).</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -207,146 +213,143 @@ nếu app đã tính toán dựa trên giá trị cũ.</code></pre>
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>PostgreSQL giữ version cũ <em>trong table</em> (xmin/xmax) → cần <strong>VACUUM</strong> dọn dead tuple. Oracle update in-place, version cũ vào <strong>UNDO segment</strong>; SCN xác định điểm nhìn → ORA-01555 "snapshot too old" khi UNDO bị ghi đè quá sớm.</p>
+      <p>Giải thích quy tắc visibility qua xmin/xmax + snapshot; PostgreSQL giữ version cũ trong table → dead tuple → VACUUM. Oracle update in-place, version cũ vào UNDO, SCN xác định điểm nhìn → ORA-01555 khi UNDO bị ghi đè.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>PostgreSQL: tune autovacuum, monitor table bloat, tránh long transaction giữ snapshot. Oracle: tune UNDO_RETENTION, kích thước UNDO tablespace. Đọc đúng error để biết chỉnh chỗ nào, không đoán mò.</p>
+      <p>PostgreSQL: tune autovacuum, monitor bloat, tránh long transaction giữ snapshot. Oracle: tune UNDO_RETENTION + UNDO tablespace, tách reporting. Đọc đúng error/triệu chứng để biết chỉnh chỗ nào, không đoán mò.</p>
     </div>
   </div>
 </section>
 
 <section id="anomalies">
-  <h2>2.4 6 isolation anomalies <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.4 6 isolation anomalies — định nghĩa chính xác <span class="k-tag core">CORE ★</span></h2>
+  <p>"Anomaly" là một kết quả sai sinh ra do hai+ transaction xen kẽ (interleave) nhau. Đặt đúng tên anomaly là kỹ năng phân biệt mid với senior — vì mỗi anomaly có một cách phòng khác nhau. Sáu loại quan trọng:</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Anomaly</th><th>Mô tả</th><th>Ví dụ e-commerce</th></tr></thead>
+    <thead><tr><th>Anomaly</th><th>Định nghĩa &amp; cơ chế interleave</th><th>Ví dụ e-commerce</th></tr></thead>
     <tbody>
-      <tr><td>Dirty Read</td><td>Đọc data của TX chưa commit</td><td>Đọc tồn kho sau khi TX khác trừ nhưng chưa commit; TX đó rollback → thấy giá trị ảo</td></tr>
-      <tr><td>Non-Repeatable Read</td><td>Đọc cùng row 2 lần, khác nhau</td><td>Đọc balance 600K, TX khác commit, đọc lại 100K</td></tr>
-      <tr><td>Phantom Read</td><td>Cùng range query, số row khác</td><td>"Đơn hôm nay" chạy 2 lần, TX khác insert đơn mới → thêm row</td></tr>
-      <tr><td>Lost Update</td><td>2 TX đọc cùng giá trị, ghi đè nhau</td><td>2 TX trừ store credit 500K từ 600K → còn 100K (đúng phải fail 1 cái)</td></tr>
-      <tr><td>Write Skew</td><td>Đọc overlapping, ghi disjoint rows, phá invariant</td><td>On-call: 2 bác sĩ cùng xin off, mỗi người thấy "còn người khác" → không ai trực</td></tr>
-      <tr><td>Read Skew</td><td>Đọc 2 bảng liên quan, giữa chừng bị update → snapshot lệch</td><td>Đọc ví A=500K rồi ví B=300K, giữa đó có chuyển 200K A→B → tổng sai</td></tr>
+      <tr><td><strong>Dirty Read</strong></td><td>TX A đọc dữ liệu mà TX B đã ghi nhưng <em>chưa commit</em>. Nếu B rollback, A đã đọc một giá trị "chưa từng tồn tại".</td><td>Đọc tồn kho sau khi TX khác trừ nhưng chưa commit; TX đó rollback → A thấy số ảo</td></tr>
+      <tr><td><strong>Non-Repeatable Read</strong></td><td>TX A đọc <em>cùng một row</em> hai lần trong một transaction, hai lần ra giá trị khác nhau (vì TX B đã update &amp; commit ở giữa).</td><td>Đọc balance 600K → TX khác commit → đọc lại 100K trong cùng transaction</td></tr>
+      <tr><td><strong>Phantom Read</strong></td><td>TX A chạy <em>cùng một range query</em> hai lần, số dòng khác nhau (TX B đã insert/delete dòng thoả điều kiện ở giữa). Khác non-repeatable ở chỗ: là <em>tập kết quả</em> đổi, không phải một row.</td><td>"Đếm đơn hôm nay" chạy 2 lần, TX khác insert đơn mới → lần 2 ra số lớn hơn</td></tr>
+      <tr><td><strong>Lost Update</strong></td><td>Hai TX cùng đọc một giá trị, cùng tính toán dựa trên nó, cùng ghi lại → update sau đè update trước, một thay đổi "mất tích".</td><td>2 TX trừ store credit 500K từ 600K → còn 100K (đúng phải fail 1 cái hoặc còn −400K)</td></tr>
+      <tr><td><strong>Write Skew</strong></td><td>Hai TX đọc <em>cùng một tập dữ liệu</em> (overlapping), kiểm tra một invariant, rồi mỗi cái ghi vào <em>row khác nhau</em> (disjoint). Riêng lẻ thì hợp lệ, nhưng cộng lại phá vỡ invariant. (Xem sâu ở 2.6.)</td><td>2 bác sĩ cùng xin off, mỗi người thấy "còn người kia trực" → cả hai off → không ai trực</td></tr>
+      <tr><td><strong>Read Skew</strong></td><td>TX A đọc nhiều row/bảng liên quan ở các thời điểm khác nhau; giữa các lần đọc, TX B sửa cả hai → A thấy một snapshot không nhất quán (đọc cái này cũ, cái kia mới).</td><td>Đọc ví A=500K rồi ví B=300K; giữa đó có chuyển 200K A→B → tổng A+B đọc ra bị sai</td></tr>
     </tbody>
   </table>
   </div>
+  <p><strong>Điểm mấu chốt thường bị bỏ sót:</strong> Lost Update và Write Skew <em>không</em> nằm trong định nghĩa gốc của SQL standard (vốn chỉ liệt kê dirty/non-repeatable/phantom). Đó là lý do <em>không isolation level tiêu chuẩn nào tự động chặn Lost Update</em> — bạn phải dùng khoá rõ ràng (optimistic/pessimistic) hoặc SERIALIZABLE thật.</p>
 </section>
 
 <section id="levels">
-  <h2>2.5 Isolation levels theo vendor <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.5 Isolation levels — chặn gì và chặn bằng cách nào <span class="k-tag core">CORE ★</span></h2>
+  <p>SQL standard định nghĩa 4 level theo việc chúng <em>cho phép</em> anomaly nào. Level càng cao càng an toàn nhưng càng tốn (nhiều lock / nhiều abort hơn):</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Level (SQL standard)</th><th>Dirty</th><th>Non-Repeatable</th><th>Phantom</th></tr></thead>
+    <thead><tr><th>Level (SQL standard)</th><th>Dirty</th><th>Non-Repeatable</th><th>Phantom</th><th>Ý nghĩa</th></tr></thead>
     <tbody>
-      <tr><td>READ UNCOMMITTED</td><td>❌ allow</td><td>❌</td><td>❌</td></tr>
-      <tr><td>READ COMMITTED</td><td>✅ prevent</td><td>❌</td><td>❌</td></tr>
-      <tr><td>REPEATABLE READ</td><td>✅</td><td>✅</td><td>❌</td></tr>
-      <tr><td>SERIALIZABLE</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>READ UNCOMMITTED</td><td>❌ cho phép</td><td>❌</td><td>❌</td><td>Đọc cả dữ liệu chưa commit. Gần như không dùng.</td></tr>
+      <tr><td>READ COMMITTED</td><td>✅ chặn</td><td>❌</td><td>❌</td><td>Chỉ đọc dữ liệu đã commit. Mặc định của PostgreSQL/Oracle.</td></tr>
+      <tr><td>REPEATABLE READ</td><td>✅</td><td>✅ chặn</td><td>❌ (theo standard)</td><td>Đọc lại cùng row ra cùng giá trị suốt transaction.</td></tr>
+      <tr><td>SERIALIZABLE</td><td>✅</td><td>✅</td><td>✅ chặn</td><td>Kết quả như thể các transaction chạy tuần tự.</td></tr>
     </tbody>
   </table>
   </div>
+  <p><strong>Nhưng vendor implement rất khác nhau</strong> — đây là chỗ "hiểu giả" hay vỡ. Cùng tên level nhưng cơ chế và mức bảo đảm khác:</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Database</th><th>READ COMMITTED</th><th>REPEATABLE READ</th><th>SERIALIZABLE</th></tr></thead>
     <tbody>
-      <tr><td>PostgreSQL</td><td>MVCC read latest committed</td><td>Snapshot Isolation</td><td>SSI (Serializable Snapshot Isolation) — true serializability</td></tr>
-      <tr><td>Oracle</td><td>MVCC read latest committed</td><td><strong>Không hỗ trợ</strong></td><td>Snapshot Isolation (KHÔNG phải true serializability)</td></tr>
-      <tr><td>MySQL InnoDB</td><td>MVCC</td><td>SI + gap lock (chặn phantom phần lớn)</td><td>Range lock (nhiều lock hơn)</td></tr>
+      <tr><td>PostgreSQL</td><td>MVCC, đọc bản committed mới nhất</td><td>Snapshot Isolation (thực tế chặn cả phantom)</td><td><strong>SSI</strong> — Serializable Snapshot Isolation, true serializability</td></tr>
+      <tr><td>Oracle</td><td>MVCC</td><td><strong>KHÔNG hỗ trợ</strong> (báo lỗi nếu set)</td><td>Snapshot Isolation (KHÔNG phải true serializability)</td></tr>
+      <tr><td>MySQL InnoDB</td><td>MVCC</td><td>SI + gap lock (chặn phantom phần lớn) — đây là <em>mặc định</em></td><td>Khoá range nhiều hơn</td></tr>
     </tbody>
   </table>
   </div>
-  <div class="callout warn"><div class="ctitle">3 gotcha vendor</div><p><strong>(1)</strong> Oracle SERIALIZABLE thực chất là Snapshot Isolation → <em>vẫn có Write Skew</em>. <strong>(2)</strong> PostgreSQL SERIALIZABLE là SSI → true serializability, detect conflict lúc commit và abort. <strong>(3)</strong> MySQL REPEATABLE_READ (default) dùng gap lock nên chặn được phantom phần lớn trường hợp — khác SQL standard. <em>Lưu ý:</em> KHÔNG level nào tự chặn Lost Update — cần explicit lock.</p></div>
+  <div class="callout warn"><div class="ctitle">3 gotcha phải nhớ để không bị bắt bài</div>
+    <p><strong>(1) Oracle "SERIALIZABLE" thực chất chỉ là Snapshot Isolation</strong> → nó <em>vẫn để lọt Write Skew</em>. Đừng tin cái tên.<br>
+    <strong>(2) PostgreSQL SERIALIZABLE là SSI</strong> — theo dõi phụ thuộc đọc/ghi (predicate locks), tới lúc commit nếu phát hiện một chu trình (cycle) trong đồ thị phụ thuộc thì abort một transaction. Đây là true serializability nhưng đổi lại có abort → phải retry.<br>
+    <strong>(3) MySQL REPEATABLE READ (mặc định) dùng gap lock</strong> nên chặn được phantom trong đa số trường hợp — khác với định nghĩa SQL standard (vốn cho phép phantom ở RR).<br>
+    Và bao trùm tất cả: <strong>không level nào tự chặn Lost Update</strong> — cần explicit lock.</p>
+  </div>
 </section>
 
 <section id="writeskew">
-  <h2>2.6 Write Skew — anomaly Snapshot Isolation không fix <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-sql">-- Invariant: luôn ≥ 1 bác sĩ on-call. Hiện có Alice + Bob (on_duty=true).
-
--- TX1 (Alice xin off):                        -- TX2 (Bob xin off) chạy đồng thời:
+  <h2>2.6 Write Skew — anomaly mà Snapshot Isolation không thấy <span class="k-tag core">CORE ★</span></h2>
+  <p>Đây là câu phân loại senior. Ví dụ kinh điển: lịch trực bác sĩ, invariant "luôn phải có ít nhất 1 bác sĩ on-call". Hiện có Alice và Bob đang trực.</p>
+  <pre><code class="language-sql">-- TX1 (Alice xin off):                        -- TX2 (Bob xin off) chạy ĐỒNG THỜI:
 BEGIN;                                          BEGIN;
 SELECT count(*) FROM oncall                     SELECT count(*) FROM oncall
-  WHERE shift='night' AND on_duty=true;  -- =2    WHERE shift='night' AND on_duty=true; -- =2 (snapshot cũ)
--- count >= 2 → OK cho off                       -- count >= 2 → OK cho off
+  WHERE shift='night' AND on_duty=true; -- = 2    WHERE shift='night' AND on_duty=true; -- = 2 (snapshot riêng)
+-- count >= 2 → OK, cho phép Alice off          -- count >= 2 → OK, cho phép Bob off
 UPDATE oncall SET on_duty=false                 UPDATE oncall SET on_duty=false
   WHERE name='Alice';                             WHERE name='Bob';
 COMMIT;                                          COMMIT;
--- KẾT QUẢ: không ai on-call → vi phạm invariant</code></pre>
-  <p><strong>Vì sao SI không bắt:</strong> hai TX update <em>disjoint rows</em> (Alice vs Bob) → không có write-write conflict trên cùng row; mỗi TX đọc snapshot riêng thấy điều kiện thoả. SI chỉ detect conflict trên <em>cùng row</em>.</p>
+-- KẾT QUẢ: cả Alice và Bob đều off → 0 bác sĩ trực → vi phạm invariant</code></pre>
+  <p><strong>Vì sao Snapshot Isolation (REPEATABLE READ ở PostgreSQL) KHÔNG bắt được:</strong> SI chỉ phát hiện xung đột khi hai transaction <em>ghi vào cùng một row</em> (write-write conflict). Ở đây TX1 ghi row Alice, TX2 ghi row Bob — hai row <em>khác nhau</em> (disjoint) → không có write-write conflict → SI cho cả hai commit. Cái sai nằm ở chỗ cả hai <em>đọc</em> chung một tập dữ liệu (toàn bộ bảng oncall) và ra quyết định dựa trên một điều kiện mà hành động của người kia làm sai đi — nhưng SI không theo dõi phụ thuộc đọc-ghi này.</p>
+  <p><strong>Ba cách fix:</strong></p>
+  <ol>
+    <li><strong>SERIALIZABLE thật (PostgreSQL SSI):</strong> SSI có theo dõi predicate (phạm vi đọc), phát hiện chu trình phụ thuộc và abort một transaction → bạn retry. Đắt hơn nhưng đúng về mặt lý thuyết.</li>
+    <li><strong>Materialize conflict bằng <code>SELECT ... FOR UPDATE</code>:</strong> khi đọc, khoá luôn các row liên quan (cả Alice và Bob, hoặc một row "đại diện ca trực"). Biến write-skew thành write-write conflict mà SI bắt được — thường đơn giản &amp; nhanh hơn SSI.</li>
+    <li><strong>Khoá trên một "phantom row" đại diện:</strong> ví dụ advisory lock theo <code>shift_id</code>, buộc hai transaction trên cùng ca phải tuần tự.</li>
+  </ol>
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — khi nâng isolation KHÔNG phải cách đúng</div>
     <div class="bi-answer">
       <p>Phản xạ "thấy lỗi đồng thời → set SERIALIZABLE toàn bộ service" là sai hướng:</p>
       <ul>
-        <li><strong>SSI abort khi conflict:</strong> không bọc <code>@Retryable</code> → transaction bị abort → user nhận 500 ngẫu nhiên.</li>
-        <li><strong>Overhead:</strong> SSI phải track predicate lock → chậm đáng kể dưới tải cao.</li>
-        <li><strong>Thường chỉ cần lock đúng chỗ:</strong> Lost Update fix bằng <code>SELECT FOR UPDATE</code> với READ COMMITTED là đủ và deterministic hơn.</li>
+        <li><strong>SSI abort khi conflict:</strong> không bọc <code>@Retryable</code> → transaction bị abort → user nhận 500 ngẫu nhiên (khó tái hiện, khó debug).</li>
+        <li><strong>Overhead:</strong> SSI phải track predicate lock cho mọi transaction → chậm đáng kể dưới tải cao, kể cả các transaction không hề có write skew.</li>
+        <li><strong>Thường chỉ cần lock đúng chỗ:</strong> Lost Update fix bằng <code>SELECT FOR UPDATE</code> với READ COMMITTED là đủ và <em>deterministic</em> (không có abort ngẫu nhiên).</li>
       </ul>
-      <p><em>Cách đúng:</em> chọn isolation tối thiểu cần; materialize conflict bằng <code>SELECT FOR UPDATE</code> trên row "đại diện" (vd advisory lock theo shift_id) cho Write Skew. Xem 3.3.</p>
+      <p><em>Cách đúng:</em> chọn isolation tối thiểu cần cho từng nghiệp vụ; materialize conflict bằng lock ở đúng chỗ có invariant, thay vì nâng toàn cục.</p>
     </div>
   </div>
 </section>
 
 <section id="optimistic">
-  <h2>3.1 Optimistic lock (@Version) — contention thấp <span class="k-tag core">CORE ★</span></h2>
+  <h2>3.1 Optimistic lock (@Version) — cho contention thấp <span class="k-tag core">CORE ★</span></h2>
+  <p><strong>Ý tưởng:</strong> "lạc quan" rằng xung đột hiếm. Không khoá gì khi đọc; chỉ <em>tại lúc ghi</em> mới kiểm tra xem dữ liệu có bị ai sửa giữa chừng không. Cơ chế: thêm cột <code>version</code> (số nguyên). Mỗi update tăng version lên 1 và chỉ ghi nếu version trong DB vẫn bằng version lúc đọc. Nếu ai đó đã ghi trước (version đổi) → câu UPDATE khớp 0 row → Hibernate ném <code>OptimisticLockException</code> → bạn đọc lại bản mới và thử lại.</p>
   <pre><code class="language-java">@Entity @Table(name = "wallets")
 public class Wallet {
     @Id private Long id;
     private BigDecimal balance;
-    @Version private Long version;     // Hibernate tự increment + check
+    @Version private Long version;     // Hibernate tự increment + đưa vào WHERE
 }
 
-@Service
-public class WalletService {
-    @Transactional
-    @Retryable(retryFor = ObjectOptimisticLockingFailureException.class,
-               maxAttempts = 5,
-               backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
-    public void spend(Long walletId, BigDecimal amount) {
-        Wallet w = walletRepo.findById(walletId).orElseThrow();
-        if (w.getBalance().compareTo(amount) &lt; 0) throw new InsufficientCreditException();
-        w.setBalance(w.getBalance().subtract(amount));
-        walletRepo.save(w);            // UPDATE ... SET balance=?, version=version+1
-    }                                  //         WHERE id=? AND version=?
-                                       // row count = 0 → OptimisticLockException → retry
-
-    @Recover
-    public void onExhausted(ObjectOptimisticLockingFailureException ex, Long walletId, BigDecimal amount) {
-        log.error("High contention on wallet {} after retries", walletId, ex);
-        throw new HighContentionException("Đang bận, thử lại sau");
-    }
-}</code></pre>
-  <p><strong>Generated SQL:</strong> <code>UPDATE wallets SET balance=?, version=version+1 WHERE id=? AND version=?</code> — nếu version đã đổi (TX khác ghi trước) → 0 row → Hibernate ném exception → <code>@Retryable</code> đọc lại bản mới và thử lại. <strong>Trade-off:</strong> không lock (scalable) nhưng contention cao → nhiều retry tốn CPU; không hợp long transaction.</p>
+@Transactional
+@Retryable(retryFor = ObjectOptimisticLockingFailureException.class,
+           maxAttempts = 5, backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500))
+public void spend(Long walletId, BigDecimal amount) {
+    Wallet w = walletRepo.findById(walletId).orElseThrow();
+    if (w.getBalance().compareTo(amount) &lt; 0) throw new InsufficientCreditException();
+    w.setBalance(w.getBalance().subtract(amount));
+    walletRepo.save(w);     // UPDATE wallets SET balance=?, version=version+1 WHERE id=? AND version=?
+}                           // khớp 0 row → exception → @Retryable đọc lại &amp; thử lại</code></pre>
+  <p><strong>Trade-off:</strong> ưu điểm là không giữ lock nên scale tốt khi xung đột hiếm; nhược điểm là khi contention cao (nhiều transaction tranh cùng row "nóng" như ví tổng), tỉ lệ retry tăng vọt → lãng phí CPU, và có thể "retry storm". Cũng không hợp cho transaction dài (vòng retry có thể kéo dài). <strong>Backoff luỹ thừa</strong> (delay tăng dần) giúp giảm va chạm khi retry. Luôn có <code>@Recover</code> để xử lý khi hết số lần retry thay vì để user nhận 500.</p>
 </section>
 
 <section id="pessimistic">
   <h2>3.2 Pessimistic lock (FOR UPDATE) + chống deadlock <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-java">public interface WalletRepository extends JpaRepository&lt;Wallet, Long&gt; {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)          // → SELECT ... FOR UPDATE
-    @Query("SELECT w FROM Wallet w WHERE w.id = :id")
-    Optional&lt;Wallet&gt; findByIdForUpdate(@Param("id") Long id);
-}
+  <p><strong>Ý tưởng:</strong> "bi quan" rằng xung đột thường xảy ra → khoá ngay khi đọc. <code>SELECT ... FOR UPDATE</code> đặt một write-lock trên row; transaction khác muốn khoá cùng row phải <em>chờ</em> cho đến khi transaction này commit/rollback. Nhờ vậy việc đọc-rồi-ghi được serialize, loại bỏ Lost Update một cách deterministic (không cần retry).</p>
+  <pre><code class="language-java">@Lock(LockModeType.PESSIMISTIC_WRITE)          // → SELECT ... FOR UPDATE
+@Query("SELECT w FROM Wallet w WHERE w.id = :id")
+Optional&lt;Wallet&gt; findByIdForUpdate(@Param("id") Long id);
 
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public void transfer(Long fromId, Long toId, BigDecimal amount) {
-    // LUÔN lock theo thứ tự ID cố định → không bao giờ deadlock chéo
-    Long firstId  = Math.min(fromId, toId);
+    Long firstId  = Math.min(fromId, toId);    // ⚠️ LUÔN khoá theo thứ tự ID cố định
     Long secondId = Math.max(fromId, toId);
     Wallet first  = walletRepo.findByIdForUpdate(firstId).orElseThrow();
     Wallet second = walletRepo.findByIdForUpdate(secondId).orElseThrow();
-
-    Wallet from = fromId.equals(firstId) ? first : second;
-    Wallet to   = fromId.equals(firstId) ? second : first;
-    if (from.getBalance().compareTo(amount) &lt; 0) throw new InsufficientCreditException();
-    from.setBalance(from.getBalance().subtract(amount));
-    to.setBalance(to.getBalance().add(amount));
-    walletRepo.save(from); walletRepo.save(to);
+    /* ... trừ/cộng ... */
 }</code></pre>
-  <div class="callout danger"><div class="ctitle">Deadlock symptom + fix</div><p><strong>Triệu chứng:</strong> log <code>deadlock detected</code>, DB tự hủy một transaction ngẫu nhiên dưới tải. <strong>Nguyên nhân:</strong> TX1 lock A rồi xin B; TX2 lock B rồi xin A → chờ nhau. <strong>Fix:</strong> luôn acquire lock theo thứ tự cố định (<code>MIN(id)</code> trước <code>MAX(id)</code>) như trên. Pessimistic hợp khi contention cao (row "nóng") vì deterministic, không retry-storm.</p></div>
+  <div class="callout danger"><div class="ctitle">Deadlock — vì sao xảy ra &amp; cách chặn</div><p><strong>Deadlock</strong> là khi hai transaction chờ lock của nhau theo vòng tròn: TX1 đang giữ lock ví A và xin lock ví B; TX2 đang giữ lock ví B và xin lock ví A → không ai đi tiếp được. DB phát hiện và <em>hủy một transaction</em> ngẫu nhiên (<code>deadlock detected</code>). <strong>Cách chặn tận gốc:</strong> luôn acquire lock theo một <em>thứ tự toàn cục cố định</em> — ví dụ luôn khoá ID nhỏ trước (<code>MIN(id)</code> rồi <code>MAX(id)</code>). Khi mọi transaction tuân cùng thứ tự, không thể tạo thành vòng tròn chờ. <strong>Khi nào chọn pessimistic:</strong> contention cao, chi phí của một lần làm sai (hoặc một lần retry) lớn — ví dụ trừ tiền/tồn kho trên row nóng.</p></div>
 </section>
 
 <section id="serializable">
-  <h2>3.3 SERIALIZABLE (PostgreSQL SSI) fix Write Skew <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <h2>3.3 SERIALIZABLE (PostgreSQL SSI) — fix Write Skew <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Khi nghiệp vụ có invariant phức tạp mà lock từng row không diễn đạt nổi (như on-call), dùng SERIALIZABLE thật. PostgreSQL SSI theo dõi các phụ thuộc đọc-ghi giữa transaction (predicate lock — "transaction này đã đọc các row thoả điều kiện X"), và tới lúc commit, nếu phát hiện một chu trình nguy hiểm trong đồ thị phụ thuộc, nó abort một transaction. Bạn <em>bắt buộc</em> phải có vòng retry vì không transaction nào được đảm bảo thành công.</p>
   <pre><code class="language-java">@Transactional(isolation = Isolation.SERIALIZABLE)
 @Retryable(retryFor = CannotSerializeTransactionException.class,
            maxAttempts = 3, backoff = @Backoff(delay = 100))
@@ -357,65 +360,63 @@ public void requestTimeOff(Long doctorId, String shift) {
     rec.setOnDuty(false);
     oncallRepo.save(rec);
 }
-// PostgreSQL SSI: track predicate dependency; tại commit nếu phát hiện cycle trong
-// dependency graph → abort 1 TX với "could not serialize access due to read/write
-// dependencies among transactions" → @Retryable thử lại. KHÔNG có TX nào chắc chắn succeed.</code></pre>
-  <p>Thay thế: <code>SELECT ... FOR UPDATE</code> trên các row đọc để <em>materialize conflict</em> (biến write-skew thành write-write conflict mà SI bắt được) — đôi khi đơn giản &amp; nhanh hơn SSI.</p>
+// nếu hai bác sĩ off đồng thời → SSI abort một TX với "could not serialize access due to
+// read/write dependencies among transactions" → @Retryable thử lại → lần này count=1 → bị chặn đúng.</code></pre>
 </section>
 
 <section id="idempotency">
   <h2>3.4 Idempotency key — chống duplicate request <span class="k-tag core">CORE ★</span></h2>
-  <p>Kể cả SERIALIZABLE, client submit 2 lần (timeout, double-click) vẫn có thể tạo 2 kết quả với id khác nhau. Idempotency key (unique constraint) giải quyết — và phải nằm <strong>cùng transaction</strong> với thao tác chính.</p>
+  <p>Lock/isolation chỉ giải quyết hai transaction <em>tranh cùng dữ liệu</em>. Nó <em>không</em> giải quyết tình huống client gửi <em>cùng một yêu cầu</em> hai lần (mạng timeout rồi retry, hoặc user double-click) — vì hai request đó có thể chạy nối tiếp, mỗi cái tạo một order hợp lệ riêng. Đây là vấn đề "exactly-once" ở tầng nghiệp vụ, giải bằng <strong>idempotency key</strong>: client gắn một khoá duy nhất cho mỗi ý định; server dùng unique constraint để đảm bảo một khoá chỉ được xử lý một lần.</p>
   <pre><code class="language-java">@Transactional(isolation = Isolation.READ_COMMITTED)
 public OrderResult placeOrder(String idempotencyKey, OrderRequest req) {
     try {
-        idempotencyRepo.saveAndFlush(new IdempotencyKey(idempotencyKey)); // INSERT unique
-    } catch (DataIntegrityViolationException dup) {                        // đã tồn tại
+        idempotencyRepo.saveAndFlush(new IdempotencyKey(idempotencyKey)); // INSERT, unique constraint
+    } catch (DataIntegrityViolationException dup) {                        // khoá đã tồn tại
         IdempotencyKey k = idempotencyRepo.findByKeyValue(idempotencyKey);
-        return OrderResult.from(orderRepo.findById(k.getResourceId()).orElseThrow());
+        return OrderResult.from(orderRepo.findById(k.getResourceId()).orElseThrow()); // trả KẾT QUẢ CŨ
     }
-    Order order = doPlaceOrder(req);                 // CÙNG transaction với insert key
-    IdempotencyKey k = idempotencyRepo.findByKeyValue(idempotencyKey);
-    k.setResourceType("ORDER"); k.setResourceId(order.getId());
-    idempotencyRepo.save(k);
+    Order order = doPlaceOrder(req);                 // CÙNG transaction với INSERT key
+    /* link key ↔ order.id */
     return OrderResult.from(order);
 }</code></pre>
-  <div class="callout warn"><div class="ctitle">Quan trọng</div><p>INSERT key và thao tác chính phải <strong>cùng transaction</strong>. Nếu tách ra, crash giữa chừng sẽ tạo key mồ côi (key đã ghi nhưng order chưa tạo) → request retry tưởng đã xử lý mà thực ra chưa.</p></div>
+  <div class="callout warn"><div class="ctitle">Vì sao phải CÙNG transaction</div><p>INSERT key và thao tác chính (tạo order) phải nằm trong <em>cùng một transaction</em>. Nếu tách: server ghi key thành công rồi crash trước khi tạo order → lần retry tiếp theo thấy key đã tồn tại, tưởng "đã xử lý xong" và trả về kết quả không tồn tại. Đặt chung transaction đảm bảo "có key" ⟺ "có order" — hoặc cả hai cùng có, hoặc cả hai cùng rollback.</p></div>
 </section>
 
 <section id="reconciliation">
   <h2>3.5 Reconciliation — phát hiện inconsistency chủ động <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <pre><code class="language-sql">-- Chạy hằng đêm: tổng nợ phải = tổng có (ledger cân bằng)
+  <p>Dù phòng thủ kỹ tới đâu, hệ thống lớn vẫn nên có một job đối soát định kỳ để <em>phát hiện</em> dữ liệu đã lệch (do bug, do race chưa lường) — vì im lặng để dữ liệu sai trôi đi còn nguy hiểm hơn. Với hệ ghi sổ tiền/kho dạng double-entry, bất biến đơn giản là "tổng nợ = tổng có"; chỉ cần SUM lệch khác 0 là có anomaly đã xảy ra → alert ops điều tra.</p>
+  <pre><code class="language-sql">-- Chạy hằng đêm: kiểm tra tổng cân bằng của ledger
 SELECT
   SUM(CASE WHEN type='DEBIT'  THEN amount ELSE 0 END) AS total_debit,
   SUM(CASE WHEN type='CREDIT' THEN amount ELSE 0 END) AS total_credit,
   SUM(CASE WHEN type='DEBIT'  THEN amount ELSE -amount END) AS imbalance
 FROM ledger_entries
 WHERE created_date = CURRENT_DATE - INTERVAL '1 day';
--- imbalance != 0 → có anomaly đã xảy ra → alert ops team điều tra</code></pre>
+-- imbalance != 0 → có anomaly đã xảy ra → alert ops team</code></pre>
 </section>
 
 <section id="antipatterns">
-  <h2>4. Anti-patterns + decision <span class="k-tag core">CORE ★</span></h2>
+  <h2>4. Anti-patterns + cách chọn <span class="k-tag core">CORE ★</span></h2>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
     <tbody>
-      <tr><td>Nâng isolation để "fix race"</td><td>SSI abort → 500 nếu không retry; chậm</td><td>Isolation tối thiểu + explicit lock + retry</td></tr>
-      <tr><td>Long transaction (gọi API/PDF trong TX)</td><td>Snapshot giữ lâu → VACUUM bị chặn → table bloat, cạn connection</td><td>Tách TX ngắn; xử lý nặng ngoài TX</td></tr>
+      <tr><td>Nâng isolation để "fix race"</td><td>SSI abort → 500 nếu không retry; chậm toàn cục</td><td>Isolation tối thiểu + explicit lock đúng chỗ + retry</td></tr>
+      <tr><td>Long transaction (gọi API/PDF/S3 trong TX)</td><td>Snapshot giữ lâu → chặn VACUUM → table bloat, cạn connection pool</td><td>Tách TX ngắn; xử lý nặng ngoài TX rồi ghi lại</td></tr>
       <tr><td>Không handle OptimisticLockException</td><td>User nhận 500 ngẫu nhiên dưới tải</td><td>@Retryable + @Recover fallback</td></tr>
-      <tr><td>Pessimistic lock không theo order</td><td>Deadlock chéo</td><td>Lock theo MIN(id) → MAX(id)</td></tr>
-      <tr><td>Idempotency key khác transaction</td><td>Key mồ côi khi crash</td><td>INSERT key cùng TX với thao tác chính</td></tr>
-      <tr><td>Dùng CAP biện minh eventual cho tiền</td><td>Double-spend/oversell khi partition</td><td>Tiền/tồn kho: PC/EC; analytics: PA/EL</td></tr>
+      <tr><td>Pessimistic lock không theo thứ tự cố định</td><td>Deadlock chéo</td><td>Lock theo MIN(id) → MAX(id)</td></tr>
+      <tr><td>Idempotency key khác transaction</td><td>Key mồ côi khi crash → tưởng đã xử lý</td><td>INSERT key cùng TX với thao tác chính</td></tr>
+      <tr><td>Dùng CAP biện minh eventual cho tiền</td><td>Double-spend/oversell khi partition</td><td>Tiền/tồn kho: PC/EC; analytics/notification: PA/EL</td></tr>
     </tbody>
   </table>
   </div>
-  <pre><code class="language-text">Chọn cơ chế:
-  Không shared mutable state           → READ COMMITTED (mặc định, nhanh)
-  Update cùng row, contention thấp     → Optimistic (@Version) + retry
-  Update cùng row, contention cao      → Pessimistic (FOR UPDATE) + lock ordering
-  Invariant phức tạp (Write Skew)      → SERIALIZABLE (SSI) + retry, hoặc FOR UPDATE materialize
-  Cross-service / cross-shard          → Saga + Outbox (xem #13, #18)</code></pre>
+  <pre><code class="language-text">Chọn cơ chế theo tình huống:
+  Không có shared mutable state           → READ COMMITTED (mặc định, nhanh nhất)
+  Update cùng row, contention THẤP        → Optimistic (@Version) + retry
+  Update cùng row, contention CAO         → Pessimistic (FOR UPDATE) + lock ordering
+  Invariant phức tạp (Write Skew)         → SERIALIZABLE (SSI) + retry, hoặc FOR UPDATE materialize
+  Cross-service / cross-shard             → Saga + Outbox (xem #13, #18)
+  Chống duplicate request (cùng ý định)   → Idempotency key (cùng transaction)</code></pre>
 </section>
 
 <section id="interview">
@@ -423,17 +424,17 @@ WHERE created_date = CURRENT_DATE - INTERVAL '1 day';
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
     <p><strong>Q:</strong> 4 isolation level chặn anomaly nào? Optimistic vs pessimistic?</p>
-    <p class="a">RU: không chặn gì; RC: chặn dirty read; RR: + non-repeatable; SER: + phantom/write skew. Không level nào tự chặn lost update. Optimistic (@Version) = không lock, detect lúc commit, cần retry, contention thấp; Pessimistic (FOR UPDATE) = lock khi đọc, contention cao, rủi ro deadlock nếu sai lock order.</p>
+    <p class="a">RU: không chặn gì; RC: chặn dirty read; RR: + non-repeatable; SER: + phantom/write skew. Không level nào tự chặn lost update. Optimistic (@Version) = không lock, kiểm tra lúc commit, cần retry, hợp contention thấp; Pessimistic (FOR UPDATE) = lock khi đọc, hợp contention cao, rủi ro deadlock nếu sai thứ tự lock.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
-    <p><strong>Q:</strong> Vì sao PostgreSQL REPEATABLE_READ không chặn Write Skew? Và vì sao chuyển tiền nên dùng FOR UPDATE thay vì RR retry?</p>
-    <p class="a">RR = Snapshot Isolation, chỉ detect write-write conflict cùng row. Write Skew ghi disjoint rows (Alice vs Bob) sau khi đọc overlapping → SI không thấy conflict → cả hai commit, phá invariant. Fix: SERIALIZABLE (SSI predicate lock) hoặc SELECT FOR UPDATE materialize. Với chuyển tiền: FOR UPDATE cho hành vi <em>deterministic</em> (TX2 block rồi đọc giá trị mới, fail đúng logic) thay vì RR ném "could not serialize" buộc app retry → UX kém nếu quên retry.</p>
+    <p><strong>Q:</strong> Vì sao PostgreSQL REPEATABLE_READ không chặn Write Skew? Vì sao chuyển tiền nên dùng FOR UPDATE thay vì RR retry?</p>
+    <p class="a">RR = Snapshot Isolation, chỉ phát hiện write-write conflict trên cùng row. Write Skew ghi disjoint rows (Alice vs Bob) sau khi đọc overlapping → SI không thấy conflict → cả hai commit, phá invariant. Fix: SERIALIZABLE (SSI predicate lock) hoặc SELECT FOR UPDATE materialize conflict. Với chuyển tiền: FOR UPDATE cho hành vi <em>deterministic</em> (TX2 block rồi đọc giá trị mới, fail đúng logic) thay vì RR ném "could not serialize" buộc app retry → UX kém nếu quên retry.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> Thiết kế hệ trừ tồn kho/ví 10K TPS, no lost update, no write skew.</p>
-    <p class="a">Shard theo wallet_id (~1K TPS/shard, 10 shard). Per-shard: READ COMMITTED + SELECT FOR UPDATE, lock theo id order (no cross-shard deadlock). Cross-shard (chuyển A shard1 → B shard3): không lock 2 shard trong 1 TX → Saga + Outbox (debit A + outbox event → credit B + ack → compensation nếu fail). Idempotency key chống duplicate. Monitor: p99 lock wait, deadlock count (alert &gt;0), retry rate (alert &gt;5%).</p>
+    <p class="a">Shard theo wallet_id (~1K TPS/shard, 10 shard). Per-shard: READ COMMITTED + SELECT FOR UPDATE, lock theo id order (không cross-shard deadlock). Cross-shard (chuyển A shard1 → B shard3): không thể lock 2 shard trong 1 TX → Saga + Outbox (debit A + outbox event → credit B + ack → compensation nếu fail). Idempotency key chống duplicate request. Monitor: p99 lock wait, deadlock count (alert &gt;0), retry rate (alert &gt;5%).</p>
   </div>
 </section>
 
@@ -441,7 +442,7 @@ WHERE created_date = CURRENT_DATE - INTERVAL '1 day';
   <div class="build-exercise">
     <div class="be-head">🔧 Lab bắt buộc — reproduce anomaly (2 bài)</div>
     <div class="be-deliverable">
-      <p><strong>Lab 1 — Lost Update tận mắt.</strong> Mở 2 psql session, cùng <code>BEGIN</code> READ COMMITTED, cùng đọc <code>balance=600</code>, cả hai tính 600-500 trong "app" rồi <code>UPDATE balance=100 WHERE id=1</code>, commit. Quan sát balance sai. Lặp lại với <code>SELECT ... FOR UPDATE</code> → TX2 block, đọc giá trị mới (100) → fail đúng logic. Tiêu chí: gọi đúng tên anomaly và giải thích FOR UPDATE sửa thế nào.</p>
+      <p><strong>Lab 1 — Lost Update tận mắt.</strong> Mở 2 psql session, cùng <code>BEGIN</code> READ COMMITTED, cùng đọc <code>balance=600</code>, cả hai tính 600−500 trong "app" rồi <code>UPDATE balance=100 WHERE id=1</code>, commit. Quan sát balance sai. Lặp lại với <code>SELECT ... FOR UPDATE</code> → TX2 block, đọc giá trị mới (100) → fail đúng logic. Tiêu chí: gọi đúng tên anomaly và giải thích FOR UPDATE sửa thế nào.</p>
       <p><strong>Lab 2 — Write Skew + SSI.</strong> Tạo bảng <code>oncall(name, on_duty)</code> 2 dòng true. Hai session REPEATABLE_READ chạy kịch bản on-call ở 2.6 → cả hai commit, count=0 (bug). Đổi sang SERIALIZABLE → một transaction bị "could not serialize", phải retry. Tiêu chí: chỉ ra vì sao RR không bắt mà SSI bắt.</p>
     </div>
   </div>
@@ -452,12 +453,12 @@ WHERE created_date = CURRENT_DATE - INTERVAL '1 day';
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
       <li>Vì sao READ COMMITTED không chặn Lost Update dù cả hai transaction commit?</li>
-      <li>MVCC PostgreSQL (xmin/xmax) khác Oracle (UNDO/SCN) chỗ nào? Vì sao PG cần VACUUM, Oracle bị ORA-01555?</li>
+      <li>MVCC PostgreSQL (xmin/xmax + snapshot) khác Oracle (UNDO/SCN) chỗ nào? Vì sao PG cần VACUUM, Oracle bị ORA-01555?</li>
       <li>Liệt kê 6 anomaly và isolation level nào chặn cái nào. Cái nào KHÔNG level nào tự chặn?</li>
-      <li>Write Skew là gì? Vì sao Snapshot Isolation không bắt được? Hai cách fix?</li>
+      <li>Write Skew là gì? Vì sao Snapshot Isolation không bắt được? Ba cách fix?</li>
       <li>CAP có áp dụng cho single-node DB không? PACELC bổ sung gì? Vì sao tiền chọn PC/EC?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = nắm chắc consistency mức senior+.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = nắm chắc consistency mức senior+.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

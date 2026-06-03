@@ -33,10 +33,10 @@
       <a href="#real-problem">1. Bài toán: rò rỉ &amp; chiếm đơn</a>
       <div class="toc-section">Mental models</div>
       <a href="#owasp">2.1 OWASP Top 10 (cốt lõi)</a>
-      <a href="#sqli">2.2 SQL Injection — vì sao parameterized fix</a>
+      <a href="#sqli">2.2 SQL Injection — cơ chế &amp; cách chặn</a>
       <a href="#xss">2.3 XSS — 3 biến thể + 4 tầng chặn</a>
       <a href="#csrf">2.4 CSRF vs CORS + SameSite</a>
-      <a href="#idor">2.5 IDOR — trust client ID</a>
+      <a href="#idor">2.5 IDOR — authn vs authz</a>
       <div class="toc-section">Production code</div>
       <a href="#code-controller">3.1 Controller: parameterized + validation</a>
       <a href="#code-headers">3.2 Security headers filter</a>
@@ -57,7 +57,7 @@
   <div class="meta-tag">Nhóm J · Security · File chống hiểu giả</div>
   <h1>Application Security — OWASP, Injection, CSRF, IDOR</h1>
   <p class="lead">
-    Security là nơi hiểu giả dễ chết người nhất: "có dùng prepared statement", "có HTTPS" nghe đủ — nhưng "vì sao parameterized query chặn injection ở tầng nào?", "CSRF cần token cho form nhưng KHÔNG cần cho JWT API — vì sao?", "IDOR khác broken auth chỗ nào?" thì lộ. File này dạy <em>cơ chế</em> tấn công và phòng thủ kèm code thật, trên domain <strong>ShopFlow</strong> — tài khoản &amp; đơn hàng của sàn e-commerce.
+    Security là nơi hiểu giả dễ chết người nhất: "có dùng prepared statement", "có HTTPS" nghe đủ — nhưng "vì sao parameterized query chặn injection ở tầng nào?", "CSRF cần token cho form nhưng KHÔNG cho JWT API — vì sao?", "IDOR khác broken auth chỗ nào?" thì lộ. File này giải thích <em>cơ chế</em> từng lỗ hổng và vì sao cách chặn nằm ở đúng tầng — đọc một lần là hiểu. Domain: <strong>ShopFlow</strong> — tài khoản &amp; đơn hàng của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Hiểu cơ chế từng lỗ hổng + cách chặn ở đúng tầng</div>
@@ -71,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Dùng prepared statement là an toàn SQL injection. Escape input cũng được."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Parameterized query an toàn vì <em>tách câu lệnh khỏi dữ liệu</em> — DB nhận query đã compile + data là tham số, data không bao giờ được parse như SQL. Tự escape thì luôn sót case (Unicode, encoding). Nhưng nối chuỗi vào tên bảng/cột/<code>ORDER BY</code> (không tham số hoá được) vẫn injectable.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Parameterized query an toàn vì <em>tách câu lệnh khỏi dữ liệu ở tầng protocol</em> — DB nhận query đã được phân tích cú pháp (parse) trước, rồi data đến sau như tham số thuần, không bao giờ được parse như SQL. Tự escape thì luôn sót case (Unicode, encoding lồng). Và nối chuỗi vào tên bảng/cột/<code>ORDER BY</code> (không tham số hoá được) vẫn injectable dù dùng PreparedStatement.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "CSRF với CORS là một, đều về cross-origin."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> CSRF = trình duyệt <em>tự gửi cookie/session</em> khi bị dụ submit form sang site bạn → cần CSRF token. CORS = cơ chế trình duyệt cho phép/chặn JS <em>đọc response</em> cross-origin. JWT trong header (không phải cookie) thì KHÔNG bị CSRF (trình duyệt không tự gắn custom header).</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Ngược nhau. CSRF lợi dụng việc trình duyệt <em>tự gửi cookie</em> → kẻ tấn công khiến trình duyệt nạn nhân gửi request hợp lệ ngoài ý muốn. CORS là cơ chế trình duyệt <em>nới lỏng/giới hạn</em> việc JS đọc response cross-origin. Bật CORS không chống CSRF; thậm chí cấu hình CORS lỏng còn mở thêm rủi ro.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Đã login (authentication) là an toàn truy cập."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Authentication (bạn là ai) ≠ authorization (bạn được làm gì). IDOR: user A login hợp lệ nhưng đổi <code>orderId</code> trên URL để xem đơn của user B. Phải check ownership ở server, không tin ID client gửi.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Authentication (bạn là <em>ai</em>) ≠ authorization (bạn được làm <em>gì</em> với resource nào). IDOR là lỗ hổng authorization: user A login hợp lệ nhưng đổi <code>orderId</code> trên URL để xem đơn của user B. Login không ngăn được; phải check ownership ở server.</div>
   </div>
 </section>
 
@@ -87,7 +87,7 @@
   <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
   <div class="roadmap">
     <div class="roadmap-head">Thứ tự ưu tiên</div>
-    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> SQL Injection + vì sao parameterized fix (2.2), IDOR + check ownership server-side (2.5), CSRF vs CORS (2.4). Ba lỗi này hỏi gần như chắc chắn và hay gặp thật.</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> SQL Injection + vì sao parameterized fix (2.2), IDOR + authn vs authz (2.5), CSRF vs CORS (2.4). Ba lỗi này hỏi gần như chắc chắn và hay gặp thật.</div>
     <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> XSS 3 biến thể + 4 tầng chặn (2.3), rate limiting login, PII masking (3.3).</div>
     <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> OWASP Top 10 tổng quan (2.1), security headers (3.2), SameSite, second-order injection.</div>
     <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> SSRF, deserialization, dependency CVE scanning, threat modeling.</div>
@@ -96,7 +96,7 @@
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — rò rỉ &amp; chiếm đơn <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow gặp 3 sự cố: (1) một query search nối chuỗi input → kẻ tấn công dump cả bảng user; (2) user đổi <code>?orderId=1002</code> trên URL xem được đơn người khác; (3) form đổi email bị site khác submit hộ qua cookie → tài khoản bị chiếm.</p>
+  <p>ShopFlow gặp 3 sự cố trong một tháng. (1) Một endpoint tìm kiếm ghép trực tiếp ô input người dùng vào câu SQL; kẻ tấn công nhập một chuỗi khéo léo khiến câu lệnh trả về toàn bộ bảng <code>users</code> kèm hash mật khẩu. (2) Một khách quan sát URL <code>/orders?orderId=1002</code> của mình, đổi thành <code>1003</code> và xem được đơn của người khác — không cần hack gì, chỉ đổi số. (3) Form đổi email bị một website lạ submit hộ: khi nạn nhân đang đăng nhập ShopFlow mà ghé trang đó, trình duyệt tự đính kèm session cookie nên ShopFlow tưởng chính chủ yêu cầu, đổi email và kẻ tấn công chiếm tài khoản.</p>
 
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
@@ -106,17 +106,19 @@
       <li>Sự cố (2) tên là gì? Vì sao "đã login" không ngăn được? Check gì ở server?</li>
       <li>Sự cố (3) tên là gì? Vì sao JWT trong header sẽ không bị, nhưng session cookie thì bị?</li>
     </ol>
-    <div class="pause-hint">Đáp án: (1) SQL Injection — parameterized tách lệnh khỏi data (2.2); (2) IDOR — check ownership server, không tin ID client (2.5); (3) CSRF — cần token; cookie tự gửi còn JWT header thì không (2.4). Đừng đọc tiếp khi chưa đặt đúng 3 tên.</div>
+    <div class="pause-hint">Đáp án: (1) SQL Injection — parameterized tách lệnh khỏi data (2.2); (2) IDOR — authorization, check ownership server, không tin ID client (2.5); (3) CSRF — cookie tự gửi tạo "ambient authority"; JWT header thì trình duyệt không tự gắn (2.4). Đừng đọc tiếp khi chưa đặt đúng 3 tên.</div>
   </div>
 </section>
 
 <section id="owasp">
-  <h2>2.1 OWASP Top 10 — cốt lõi <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Một số mục hay gặp trong backend e-commerce: <strong>Broken Access Control</strong> (gồm IDOR), <strong>Injection</strong> (SQL/NoSQL/command), <strong>Cryptographic Failures</strong> (PII không mã hoá), <strong>Security Misconfiguration</strong>, <strong>Identification &amp; Authentication Failures</strong> (thiếu rate limit, session yếu), <strong>SSRF</strong>. Học theo <em>cơ chế</em> chứ không thuộc danh sách.</p>
+  <h2>2.1 OWASP Top 10 — học theo cơ chế <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>OWASP Top 10 là danh sách 10 nhóm rủi ro web phổ biến nhất, cập nhật vài năm một lần. Đừng học thuộc danh sách — học theo <em>cơ chế</em>. Trong backend e-commerce hay gặp nhất: <strong>Broken Access Control</strong> (gồm IDOR — vượt quyền truy cập), <strong>Injection</strong> (SQL/NoSQL/command — chèn lệnh qua input), <strong>Cryptographic Failures</strong> (PII không mã hoá, dùng thuật toán yếu — xem #30), <strong>Security Misconfiguration</strong> (mặc định không an toàn, lộ stack trace), <strong>Identification &amp; Authentication Failures</strong> (thiếu rate limit, session yếu), và <strong>SSRF</strong> (lừa server gọi tới địa chỉ nội bộ). Hiểu cơ chế của vài cái cốt lõi (injection, access control, crypto) thì suy ra được phần còn lại.</p>
 </section>
 
 <section id="sqli">
-  <h2>2.2 SQL Injection — vì sao parameterized fix <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.2 SQL Injection — cơ chế &amp; vì sao parameterized fix <span class="k-tag core">CORE ★</span></h2>
+  <p>SQL Injection xảy ra khi dữ liệu người dùng bị <em>diễn giải như câu lệnh SQL</em> thay vì dữ liệu. Khi bạn nối chuỗi <code>"... WHERE email='" + input + "'"</code>, toàn bộ chuỗi (gồm cả input) được gửi tới DB như một câu lệnh và DB <em>parse</em> nó. Nếu input là <code>x' OR '1'='1' --</code>, câu lệnh thành <code>WHERE email='x' OR '1'='1' --'</code>: mệnh đề <code>OR '1'='1'</code> luôn đúng nên trả về mọi dòng, còn <code>--</code> biến phần sau thành comment. Dữ liệu đã "thoát ra" thành cấu trúc lệnh.</p>
+  <p><strong>Vì sao parameterized query chặn được — ở tầng nào:</strong> với <code>"... WHERE email = ?"</code>, driver gửi <em>câu lệnh có placeholder</em> tới DB để parse &amp; compile <em>trước</em>, rồi gửi giá trị input <em>riêng</em> như một tham số đã được đánh dấu là "dữ liệu thuần". Lúc này DB đã xác định xong cấu trúc lệnh; giá trị tham số <em>không bao giờ được parse lại</em> như SQL — dù input có chứa <code>' OR '1'='1</code> thì nó chỉ được so sánh như một chuỗi literal. Việc tách "code" và "data" này diễn ra ở tầng giao thức DB, nên an toàn theo thiết kế chứ không nhờ "lọc đúng".</p>
   <div class="compare">
     <div class="compare-col bad">
       <h4>❌ Nối chuỗi — injectable</h4>
@@ -126,44 +128,48 @@
     <div class="compare-col good">
       <h4>✅ Parameterized — tách lệnh khỏi data</h4>
       <pre><code class="language-java">jdbc.query("SELECT * FROM users WHERE email = ?", input);
-// query compile TRƯỚC; input là DATA, DB không parse nó như SQL</code></pre>
+// query parse TRƯỚC; input là DATA thuần, DB không parse nó như SQL</code></pre>
     </div>
   </div>
-  <div class="callout warn"><div class="ctitle">Vẫn injectable dù dùng PreparedStatement</div><p>Tham số chỉ thay cho <em>giá trị</em>, không thay cho <em>tên bảng/cột/ORDER BY</em>. <code>"ORDER BY " + sortColumn</code> vẫn injectable → phải whitelist <code>sortColumn</code> trong tập cho phép. <strong>ORM mostly safe</strong> (JPA dùng parameterized mặc định) nhưng <code>createNativeQuery()</code> + nối chuỗi = vulnerable.</p></div>
-  <div class="callout info"><div class="ctitle">Second-order injection</div><p>Data từ nguồn "an toàn" (DB) nhưng khi lấy ra dùng lại (log message, render HTML) mà không sanitize → injection/XSS bậc hai. Sanitize <em>tại điểm dùng</em>, không chỉ tại điểm nhập.</p></div>
+  <div class="callout warn"><div class="ctitle">Vẫn injectable dù dùng PreparedStatement</div><p>Placeholder <code>?</code> chỉ thay được cho <em>giá trị</em>, không thay được cho <em>định danh</em> (tên bảng/cột) hay từ khoá. Vì vậy <code>"ORDER BY " + sortColumn</code> hay <code>"... " + tableName</code> vẫn injectable kể cả khi phần còn lại tham số hoá. Cách chặn: <strong>whitelist</strong> — chỉ chấp nhận <code>sortColumn</code> nằm trong tập cố định (<code>Set.of("created_at","total")</code>). ORM (JPA/Hibernate) mặc định dùng parameterized nên an toàn, nhưng <code>createNativeQuery()</code> + nối chuỗi thì lại hở.</p></div>
+  <div class="callout info"><div class="ctitle">Second-order injection</div><p>Dữ liệu có thể "sạch" lúc lưu (đã parameterized khi INSERT) nhưng vẫn nguy hiểm khi <em>lấy ra dùng lại</em> trong một câu SQL khác bằng cách nối chuỗi, hoặc render vào HTML/log mà không encode. Bài học: an toàn phải đảm bảo <em>tại mỗi điểm sử dụng</em> (mỗi câu query, mỗi lần render), không chỉ tại điểm nhập.</p></div>
 </section>
 
 <section id="xss">
   <h2>2.3 XSS — 3 biến thể + 4 tầng chặn <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>XSS (Cross-Site Scripting) là khi kẻ tấn công khiến <em>script của chúng</em> chạy trong trình duyệt của nạn nhân, trong ngữ cảnh trang web của bạn — từ đó đánh cắp cookie/session, thực hiện hành động thay nạn nhân. Bản chất giống injection nhưng "đích" là trình duyệt thay vì DB: input người dùng bị diễn giải như <em>mã HTML/JS</em> thay vì văn bản. Ba biến thể khác nhau ở <em>nơi script được tiêm vào</em>:</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Loại</th><th>Cơ chế</th></tr></thead>
     <tbody>
-      <tr><td>Reflected</td><td>Script trong URL phản chiếu vào trang: <code>/search?q=&lt;script&gt;...&lt;/script&gt;</code></td></tr>
-      <tr><td>Stored</td><td>Script lưu vào DB (tên/ review) → hiện cho mọi người, vd admin xem danh sách → trigger</td></tr>
-      <tr><td>DOM-based</td><td>JS client ghi input vào DOM qua <code>innerHTML</code> (parse HTML); dùng <code>textContent</code> thì an toàn</td></tr>
+      <tr><td><strong>Reflected</strong></td><td>Script nằm trong URL/request và bị server <em>phản chiếu</em> thẳng vào trang trả về (vd <code>/search?q=&lt;script&gt;...&lt;/script&gt;</code> rồi hiển thị lại q). Cần lừa nạn nhân bấm link.</td></tr>
+      <tr><td><strong>Stored</strong></td><td>Script được <em>lưu vào DB</em> (tên hiển thị, review sản phẩm) rồi hiện cho mọi người xem → nguy hiểm nhất vì chạy với nhiều nạn nhân (vd admin mở danh sách → script chạy trong phiên admin).</td></tr>
+      <tr><td><strong>DOM-based</strong></td><td>Lỗ hổng nằm ở JS phía client: code lấy input rồi ghi vào DOM bằng <code>innerHTML</code> (parse HTML). Dùng <code>textContent</code> thì an toàn vì không parse.</td></tr>
     </tbody>
   </table>
   </div>
-  <pre><code class="language-text">4 tầng phòng thủ XSS (defense in depth):
-1. Input validation   — whitelist ký tự cho phép
-2. Output encoding     — convert "<" → "&lt;" khi RENDER (OWASP Java Encoder) ← tầng chính
-3. Content-Security-Policy header — trình duyệt không chạy inline script dù bị inject
-4. HttpOnly cookie flag — JavaScript không đọc được cookie (chống đánh cắp session)</code></pre>
-  <p><strong>Cốt lõi:</strong> XSS được chặn chủ yếu ở <em>output encoding theo ngữ cảnh</em> (HTML/JS/URL), không chỉ ở input validation.</p>
+  <p><strong>Tầng chặn chính là output encoding, không phải input validation.</strong> Lý do: cùng một input có thể an toàn ở chỗ này nhưng nguy hiểm ở chỗ khác tuỳ ngữ cảnh render (trong HTML body, trong attribute, trong JS, trong URL). Nên cách đúng là <em>encode đúng ngữ cảnh ngay lúc render</em> — biến <code>&lt;</code> thành <code>&amp;lt;</code> khi đưa vào HTML — để trình duyệt hiển thị nó như văn bản chứ không thực thi. Bốn tầng phòng thủ chồng lên nhau (defense in depth):</p>
+  <pre><code class="language-text">1. Input validation   — whitelist ký tự hợp lệ (giảm bề mặt, nhưng KHÔNG đủ một mình)
+2. Output encoding     — encode theo ngữ cảnh khi render (OWASP Java Encoder) ← TẦNG CHÍNH
+3. Content-Security-Policy (header) — trình duyệt từ chối chạy inline script dù bị tiêm
+4. HttpOnly cookie flag — JavaScript không đọc được cookie → script (nếu lọt) cũng khó trộm session</code></pre>
 </section>
 
 <section id="csrf">
   <h2>2.4 CSRF vs CORS + SameSite <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-text">CSRF attack (lợi dụng cookie tự gửi):
-1. Victim đang login ShopFlow (trình duyệt giữ session cookie)
-2. Victim vào attacker.com — trang này có form ẩn POST tới shopflow.com/account/email
-3. Form auto-submit; trình duyệt TỰ ĐỘNG kèm session cookie (same-origin cho cookie)
-4. ShopFlow nhận request "đã xác thực" → đổi email nạn nhân
-
-CSRF token chặn:
-- Form chứa token ngẫu nhiên lưu ở server session (không ở cookie)
-- attacker.com gửi được form NHƯNG không đọc được token (cross-origin) → thiếu token → fail</code></pre>
+  <p>CSRF (Cross-Site Request Forgery) lợi dụng một đặc tính của trình duyệt: khi gửi request tới <code>shopflow.com</code>, trình duyệt <em>tự động đính kèm cookie</em> của shopflow.com — bất kể request đó được kích hoạt từ trang nào. Đây gọi là "ambient authority" (quyền có sẵn theo ngữ cảnh). Kẻ tấn công khai thác bằng cách: tạo một trang có form (hoặc request ngầm) trỏ tới <code>shopflow.com/account/email</code>; khi nạn nhân (đang đăng nhập ShopFlow) ghé trang đó, form auto-submit, trình duyệt kèm cookie session, và ShopFlow tưởng chính chủ → thực hiện hành động ngoài ý muốn.</p>
+  <pre><code class="language-text">CSRF attack:
+1. Nạn nhân đang login ShopFlow (trình duyệt giữ session cookie)
+2. Nạn nhân vào attacker.com — trang này có form ẩn POST tới shopflow.com/account/email
+3. Form auto-submit; trình duyệt TỰ ĐỘNG kèm session cookie
+4. ShopFlow nhận request "đã xác thực" → đổi email nạn nhân</code></pre>
+  <p><strong>CSRF token chặn thế nào:</strong> server nhúng vào form một token ngẫu nhiên, lưu bản đối chiếu trong session (không nằm trong cookie). Khi submit, request phải kèm token này trong body. Trang của kẻ tấn công <em>không đọc được</em> token đó (vì same-origin policy chặn đọc nội dung trang cross-origin), nên không thể gửi kèm → request giả thiếu token → bị từ chối.</p>
+  <p><strong>Vì sao JWT trong header miễn nhiễm CSRF:</strong> nếu bạn xác thực bằng JWT đặt trong header <code>Authorization: Bearer ...</code> (không phải cookie), thì trình duyệt <em>không tự động</em> đính kèm header này cho request cross-origin — chỉ JS của chính bạn mới gắn được. Kẻ tấn công không lấy được token để gắn → request giả thiếu auth → fail. Đó là lý do API stateless dùng JWT header thường <em>không cần</em> CSRF token (bật vào là thừa, gây hiểu sai mô hình).</p>
+  <p><strong>CORS khác hẳn:</strong> CORS (Cross-Origin Resource Sharing) là cơ chế trình duyệt quyết định liệu <em>JavaScript của một origin có được đọc response</em> từ origin khác hay không. Nó không liên quan tới chống CSRF; thậm chí cấu hình CORS quá lỏng (<code>Access-Control-Allow-Origin: *</code> kèm credentials) còn mở thêm rủi ro. Nhầm CSRF với CORS → bật sai cơ chế.</p>
+  <pre><code class="language-text">SameSite cookie attribute (lớp chống CSRF ở tầng cookie):
+  Strict — không bao giờ gửi cookie cho request khởi nguồn từ site khác
+  Lax    — gửi cho cross-site nhưng chỉ với navigation an toàn (GET click link)  ← default hợp lý
+  None   — gửi mọi nơi (bắt buộc kèm Secure = chỉ HTTPS)</code></pre>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -171,28 +177,25 @@ CSRF token chặn:
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>CSRF lợi dụng việc trình duyệt <em>tự gửi cookie</em>. Token chống vì site khác không đoán được. CORS là cơ chế khác: kiểm soát JS <em>đọc response</em> cross-origin — không phải để chống CSRF. JWT header không bị CSRF.</p>
+      <p>Giải thích CSRF = lợi dụng ambient authority của cookie; token chống vì site khác không đọc được token; CORS là cơ chế đọc response cross-origin, không phải chống CSRF.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Session cookie → CSRF token <em>hoặc</em> <code>SameSite</code>. JWT header → không cần CSRF token. Chọn cơ chế chống theo cách lưu credential.</p>
+      <p>Chọn cơ chế theo cách lưu credential: session cookie → CSRF token <em>hoặc</em> SameSite=Lax/Strict + HttpOnly; JWT trong header → không cần CSRF token. Cấu hình CORS chặt (whitelist origin cụ thể).</p>
     </div>
   </div>
-  <pre><code class="language-text">SameSite cookie:
-  Strict — không bao giờ gửi cookie cho cross-site request
-  Lax    — gửi cho cross-site nhưng chỉ safe method (GET)  ← default hợp lý
-  None   — gửi mọi nơi (bắt buộc Secure = HTTPS)</code></pre>
 </section>
 
 <section id="idor">
-  <h2>2.5 IDOR — đừng tin client ID <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-java">// ❌ tin orderId từ URL → user xem đơn người khác
+  <h2>2.5 IDOR — authentication ≠ authorization <span class="k-tag core">CORE ★</span></h2>
+  <p>IDOR (Insecure Direct Object Reference) là một dạng <em>Broken Access Control</em>. Mấu chốt là phân biệt hai khái niệm hay bị gộp: <strong>authentication</strong> = xác minh "bạn là ai" (đăng nhập đúng); <strong>authorization</strong> = quyết định "bạn được phép làm gì với resource nào". IDOR là lỗ hổng authorization: user đã authenticate hợp lệ, nhưng server <em>không kiểm tra</em> rằng resource họ yêu cầu có thuộc về họ không. Code điển hình: <code>findById(orderId)</code> trả về đơn ứng với id trên URL mà không hỏi "đơn này có phải của người đang đăng nhập không". Đổi <code>orderId</code> = xem đơn người khác.</p>
+  <pre><code class="language-java">// ❌ tin orderId từ URL → user xem đơn người khác (chỉ authenticate, không authorize)
 Order o = orderRepo.findById(orderId).orElseThrow();
 
-// ✅ check ownership: ràng buộc theo user đang đăng nhập
+// ✅ check ownership: ràng buộc resource theo user đang đăng nhập
 Order o = orderRepo.findByIdAndCustomerId(orderId, currentUser.getId())
                    .orElseThrow(NotFoundException::new);   // trả 404, không lộ tồn tại</code></pre>
-  <p>Fix phải ở <strong>backend (service layer)</strong> — không fix ở frontend (attacker bypass) hay log (đã bị khai thác). Trả <code>404</code> chứ không <code>403</code> để không tiết lộ resource có tồn tại.</p>
+  <p>Fix <em>bắt buộc ở backend</em> (service/data layer) — không phải ở frontend (ẩn nút thì attacker vẫn gọi API trực tiếp) hay ở log (đã bị khai thác rồi). Chi tiết nhỏ nhưng quan trọng: trả <code>404 Not Found</code> thay vì <code>403 Forbidden</code> khi resource không thuộc về user — vì 403 vô tình tiết lộ "resource này có tồn tại, chỉ là bạn không được xem", giúp attacker dò ra id hợp lệ.</p>
 </section>
 
 <section id="code-controller">
@@ -206,7 +209,7 @@ class OrderController {
   ResponseEntity&lt;OrderResponse&gt; create(
       @Valid @RequestBody OrderRequest req,            // Bean Validation server-side
       @AuthenticationPrincipal UserPrincipal user) {
-    OrderResponse r = service.place(user.id(), req);   // dùng user từ token, KHÔNG từ body
+    OrderResponse r = service.place(user.id(), req);   // dùng user TỪ TOKEN, không từ body
     return ResponseEntity.status(CREATED).body(r);
   }
 
@@ -218,10 +221,10 @@ class OrderController {
 
 record OrderRequest(
     @NotBlank String sku,
-    @Min(1) @Max(999) int quantity,                    // validate biên server-side
+    @Min(1) @Max(999) int quantity,                    // validate biên ở SERVER
     @Pattern(regexp = "[A-Z0-9-]{0,16}") String coupon // whitelist ký tự
 ) {}</code></pre>
-  <p>Repository dùng JPA/parameterized; nếu cần native query động (sort), whitelist cột: <code>Set.of("created_at","total").contains(sortCol)</code> trước khi ghép.</p>
+  <p>Lưu ý hai chỗ thường sai: (a) lấy <code>customerId</code> từ token (<code>user.id()</code>) chứ KHÔNG từ body request — nếu tin body, attacker đặt đơn cho người khác; (b) validation phải ở server, vì validation phía client chỉ phục vụ UX, attacker bỏ qua client dễ dàng.</p>
 </section>
 
 <section id="code-headers">
@@ -230,33 +233,33 @@ record OrderRequest(
 class SecurityHeadersFilter extends OncePerRequestFilter {
   @Override protected void doFilterInternal(HttpServletRequest req,
       HttpServletResponse res, FilterChain chain) throws ... {
-    res.setHeader("Content-Security-Policy", "default-src 'self'");   // chặn inline script
-    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'self'");   // chặn inline script (XSS)
+    res.setHeader("X-Content-Type-Options", "nosniff");              // chống MIME sniffing
     res.setHeader("X-Frame-Options", "DENY");                        // chống clickjacking
-    res.setHeader("Strict-Transport-Security", "max-age=31536000");  // HSTS, ép HTTPS
+    res.setHeader("Strict-Transport-Security", "max-age=31536000");  // HSTS — ép HTTPS
     res.setHeader("Referrer-Policy", "no-referrer");
     chain.doFilter(req, res);
   }
 }
-// Cookie: Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax</code></pre>
+// Cookie nên có: Set-Cookie: session=...; HttpOnly; Secure; SameSite=Lax</code></pre>
 </section>
 
 <section id="code-masking">
   <h2>3.3 PII masking + rate limit <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <pre><code class="language-java">// PII masking — KHÔNG log email/thẻ/địa chỉ đầy đủ
-static String maskEmail(String e) {           // a***@mail.com
+  <p>Hai biện pháp nhỏ nhưng quan trọng: <strong>masking</strong> đảm bảo dữ liệu nhạy cảm (email, số thẻ, địa chỉ, token) không bị ghi nguyên văn vào log — vì log thường được tập trung, lưu lâu, nhiều người đọc, dễ rò rỉ. <strong>Rate limit login</strong> chống brute-force (thử mật khẩu hàng loạt) và credential stuffing (thử các cặp email/mật khẩu rò rỉ từ nơi khác) bằng cách giới hạn số lần thử theo IP và theo tài khoản.</p>
+  <pre><code class="language-java">static String maskEmail(String e) {           // a***@mail.com
   int at = e.indexOf('@');
   return at &lt;= 1 ? "***" : e.charAt(0) + "***" + e.substring(at);
 }
-static String maskCard(String c) {            // **** **** **** 1234
+static String maskCard(String c) {            // **** **** **** 1234 (giữ 4 số cuối)
   return "**** **** **** " + c.substring(c.length() - 4);
 }
 log.info("order placed customer={} card={}", maskEmail(email), maskCard(card));
 
-// Rate limit login chống brute-force / credential stuffing (Redis token bucket)
+// rate limit (Redis token bucket): chặn brute-force theo CẢ ip và account
 boolean allow(String ip, String account) {
-  return bucketFor("login:ip:" + ip).tryConsume(1)        // theo IP
-      &amp;&amp; bucketFor("login:acct:" + account).tryConsume(1); // theo account
+  return bucket("login:ip:" + ip).tryConsume(1)
+      &amp;&amp; bucket("login:acct:" + account).tryConsume(1);
 }
 // vượt N lần → exponential backoff + captcha; khoá tạm account khi nghi credential stuffing</code></pre>
 </section>
@@ -267,12 +270,12 @@ boolean allow(String ip, String account) {
     <div class="bi-head">🔧 Counter-example — khi "phòng thủ" lại tạo lỗ hổng / sai chỗ</div>
     <div class="bi-answer">
       <ul>
-        <li><strong>Tự escape thay parameterized:</strong> blacklist ký tự luôn sót (Unicode, comment, encoding). Phòng thủ đúng tầng là tách lệnh/data, không lọc input.</li>
-        <li><strong>Verbose error:</strong> trả stack trace/SQL ra client = chỉ đường cho attacker. Log chi tiết server, trả message chung cho client.</li>
-        <li><strong>Validate ở client là đủ:</strong> client validation chỉ cho UX; attacker bỏ qua client → mọi check bảo mật phải ở server.</li>
-        <li><strong>Bật CSRF token cho JWT API stateless:</strong> thừa, gây hiểu sai mô hình; ngược lại quên <code>SameSite</code>/<code>HttpOnly</code> cho session cookie mới là lỗ hổng.</li>
+        <li><strong>Tự escape thay parameterized:</strong> blacklist ký tự luôn sót (Unicode, comment lồng, double-encoding). Phòng thủ đúng tầng là tách lệnh/data ở protocol, không lọc input.</li>
+        <li><strong>Verbose error:</strong> trả stack trace/câu SQL ra client = chỉ đường cho attacker (lộ schema, lộ framework). Log chi tiết ở server, trả message chung cho client.</li>
+        <li><strong>Validate ở client là đủ:</strong> client validation chỉ cho UX; attacker gọi thẳng API → mọi check bảo mật phải lặp lại ở server.</li>
+        <li><strong>Bật CSRF token cho JWT API stateless:</strong> thừa và gây hiểu sai mô hình; ngược lại quên <code>SameSite</code>/<code>HttpOnly</code> cho session cookie mới là lỗ hổng thật.</li>
       </ul>
-      <p><em>Quy tắc:</em> chặn ở đúng tầng (parameterized cho injection, output encoding cho XSS, ownership check cho IDOR), và không tin bất cứ gì từ client.</p>
+      <p><em>Quy tắc bao trùm:</em> chặn ở đúng tầng cho từng lỗ hổng (parameterized cho injection, output encoding cho XSS, ownership check cho IDOR), và <strong>không tin bất cứ gì đến từ client</strong>.</p>
     </div>
   </div>
   <div class="table-wrap">
@@ -280,10 +283,10 @@ boolean allow(String ip, String account) {
     <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
     <tbody>
       <tr><td>Nối chuỗi vào SQL</td><td>Dump DB</td><td>Parameterized + whitelist tên cột</td></tr>
-      <tr><td>Log JWT/password/PII</td><td>Rò rỉ qua log</td><td>Masking, không log secret</td></tr>
-      <tr><td>Tin user ID từ client</td><td>IDOR, chiếm dữ liệu</td><td>Check ownership server-side</td></tr>
-      <tr><td>Không rate limit login</td><td>Brute-force/credential stuffing</td><td>Rate limit + backoff + captcha</td></tr>
-      <tr><td>Verbose error ra client</td><td>Lộ schema/stack</td><td>Message chung + log server</td></tr>
+      <tr><td>Log JWT/password/PII</td><td>Rò rỉ qua log tập trung</td><td>Masking, không log secret</td></tr>
+      <tr><td>Tin user ID từ client/body</td><td>IDOR, chiếm dữ liệu/đặt hộ</td><td>Lấy identity từ token, check ownership server-side</td></tr>
+      <tr><td>Không rate limit login</td><td>Brute-force/credential stuffing</td><td>Rate limit theo ip+account + backoff + captcha</td></tr>
+      <tr><td>Verbose error ra client</td><td>Lộ schema/stack/framework</td><td>Message chung + log chi tiết ở server</td></tr>
     </tbody>
   </table>
   </div>
@@ -294,17 +297,17 @@ boolean allow(String ip, String account) {
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
     <p><strong>Q:</strong> Chặn SQL injection thế nào?</p>
-    <p class="a">Parameterized query/PreparedStatement — tách câu lệnh khỏi dữ liệu, data không bao giờ parse như SQL. Whitelist cho phần không tham số hoá được (tên cột, ORDER BY). Không tự escape.</p>
+    <p class="a">Parameterized query/PreparedStatement — DB parse câu lệnh trước, input đến sau như data thuần, không bao giờ parse như SQL (tách code/data ở tầng protocol). Whitelist cho phần không tham số hoá được (tên cột, ORDER BY). Không tự escape.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Thiết kế API xử lý PII an toàn.</p>
-    <p class="a">TLS bắt buộc; authorization theo ownership (chống IDOR); PII mã hoá at-rest, masking trong log; rate limit; input validation server-side + output encoding; security headers (CSP/HSTS/X-Frame); cookie HttpOnly+Secure+SameSite; audit log truy cập PII; least-privilege DB account.</p>
+    <p class="a">TLS bắt buộc; authorization theo ownership (chống IDOR); PII mã hoá at-rest + masking trong log; rate limit login; input validation server-side + output encoding (chống XSS); security headers (CSP/HSTS/X-Frame); cookie HttpOnly+Secure+SameSite; audit log truy cập PII; least-privilege cho DB account.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> CSRF vs CORS — giải thích sự nhầm lẫn phổ biến.</p>
-    <p class="a">CSRF: trình duyệt tự gửi cookie → cần token/SameSite; ảnh hưởng app dùng session cookie. CORS: cơ chế trình duyệt cho JS đọc response cross-origin — KHÔNG phải chống CSRF. JWT header không bị CSRF (trình duyệt không tự gắn custom header). Nhầm hai cái → bật sai cơ chế, vừa thừa vừa hở.</p>
+    <p class="a">CSRF: trình duyệt tự gửi cookie (ambient authority) → kẻ tấn công khiến nạn nhân gửi request hợp lệ ngoài ý muốn → cần token/SameSite; chỉ ảnh hưởng app dùng session cookie. CORS: cơ chế trình duyệt cho phép JS đọc response cross-origin — KHÔNG chống CSRF. JWT header miễn nhiễm CSRF (trình duyệt không tự gắn). Nhầm hai cái → bật sai cơ chế, vừa thừa vừa hở.</p>
   </div>
 </section>
 
@@ -312,8 +315,8 @@ boolean allow(String ip, String account) {
   <div class="build-exercise">
     <div class="be-head">🔧 Lab bắt buộc — khai thác &amp; vá (2 bài)</div>
     <div class="be-deliverable">
-      <p><strong>Lab 1 — SQL Injection.</strong> Viết một endpoint search nối chuỗi input vào SQL. Khai thác bằng <code>' OR '1'='1</code> để dump bảng. Vá bằng parameterized query, thử lại → vô hại. Thêm case <code>ORDER BY</code> động → chứng minh vẫn injectable, vá bằng whitelist. Tiêu chí: giải thích tách lệnh/data.</p>
-      <p><strong>Lab 2 — IDOR.</strong> Tạo endpoint <code>GET /orders/{id}</code> chỉ <code>findById</code>. Login user A, đổi id sang đơn của user B → xem được (lỗ hổng). Vá bằng <code>findByIdAndCustomerId(currentUser)</code>, trả 404. Tiêu chí: phân biệt authentication vs authorization.</p>
+      <p><strong>Lab 1 — SQL Injection.</strong> Viết một endpoint search nối chuỗi input vào SQL. Khai thác bằng <code>' OR '1'='1</code> để dump bảng. Vá bằng parameterized query, thử lại → vô hại. Thêm case <code>ORDER BY</code> động → chứng minh vẫn injectable, vá bằng whitelist. Tiêu chí: giải thích tách lệnh/data ở tầng nào.</p>
+      <p><strong>Lab 2 — IDOR.</strong> Tạo endpoint <code>GET /orders/{id}</code> chỉ <code>findById</code>. Login user A, đổi id sang đơn của user B → xem được (lỗ hổng). Vá bằng <code>findByIdAndCustomerId(currentUser)</code>, trả 404. Tiêu chí: phân biệt authentication vs authorization, vì sao 404 không 403.</p>
     </div>
   </div>
 </section>
@@ -322,13 +325,13 @@ boolean allow(String ip, String account) {
   <div class="feynman">
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
-      <li>Vì sao parameterized query chặn SQL injection? Trường hợp nào vẫn injectable?</li>
-      <li>IDOR là gì? Vì sao "đã login" không ngăn được? Check gì ở server?</li>
-      <li>CSRF vs CORS khác nhau ra sao? Vì sao JWT header không bị CSRF? SameSite làm gì?</li>
+      <li>Vì sao parameterized query chặn SQL injection (ở tầng nào)? Trường hợp nào vẫn injectable?</li>
+      <li>IDOR là gì? Phân biệt authentication vs authorization. Vì sao "đã login" không ngăn được?</li>
+      <li>CSRF hoạt động thế nào (ambient authority)? Vì sao JWT header miễn nhiễm? CORS khác gì? SameSite làm gì?</li>
       <li>XSS chặn chủ yếu ở đâu — input hay output? 4 tầng phòng thủ là gì?</li>
-      <li>Vì sao mọi check bảo mật phải ở server dù client đã validate?</li>
+      <li>Vì sao mọi check bảo mật phải lặp lại ở server dù client đã validate?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = không bị hiểu giả về security.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = không bị hiểu giả về security.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

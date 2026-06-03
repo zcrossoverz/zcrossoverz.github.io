@@ -57,7 +57,7 @@
   <div class="meta-tag">Nhóm G · Cloud · File chống hiểu giả</div>
   <h1>AWS cho Java Backend — Chọn Đúng Dịch Vụ, Đúng Chi Phí</h1>
   <p class="lead">
-    AWS có hàng trăm dịch vụ; hiểu giả là "biết tên" mà không biết <em>khi nào dùng cái nào</em> và <em>chi phí ẩn ở đâu</em>. "EC2 vs Lambda vs Fargate khác gì?", "vì sao Lambda timeout 15s?", "DynamoDB khi nào thay RDS?", "vì sao bill S3 tăng vì request chứ không phải dung lượng?" — là các câu phân loại junior/senior. File này dạy quyết định theo trade-off kèm IAM/Lambda/DynamoDB code, cho <strong>ShopFlow</strong> — sàn e-commerce trên AWS.
+    AWS có hàng trăm dịch vụ; hiểu giả là "biết tên" mà không biết <em>khi nào dùng cái nào</em> và <em>chi phí ẩn ở đâu</em>. File này giải thích bản chất từng nhóm dịch vụ (compute/storage/DB/messaging), trade-off chọn lựa, và các chi phí ẩn — đọc một lần là ra quyết định theo trade-off. Domain: <strong>ShopFlow</strong> — sàn e-commerce trên AWS.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Chọn compute/storage/DB/messaging đúng nhu cầu &amp; chi phí</div>
@@ -71,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Lambda rẻ và tự scale nên dùng cho mọi thứ."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Lambda có timeout (tối đa 15 phút), cold start, giới hạn payload, và đắt khi chạy liên tục tải cao. Hợp cho event-driven/burst ngắn; không hợp cho job dài, kết nối DB lâu, hay tải cao ổn định (lúc đó ECS/EC2 rẻ hơn).</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Lambda có ràng buộc: timeout tối đa 15 phút, "cold start" (lần gọi đầu sau khi ngủ phải khởi tạo runtime → chậm, JVM nặng càng đau), giới hạn payload. Mô hình tính tiền theo số lần gọi × thời gian × bộ nhớ khiến nó <em>đắt</em> khi chạy liên tục ở tải cao. Hợp với event-driven/burst ngắn; không hợp job dài, kết nối DB lâu, hay tải cao ổn định (lúc đó ECS/EC2 rẻ hơn).</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Bill S3 cao là do lưu nhiều dữ liệu."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> S3 tính cả <em>số request</em> (GET/PUT) và <em>data transfer ra ngoài</em>, không chỉ dung lượng. App gọi S3 hàng triệu lần/ngày hoặc serve ảnh trực tiếp (không CDN) → bill request/egress vượt cả bill storage.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> S3 tính tiền <em>ba chiều</em>: dung lượng lưu, <em>số request</em> (mỗi GET/PUT tính phí), và <em>data transfer ra ngoài</em> (egress). App gọi S3 hàng triệu lần/ngày, hoặc serve ảnh trực tiếp ra internet (không CDN), khiến phí request + egress vượt cả phí storage.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "DynamoDB là NoSQL nên linh hoạt, query kiểu gì cũng được."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> DynamoDB bắt bạn <em>thiết kế theo access pattern trước</em> (partition key + sort key). Query không theo key = scan toàn bảng (chậm, đắt). Nó nhanh &amp; scale vô hạn NẾU thiết kế đúng pattern; "linh hoạt như SQL" là hiểu sai.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Ngược lại — DynamoDB bắt bạn <em>thiết kế theo access pattern TRƯỚC</em> (chọn partition key + sort key dựa trên các query bạn sẽ chạy). Query không theo key đã thiết kế = phải scan toàn bảng (chậm, đắt) hoặc tạo thêm index (GSI). Nó nhanh &amp; scale gần như vô hạn NẾU pattern biết trước &amp; ổn định; "linh hoạt như SQL" là hiểu ngược.</div>
   </div>
 </section>
 
@@ -96,7 +96,7 @@
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — bill 3×, Lambda timeout, service không gọi nhau <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow trên AWS gặp 3 việc: (1) bill tháng tăng 3× không rõ vì sao; (2) một Lambda xử lý export báo cáo timeout sau 15s; (3) service A trong VPC không gọi được service B (connection refused).</p>
+  <p>ShopFlow trên AWS gặp ba việc cùng lúc: (1) hoá đơn tháng tăng 3× mà không ai rõ vì sao — CPU/RAM không tăng; (2) một Lambda xử lý export báo cáo bị kill sau 15 giây với lỗi timeout; (3) service A trong VPC không gọi được service B, báo "connection timed out". Cả ba là những lỗi/chi phí kinh điển của người mới lên AWS.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
     <div class="pause-q">Viết ra giấy:</div>
@@ -105,17 +105,18 @@
       <li>Lambda timeout export báo cáo — vì sao Lambda sai công cụ cho việc này? Dùng gì thay?</li>
       <li>Service A không gọi được B trong VPC — thường do cấu hình mạng nào (gợi ý: 2 lớp firewall)?</li>
     </ol>
-    <div class="pause-hint">Đáp án: chi phí ẩn = data egress, S3/API request count, NAT gateway, idle resource (2.3, 4); Lambda timeout 15 phút max + không hợp job dài → ECS/Batch (2.2); A→B chặn bởi security group / NACL / subnet routing (2.1). Đừng đọc tiếp khi chưa nêu 3 chi phí ẩn.</div>
+    <div class="pause-hint">Đáp án: chi phí ẩn = data egress, S3/API request count, NAT gateway, tài nguyên idle (2.3, 4); Lambda timeout tối đa 15 phút + không hợp job dài → ECS task/Batch (2.2); A→B bị chặn bởi security group / NACL / route table (2.1). Đừng đọc tiếp khi chưa nêu 3 chi phí ẩn.</div>
   </div>
 </section>
 
 <section id="iam">
-  <h2>2.1 IAM + VPC <span class="k-tag core">CORE ★</span></h2>
-  <p><strong>IAM</strong> = ai (principal) được làm gì (action) trên tài nguyên nào (resource), theo policy. Nguyên tắc: <em>least privilege</em> — cấp đúng quyền tối thiểu; dùng <em>role</em> cho service (không hardcode access key). <strong>VPC</strong> = mạng riêng: subnet public (có internet) / private (qua NAT), <em>security group</em> (firewall mức instance, stateful) + <em>NACL</em> (mức subnet, stateless).</p>
+  <h2>2.1 IAM + VPC — quyền và mạng <span class="k-tag core">CORE ★</span></h2>
+  <p><strong>IAM</strong> (Identity and Access Management) trả lời câu hỏi "ai được làm gì với resource nào". Một <em>policy</em> là tập các câu cho phép/từ chối: principal (ai) + action (làm gì, vd <code>s3:GetObject</code>) + resource (trên cái gì, vd một bucket cụ thể). Hai nguyên tắc cốt lõi: (a) <strong>least privilege</strong> — chỉ cấp đúng quyền tối thiểu cần (đừng dùng <code>*</code> cho tiện vì lộ một credential là mất tất cả); (b) dùng <strong>role</strong> cho service (ECS task/Lambda gắn một IAM role để tự lấy quyền tạm thời) thay vì hardcode access key tĩnh (key tĩnh lộ qua Git/decompile là thảm hoạ).</p>
+  <p><strong>VPC</strong> (Virtual Private Cloud) là mạng riêng của bạn trên AWS. Trong VPC có <em>subnet public</em> (có đường ra internet trực tiếp) và <em>subnet private</em> (ra internet phải qua NAT gateway — tốn phí). Hai lớp firewall kiểm soát traffic: <strong>security group</strong> (mức instance, <em>stateful</em> — cho phép theo SG nguồn, tự nhớ kết nối đã mở để trả về) và <strong>NACL</strong> (mức subnet, <em>stateless</em> — phải mở cả chiều vào lẫn ra). Hiểu hai lớp này là chìa khoá debug "connection timed out".</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
-      <p>Biết "IAM quản quyền, VPC là mạng". <em>Symptom hiểu giả:</em> gắn <code>*</code> policy cho tiện, hoặc mở security group 0.0.0.0/0.</p>
+      <p>Biết "IAM quản quyền, VPC là mạng". <em>Symptom hiểu giả:</em> gắn policy <code>*</code> cho tiện, hoặc mở security group 0.0.0.0/0.</p>
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
@@ -123,25 +124,27 @@
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Thiết kế: service role gắn policy theo resource cụ thể; SG inbound theo SG nguồn (không IP rộng); DB ở private subnet; debug "connection timed out" bằng kiểm SG + route table + NACL theo thứ tự.</p>
+      <p>Service role gắn policy theo resource cụ thể; SG inbound theo SG nguồn (không IP rộng); DB ở private subnet; debug "connection timed out" theo thứ tự SG → route table → NACL.</p>
     </div>
   </div>
-  <div class="callout warn"><div class="ctitle">Anti-pattern + symptom</div><p><strong>Triệu chứng:</strong> service A gọi B "connection timed out". <strong>Nguyên nhân thường gặp:</strong> SG của B không cho inbound từ SG của A, hoặc B ở private subnet không có route. <strong>Fix:</strong> mở SG inbound theo SG nguồn (không 0.0.0.0/0), kiểm route table.</p></div>
+  <div class="callout warn"><div class="ctitle">Anti-pattern + symptom</div><p><strong>Triệu chứng:</strong> service A gọi B "connection timed out" (không phải "refused"). <strong>Nguyên nhân thường gặp:</strong> security group của B không cho inbound từ SG của A, hoặc B nằm ở private subnet không có route phù hợp. <strong>Fix:</strong> mở SG inbound của B cho phép SG nguồn của A (không mở 0.0.0.0/0), kiểm route table.</p></div>
 </section>
 
 <section id="compute">
   <h2>2.2 Compute: EC2 / Lambda / ECS / EKS <span class="k-tag core">CORE ★</span></h2>
+  <p>Bốn cách chạy code, từ "tự quản nhiều" đến "AWS quản nhiều", chọn theo đặc tính tải &amp; mức độ muốn quản hạ tầng:</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Dịch vụ</th><th>Là gì</th><th>Hợp khi</th><th>Bẫy</th></tr></thead>
     <tbody>
-      <tr><td>EC2</td><td>VM, toàn quyền</td><td>Tải ổn định, cần control OS</td><td>Tự quản patch/scale</td></tr>
-      <tr><td>Lambda</td><td>Serverless, trả theo lần gọi</td><td>Event/burst ngắn (resize ảnh, webhook)</td><td>Timeout 15 phút, cold start, đắt khi chạy liên tục</td></tr>
-      <tr><td>ECS Fargate</td><td>Container không cần quản node</td><td>API tải ổn định, không muốn quản K8s</td><td>—</td></tr>
-      <tr><td>EKS</td><td>Kubernetes managed</td><td>Đã chuẩn K8s, đa cloud</td><td>Phức tạp vận hành</td></tr>
+      <tr><td><strong>EC2</strong></td><td>Máy ảo, toàn quyền OS</td><td>Tải ổn định, cần control sâu</td><td>Tự lo patch, scale, AMI</td></tr>
+      <tr><td><strong>Lambda</strong></td><td>Serverless — chạy một hàm khi có event, trả tiền theo lần gọi</td><td>Event/burst ngắn (resize ảnh khi upload, webhook)</td><td>Timeout 15 phút; cold start; đắt khi chạy liên tục tải cao</td></tr>
+      <tr><td><strong>ECS Fargate</strong></td><td>Chạy container mà không phải quản node</td><td>API tải ổn định, muốn container nhưng không muốn quản K8s</td><td>—</td></tr>
+      <tr><td><strong>EKS</strong></td><td>Kubernetes managed</td><td>Đã chuẩn hoá K8s, cần hệ sinh thái K8s / đa cloud</td><td>Phức tạp vận hành nhất</td></tr>
     </tbody>
   </table>
   </div>
+  <p>Cốt lõi để chọn: tải <em>liên tục, dự đoán được</em> → EC2/ECS (trả tiền cho capacity chạy 24/7 thường rẻ hơn). Tải <em>thưa, đột biến, event-driven</em> → Lambda (không trả tiền khi không có request). Job <em>chạy lâu</em> (export, ETL) → KHÔNG Lambda (đụng trần 15 phút) → ECS task hoặc AWS Batch.</p>
 </section>
 
 <section id="storage">
@@ -150,44 +153,46 @@
   <table>
     <thead><tr><th>Dịch vụ</th><th>Loại</th><th>Dùng cho</th></tr></thead>
     <tbody>
-      <tr><td>S3</td><td>Object storage</td><td>Ảnh sản phẩm, file, backup, static asset (serve qua CloudFront)</td></tr>
-      <tr><td>EBS</td><td>Block storage gắn 1 EC2</td><td>Ổ đĩa cho instance (DB tự quản, OS)</td></tr>
-      <tr><td>EFS</td><td>File system chia sẻ nhiều instance</td><td>Khi nhiều pod/instance cần cùng filesystem</td></tr>
+      <tr><td><strong>S3</strong></td><td>Object storage (lưu file theo key, truy cập qua HTTP API)</td><td>Ảnh sản phẩm, file, backup, static asset (serve qua CloudFront)</td></tr>
+      <tr><td><strong>EBS</strong></td><td>Block storage gắn vào 1 EC2 (như ổ cứng)</td><td>Ổ đĩa cho instance (DB tự quản, OS)</td></tr>
+      <tr><td><strong>EFS</strong></td><td>File system chia sẻ nhiều instance cùng lúc</td><td>Khi nhiều pod/instance cần cùng một filesystem</td></tr>
     </tbody>
   </table>
   </div>
-  <p><strong>Chi phí S3:</strong> dung lượng + <em>số request</em> + <em>data egress</em>. Serve ảnh trực tiếp từ S3 ra internet → egress đắt; đặt CloudFront (CDN) trước → cache, giảm egress &amp; request. Dùng storage class (S3-IA, Glacier) cho data ít truy cập.</p>
+  <p><strong>Mô hình chi phí S3 — chỗ hay gây bill bất ngờ:</strong> bạn trả cho ba thứ: dung lượng lưu (rẻ), <em>số request</em> (mỗi GET/PUT có phí nhỏ nhưng nhân với hàng triệu lần/ngày thành lớn), và <em>data egress</em> (chuyển dữ liệu ra internet — đắt nhất). Hệ quả thực tế: nếu serve ảnh sản phẩm <em>trực tiếp</em> từ S3 ra cho người dùng cuối, mỗi lượt xem là một request + một lượt egress → bill phình. Cách đúng: đặt <strong>CloudFront</strong> (CDN) trước S3 — CDN cache ảnh ở biên, giảm cả số request tới S3 lẫn egress. Thêm vào đó, dùng storage class rẻ hơn (S3-IA, Glacier) cho dữ liệu ít truy cập.</p>
 </section>
 
 <section id="database">
   <h2>2.4 DB: RDS / DynamoDB / ElastiCache <span class="k-tag core">CORE ★</span></h2>
+  <p>Chọn DB là quyết định kiến trúc lớn nhất, và mấu chốt là hiểu <em>triết lý</em> khác nhau:</p>
   <ul>
-    <li><strong>RDS</strong> (Postgres/MySQL managed): khi cần SQL, quan hệ, query linh hoạt, transaction. Multi-AZ cho HA, read replica cho scale đọc.</li>
-    <li><strong>DynamoDB</strong>: NoSQL key-value, scale vô hạn, latency thấp ổn định — NHƯNG phải thiết kế theo access pattern (partition/sort key). Hợp cart, session, sự kiện nhiều ghi; không hợp query ad-hoc.</li>
-    <li><strong>ElastiCache</strong> (Redis): cache, session, rate limit, leaderboard.</li>
+    <li><strong>RDS</strong> (Postgres/MySQL managed): SQL quan hệ. Mạnh ở <em>query linh hoạt</em> — bạn có thể thêm index, viết JOIN, lọc theo nhiều chiều tuỳ ý <em>sau</em> khi đã có dữ liệu. Hỗ trợ transaction nhiều bảng. Multi-AZ cho HA, read replica cho scale đọc. Dùng khi pattern truy vấn còn thay đổi hoặc cần query ad-hoc.</li>
+    <li><strong>DynamoDB</strong>: NoSQL key-value, scale gần như vô hạn với latency thấp ổn định. Đổi lại, bạn phải <em>thiết kế theo access pattern trước</em> (chọn partition key quyết định dữ liệu nằm ở "ngăn" nào, sort key quyết định thứ tự trong ngăn). Query không theo key = scan (đắt). Dùng khi pattern biết trước &amp; ổn định + cần scale cực lớn (cart, session, sự kiện nhiều ghi).</li>
+    <li><strong>ElastiCache</strong> (Redis): cache trong bộ nhớ — session, rate limit, leaderboard, giảm tải DB.</li>
   </ul>
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — khi DynamoDB là lựa chọn SAI</div>
     <div class="bi-answer">
       <ul>
-        <li><strong>Query đa chiều, ad-hoc:</strong> báo cáo "đơn theo nhiều bộ lọc tuỳ ý" → DynamoDB phải scan hoặc tạo nhiều GSI tốn kém. RDS với index linh hoạt hơn.</li>
-        <li><strong>Transaction phức tạp nhiều bảng:</strong> DynamoDB transaction hạn chế; quan hệ nhiều thực thể → RDS.</li>
-        <li><strong>Team chưa quen single-table design:</strong> mô hình sai từ đầu rất đắt để sửa (phải migrate).</li>
+        <li><strong>Query đa chiều, ad-hoc:</strong> báo cáo "đơn theo nhiều bộ lọc tuỳ ý kết hợp" → DynamoDB phải scan hoặc tạo nhiều GSI (mỗi GSI tốn tiền &amp; phải duy trì). RDS với index linh hoạt phù hợp hơn nhiều.</li>
+        <li><strong>Transaction phức tạp nhiều bảng:</strong> DynamoDB transaction giới hạn về số item; quan hệ nhiều thực thể → RDS.</li>
+        <li><strong>Team chưa quen single-table design:</strong> mô hình DynamoDB sai từ đầu rất đắt để sửa (phải migrate dữ liệu).</li>
       </ul>
-      <p><em>Quy tắc:</em> DynamoDB tỏa sáng khi access pattern biết trước &amp; ổn định + cần scale cực lớn. Khi pattern còn đổi hoặc cần query linh hoạt → RDS. Chọn theo access pattern, không theo "NoSQL nghe hiện đại".</p>
+      <p><em>Quy tắc:</em> chọn theo <strong>access pattern</strong>, không theo "NoSQL nghe hiện đại". Pattern biết trước &amp; cần scale cực lớn → DynamoDB; pattern còn đổi hoặc cần query linh hoạt → RDS.</p>
     </div>
   </div>
 </section>
 
 <section id="messaging">
   <h2>2.5 Messaging: SQS / SNS / EventBridge <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Ba dịch vụ nhắn tin khác nhau ở mô hình phân phối:</p>
   <ul>
-    <li><strong>SQS</strong>: queue point-to-point, một consumer xử lý mỗi message; decouple + buffer + retry (DLQ).</li>
-    <li><strong>SNS</strong>: pub/sub fan-out, một message tới nhiều subscriber.</li>
-    <li><strong>EventBridge</strong>: event bus với routing theo rule (tích hợp SaaS, schema registry).</li>
-    <li><strong>MSK</strong>: Kafka managed (khi cần replay, ordering, throughput Kafka).</li>
+    <li><strong>SQS</strong> (queue): point-to-point — một message được <em>một</em> consumer xử lý. Dùng để decouple producer/consumer, buffer khi tải đột biến, và retry (message lỗi vào dead-letter queue).</li>
+    <li><strong>SNS</strong> (pub/sub): fan-out — một message được gửi tới <em>nhiều</em> subscriber cùng lúc.</li>
+    <li><strong>EventBridge</strong>: event bus với routing theo rule (lọc/định tuyến event tới đích phù hợp), tích hợp nhiều SaaS, có schema registry.</li>
+    <li><strong>MSK</strong>: Kafka managed — khi cần replay, ordering mạnh, throughput của Kafka.</li>
   </ul>
-  <p>Pattern phổ biến: SNS → nhiều SQS (fan-out + buffer riêng cho từng consumer).</p>
+  <p>Pattern phổ biến: <strong>SNS → nhiều SQS</strong> — một event fan-out qua SNS tới nhiều queue, mỗi queue là buffer riêng cho một consumer (consumer chậm không ảnh hưởng consumer khác).</p>
 </section>
 
 <section id="code-iam">
@@ -196,7 +201,7 @@
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Action": ["s3:GetObject", "s3:PutObject"],           // CHỈ action cần
+    "Action": ["s3:GetObject", "s3:PutObject"],           // CHỈ action cần, không s3:*
     "Resource": "arn:aws:s3:::shopflow-product-images/*"  // CHỈ bucket cần, không *
   }, {
     "Effect": "Allow",
@@ -204,41 +209,39 @@
     "Resource": "arn:aws:dynamodb:*:*:table/Carts"
   }]
 }
-// gắn policy này vào IAM ROLE của ECS task / Lambda — KHÔNG hardcode access key.</code></pre>
+// gắn policy này vào IAM ROLE của ECS task / Lambda — KHÔNG hardcode access key tĩnh.</code></pre>
 </section>
 
 <section id="code-lambda">
   <h2>3.2 Lambda handler (Java) <span class="k-tag supp">SUPPLEMENTARY</span></h2>
   <pre><code class="language-java">// resize ảnh khi upload S3 — sự kiện ngắn, hợp Lambda
 public class ImageResizeHandler implements RequestHandler&lt;S3Event, Void&gt; {
-  private final S3Client s3 = S3Client.create();   // tái dùng client ngoài handler (giảm cold start)
-
+  private final S3Client s3 = S3Client.create();   // khởi tạo NGOÀI handler → tái dùng giữa các lần
+                                                   // gọi (giảm cold start)
   @Override public Void handleRequest(S3Event event, Context ctx) {
     var rec = event.getRecords().get(0);
-    String bucket = rec.getS3().getBucket().getName();
-    String key = rec.getS3().getObject().getKey();
-    byte[] original = download(bucket, key);
-    byte[] thumb = resize(original, 200, 200);      // việc ngắn, &lt; 15 phút
-    s3.putObject(b -&gt; b.bucket(bucket).key("thumbs/" + key), fromBytes(thumb));
+    byte[] original = download(rec.getS3().getBucket().getName(), rec.getS3().getObject().getKey());
+    byte[] thumb = resize(original, 200, 200);     // việc ngắn, &lt; 15 phút
+    s3.putObject(b -&gt; b.bucket(...).key("thumbs/" + ...), fromBytes(thumb));
     return null;
   }
 }
-// ⚠️ export 1 triệu đơn ra CSV (chạy lâu) → KHÔNG Lambda (timeout 15') → ECS task / AWS Batch.</code></pre>
+// ⚠️ export 1 triệu đơn ra CSV (chạy lâu) → KHÔNG Lambda (đụng trần 15') → ECS task / AWS Batch.</code></pre>
 </section>
 
 <section id="code-dynamo">
   <h2>3.3 DynamoDB access pattern <span class="k-tag core">CORE ★</span></h2>
   <pre><code class="language-text">Yêu cầu: (a) lấy đơn theo customerId, sắp theo ngày; (b) lấy đơn theo orderId.
 
-Thiết kế key:
+Thiết kế key (access-pattern-first):
   Bảng Orders: PK = "CUST#&lt;customerId&gt;", SK = "ORDER#&lt;createdAt&gt;#&lt;orderId&gt;"
   → query (a): PK = CUST#C1, SK begins_with "ORDER#" → đã sắp theo ngày, KHÔNG scan
   → query (b) theo orderId: thêm GSI  PK = "ORDER#&lt;orderId&gt;"
 
 Yêu cầu MỚI "lọc đơn theo status bất kỳ":
-  → KHÔNG có key cho status → phải GSI mới (PK=status) HOẶC scan (đắt)
-  → nếu nhiều bộ lọc tuỳ ý phát sinh liên tục → cân nhắc RDS thay vì đẻ GSI vô hạn.</code></pre>
-  <p><strong>Access-pattern-first:</strong> liệt kê mọi query TRƯỚC khi thiết kế key. Query mới không nằm trong pattern = phải thêm GSI (tốn) hoặc scan (chậm/đắt) — đó là dấu hiệu cân nhắc RDS.</p>
+  → KHÔNG có key cho status → phải tạo GSI mới (PK=status) HOẶC scan (đắt)
+  → nếu nhiều bộ lọc tuỳ ý phát sinh liên tục → đó là dấu hiệu cân nhắc RDS thay vì đẻ GSI vô hạn.</code></pre>
+  <p>Bài học: trong DynamoDB, bạn phải <em>liệt kê mọi query trước</em> rồi mới thiết kế key sao cho mỗi query khớp một key/GSI mà không phải scan. Một query mới nằm ngoài thiết kế = phải thêm GSI (tốn tiền &amp; duy trì) hoặc scan (chậm) — đó là tín hiệu pattern chưa ổn định và có lẽ nên dùng RDS.</p>
 </section>
 
 <section id="antipatterns">
@@ -247,8 +250,8 @@ Yêu cầu MỚI "lọc đơn theo status bất kỳ":
   <table>
     <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
     <tbody>
-      <tr><td>Serve ảnh trực tiếp từ S3</td><td>Egress + request bill cao</td><td>CloudFront CDN trước S3</td></tr>
-      <tr><td>Lambda cho job dài</td><td>Timeout 15 phút, cold start</td><td>ECS task / Batch</td></tr>
+      <tr><td>Serve ảnh trực tiếp từ S3</td><td>Phí egress + request cao</td><td>CloudFront CDN trước S3</td></tr>
+      <tr><td>Lambda cho job dài</td><td>Timeout 15 phút, cold start</td><td>ECS task / AWS Batch</td></tr>
       <tr><td>Hardcode access key</td><td>Lộ key = chiếm tài khoản</td><td>IAM role cho service</td></tr>
       <tr><td>SG mở 0.0.0.0/0</td><td>Phơi service ra internet</td><td>Mở theo SG nguồn / IP cụ thể</td></tr>
       <tr><td>Tài nguyên idle không tắt</td><td>Bill âm thầm</td><td>Auto-scale, tag + cost alert, tắt non-prod</td></tr>
@@ -263,17 +266,17 @@ Yêu cầu MỚI "lọc đơn theo status bất kỳ":
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
     <p><strong>Q:</strong> EC2 vs Lambda khác gì?</p>
-    <p class="a">EC2 = VM chạy liên tục, tự quản, hợp tải ổn định. Lambda = serverless, trả theo lần gọi, tự scale, hợp event/burst ngắn nhưng có cold start + timeout 15 phút, không hợp job dài/tải cao liên tục.</p>
+    <p class="a">EC2 = VM chạy liên tục, tự quản, hợp tải ổn định (trả tiền cho capacity 24/7). Lambda = serverless, trả tiền theo lần gọi, tự scale, hợp event/burst ngắn nhưng có cold start + timeout 15 phút, không hợp job dài/tải cao liên tục.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Bill AWS tăng 3×, điều tra thế nào?</p>
-    <p class="a">Cost Explorer phân tích theo service/tag → tìm thủ phạm: data egress, S3/API request count, NAT gateway, idle EC2/RDS, Lambda chạy liên tục. Fix: CDN giảm egress, tắt idle, right-size, savings plan, cost alert + tag bắt buộc.</p>
+    <p class="a">Cost Explorer phân tích theo service/tag để tìm thủ phạm: data egress, S3/API request count, NAT gateway, EC2/RDS idle, Lambda chạy liên tục. Fix: CloudFront giảm egress, tắt tài nguyên idle, right-size instance, savings plan/spot, bắt buộc tag + cost alert.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> Thiết kế kiến trúc e-commerce AWS chịu tải, tối ưu chi phí.</p>
-    <p class="a">ALB → ECS Fargate (auto-scale) cho API; RDS Multi-AZ + read replica cho đơn; DynamoDB cho cart/session; ElastiCache cho cache; S3 + CloudFront cho ảnh; SQS/SNS decouple; Lambda cho event ngắn (resize ảnh). IAM role least-privilege, VPC private subnet, cost alert + spot cho phi-critical.</p>
+    <p class="a">ALB → ECS Fargate (auto-scale) cho API; RDS Multi-AZ + read replica cho đơn; DynamoDB cho cart/session; ElastiCache cho cache; S3 + CloudFront cho ảnh; SQS/SNS decouple; Lambda cho event ngắn (resize ảnh). IAM role least-privilege, VPC private subnet cho DB, cost alert + spot cho phi-critical.</p>
   </div>
 </section>
 
@@ -282,7 +285,7 @@ Yêu cầu MỚI "lọc đơn theo status bất kỳ":
     <div class="be-head">🔧 Lab bắt buộc — quyết định &amp; đo (2 bài)</div>
     <div class="be-deliverable">
       <p><strong>Lab 1 — Lambda vs ECS cho 2 việc.</strong> Lấy 2 task: (a) resize ảnh khi upload (sự kiện ngắn), (b) export 1 triệu đơn ra CSV (chạy lâu). Lý giải bằng giấy: cái nào Lambda, cái nào ECS/Batch, dựa trên timeout/cost/cold start. Tiêu chí: nêu đúng giới hạn 15 phút và chi phí chạy liên tục.</p>
-      <p><strong>Lab 2 — DynamoDB access pattern.</strong> Cho yêu cầu: "lấy đơn theo customerId, sắp theo ngày" và "lấy đơn theo orderId". Thiết kế partition key/sort key + GSI để cả hai query không scan. Thêm yêu cầu mới "lọc đơn theo status bất kỳ" → chỉ ra vì sao cần GSI hoặc nên dùng RDS. Tiêu chí: giải thích access-pattern-first.</p>
+      <p><strong>Lab 2 — DynamoDB access pattern.</strong> Cho yêu cầu "lấy đơn theo customerId, sắp theo ngày" và "lấy đơn theo orderId". Thiết kế partition key/sort key + GSI để cả hai query không scan. Thêm yêu cầu mới "lọc đơn theo status bất kỳ" → chỉ ra vì sao cần GSI hoặc nên dùng RDS. Tiêu chí: giải thích access-pattern-first.</p>
     </div>
   </div>
 </section>
@@ -291,13 +294,13 @@ Yêu cầu MỚI "lọc đơn theo status bất kỳ":
   <div class="feynman">
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
-      <li>EC2 / Lambda / ECS / EKS — khi nào dùng cái nào?</li>
-      <li>Bill S3 cao có thể do gì ngoài dung lượng? CDN giúp thế nào?</li>
-      <li>DynamoDB khác RDS ở triết lý thiết kế nào? Khi nào DynamoDB là sai?</li>
-      <li>Service A không gọi được B trong VPC — kiểm tra gì?</li>
+      <li>EC2 / Lambda / ECS / EKS — khi nào dùng cái nào (theo đặc tính tải)?</li>
+      <li>Bill S3 cao có thể do gì ngoài dung lượng (3 chiều phí)? CDN giúp thế nào?</li>
+      <li>DynamoDB khác RDS ở triết lý thiết kế nào (access-pattern-first)? Khi nào DynamoDB là sai?</li>
+      <li>Service A không gọi được B trong VPC — kiểm tra gì (SG → route → NACL)?</li>
       <li>Vì sao dùng IAM role thay vì hardcode access key?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = ra quyết định AWS theo trade-off, không cargo-cult.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = ra quyết định AWS theo trade-off, không cargo-cult.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

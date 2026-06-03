@@ -55,6 +55,41 @@
     font-size: 13px;
     font-weight: 600;
   }
+  .home-tabs {
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-button {
+    appearance: none;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 11px 16px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-button:hover {
+    color: var(--text);
+    background: var(--bg-elev);
+  }
+  .tab-button.active {
+    color: var(--accent);
+    background: var(--bg-elev);
+    border-color: var(--border);
+    box-shadow: 0 -1px 0 var(--bg-elev) inset;
+  }
+  .tab-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .tab-panel[hidden] { display: none; }
   .module-section { margin-top: 28px; }
   .module-section h2 { margin-top: 34px; }
   .module-grid {
@@ -198,12 +233,201 @@
     background: var(--bg-elev);
   }
   .empty-state.show { display: block; }
+  .study-summary {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, .42fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+  .study-note,
+  .study-progress {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .study-note h2,
+  .study-progress h2,
+  .plan-phase h2 {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    font-size: 1rem;
+  }
+  .study-note p {
+    margin: 9px 0 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .priority-line {
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+  .progress-count {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .progress-bar {
+    height: 10px;
+    margin-top: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--accent);
+    transition: width .18s ease;
+  }
+  .checklist-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .ghost-button {
+    min-height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-muted);
+    padding: 7px 11px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ghost-button:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .study-plan {
+    margin-top: 18px;
+    display: grid;
+    gap: 16px;
+  }
+  .plan-phase {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .plan-phase-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .plan-phase p {
+    margin: 8px 0 0;
+    color: var(--text-muted);
+    font-size: .94rem;
+    line-height: 1.55;
+  }
+  .plan-list {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+  .plan-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 11px;
+    align-items: center;
+    min-height: 54px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .plan-check {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .plan-item label {
+    min-width: 0;
+    cursor: pointer;
+  }
+  .plan-title {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    min-width: 0;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .plan-number {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .plan-name {
+    overflow-wrap: anywhere;
+  }
+  .plan-meta {
+    margin-top: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .plan-open {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .plan-open:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .plan-item.is-read .plan-name {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+  .plan-item.is-read .plan-meta {
+    color: var(--text-faint);
+  }
   @media (max-width: 760px) {
     .home-hero { grid-template-columns: 1fr; }
     .home-actions { justify-content: flex-start; }
     .search-wrap { grid-template-columns: 1fr; }
     .count-pill { width: fit-content; }
     .module-card { min-height: auto; }
+    .study-summary { grid-template-columns: 1fr; }
+    .plan-phase-head { display: block; }
+    .plan-phase-head .phase-tag { margin-top: 8px; }
+    .plan-item {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .plan-open {
+      grid-column: 2;
+      width: fit-content;
+    }
   }
 </style>
 </head>
@@ -219,6 +443,7 @@
 <aside class="sidebar">
   <div class="toc-title">Mục lục</div>
   <nav class="toc" aria-label="Mục lục trang chủ">
+    <a href="#study-order" data-tab-link="studyPanel">Lộ trình ôn tập</a>
     <a href="#core-java">Core Java Mastery</a>
     <a href="#spring">Spring Ecosystem</a>
     <a href="#database">Database</a>
@@ -240,14 +465,20 @@
     <p class="lead">Trang chủ gom các file HTML hiện có trong thư mục này để mở nhanh từng bài học.</p>
   </div>
   <div class="home-actions">
-    <span class="phase-tag">37 bài</span>
+    <span class="phase-tag">51 bài</span>
     <span class="phase-tag">HTML offline</span>
   </div>
 </section>
 
+<div class="home-tabs" role="tablist" aria-label="Cách xem tài liệu">
+  <button class="tab-button active" id="modulesTab" type="button" role="tab" aria-selected="true" aria-controls="modulesPanel" data-tab-target="modulesPanel">Tất cả bài</button>
+  <button class="tab-button" id="studyTab" type="button" role="tab" aria-selected="false" aria-controls="studyPanel" data-tab-target="studyPanel">Lộ trình ôn tập</button>
+</div>
+
+<section class="tab-panel active" id="modulesPanel" role="tabpanel" aria-labelledby="modulesTab">
 <div class="search-wrap">
   <input class="search-input" id="moduleSearch" type="search" placeholder="Tìm theo số bài, tên chủ đề hoặc nhóm..." autocomplete="off">
-  <div class="count-pill" id="resultCount">37 bài</div>
+  <div class="count-pill" id="resultCount">51 bài</div>
 </div>
 <div class="empty-state" id="emptyState">Không có bài nào khớp với từ khóa hiện tại.</div>
 
@@ -384,7 +615,7 @@
         <h3>Spring WebFlux</h3>
         <p>Reactive programming, Mono/Flux, WebClient, backpressure, schedulers và khi nào không nên dùng.</p>
       </div>
-      <div class="module-foot"><span class="depth-badge depth-rewrite">🔴 Rewrite</span><span>10-spring-webflux.html</span><span>Open</span></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>10-spring-webflux.html</span><span>Open</span></div>
     </a>
   </div>
 </section>
@@ -833,6 +1064,32 @@
   </div>
 </section>
 
+</section>
+
+<section class="tab-panel" id="studyPanel" role="tabpanel" aria-labelledby="studyTab" hidden>
+  <section id="study-order" class="module-section">
+    <div class="study-summary">
+      <div class="study-note">
+        <h2>Thứ tự đọc đề xuất</h2>
+        <p>Đi theo checklist này khi ôn phỏng vấn: mở bằng coding interview, củng cố Java/Spring/DB, rồi mới chuyển sang architecture, system design và production topics.</p>
+        <div class="priority-line"><strong>Nếu gấp:</strong> ưu tiên #43, #42, #01, #04, #05, #07, #09, #11, #12, #19, #37, #45.</div>
+      </div>
+      <div class="study-progress" aria-live="polite">
+        <div class="progress-top">
+          <h2>Tiến độ đã đọc</h2>
+          <span class="progress-count" id="planProgressText">0/51</span>
+        </div>
+        <div class="progress-bar" aria-hidden="true"><span class="progress-fill" id="planProgressFill"></span></div>
+        <div class="checklist-actions">
+          <button class="ghost-button" id="resetReadProgress" type="button">Xóa checklist</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="study-plan" id="studyPlan"></div>
+  </section>
+</section>
+
 <footer>
   <span>Trang chủ: html/index.html</span>
   <span>Liên kết tương đối, chạy trực tiếp bằng trình duyệt.</span>
@@ -871,6 +1128,259 @@
       });
     });
 
+    const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
+    const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
+
+    function activateTab(panelId) {
+      tabPanels.forEach(function (panel) {
+        const active = panel.id === panelId;
+        panel.hidden = !active;
+        panel.classList.toggle('active', active);
+      });
+
+      tabButtons.forEach(function (button) {
+        const active = button.dataset.tabTarget === panelId;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+      });
+    }
+
+    tabButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        activateTab(button.dataset.tabTarget);
+      });
+    });
+
+    document.querySelectorAll('[data-tab-link]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        activateTab(link.dataset.tabLink);
+      });
+    });
+
+    document.querySelectorAll('aside .toc a:not([data-tab-link])').forEach(function (link) {
+      link.addEventListener('click', function () {
+        activateTab('modulesPanel');
+      });
+    });
+
+    if (window.location.hash === '#study-order') {
+      activateTab('studyPanel');
+    }
+
+    const studyPhases = [
+      {
+        title: '0. Nền cần vá nhanh',
+        tag: '4 bài',
+        note: 'Đọc trước nếu cần làm chắc nền junior/backend trước khi vào vòng hỏi sâu.',
+        items: [
+          ['#47', 'Junior Foundation Pack', '47-junior-foundation-pack.html', 'Vá nhanh Java, web, SQL, HTTP, Git và cách trả lời câu hỏi cơ bản.'],
+          ['#48', 'Java OOP Foundation', '48-java-oop-foundation.html', 'Class/object, abstraction, encapsulation, inheritance, polymorphism.'],
+          ['#50', 'Git Daily Workflow', '50-git-daily-workflow.html', 'Working tree, index, commit, branch, rebase, conflict, stash, reflog.'],
+          ['#51', 'Linux for Backend Dev', '51-linux-backend-essentials.html', 'Process, port, log, disk, file handle và network debug.']
+        ]
+      },
+      {
+        title: '1. Coding interview trước',
+        tag: '4 bài',
+        note: 'Tối ưu khả năng làm bài trực tiếp: cách nghĩ, pattern, luyện tập và communication.',
+        items: [
+          ['#43', 'Algorithm Mental Model & UMPIRE', '43-algorithm-mental-model.html', 'Clarify, brute force, optimize, trace, edge cases và trình bày lời giải.'],
+          ['#38', 'Algorithm & Data Structure Essentials', '38-algorithm-data-structure.html', 'Array/string, hashmap, stack/queue, tree, graph, DP và complexity.'],
+          ['#42', 'LeetCode Patterns Mastery', '42-leetcode-patterns-mastery.html', 'Pattern recall: hashing, prefix sum, two pointers, sliding window, graph, DP.'],
+          ['#44', 'FAANG Coding Playbook', '44-faang-coding-playbook.html', 'Practice loop, mock interview, communication và debrief sau bài.']
+        ]
+      },
+      {
+        title: '2. Java core hay bị hỏi',
+        tag: '5 bài',
+        note: 'Đây là phần dễ phân cấp ứng viên Java backend: collections, concurrency, JMM và JVM.',
+        items: [
+          ['#52', 'Collections Deep Dive', '52-collections-deep-dive.html', 'ArrayList, HashMap, TreeMap, ConcurrentHashMap và benchmark bằng evidence.'],
+          ['#03', 'Java 8-17 Features', '03-java-8-17-features.html', 'Stream, lambda, Optional, record, sealed class và trade-off khi review code.'],
+          ['#01', 'Java Concurrency', '01-java-concurrency.html', 'Thread, executor, CompletableFuture, race condition, deadlock, thread pool.'],
+          ['#04', 'Java Memory Model', '04-java-memory-model.html', 'Happens-before, volatile, synchronized, AtomicXxx và safe publication.'],
+          ['#02', 'JVM Internals', '02-jvm-internals.html', 'Memory layout, GC, heap dump, classloader, JIT và flags production.']
+        ]
+      },
+      {
+        title: '3. Spring backend core',
+        tag: '7 bài',
+        note: 'Tập trung vào những thứ đi thẳng vào daily backend work và bug production.',
+        items: [
+          ['#05', 'Spring Core', '05-spring-core.html', 'IoC, DI, bean lifecycle, scope và AOP proxy.'],
+          ['#06', 'Spring Boot', '06-spring-boot.html', 'Auto-configuration, property binding, actuator và debug bean missing.'],
+          ['#07', 'Spring Transaction', '07-spring-transaction.html', 'Isolation, propagation, rollback rules và boundary đúng.'],
+          ['#09', 'Spring Data JPA & Hibernate', '09-spring-data-jpa.html', 'N+1, Lazy/Eager, cache, dirty checking, projections và locking.'],
+          ['#08', 'Spring Security', '08-spring-security.html', 'JWT, filter chain, SecurityContext, method security và CORS.'],
+          ['#19', 'API Design', '19-api-design.html', 'REST, versioning, idempotency key, rate limiting, pagination và API contract.'],
+          ['#49', 'Exception & Logging', '49-exception-logging.html', 'Exception boundary, structured logging và tư duy debug production.']
+        ]
+      },
+      {
+        title: '4. Database và data correctness',
+        tag: '7 bài',
+        note: 'Đọc trước system design vì nhiều trade-off hệ thống nằm ở storage, consistency và retry safety.',
+        items: [
+          ['#11', 'SQL Nâng Cao', '11-sql-advanced.html', 'Index strategy, execution plan, query optimization và covering index.'],
+          ['#12', 'Database Design', '12-database-design.html', 'Normalization, data modeling, partitioning, sharding và read replica.'],
+          ['#14', 'Redis', '14-redis.html', 'Caching patterns, distributed lock, Pub/Sub, data structures và expiry strategy.'],
+          ['#39', 'Database Consistency', '39-database-consistency.html', 'CAP/PACELC, MVCC, isolation anomaly và optimistic/pessimistic lock.'],
+          ['#40', 'Oracle Deep Dive', '40-oracle-deep-dive.html', 'SGA/PGA, UNDO/SCN, ORA-01555, index/partition và AWR/ASH.'],
+          ['#13', 'Distributed Transaction', '13-distributed-transaction.html', '2PC, Saga, Outbox và eventual consistency.'],
+          ['#33', 'Idempotency', '33-idempotency.html', 'Idempotency key, retry safety, duplicate request và payment double-charge.']
+        ]
+      },
+      {
+        title: '5. Code design và architecture',
+        tag: '8 bài',
+        note: 'Dùng để trả lời câu hỏi design class/service, refactor, microservice và async architecture.',
+        items: [
+          ['#36', 'Clean Code & SOLID', '36-clean-code-solid.html', 'Code smell, SOLID qua WHY, refactor có test và Tell-Dont-Ask.'],
+          ['#16', 'Design Patterns', '16-design-patterns.html', 'Factory, Strategy, Observer, Builder, Adapter và lỗi over-engineering.'],
+          ['#15', 'Clean Architecture & DDD', '15-clean-architecture-ddd.html', 'Boundary, domain model, use case và repository.'],
+          ['#17', 'Microservices Patterns', '17-microservices-patterns.html', 'Service boundary, data ownership, saga, gateway và observability.'],
+          ['#18', 'Event-Driven Architecture', '18-event-driven-architecture.html', 'Event, command, async flow, outbox, idempotency và coupling.'],
+          ['#20', 'Apache Kafka', '20-apache-kafka.html', 'Producer/consumer, partition, offset, ordering, lag, DLQ và exactly-once.'],
+          ['#21', 'Async Patterns', '21-async-patterns.html', 'Message queue, job queue, durable work, scheduler, batch và retry.'],
+          ['#22', 'Resilience Patterns', '22-resilience-patterns.html', 'Timeout, retry, backoff/jitter, circuit breaker, bulkhead và fallback.']
+        ]
+      },
+      {
+        title: '6. System design và vận hành',
+        tag: '6 bài',
+        note: 'Sau khi có Java/Spring/DB/architecture, phần này giúp gom câu trả lời thành thiết kế end-to-end.',
+        items: [
+          ['#37', 'System Design Interview Framework', '37-system-design-interview.html', 'Scope, requirements, capacity, API, data model, architecture và trade-off.'],
+          ['#45', 'FAANG System Design HLD', '45-faang-system-design.html', 'Scalability, capacity, API, storage, cache, queue và consistency.'],
+          ['#23', 'Performance Tuning', '23-performance-tuning.html', 'Profiling, bottleneck taxonomy, query tuning, cache và connection pool.'],
+          ['#26', 'Observability', '26-observability.html', 'Log, metric, trace, correlation ID, SLI/SLO và alert theo symptom.'],
+          ['#27', 'Testing Strategy', '27-testing-strategy.html', 'Test pyramid, Testcontainers, contract testing và slice test.'],
+          ['#28', 'Performance Testing', '28-performance-testing.html', 'Load/stress/spike/soak, p99, bottleneck analysis và perf gate CI.']
+        ]
+      },
+      {
+        title: '7. Platform, security và cloud',
+        tag: '5 bài',
+        note: 'Đọc khi job có yêu cầu vận hành service hoặc cloud-native backend.',
+        items: [
+          ['#29', 'Application Security', '29-application-security.html', 'OWASP, SQL injection, XSS, CSRF/CORS, IDOR, rate limit và PII masking.'],
+          ['#30', 'Cryptography', '30-cryptography.html', 'Hashing vs encryption, bcrypt, AES-GCM, signature, TLS/mTLS và PKI.'],
+          ['#24', 'Docker & Kubernetes', '24-docker-kubernetes.html', 'Pod, Deployment, Service, probes, resources và rolling update.'],
+          ['#25', 'CI/CD Pipeline', '25-cicd-pipeline.html', 'Blue-green/canary/rolling, feature flag, DB migration và rollback.'],
+          ['#54', 'AWS cho Java Backend', '54-aws-java-backend.html', 'EC2/Lambda/ECS/EKS, S3, RDS/DynamoDB, messaging, IAM/VPC và cost.']
+        ]
+      },
+      {
+        title: '8. Đọc theo job description',
+        tag: '5 bài',
+        note: 'Chỉ ưu tiên sớm khi JD hoặc dự án mục tiêu có đúng domain này.',
+        items: [
+          ['#10', 'Spring WebFlux', '10-spring-webflux.html', 'Reactive programming, Mono/Flux, WebClient, backpressure và scheduler.'],
+          ['#35', 'Payment Systems', '35-payment-banking-concepts.html', 'Authorize/capture/settle, ledger, reconciliation, webhook và refund.'],
+          ['#34', 'Audit Logging & Compliance', '34-audit-logging.html', 'Append-only audit trail, hash chain, retention và evidence integrity.'],
+          ['#31', 'Camunda & BPMN', '31-camunda-bpmn.html', 'Process engine, user task, service task, timer/error và idempotent workflow.'],
+          ['#53', 'AI/LLM Backend', '53-ai-llm-backend-integration.html', 'LLM stateless, embedding/vector search, RAG, function calling và agent safety.']
+        ]
+      }
+    ];
+
+    const studyPlan = document.getElementById('studyPlan');
+    const readKey = 'java-backend-interview-read-v1';
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, function (char) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[char];
+      });
+    }
+
+    function renderStudyPlan() {
+      if (!studyPlan) return;
+      studyPlan.innerHTML = studyPhases.map(function (phase) {
+        const items = phase.items.map(function (item) {
+          const id = 'read-' + item[0].replace('#', '');
+          return [
+            '<li class="plan-item">',
+            '<input class="plan-check" type="checkbox" id="' + id + '" data-module="' + escapeHtml(item[2]) + '">',
+            '<label for="' + id + '">',
+            '<span class="plan-title"><span class="plan-number">' + escapeHtml(item[0]) + '</span><span class="plan-name">' + escapeHtml(item[1]) + '</span></span>',
+            '<span class="plan-meta">' + escapeHtml(item[3]) + '</span>',
+            '</label>',
+            '<a class="plan-open" href="' + escapeHtml(item[2]) + '">Open</a>',
+            '</li>'
+          ].join('');
+        }).join('');
+
+        return [
+          '<section class="plan-phase">',
+          '<div class="plan-phase-head">',
+          '<div><h2>' + escapeHtml(phase.title) + '</h2><p>' + escapeHtml(phase.note) + '</p></div>',
+          '<span class="phase-tag">' + escapeHtml(phase.tag) + '</span>',
+          '</div>',
+          '<ol class="plan-list">' + items + '</ol>',
+          '</section>'
+        ].join('');
+      }).join('');
+    }
+
+    function loadReadSet() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(readKey) || '[]');
+        return new Set(Array.isArray(saved) ? saved : []);
+      } catch (error) {
+        return new Set();
+      }
+    }
+
+    function saveReadSet(readSet) {
+      localStorage.setItem(readKey, JSON.stringify(Array.from(readSet)));
+    }
+
+    function syncReadProgress(readSet, checks) {
+      let done = 0;
+      checks.forEach(function (check) {
+        const isRead = readSet.has(check.dataset.module);
+        check.checked = isRead;
+        check.closest('.plan-item').classList.toggle('is-read', isRead);
+        if (isRead) done += 1;
+      });
+
+      const total = checks.length;
+      const progressText = document.getElementById('planProgressText');
+      const progressFill = document.getElementById('planProgressFill');
+      if (progressText) progressText.textContent = done + '/' + total + ' đã đọc';
+      if (progressFill) progressFill.style.width = total ? Math.round(done / total * 100) + '%' : '0%';
+    }
+
+    renderStudyPlan();
+    const planChecks = Array.from(document.querySelectorAll('.plan-check'));
+    const readSet = loadReadSet();
+    syncReadProgress(readSet, planChecks);
+
+    planChecks.forEach(function (check) {
+      check.addEventListener('change', function () {
+        if (check.checked) readSet.add(check.dataset.module);
+        else readSet.delete(check.dataset.module);
+        saveReadSet(readSet);
+        syncReadProgress(readSet, planChecks);
+      });
+    });
+
+    const resetReadProgress = document.getElementById('resetReadProgress');
+    if (resetReadProgress) {
+      resetReadProgress.addEventListener('click', function () {
+        if (!window.confirm('Xóa toàn bộ trạng thái đã đọc?')) return;
+        readSet.clear();
+        saveReadSet(readSet);
+        syncReadProgress(readSet, planChecks);
+      });
+    }
+
     const input = document.getElementById('moduleSearch');
     const cards = Array.from(document.querySelectorAll('.module-card'));
     const count = document.getElementById('resultCount');
@@ -895,6 +1405,7 @@
       empty.classList.toggle('show', visible === 0);
     }
 
+    updateFilter();
     input.addEventListener('input', updateFilter);
   })();
 </script>

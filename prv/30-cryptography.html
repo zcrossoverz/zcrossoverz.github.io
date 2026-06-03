@@ -57,7 +57,7 @@
   <div class="meta-tag">Nhóm J · Security · File chống hiểu giả</div>
   <h1>Cryptography — Hash, Encrypt, Sign, TLS Đúng Cách</h1>
   <p class="lead">
-    Crypto là nơi "có mã hoá" che giấu vô số lỗi chí mạng: hash mật khẩu bằng SHA-256 (sai!), dùng AES-ECB (lộ pattern), hardcode key. Lên thật phải phân biệt <em>hashing vs encryption</em>, <em>symmetric vs asymmetric</em>, hiểu vì sao bcrypt chậm là tính năng chứ không phải bug. File này dạy cơ chế + code thật, trên domain <strong>ShopFlow</strong> — mật khẩu &amp; PII (email, địa chỉ, token) của sàn e-commerce.
+    Crypto là nơi "có mã hoá" che giấu vô số lỗi chí mạng: hash mật khẩu bằng SHA-256 (sai!), dùng AES-ECB (lộ pattern), hardcode key. File này giải thích bản chất từng nguyên thuỷ — hashing vs encryption, symmetric vs asymmetric, vì sao bcrypt chậm lại là tính năng — đủ để bạn chọn đúng công cụ mà không cần tra cứu. Domain: <strong>ShopFlow</strong> — mật khẩu &amp; PII (email, địa chỉ, token) của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Chọn đúng nguyên thuỷ crypto cho từng nhu cầu, không tự chế</div>
@@ -71,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Hash mật khẩu bằng SHA-256 là an toàn vì SHA-256 mạnh."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> SHA-256 thiết kế để <em>nhanh</em> → attacker thử hàng tỉ hash/giây (GPU). Mật khẩu cần hàm <em>chậm có chủ đích</em> + salt: bcrypt/scrypt/Argon2. "Chậm" ở đây là tính năng chống brute-force, không phải nhược điểm.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> SHA-256 được thiết kế để <em>nhanh</em> (dùng cho checksum, nơi tốc độ là ưu điểm). Chính vì nhanh, attacker có hash rò rỉ có thể thử hàng <em>tỉ</em> mật khẩu mỗi giây bằng GPU. Mật khẩu cần hàm <em>chậm có chủ đích</em> + salt: bcrypt/scrypt/Argon2. "Chậm" ở đây là tính năng chống brute-force, không phải nhược điểm.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Hashing và encryption đều biến data thành chuỗi khó đọc nên dùng cái nào cũng được."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Hashing <em>một chiều</em> (không giải ngược) — dùng cho mật khẩu, kiểm tra toàn vẹn. Encryption <em>hai chiều</em> (giải ngược bằng key) — dùng cho PII cần đọc lại (email, địa chỉ). Hash mật khẩu rồi cần "giải ra" = bạn đã hiểu sai.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Khác bản chất. Hashing <em>một chiều</em> (không có cách giải ngược) — dùng cho mật khẩu, kiểm tra toàn vẹn. Encryption <em>hai chiều</em> (giải ngược được bằng key) — dùng cho PII cần đọc lại (email, địa chỉ). Nếu bạn "hash mật khẩu rồi cần giải ra" thì bạn đã hiểu sai ngay từ đầu.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "AES là mã hoá mạnh nên dùng AES kiểu gì cũng an toàn."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Mode quan trọng ngang thuật toán. AES-ECB mã hoá mỗi block độc lập → block giống nhau ra ciphertext giống nhau → lộ pattern (ảnh penguin nổi tiếng). Dùng AES-GCM (có IV + authentication tag) để vừa bí mật vừa chống sửa đổi.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> "Mode" quan trọng ngang thuật toán. AES-ECB mã hoá mỗi block độc lập → hai block plaintext giống nhau cho ra ciphertext giống nhau → lộ pattern (ảnh con chim cánh cụt mã hoá ECB vẫn nhìn ra hình). Dùng AES-GCM (có IV ngẫu nhiên + authentication tag) để vừa bí mật vừa chống sửa đổi.</div>
   </div>
 </section>
 
@@ -88,7 +88,7 @@
   <div class="roadmap">
     <div class="roadmap-head">Thứ tự ưu tiên</div>
     <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Hashing vs encryption + bcrypt cho mật khẩu (2.1, 3.1), symmetric AES-GCM cho PII (2.2, 3.2). Hai quyết định bạn làm gần như mọi dự án.</div>
-    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Symmetric vs asymmetric — khi nào cái nào (2.2, 2.3), digital signature (2.4, 3.3).</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Symmetric vs asymmetric — khi nào cái nào &amp; vì sao (2.2, 2.3), digital signature (2.4, 3.3).</div>
     <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> TLS/mTLS handshake (2.5), PKI, key management (KMS), envelope encryption.</div>
     <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> key rotation, HSM, certificate chain validation, crypto-shredding cho GDPR.</div>
   </div>
@@ -96,7 +96,7 @@
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — lưu mật khẩu &amp; PII <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow cần lưu: (1) mật khẩu user, (2) email/địa chỉ giao hàng (PII cần đọc lại để giao), (3) token tích hợp đối tác. Một dev đề xuất "hash hết bằng SHA-256 cho an toàn". Một dev khác "mã hoá AES rồi base64 là xong".</p>
+  <p>ShopFlow cần lưu ba loại dữ liệu nhạy cảm: (1) <em>mật khẩu</em> user — chỉ cần kiểm "đúng hay sai" lúc đăng nhập, không bao giờ cần đọc lại giá trị gốc; (2) <em>email &amp; địa chỉ giao hàng</em> — PII phải đọc lại được để hiển thị và để giao hàng; (3) <em>token tích hợp đối tác</em> — bí mật, cần dùng lại để gọi API đối tác. Một dev đề xuất "hash hết bằng SHA-256 cho an toàn"; một dev khác "mã hoá AES rồi base64 là xong". Cả hai đều sai ở những chỗ khác nhau.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
     <div class="pause-q">Viết ra giấy:</div>
@@ -105,24 +105,15 @@
       <li>Vì sao SHA-256 cho mật khẩu là sai, dù SHA-256 "mạnh"? Dùng gì thay?</li>
       <li>"AES rồi base64" — base64 có phải mã hoá không? AES thiếu gì để an toàn (gợi ý: mode + IV)?</li>
     </ol>
-    <div class="pause-hint">Đáp án: mật khẩu → hash chậm + salt (bcrypt); email/địa chỉ cần đọc lại → encryption hai chiều (AES-GCM); token → encryption hoặc vault. SHA-256 quá nhanh → brute-force; base64 chỉ là encoding; AES cần GCM mode + IV ngẫu nhiên. Đừng đọc tiếp khi chưa map đúng 3 loại data.</div>
+    <div class="pause-hint">Đáp án: mật khẩu (chỉ cần kiểm) → hash chậm + salt (bcrypt); email/địa chỉ (cần đọc lại) → encryption hai chiều (AES-GCM); token → encryption hoặc vault. SHA-256 quá nhanh → brute-force; base64 chỉ là encoding (ai cũng giải được), không bảo mật; AES cần GCM mode + IV ngẫu nhiên. Đừng đọc tiếp khi chưa map đúng 3 loại data.</div>
   </div>
 </section>
 
 <section id="hashing">
   <h2>2.1 Hashing vs encryption — bcrypt cho mật khẩu <span class="k-tag core">CORE ★</span></h2>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th></th><th>Hashing</th><th>Encryption</th></tr></thead>
-    <tbody>
-      <tr><td>Chiều</td><td>Một chiều (không giải ngược)</td><td>Hai chiều (giải bằng key)</td></tr>
-      <tr><td>Dùng cho</td><td>Mật khẩu, toàn vẹn (checksum)</td><td>PII cần đọc lại (email, địa chỉ)</td></tr>
-      <tr><td>Ví dụ đúng</td><td>bcrypt / Argon2 + salt</td><td>AES-256-GCM</td></tr>
-      <tr><td>Ví dụ SAI</td><td>SHA-256/MD5 cho mật khẩu</td><td>AES-ECB, hardcode key</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p><strong>Salt</strong> = chuỗi ngẫu nhiên thêm vào mỗi mật khẩu trước hash → hai user cùng mật khẩu ra hash khác → vô hiệu rainbow table. bcrypt nhúng salt + cost factor (số vòng) ngay trong chuỗi hash. <strong>Cost factor</strong> điều chỉnh độ chậm (vd 12) — tăng theo sức mạnh phần cứng tương lai.</p>
+  <p>Đây là phân biệt nền tảng. <strong>Hashing</strong> là hàm <em>một chiều</em>: biến input thành một chuỗi cố định (digest), và <em>không có khoá nào giải ngược</em> để lấy lại input. Bạn chỉ có thể kiểm tra bằng cách hash lại input mới và so sánh digest. Dùng cho: lưu mật khẩu (chỉ cần biết "đúng hay sai"), kiểm tra toàn vẹn file (checksum). <strong>Encryption</strong> là hàm <em>hai chiều</em>: dùng khoá mã hoá plaintext thành ciphertext, và dùng khoá để giải ngược lại plaintext. Dùng cho: dữ liệu cần đọc lại (email, địa chỉ, token).</p>
+  <p><strong>Vì sao SHA-256 sai cho mật khẩu:</strong> SHA-256 là hash <em>nhanh</em> — đó là điểm mạnh khi tính checksum (xử lý GB dữ liệu/giây). Nhưng với mật khẩu, "nhanh" là tai hoạ: nếu DB hash mật khẩu bị rò rỉ, attacker chạy GPU thử <em>hàng tỉ mật khẩu/giây</em>, dò ra mọi mật khẩu yếu trong vài giờ. Mật khẩu cần hàm <strong>chậm có chủ đích</strong> như bcrypt/scrypt/Argon2 — chúng có một <em>work factor</em> (cost) điều chỉnh được để mỗi lần hash mất ~vài chục mili-giây. Với người dùng thật, vài chục ms không cảm nhận được; với attacker muốn thử hàng tỉ lần, nó làm chậm hàng triệu lần khiến brute-force bất khả thi. Và work factor có thể <em>tăng dần theo thời gian</em> khi phần cứng mạnh lên.</p>
+  <p><strong>Salt — chống rainbow table:</strong> nếu chỉ hash trơn, hai user dùng cùng mật khẩu "123456" sẽ ra cùng digest, và attacker có thể tính trước một bảng khổng lồ (rainbow table) ánh xạ "mật khẩu phổ biến → digest" rồi tra ngược. <strong>Salt</strong> là một chuỗi ngẫu nhiên <em>riêng cho từng mật khẩu</em>, ghép vào trước khi hash → hai user cùng mật khẩu cho ra digest khác nhau → rainbow table vô dụng (phải dựng bảng riêng cho từng salt). bcrypt tự sinh salt và <em>nhúng cả salt + cost + digest</em> vào một chuỗi duy nhất, nên bạn không cần quản salt riêng.</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -130,68 +121,73 @@
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>Hashing một chiều — "quên mật khẩu" = reset, không giải ra. SHA-256 quá nhanh → brute-force GPU; bcrypt cố tình chậm + salt chống rainbow table. Encryption hai chiều cho PII cần đọc lại.</p>
+      <p>Hashing một chiều — "quên mật khẩu" = reset, không giải ra. SHA-256 quá nhanh → brute-force GPU; bcrypt cố tình chậm (work factor) + salt chống rainbow table. Encryption hai chiều cho PII cần đọc lại.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Chọn đúng nguyên thuỷ theo nhu cầu đọc lại; tune cost factor theo phần cứng; per-field encryption cho cột PII; crypto-shredding (xoá key) cho GDPR delete trên append-only store.</p>
+      <p>Chọn đúng nguyên thuỷ theo "có cần đọc lại không"; tune work factor theo phần cứng (vd cost 12); per-field encryption cho cột PII; crypto-shredding (xoá key) cho GDPR delete trên append-only store.</p>
     </div>
   </div>
 </section>
 
 <section id="symmetric">
   <h2>2.2 Symmetric — AES-256-GCM <span class="k-tag core">CORE ★</span></h2>
-  <p>Một key dùng để mã hoá và giải mã. Nhanh → dùng cho khối lượng lớn (PII, file). <strong>GCM</strong> cho cả bí mật (confidentiality) và toàn vẹn/chống sửa (authentication tag). Mỗi lần mã hoá dùng <strong>IV (nonce) ngẫu nhiên</strong>, không tái sử dụng.</p>
+  <p><strong>Symmetric encryption</strong> dùng <em>một khoá duy nhất</em> cho cả mã hoá và giải mã. Ưu điểm: rất nhanh → hợp để mã hoá khối lượng lớn (PII, file, dữ liệu trên đường truyền). Nhược điểm cốt lõi: <em>làm sao chia sẻ khoá an toàn</em> giữa hai bên (vì ai có khoá là giải được tất cả). AES là chuẩn symmetric phổ biến; "256" là độ dài khoá (bit).</p>
+  <p><strong>Mode quan trọng ngang thuật toán.</strong> AES xử lý theo block 16 byte; "mode" quyết định cách ghép các block. <strong>ECB</strong> (Electronic Codebook) mã hoá mỗi block <em>độc lập</em> bằng cùng khoá → hai block plaintext giống nhau cho ra ciphertext giống nhau → lộ pattern dữ liệu (ví dụ kinh điển: ảnh mã hoá ECB vẫn nhìn ra hình gốc). <strong>GCM</strong> (Galois/Counter Mode) là lựa chọn đúng: nó dùng một <strong>IV (nonce)</strong> — số ngẫu nhiên, duy nhất cho mỗi lần mã hoá — nên cùng plaintext mã hoá hai lần ra ciphertext khác nhau (không lộ pattern); và nó tạo thêm một <strong>authentication tag</strong> để phát hiện nếu ciphertext bị sửa (vừa bí mật vừa toàn vẹn). IV không cần bí mật (lưu cạnh ciphertext) nhưng <em>tuyệt đối không được tái sử dụng</em> với cùng khoá — tái dùng IV trong GCM phá vỡ tính an toàn.</p>
 </section>
 
 <section id="asymmetric">
   <h2>2.3 Asymmetric — RSA / ECDSA <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Cặp key: public (chia sẻ) + private (giữ bí mật). Chậm hơn symmetric → KHÔNG mã hoá data lớn trực tiếp, mà dùng để: trao đổi khoá (mã hoá session key) và <em>chữ ký số</em>. Đây là lý do TLS dùng asymmetric để bắt tay rồi chuyển sang symmetric cho data (hybrid). Envelope encryption: data key (symmetric) mã hoá data; master key (KMS) mã hoá data key → rotation master không cần mã hoá lại toàn bộ data.</p>
+  <p><strong>Asymmetric encryption</strong> dùng một <em>cặp khoá</em>: public key (chia sẻ công khai) và private key (giữ bí mật). Điều gì mã hoá bằng public chỉ giải được bằng private (và ngược lại cho chữ ký). Điều này giải bài toán "chia sẻ khoá" của symmetric: bạn có thể công khai public key cho cả thế giới, ai cũng mã hoá gửi cho bạn được, nhưng chỉ bạn (giữ private) giải được.</p>
+  <p>Nhược điểm: asymmetric <em>chậm hơn nhiều</em> symmetric (vì dựa trên phép toán số học lớn) → <strong>không</strong> dùng để mã hoá data lớn trực tiếp. Thực tế nó được dùng cho hai việc: (a) <em>trao đổi khoá</em> — dùng asymmetric để truyền an toàn một session key, rồi chuyển sang symmetric (nhanh) cho phần data; đây là cách TLS hoạt động (xem 2.5); (b) <em>chữ ký số</em> (2.4). Mô hình kết hợp này gọi là <strong>hybrid encryption</strong>.</p>
+  <p><strong>Envelope encryption</strong> là một ứng dụng quan trọng của ý tưởng "khoá mã hoá khoá": bạn sinh một <em>data key</em> (symmetric) để mã hoá dữ liệu, rồi mã hoá chính data key đó bằng một <em>master key</em> (giữ trong KMS). Khi cần xoay (rotate) master key, bạn chỉ phải mã hoá lại các data key (nhỏ), không phải mã hoá lại toàn bộ dữ liệu (lớn). RSA là thuật toán asymmetric cổ điển; ECDSA (dựa trên đường cong elliptic) cho cùng mức an toàn với khoá ngắn hơn và nhanh hơn.</p>
 </section>
 
 <section id="signature">
   <h2>2.4 Digital signature <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Ký bằng <em>private key</em>, verify bằng <em>public key</em> → chứng minh (a) đúng người gửi (authenticity), (b) data không bị sửa (integrity), (c) không chối được (non-repudiation). Cơ chế: hash data → mã hoá hash bằng private key = chữ ký; verify = giải chữ ký bằng public key, so với hash tính lại.</p>
+  <p>Chữ ký số đảo ngược vai trò khoá so với mã hoá: ký bằng <em>private key</em>, verify bằng <em>public key</em>. Nó cho ba bảo đảm: <strong>authenticity</strong> (đúng người gửi — chỉ người giữ private mới ký được), <strong>integrity</strong> (data không bị sửa — sửa một bit là chữ ký không khớp), và <strong>non-repudiation</strong> (người ký không thể chối là không phải mình ký). Cơ chế: hash data (để rút gọn và cố định độ dài) rồi mã hoá digest đó bằng private key = chữ ký; bên nhận giải chữ ký bằng public key để lấy digest, đồng thời tự hash lại data, rồi so sánh — khớp thì hợp lệ.</p>
 </section>
 
 <section id="tls">
   <h2>2.5 TLS / mTLS handshake <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>TLS (cái "S" trong HTTPS) áp dụng đúng mô hình hybrid: dùng asymmetric để bắt tay an toàn rồi chuyển sang symmetric cho data vì symmetric nhanh hơn nhiều.</p>
   <pre><code class="language-text">TLS handshake (đơn giản hoá):
-1. Client hello (cipher suites hỗ trợ)
-2. Server gửi certificate (chứa public key, ký bởi CA)
-3. Client verify cert qua chuỗi CA tin cậy
-4. Trao đổi khoá (ECDHE) → cả hai có session key (symmetric)
-5. Từ đây dùng symmetric mã hoá data (nhanh)
-mTLS: thêm bước client cũng gửi cert để server xác thực client (service-to-service)</code></pre>
+1. Client hello — gửi danh sách cipher suite client hỗ trợ
+2. Server gửi certificate — chứa public key của server, được một CA tin cậy ký
+3. Client verify cert qua chuỗi CA → tin chắc đây đúng là server, không phải kẻ giả mạo
+4. Hai bên trao đổi khoá (ECDHE) → cùng dẫn ra một session key (symmetric) mà không ai nghe lén được
+5. Từ đây, mọi data mã hoá bằng symmetric với session key (nhanh)
+mTLS (mutual TLS): thêm bước CLIENT cũng gửi certificate để server xác thực client
+                   → dùng cho service-to-service (mỗi service một cert)</code></pre>
 </section>
 
 <section id="code-password">
   <h2>3.1 Password hashing (bcrypt) <span class="k-tag core">CORE ★</span></h2>
   <pre><code class="language-java">@Service
 class PasswordHashingService {
-  // Spring Security: cost factor 12, salt tự sinh &amp; nhúng trong chuỗi hash
+  // cost factor 12 → ~vài chục ms/hash; salt tự sinh &amp; nhúng trong chuỗi hash
   private final PasswordEncoder enc = new BCryptPasswordEncoder(12);
 
   String hash(String raw) { return enc.encode(raw); }            // lưu chuỗi này vào DB
-  boolean matches(String raw, String stored) {                   // không "giải mã"
-    return enc.matches(raw, stored);                             // so sánh constant-time
+  boolean matches(String raw, String stored) {                   // KHÔNG "giải mã"
+    return enc.matches(raw, stored);                             // hash lại &amp; so sánh constant-time
   }
 }
 // Hai user cùng mật khẩu "abc123" → hash KHÁC nhau (salt khác) → rainbow table vô dụng.
-// "Quên mật khẩu" = gửi link reset, KHÔNG bao giờ giải ra mật khẩu cũ.</code></pre>
+// "Quên mật khẩu" = gửi link reset, KHÔNG bao giờ giải ra mật khẩu cũ (vì hash một chiều).</code></pre>
 </section>
 
 <section id="code-pii">
   <h2>3.2 PII encryption (AES-GCM, envelope) <span class="k-tag core">CORE ★</span></h2>
   <pre><code class="language-java">@Service
 class PiiEncryptionService {
-  // data key (DEK) lấy từ KMS; IV ngẫu nhiên mỗi lần; lưu IV cạnh ciphertext (IV không bí mật)
+  // data key (DEK) lấy từ KMS; IV ngẫu nhiên MỖI lần; lưu IV cạnh ciphertext (IV không bí mật)
   String encrypt(String plaintext, SecretKey dek) throws Exception {
     byte[] iv = new byte[12]; SecureRandom.getInstanceStrong().nextBytes(iv);
     Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
     c.init(Cipher.ENCRYPT_MODE, dek, new GCMParameterSpec(128, iv));
     byte[] ct = c.doFinal(plaintext.getBytes(UTF_8));            // ct kèm auth tag
-    return base64(iv) + ":" + base64(ct);                       // sửa 1 bit → giải mã FAIL
+    return base64(iv) + ":" + base64(ct);                       // sửa 1 bit → giải mã FAIL (tag sai)
   }
   String decrypt(String packed, SecretKey dek) throws Exception {
     String[] p = packed.split(":");
@@ -213,7 +209,7 @@ boolean verify(byte[] data, byte[] sig, PublicKey pub) throws Exception {
   Signature s = Signature.getInstance("SHA256withECDSA");
   s.initVerify(pub); s.update(data); return s.verify(sig);    // verify bằng public
 }
-// authenticity + integrity + non-repudiation. ECDSA nhẹ hơn RSA cho cùng mức an toàn.</code></pre>
+// cho authenticity + integrity + non-repudiation. ECDSA nhẹ hơn RSA cho cùng mức an toàn.</code></pre>
 </section>
 
 <section id="antipatterns">
@@ -221,25 +217,27 @@ boolean verify(byte[] data, byte[] sig, PublicKey pub) throws Exception {
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — "tự làm crypto" gần như luôn sai</div>
     <div class="bi-answer">
+      <p>Nguyên tắc số một của crypto thực hành: <strong>đừng tự phát minh</strong>. Lý do và các lỗi cụ thể:</p>
       <ul>
-        <li><strong>Roll your own crypto:</strong> tự chế thuật toán/giao thức → gần như chắc có lỗ hổng tinh vi (timing attack, padding oracle). Dùng thư viện đã kiểm định (JCA, Bouncy Castle, libsodium).</li>
+        <li><strong>Roll your own crypto:</strong> tự chế thuật toán/giao thức → gần như chắc có lỗ hổng tinh vi (timing attack, padding oracle) mà người không chuyên không thấy. Dùng thư viện đã được kiểm định và soi kỹ (JCA, Bouncy Castle, libsodium).</li>
         <li><strong>AES-ECB:</strong> mỗi block độc lập → lộ pattern. Luôn dùng GCM (hoặc CBC + HMAC) với IV ngẫu nhiên.</li>
-        <li><strong>SHA-256/MD5 cho mật khẩu:</strong> quá nhanh → brute-force. Dùng bcrypt/Argon2.</li>
-        <li><strong>Hardcode key trong code/repo:</strong> lộ qua Git, decompile. Dùng KMS/secret manager + rotation.</li>
-        <li><strong>Bỏ qua verify certificate chain (<code>trustAll</code>):</strong> vô hiệu TLS, mở MITM.</li>
-        <li><strong>Tái dùng IV/nonce trong GCM:</strong> phá tính an toàn của GCM. IV phải ngẫu nhiên mỗi lần.</li>
+        <li><strong>SHA-256/MD5 cho mật khẩu:</strong> quá nhanh → brute-force. Dùng bcrypt/Argon2 + salt + work factor.</li>
+        <li><strong>Hardcode key trong code/repo:</strong> lộ qua Git history, qua decompile. Dùng KMS/secret manager + rotation (envelope).</li>
+        <li><strong>Bỏ qua verify certificate chain (<code>trustAll</code>):</strong> vô hiệu hoá toàn bộ TLS, mở cửa cho man-in-the-middle.</li>
+        <li><strong>Tái dùng IV/nonce trong GCM:</strong> phá tính an toàn của GCM. IV phải ngẫu nhiên &amp; duy nhất mỗi lần mã hoá.</li>
       </ul>
-      <p><em>Quy tắc:</em> đừng phát minh; chọn nguyên thuỷ chuẩn (bcrypt cho mật khẩu, AES-GCM cho PII, TLS cho transport), quản key qua KMS, để thư viện lo chi tiết.</p>
+      <p><em>Quy tắc:</em> chọn nguyên thuỷ chuẩn cho từng việc (bcrypt cho mật khẩu, AES-GCM cho PII, TLS cho transport, chữ ký cho non-repudiation), quản key qua KMS, để thư viện lo phần toán học.</p>
     </div>
   </div>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
     <tbody>
-      <tr><td>SHA-256 cho mật khẩu</td><td>Brute-force nhanh</td><td>bcrypt/Argon2 + salt</td></tr>
+      <tr><td>SHA-256 cho mật khẩu</td><td>Brute-force GPU nhanh</td><td>bcrypt/Argon2 + salt + work factor</td></tr>
       <tr><td>AES-ECB</td><td>Lộ pattern ciphertext</td><td>AES-GCM + IV ngẫu nhiên</td></tr>
       <tr><td>Hardcode key</td><td>Lộ qua repo/decompile</td><td>KMS + rotation (envelope)</td></tr>
-      <tr><td>trustAll certificate</td><td>MITM</td><td>Verify cert chain</td></tr>
+      <tr><td>trustAll certificate</td><td>Man-in-the-middle</td><td>Verify cert chain</td></tr>
+      <tr><td>Tái dùng IV/nonce</td><td>Phá an toàn GCM</td><td>IV ngẫu nhiên mỗi lần</td></tr>
     </tbody>
   </table>
   </div>
@@ -250,17 +248,17 @@ boolean verify(byte[] data, byte[] sig, PublicKey pub) throws Exception {
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
     <p><strong>Q:</strong> Khi nào symmetric, khi nào asymmetric?</p>
-    <p class="a">Symmetric (AES): nhanh, một key, mã hoá khối lượng lớn (PII, file), vấn đề là chia sẻ key. Asymmetric (RSA/ECDSA): hai key, chậm, dùng cho trao đổi khoá + chữ ký. Thực tế hybrid: asymmetric trao session key, symmetric mã hoá data.</p>
+    <p class="a">Symmetric (AES): nhanh, một key, mã hoá khối lượng lớn (PII, file), vấn đề là chia sẻ key an toàn. Asymmetric (RSA/ECDSA): hai key (public/private), chậm, dùng cho trao đổi khoá + chữ ký. Thực tế hybrid: asymmetric trao session key, symmetric mã hoá data.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Giải thích TLS handshake.</p>
-    <p class="a">Client hello → server gửi cert (public key, ký bởi CA) → client verify chain → ECDHE trao session key → chuyển sang symmetric mã hoá data. Asymmetric chỉ dùng để bắt tay vì chậm; data dùng symmetric. mTLS thêm client cert.</p>
+    <p class="a">Client hello → server gửi cert (public key, ký bởi CA) → client verify chain (chống giả mạo) → ECDHE dẫn ra session key chung → chuyển sang symmetric mã hoá data. Asymmetric chỉ dùng để bắt tay vì chậm; data dùng symmetric vì nhanh. mTLS thêm client cert cho service-to-service.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> Thiết kế mã hoá end-to-end cho PII.</p>
-    <p class="a">Envelope encryption: data key (AES-GCM) mã hoá PII; master key trong KMS mã hoá data key. Rotation master không cần mã hoá lại data. Per-field encryption cho cột nhạy cảm; crypto-shredding (xoá key) cho GDPR delete; audit truy cập key; TLS cho transit.</p>
+    <p class="a">Envelope encryption: data key (AES-GCM) mã hoá PII; master key trong KMS mã hoá data key. Rotation master không cần mã hoá lại data. Per-field encryption cho cột nhạy cảm; crypto-shredding (xoá key) cho GDPR delete; audit truy cập key; TLS cho transit. Không hardcode key, không tự chế thuật toán.</p>
   </div>
 </section>
 
@@ -268,7 +266,7 @@ boolean verify(byte[] data, byte[] sig, PublicKey pub) throws Exception {
   <div class="build-exercise">
     <div class="be-head">🔧 Lab bắt buộc — làm đúng &amp; thấy cái sai (2 bài)</div>
     <div class="be-deliverable">
-      <p><strong>Lab 1 — bcrypt vs SHA-256.</strong> Hash 100K mật khẩu bằng SHA-256 và bằng bcrypt (cost 12), đo thời gian. Chứng minh SHA-256 nhanh gấp hàng nghìn lần → attacker brute-force dễ. Verify: hai user cùng mật khẩu ra hash bcrypt khác nhau (do salt). Tiêu chí: giải thích vì sao "chậm" là tính năng.</p>
+      <p><strong>Lab 1 — bcrypt vs SHA-256.</strong> Hash 100K mật khẩu bằng SHA-256 và bằng bcrypt (cost 12), đo thời gian. Chứng minh SHA-256 nhanh gấp hàng nghìn lần → attacker brute-force dễ. Verify: hai user cùng mật khẩu ra hash bcrypt khác nhau (do salt). Tiêu chí: giải thích vì sao "chậm" (work factor) là tính năng.</p>
       <p><strong>Lab 2 — ECB lộ pattern.</strong> Mã hoá một ảnh bitmap đơn giản (hoặc data lặp) bằng AES-ECB và AES-GCM. Quan sát ECB giữ pattern (block giống → ciphertext giống), GCM thì không. Tiêu chí: giải thích vì sao ECB nguy hiểm và vai trò IV trong GCM.</p>
     </div>
   </div>
@@ -278,13 +276,13 @@ boolean verify(byte[] data, byte[] sig, PublicKey pub) throws Exception {
   <div class="feynman">
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
-      <li>Hashing vs encryption khác gì? Loại data nào dùng cái nào?</li>
-      <li>Vì sao SHA-256 cho mật khẩu là sai? bcrypt "chậm" giúp gì? Salt làm gì?</li>
-      <li>Symmetric vs asymmetric — vì sao TLS dùng cả hai? Envelope encryption là gì?</li>
-      <li>Vì sao AES-ECB nguy hiểm? GCM + IV thêm gì?</li>
-      <li>Chữ ký số chứng minh 3 điều gì? Cơ chế ký/verify?</li>
+      <li>Hashing vs encryption khác gì (một chiều vs hai chiều)? Loại data nào dùng cái nào?</li>
+      <li>Vì sao SHA-256 cho mật khẩu là sai? bcrypt "chậm" (work factor) giúp gì? Salt chống gì?</li>
+      <li>Symmetric vs asymmetric — vì sao TLS dùng cả hai (hybrid)? Envelope encryption là gì?</li>
+      <li>Vì sao AES-ECB nguy hiểm? GCM + IV thêm gì? Vì sao không tái dùng IV?</li>
+      <li>Chữ ký số chứng minh 3 điều gì? Cơ chế ký/verify (private vs public)?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = không tự bắn vào chân khi làm crypto.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = không tự bắn vào chân khi làm crypto.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

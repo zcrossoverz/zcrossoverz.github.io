@@ -32,19 +32,20 @@
       <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
       <a href="#real-problem">1. Bài toán: 80% coverage vẫn lọt P1</a>
       <div class="toc-section">Mental models</div>
-      <a href="#pyramid">2.1 Test pyramid + tỉ lệ</a>
-      <a href="#unit">2.2 Unit test — isolation đúng</a>
-      <a href="#integration">2.3 Integration + Testcontainers vs H2</a>
-      <a href="#contract">2.4 Contract testing (Pact)</a>
-      <a href="#builder">2.5 Test data builder</a>
+      <a href="#coverage">2.1 Coverage đo gì &amp; không đo gì</a>
+      <a href="#pyramid">2.2 Test pyramid + tỉ lệ</a>
+      <a href="#unit">2.3 Unit test — isolation đúng</a>
+      <a href="#integration">2.4 Integration + Testcontainers vs H2</a>
+      <a href="#contract">2.5 Contract testing (Pact)</a>
       <a href="#slices">2.6 @SpringBootTest slices</a>
+      <a href="#brittle">2.7 Behavior vs implementation</a>
       <div class="toc-section">Production code</div>
-      <a href="#code-unit">3.1 Unit test (Mockito) đầy đủ</a>
+      <a href="#code-unit">3.1 Unit test (Mockito)</a>
       <a href="#code-integration">3.2 Integration (Testcontainers)</a>
       <a href="#code-web">3.3 @DataJpaTest · @WebMvcTest</a>
       <a href="#code-pact">3.4 Contract test (Pact)</a>
       <div class="toc-section">Pitfalls</div>
-      <a href="#antipatterns">4. Anti-patterns (brittle test)</a>
+      <a href="#antipatterns">4. Anti-patterns</a>
       <div class="toc-section">Áp dụng</div>
       <a href="#interview">5. 3-tier interview</a>
       <a href="#lab">🔧 Build &amp; drill</a>
@@ -59,7 +60,7 @@
   <div class="meta-tag">Nhóm H · Testing · File chống hiểu giả</div>
   <h1>Testing Strategy — Pyramid, Testcontainers, Contract, Non-Brittle</h1>
   <p class="lead">
-    "80% coverage" là con số gây hiểu giả nguy hiểm nhất trong testing — nó đo <em>dòng code chạy qua</em>, không đo <em>hành vi được khẳng định</em>. File này phân biệt test <strong>tốt</strong> (test behavior, real DB, contract) với test <strong>giả an toàn</strong> (test implementation, H2, mock cả class under test), kèm code thật cho từng loại, trên domain <strong>ShopFlow</strong> — <code>OrderService</code> của sàn e-commerce.
+    "80% coverage" là con số gây hiểu giả nguy hiểm nhất trong testing — nó đo <em>dòng code chạy qua</em>, không đo <em>hành vi được khẳng định</em>. File này giải thích kỹ vì sao có test pyramid, vì sao Testcontainers thắng H2, contract testing chặn breaking change ra sao, và thế nào là test "brittle" — đọc một lần là đủ để trả lời phỏng vấn. Domain minh hoạ: <strong>ShopFlow</strong> — <code>OrderService</code> của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Viết test không brittle, dùng Testcontainers, hiểu contract test</div>
@@ -73,15 +74,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Coverage 80% nghĩa là code được test kỹ, ít bug."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Coverage chỉ đo dòng code <em>chạy qua</em>, không đo <em>assertion có ý nghĩa</em>. Một test gọi method rồi không assert gì vẫn tăng coverage. P1 vẫn lọt vì coverage cao mà test toàn check implementation detail thay vì behavior.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Coverage chỉ đo dòng code <em>được chạy qua</em> trong lúc test, không đo <em>có assertion ý nghĩa</em> nào kiểm tra kết quả. Một test gọi method rồi không assert gì vẫn nâng coverage 100% cho method đó. P1 vẫn lọt vì test phủ rộng nhưng nông — chạy qua nhưng không khẳng định đúng/sai.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Integration test với H2 in-memory cho nhanh là đủ."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> H2 có dialect SQL khác PostgreSQL (JSONB, window function, native query, <code>ON CONFLICT</code>, constraint behavior). Test pass với H2 nhưng prod dùng PostgreSQL → bug bị che tới khi lên production.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> H2 chạy ở "compatibility mode" mô phỏng PostgreSQL nhưng không bằng — JSONB, window function, native query, <code>ON CONFLICT</code>, hành vi constraint đều khác. Test pass với H2 nhưng prod dùng PostgreSQL → bug bị che tới khi lên production.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Mock càng nhiều càng tốt vì test chạy nhanh và độc lập."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Mock cả <em>class under test</em> = test đang test cái mock, không test code thật → false confidence. Chỉ mock dependency (repository, external API), để class cần test chạy logic thật.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Nếu mock cả <em>class đang test</em> thì bạn đang test cái mock, không test code thật → false confidence. Chỉ mock <em>dependency</em> (repository, external API); để class cần kiểm chạy logic thật.</div>
   </div>
 </section>
 
@@ -89,16 +90,16 @@
   <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
   <div class="roadmap">
     <div class="roadmap-head">Thứ tự ưu tiên</div>
-    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Test pyramid + tỉ lệ &amp; lý do (2.1), Unit test isolation đúng — chỉ mock dependency (2.2, 3.1), test behavior không implementation (4). Đây là gốc để viết test không brittle.</div>
-    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Integration test với Testcontainers vs H2 (2.3, 3.2), @SpringBootTest slices cho tốc độ (2.6, 3.3). Hỏi nhiều trong phỏng vấn senior.</div>
-    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Contract testing Pact (2.4, 3.4), test data builder (2.5).</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Coverage đo gì (2.1), test pyramid + lý do (2.2), unit test isolation đúng (2.3, 3.1), test behavior không implementation (2.7). Gốc để viết test không brittle.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Integration với Testcontainers vs H2 (2.4, 3.2), @SpringBootTest slices cho tốc độ (2.6, 3.3).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Contract testing Pact (2.5, 3.4).</div>
     <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> property-based testing, mutation testing (đo chất lượng test), chaos testing, canary deploy.</div>
   </div>
 </section>
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — 80% coverage vẫn lọt P1 <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow có 80% test coverage nhưng bug P1 vẫn lên production. CI chạy test mất 45 phút, chặn merge. Thêm một feature làm vỡ 50 test cũ — test brittle, check implementation detail thay vì behavior. Contract giữa <code>OrderService</code> và <code>NotificationService</code> vỡ âm thầm (API đổi, consumer chưa cập nhật). Integration test dùng H2, nhưng dialect khác PostgreSQL nên bug bị che tới production.</p>
+  <p>ShopFlow có 80% test coverage nhưng bug P1 vẫn lên production đều đặn. Đào sâu thấy bốn triệu chứng: (1) CI chạy test mất 45 phút, chặn merge cả buổi; (2) thêm một feature làm vỡ 50 test cũ — các test này check <em>cách code làm</em> (gọi setter nào, gọi hàm nào) thay vì <em>kết quả</em>, nên đổi cấu trúc nội bộ là đỏ hàng loạt; (3) contract giữa <code>OrderService</code> và <code>NotificationService</code> vỡ âm thầm vì NotificationService đổi field JSON mà OrderService không biết, chỉ phát hiện khi chạy thật; (4) integration test dùng H2 nên một native query đúng cú pháp PostgreSQL pass ở test nhưng fail ở prod.</p>
 
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
@@ -108,87 +109,94 @@
       <li>Vì sao "thêm 1 feature làm vỡ 50 test"? Đặc điểm chung của 50 test đó là gì (gợi ý: chúng check cái gì)?</li>
       <li>H2 pass nhưng PostgreSQL fail — cho 2 ví dụ cụ thể về khác biệt dialect khiến bug lọt.</li>
     </ol>
-    <div class="pause-hint">Đáp án ở 2.1 (coverage ≠ quality), 4 (test implementation = brittle), 2.3 (H2 vs PostgreSQL: JSONB, native query, <code>ON CONFLICT</code>, constraint). Đừng đọc tiếp khi chưa trả lời câu 2.</div>
+    <div class="pause-hint">Đáp án ở 2.1 (coverage ≠ quality), 2.7 (test implementation = brittle), 2.4 (H2 vs PostgreSQL: JSONB, native query, ON CONFLICT, constraint). Đừng đọc tiếp khi chưa trả lời câu 2.</div>
   </div>
 
   <h3>5 câu Senior phải trả lời</h3>
   <ol>
+    <li>Coverage tốt nghĩa là gì? (không chỉ 80%)</li>
     <li>Vì sao test pyramid quan trọng? Tỉ lệ Unit:Integration:E2E?</li>
     <li>Vì sao Testcontainers (PostgreSQL) tốt hơn H2? Khác biệt thật?</li>
     <li>Contract testing (Pact) là gì? Chặn breaking change API thế nào?</li>
-    <li>"Coverage tốt" nghĩa là gì? (không chỉ 80%)</li>
     <li>Viết test không brittle thế nào? (test behavior, không implementation)</li>
   </ol>
 </section>
 
-<section id="pyramid">
-  <h2>2.1 Test pyramid + tỉ lệ <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-text">        E2E (ít)        — toàn hệ thống, chậm nhất (~1 phút/test), brittle nhất, confidence cao nhất
-     Integration (vừa)  — nhiều component, DB thật (Testcontainers), tốc độ trung bình (~10s)
-   Unit (nhiều)         — 1 class, mock dependency, nhanh (~1s), deterministic, parallel
+<section id="coverage">
+  <h2>2.1 Coverage đo gì &amp; KHÔNG đo gì <span class="k-tag core">CORE ★</span></h2>
+  <p>Code coverage là tỉ lệ phần trăm code được <em>thực thi</em> trong khi chạy test (line coverage = % dòng chạy qua; branch coverage = % nhánh if/else đi qua). Vấn đề căn bản: coverage đo "code có chạy không", <strong>không</strong> đo "kết quả có được kiểm tra không". Một test gọi <code>service.placeOrder(req)</code> rồi kết thúc mà không có một <code>assert</code> nào vẫn làm coverage của <code>placeOrder</code> lên 100% — nhưng nó không phát hiện được bất kỳ bug nào, vì không khẳng định kết quả phải là gì.</p>
+  <p>Vì vậy "80% coverage" chỉ nói "80% code từng được chạy ít nhất một lần trong test suite", chứ không nói "80% hành vi đã được kiểm chứng đúng". Đó là lý do coverage cao mà vẫn lọt P1. <strong>Coverage tốt</strong> = kết hợp ba thứ: (a) phủ đủ <em>nhánh quan trọng</em> (cả happy path lẫn error path), (b) mỗi test có <em>assertion ý nghĩa</em> kiểm tra đúng kết quả/hành vi, và (c) test đó <em>thật sự bắt được bug</em> nếu code sai. Thước đo (c) chính xác nhất không phải coverage mà là <strong>mutation testing</strong>: công cụ cố tình đổi code (đổi <code>&gt;</code> thành <code>&gt;=</code>, xoá một dòng) rồi xem test có đỏ không — nếu test vẫn xanh nghĩa là nó không thật sự kiểm cái đó.</p>
+  <div class="callout info"><div class="ctitle">Cách nói trong phỏng vấn</div><p>"Coverage là điều kiện <em>cần</em> chứ không <em>đủ</em>. Tôi dùng nó như sàn (vd không để dưới 70% cho code nghiệp vụ) nhưng không coi nó là mục tiêu — vì tối ưu coverage dễ tạo test rỗng. Thước đo chất lượng thật là mutation score và việc test có phủ error path không."</p></div>
+</section>
 
-Tỉ lệ tham chiếu: 70% Unit : 20% Integration : 10% E2E</code></pre>
-  <p><strong>WHY pyramid:</strong></p>
-  <ul>
-    <li><strong>Unit</strong> = feedback nhanh (&lt;1s), CI rẻ (chạy song song), nên làm nhiều — bắt lỗi logic sớm.</li>
-    <li><strong>Integration</strong> = bắt bug thật (SQL syntax, transaction semantics, constraint), tốc độ trung bình, làm vừa phải.</li>
-    <li><strong>E2E</strong> = bắt lỗi workflow (feature A làm vỡ feature B), chậm, brittle → chỉ dành cho critical path.</li>
-  </ul>
+<section id="pyramid">
+  <h2>2.2 Test pyramid — vì sao có hình tháp <span class="k-tag core">CORE ★</span></h2>
+  <p>Test pyramid là một heuristic về <em>tỉ lệ</em> giữa ba loại test, dựa trên ba thuộc tính đối nghịch của mỗi loại: <strong>tốc độ</strong>, <strong>độ tin cậy của tín hiệu</strong> (test đỏ thì có đúng là bug không), và <strong>phạm vi bắt lỗi</strong>.</p>
+  <pre><code class="language-text">        E2E (ít)        — toàn hệ thống, chậm nhất (~1 phút/test), brittle nhất, confidence cao nhất
+     Integration (vừa)  — vài component + DB thật, tốc độ trung bình (~vài giây/test)
+   Unit (nhiều)         — 1 class, mock dependency, nhanh (~mili-giây), deterministic, chạy song song
+
+Tỉ lệ tham chiếu: ~70% Unit : 20% Integration : 10% E2E</code></pre>
+  <p><strong>Vì sao nhiều unit:</strong> unit test nhanh (hàng nghìn test chạy trong vài giây) và <em>deterministic</em> (không phụ thuộc mạng/DB nên không "flaky"). Chúng cho <em>vòng phản hồi</em> ngắn — sửa code, chạy lại, biết ngay sai ở đâu vì mỗi test chỉ kiểm một class. Đây là nơi bắt phần lớn bug logic, nên làm nhiều.</p>
+  <p><strong>Vì sao vừa phải integration:</strong> integration test cắm DB/component thật nên bắt được loại bug mà unit không thấy — sai cú pháp SQL, hành vi transaction, vi phạm constraint, mapping ORM. Nhưng nó chậm hơn (phải dựng DB) và phức tạp hơn để setup, nên chỉ dùng cho các luồng có giá trị tích hợp thật, không phủ mọi nhánh ở đây.</p>
+  <p><strong>Vì sao ít E2E:</strong> E2E chạy cả hệ thống qua nhiều service nên cho confidence cao nhất ("luồng đặt hàng từ đầu tới cuối hoạt động"), nhưng cũng chậm nhất, <em>brittle</em> nhất (một thay đổi nhỏ ở UI/flow làm đỏ), và khi đỏ thì <em>khó biết lỗi ở đâu</em> trong 8 service. Nên chỉ dành cho vài critical path.</p>
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — inverted pyramid (kim tự tháp ngược)</div>
     <div class="bi-answer">
-      <p>Nếu 50% là E2E: CI mất 2 giờ, feedback chậm, không kham nổi nhiều E2E → ít test → bug lọt. E2E cũng <em>brittle nhất</em> (một thay đổi nhỏ ở UI/flow làm đỏ hàng loạt) và <em>khó debug</em> (lỗi ở đâu trong 8 service?). <em>Quy tắc:</em> đẩy assertion xuống tầng thấp nhất bắt được bug — đừng test một quy tắc tính giá bằng E2E khi unit test đủ.</p>
+      <p>Nếu đảo ngược — 50% là E2E: CI mất hàng giờ → feedback chậm → dev bỏ chạy test cục bộ; không kham nổi nhiều E2E nên ít test tổng → bug lọt; E2E flaky (đỏ ngẫu nhiên do mạng/timing) làm đội mất niềm tin vào test, bắt đầu "retry cho xanh" — che mất bug thật. <em>Quy tắc vàng:</em> đẩy mỗi assertion xuống tầng <em>thấp nhất</em> bắt được bug đó. Một quy tắc tính giá nên test bằng unit; đừng dựng cả flow E2E chỉ để kiểm "giảm 10% có đúng không".</p>
     </div>
   </div>
 </section>
 
 <section id="unit">
-  <h2>2.2 Unit test — isolation đúng <span class="k-tag core">CORE ★</span></h2>
-  <p>Test 1 class cô lập, mock mọi dependency (repository, external API, config). Nhanh, deterministic. <strong>KHÔNG test code của framework</strong> (đừng test Spring DI hay Hibernate — tin vendor đã test).</p>
+  <h2>2.3 Unit test — "isolation" nghĩa là gì <span class="k-tag core">CORE ★</span></h2>
+  <p>Unit test kiểm <em>một đơn vị logic</em> (thường là một class) trong <strong>cô lập</strong> với phần còn lại của hệ thống. "Cô lập" đạt được bằng <strong>mock</strong>: thay mọi dependency thật (repository, external API, clock) bằng một đối tượng giả mà bạn lập trình để trả về giá trị định trước. Nhờ đó test không chạm DB/mạng → nhanh và deterministic, và bạn kiểm soát hoàn toàn input để test từng nhánh.</p>
+  <p>Cấu trúc chuẩn là <strong>AAA</strong>: <em>Arrange</em> (dựng mock, set giá trị trả về), <em>Act</em> (gọi method cần test), <em>Assert</em> (kiểm kết quả). Mấu chốt: <strong>chỉ mock dependency, KHÔNG mock class đang test</strong> — nếu mock luôn <code>OrderService</code> thì test chạy logic của mock chứ không phải của <code>OrderService</code>, vô nghĩa.</p>
+  <p>Một sai lầm phổ biến nữa là <em>test code của framework</em>. Đừng viết test kiểm "Spring có inject bean không" hay "Hibernate có lưu được không" — đó là việc của vendor, họ đã test rồi. Unit test của bạn chỉ nên kiểm <em>logic nghiệp vụ của bạn</em>.</p>
   <div class="compare">
     <div class="compare-col good">
       <h4>✅ Test logic của OrderService (behavior)</h4>
       <pre><code class="language-java">@Test
 void appliesDiscountToOrderTotal() {
-    var repo    = mock(OrderRepository.class);
+    var repo    = mock(OrderRepository.class);   // mock dependency
     var pricing = mock(PricingService.class);
     when(pricing.discountFor(1000)).thenReturn(50);
 
-    var service = new OrderService(repo, pricing);
+    var service = new OrderService(repo, pricing); // class THẬT đang test
     Order o = service.place(1000);
 
-    assertEquals(950, o.netTotal());   // behavior: total sau giảm giá
+    assertEquals(950, o.netTotal());   // assert KẾT QUẢ (behavior)
     verify(repo).save(any());
 }</code></pre>
     </div>
     <div class="compare-col bad">
       <h4>❌ Test framework (vô nghĩa)</h4>
-      <pre><code class="language-java">@SpringBootTest
+      <pre><code class="language-java">@SpringBootTest                       // nạp cả context chỉ để...
 @Test
 void orderServiceIsAutowired() {
-    // đang test Spring DI, không test logic OrderService
-    assertNotNull(orderService);
+    assertNotNull(orderService);      // ...test Spring DI, không test logic
 }</code></pre>
     </div>
   </div>
-  <div class="callout info"><div class="ctitle">Đừng chỉ test happy path</div><p>Test cả error path: "khi pricing fail thì repository.save KHÔNG được gọi" (<code>verify(repo, never()).save(any())</code>) — đảm bảo không lưu một phần. Đây là chỗ bug thật hay trốn. Code đầy đủ ở 3.1.</p></div>
+  <div class="callout info"><div class="ctitle">Đừng quên error path</div><p>Phần lớn bug production trốn ở nhánh lỗi, không phải happy path. Hãy test các khẳng định kiểu "khi pricing fail thì repository.save KHÔNG được gọi" (<code>verify(repo, never()).save(any())</code>) — đảm bảo không lưu một phần dữ liệu hỏng. Code đầy đủ ở 3.1.</p></div>
 </section>
 
 <section id="integration">
-  <h2>2.3 Integration test: Testcontainers vs H2 <span class="k-tag core">CORE ★</span></h2>
-  <p>Integration test kiểm tra tương tác giữa component với <strong>DB thật</strong>. Testcontainers spin một PostgreSQL thật trong Docker → bắt được bug dialect mà H2 bỏ sót.</p>
+  <h2>2.4 Integration test: Testcontainers vs H2 <span class="k-tag core">CORE ★</span></h2>
+  <p>Integration test kiểm <em>tương tác</em> giữa nhiều thành phần với một <strong>DB thật</strong> — để bắt loại bug mà unit (vốn mock DB) không bao giờ thấy: SQL sai cú pháp, hành vi transaction/rollback, vi phạm constraint, mapping ORM lệch. Câu hỏi là dùng DB nào trong test.</p>
+  <p>Cám dỗ là dùng <strong>H2</strong> — một DB in-memory chạy ngay trong JVM, không cần Docker, khởi động tức thì. Nhưng H2 chỉ <em>mô phỏng</em> PostgreSQL qua "compatibility mode", không phải PostgreSQL thật. Hệ quả: nhiều thứ hành xử khác đi và bug bị <em>che</em> — test xanh nhưng prod đỏ. <strong>Testcontainers</strong> giải bằng cách spin một container PostgreSQL <em>thật</em> (đúng version prod) trong Docker khi test chạy, rồi dọn sau khi xong. Chậm hơn H2 vài giây nhưng phản ánh đúng production.</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Khác biệt</th><th>H2 (in-memory)</th><th>PostgreSQL thật (prod)</th></tr></thead>
+    <thead><tr><th>Khác biệt</th><th>H2 (compatibility mode)</th><th>PostgreSQL thật (Testcontainers)</th></tr></thead>
     <tbody>
-      <tr><td>Native query / dialect</td><td>Cú pháp khác → có thể pass nhầm</td><td>Đúng cú pháp prod</td></tr>
-      <tr><td>JSONB, array, window fn</td><td>Hỗ trợ hạn chế/khác</td><td>Đầy đủ</td></tr>
-      <tr><td><code>ON CONFLICT</code> upsert</td><td>Cú pháp khác (MERGE)</td><td>Như prod</td></tr>
-      <tr><td>Constraint / unique violation</td><td>Hành vi/exception khác</td><td>Đúng <code>DataIntegrityViolationException</code> như prod</td></tr>
+      <tr><td>Native query / dialect</td><td>Cú pháp khác → query đúng-prod có thể fail, query sai-prod có thể pass</td><td>Đúng như prod</td></tr>
+      <tr><td>JSONB, array, window function</td><td>Hỗ trợ hạn chế hoặc hành vi khác</td><td>Đầy đủ</td></tr>
+      <tr><td><code>INSERT ... ON CONFLICT</code> (upsert)</td><td>Không có / cú pháp khác (H2 dùng MERGE)</td><td>Như prod</td></tr>
+      <tr><td>Constraint / unique violation</td><td>Loại exception &amp; message khác</td><td>Đúng <code>DataIntegrityViolationException</code> như prod</td></tr>
     </tbody>
   </table>
   </div>
-
+  <p><strong>Mẹo tốc độ:</strong> Testcontainers cho phép <em>tái dùng</em> một container singleton cho cả test suite (thay vì dựng lại mỗi class) và chạy các test song song — nhờ đó rút thời gian từ 45 phút xuống ~10 phút mà vẫn dùng DB thật.</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -196,72 +204,46 @@ void orderServiceIsAutowired() {
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>Nêu được H2 khác PostgreSQL ở: native query, JSONB, window function, <code>ON CONFLICT</code>, unique/foreign-key constraint behavior, kiểu dữ liệu. Giải thích vì sao "pass với H2 = false confidence".</p>
+      <p>Nêu được H2 compatibility mode khác PostgreSQL ở: native query, JSONB, window function, <code>ON CONFLICT</code>, hành vi constraint. Giải thích vì sao "pass với H2 = false confidence" (bug bị che tới prod).</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Thiết kế suite: dùng Testcontainers cho repository/integration, <em>reuse</em> container singleton để nhanh, tách stage CI (unit trước cho feedback, integration sau), chạy container song song để rút thời gian từ 45 → 10 phút.</p>
+      <p>Thiết kế suite: Testcontainers cho repository/integration, reuse container singleton + chạy song song để nhanh, tách stage CI (unit trước cho feedback, integration sau), dùng cùng version PostgreSQL với prod.</p>
     </div>
   </div>
 </section>
 
 <section id="contract">
-  <h2>2.4 Contract testing (Pact) <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Consumer (<code>OrderService</code>) kỳ vọng Provider (<code>NotificationService</code>) trả JSON cụ thể.</p>
-  <pre><code class="language-text">Consumer test: "Gọi /notify với payload X, tôi mong response Y"
-   → Pact ghi lại kỳ vọng (contract file)
-Provider test: "Tôi có thoả mãn contract này không?" (verify trên provider)
-   → Cả hai pass = API an toàn
-   → Provider đổi API phá contract → contract test FAIL sớm trong CI,
-     KHÔNG cần chạy cả hai service cùng lúc</code></pre>
-  <div class="callout success"><div class="ctitle">Giá trị</div><p>Contract test bắt breaking change ngay trong CI của từng service, trước khi tới integration environment. Đây là thứ ngăn "API đổi, consumer vỡ âm thầm" ở mục 1. Code đầy đủ ở 3.4.</p></div>
-</section>
-
-<section id="builder">
-  <h2>2.5 Test data builder <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <div class="compare">
-    <div class="compare-col good">
-      <h4>✅ Builder — đọc được, linh hoạt</h4>
-      <pre><code class="language-java">Order o = anOrder()
-    .withTotal(5000)
-    .withDiscount(200)
-    .forCustomer("C9")
-    .build();</code></pre>
-    </div>
-    <div class="compare-col bad">
-      <h4>❌ Constructor 12 tham số — brittle</h4>
-      <pre><code class="language-java">Order o = new Order(5000, 200, "C9", "C1",
-    LocalDate.now(), "PENDING", null, false,
-    true, 0, null, "SALE");  // khó đọc, sai thứ tự dễ</code></pre>
-    </div>
-  </div>
-  <pre><code class="language-java">public class OrderBuilder {
-    private String customer = "C123";
-    private BigDecimal total = new BigDecimal("1000");
-    private BigDecimal discount = new BigDecimal("50");
-    private OrderStatus status = OrderStatus.COMPLETED;
-
-    public static OrderBuilder anOrder() { return new OrderBuilder(); }
-    public OrderBuilder withTotal(long t)    { this.total = BigDecimal.valueOf(t); return this; }
-    public OrderBuilder withDiscount(long d) { this.discount = BigDecimal.valueOf(d); return this; }
-    public OrderBuilder forCustomer(String c){ this.customer = c; return this; }
-    public Order build() { return new Order(customer, total, discount, status); }
-}</code></pre>
+  <h2>2.5 Contract testing (Pact) — chặn breaking change <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p><strong>Vấn đề:</strong> trong microservices, <code>OrderService</code> (consumer) gọi <code>NotificationService</code> (provider) và kỳ vọng một cấu trúc JSON cụ thể. Khi provider đổi API (đổi tên field, xoá field), consumer vỡ — nhưng unit test mỗi bên đều xanh (vì đã mock lẫn nhau), và chỉ phát hiện khi deploy cả hai vào môi trường integration, lúc đó đã muộn và khó truy lỗi.</p>
+  <p><strong>Contract testing</strong> giải bằng cách biến "kỳ vọng" thành một <em>hợp đồng</em> kiểm được tự động, theo mô hình <em>consumer-driven</em>: consumer viết ra "khi tôi gọi <code>/notify</code> với payload X, tôi mong response Y"; công cụ (Pact) ghi kỳ vọng này thành một file contract. Sau đó ở phía provider, một test nạp file contract và <em>verify</em> rằng provider thật sự trả đúng Y. Nếu provider lỡ đổi API phá vỡ kỳ vọng, test verify của provider sẽ đỏ <em>ngay trong CI của provider</em> — trước khi merge, không cần chạy cả hai service cùng lúc.</p>
+  <pre><code class="language-text">Consumer (OrderService): "gọi /notify {customerId, message} → mong {status:'sent'}"
+   → Pact ghi file contract
+Provider (NotificationService): test nạp contract → verify provider trả đúng {status:'sent'}
+   → provider đổi field 'status' → 'state' → test verify ĐỎ trong CI provider → chặn merge</code></pre>
+  <div class="callout success"><div class="ctitle">Giá trị cốt lõi</div><p>Contract test bắt breaking change <em>sớm</em> (CI từng service) và <em>rẻ</em> (không cần dựng cả hệ). Đây chính là thứ ngăn "API đổi, consumer vỡ âm thầm" ở phần 1. Code đầy đủ ở 3.4.</p></div>
 </section>
 
 <section id="slices">
-  <h2>2.6 @SpringBootTest slices — test nhanh hơn <span class="k-tag core">CORE ★</span></h2>
-  <p>Full <code>@SpringBootTest</code> nạp toàn bộ context (chậm). Slice chỉ nạp phần cần → nhanh gấp ~10 lần.</p>
+  <h2>2.6 @SpringBootTest slices — vì sao nhanh hơn <span class="k-tag core">CORE ★</span></h2>
+  <p>Khi bạn dùng <code>@SpringBootTest</code> đầy đủ, Spring nạp <em>toàn bộ</em> application context — mọi bean, mọi config, kết nối DB, web server... — chỉ để test một controller. Việc nạp context này tốn vài giây mỗi class test, cộng dồn thành phút. <strong>Slice annotation</strong> giải bằng cách chỉ nạp <em>phần context cần thiết</em> cho loại test đó:</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Slice</th><th>Nạp gì</th><th>Test cái gì</th></tr></thead>
+    <thead><tr><th>Slice</th><th>Chỉ nạp gì</th><th>Để test cái gì</th></tr></thead>
     <tbody>
-      <tr><td><code>@WebMvcTest</code></td><td>Controller + MockMvc (mock service)</td><td>routing, JSON mapping, validation, error handling</td></tr>
-      <tr><td><code>@DataJpaTest</code></td><td>JPA/Hibernate + DB (Testcontainers)</td><td>query, mapping, constraint</td></tr>
-      <tr><td><code>@JsonTest</code></td><td>Jackson</td><td>serialize/deserialize</td></tr>
+      <tr><td><code>@WebMvcTest</code></td><td>Tầng web: controller + MockMvc + Jackson + validation (service được mock)</td><td>routing, JSON mapping, validation, error handling — KHÔNG đụng service/DB</td></tr>
+      <tr><td><code>@DataJpaTest</code></td><td>Tầng JPA: entity, repository, Hibernate + DB (Testcontainers)</td><td>query, mapping, constraint — KHÔNG nạp controller</td></tr>
+      <tr><td><code>@JsonTest</code></td><td>Chỉ Jackson</td><td>serialize/deserialize JSON</td></tr>
     </tbody>
   </table>
   </div>
+  <p>Vì mỗi slice nạp ít bean hơn nhiều so với full context, nó khởi động nhanh gấp khoảng 10 lần — và còn giúp test <em>tập trung</em>: <code>@WebMvcTest</code> chỉ thấy tầng web nên test của bạn buộc phải kiểm đúng thứ thuộc tầng web, không lẫn lộn.</p>
+</section>
+
+<section id="brittle">
+  <h2>2.7 Behavior vs implementation — gốc của test brittle <span class="k-tag core">CORE ★</span></h2>
+  <p>Một test <strong>brittle</strong> (giòn) là test đỏ khi bạn refactor mà <em>hành vi không đổi</em>. Nguyên nhân số một: test kiểm <em>cách code làm</em> (implementation) thay vì <em>kết quả code tạo ra</em> (behavior). Ví dụ test <code>verify(service).setStatus("PAID")</code> đang khẳng định "phải gọi đúng method <code>setStatus</code>" — nếu bạn refactor đổi tên method nội bộ hoặc đổi cách cập nhật trạng thái (dù kết quả vẫn là order PAID), test sẽ đỏ. Đây là lý do "thêm 1 feature làm vỡ 50 test" ở phần 1: 50 test đó khoá chặt vào chi tiết nội bộ.</p>
+  <p><strong>Cách đúng:</strong> assert <em>kết quả quan sát được từ bên ngoài</em> — trạng thái cuối, giá trị trả về, hiệu ứng phụ quan trọng. Test <code>order.status() == PAID</code> không quan tâm bạn đạt được nó bằng cách nào, nên cho phép refactor tự do mà vẫn bảo vệ hành vi. Quy tắc: <em>test nên là rào chắn cho refactor, không phải xiềng xích.</em></p>
 </section>
 
 <section id="code-unit">
@@ -281,28 +263,24 @@ Provider test: "Tôi có thoả mãn contract này không?" (verify trên provid
     }
 
     @Test
-    void placesOrderAndSavesWithDiscount() {
-        // Arrange
+    void placesOrderAndSavesWithDiscount() {           // happy path
         when(inventory.reserve("SKU1", 2)).thenReturn(true);
         when(pricing.discountFor(1000)).thenReturn(50);
-        // Act
         Order result = service.place("C1", "SKU1", 2, 1000);
-        // Assert — behavior, không phải implementation
-        assertEquals(950, result.netTotal());
-        assertEquals(50, result.discount());
+        assertEquals(950, result.netTotal());          // assert behavior
         verify(repository).save(argThat(o -&gt; o.netTotal() == 950));
     }
 
     @Test
-    void rejectsWhenStockUnavailable() {            // error path
+    void rejectsWhenStockUnavailable() {                // error path
         when(inventory.reserve("SKU1", 2)).thenReturn(false);
         assertThrows(OutOfStockException.class,
             () -&gt; service.place("C1", "SKU1", 2, 1000));
-        verify(repository, never()).save(any());     // CRITICAL: không lưu một phần
+        verify(repository, never()).save(any());        // CRITICAL: không lưu một phần
     }
 
     @Test
-    void doesNotSaveWhenPricingFails() {            // error path
+    void doesNotSaveWhenPricingFails() {                // error path
         when(inventory.reserve(any(), anyInt())).thenReturn(true);
         when(pricing.discountFor(anyLong())).thenThrow(new PricingServiceException());
         assertThrows(PricingServiceException.class,
@@ -318,10 +296,9 @@ Provider test: "Tôi có thoả mãn contract này không?" (verify trên provid
 @SpringBootTest
 class OrderIntegrationTest {
     @Container
-    static PostgreSQLContainer&lt;?&gt; postgres = new PostgreSQLContainer&lt;&gt;("postgres:15")
-        .withDatabaseName("shop_test");
+    static PostgreSQLContainer&lt;?&gt; postgres = new PostgreSQLContainer&lt;&gt;("postgres:15");
 
-    @DynamicPropertySource
+    @DynamicPropertySource                          // trỏ datasource vào container
     static void props(DynamicPropertyRegistry reg) {
         reg.add("spring.datasource.url", postgres::getJdbcUrl);
         reg.add("spring.datasource.username", postgres::getUsername);
@@ -334,25 +311,20 @@ class OrderIntegrationTest {
     @Autowired TestEntityManager em;
 
     @Test
-    void placingOrderWritesAuditEntry() {          // test cả flow: service → repo → DB → audit
+    void placingOrderWritesAuditEntry() {           // test cả flow: service → repo → DB → audit
         Customer c = em.persistAndFlush(new Customer("C1"));
         Order o = service.place(c.getId(), "SKU1", 2, 1000);
-
         assertThat(orderRepo.findById(o.getId())).isPresent();
-        var audits = auditRepo.findByOrderId(o.getId());
-        assertThat(audits).hasSize(1);
-        assertThat(audits.get(0).getAction()).isEqualTo("ORDER_CREATED");
+        assertThat(auditRepo.findByOrderId(o.getId())).hasSize(1);
     }
 
     @Test
     void rollsBackOnUniqueConstraintViolation() {   // H2 KHÔNG bắt đúng case này
         em.persistAndFlush(new Customer("DUP"));
         assertThrows(DataIntegrityViolationException.class,
-            () -&gt; em.persistAndFlush(new Customer("DUP")));   // unique constraint
+            () -&gt; em.persistAndFlush(new Customer("DUP")));   // unique constraint thật
         em.clear();
-        assertThat(em.getEntityManager()
-            .createQuery("SELECT c FROM Customer c WHERE c.code='DUP'", Customer.class)
-            .getResultList()).hasSize(1);            // chỉ 1, bản trùng không persist
+        assertThat(orderRepo.findByCustomerCode("DUP")).hasSize(0);
     }
 }</code></pre>
 </section>
@@ -369,10 +341,8 @@ class OrderRepositoryTest {
         Customer c = em.persistAndFlush(new Customer("C1"));
         em.persistAndFlush(new Order(c, 1000, LocalDate.of(2026, 3, 1)));
         em.persistAndFlush(new Order(c, 500,  LocalDate.of(2026, 4, 1)));
-
         var result = repo.findByCustomerAndDateBetween(
             c, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31));
-
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getTotal()).isEqualByComparingTo("1000");
     }
@@ -390,8 +360,7 @@ class OrderControllerTest {
         mvc.perform(post("/orders").contentType(APPLICATION_JSON)
                 .content(json.writeValueAsString(new OrderRequest("C1", "SKU1", 2))))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value("O123"))
-            .andExpect(jsonPath("$.total").value(1000));
+            .andExpect(jsonPath("$.id").value("O123"));
     }
 
     @Test
@@ -405,7 +374,7 @@ class OrderControllerTest {
 
 <section id="code-pact">
   <h2>3.4 Contract test (Pact) — consumer + provider <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <pre><code class="language-java">// ── Consumer side (OrderService): định nghĩa kỳ vọng ──
+  <pre><code class="language-java">// ── Consumer (OrderService): khai báo kỳ vọng → sinh file contract ──
 @ExtendWith(PactConsumerTestExt.class)
 @PactTestFor(providerName = "NotificationService")
 class NotificationPactTest {
@@ -422,12 +391,12 @@ class NotificationPactTest {
     }
     @Test
     void verifiesConsumerCanCall(MockServer mock) {
-        String res = notificationClient.notify("C1", "Order placed", mock.getUrl());
-        assertThat(res).contains("sent");
+        assertThat(notificationClient.notify("C1", "Order placed", mock.getUrl()))
+            .contains("sent");
     }
 }
 
-// ── Provider side (NotificationService): verify thoả contract ──
+// ── Provider (NotificationService): verify thoả contract (chạy trong CI provider) ──
 @Provider("NotificationService")
 @PactFolder("pacts")
 class NotificationProviderTest {
@@ -441,14 +410,14 @@ class NotificationProviderTest {
   <h2>4. Anti-patterns — brittle test <span class="k-tag core">CORE ★</span></h2>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <thead><tr><th>Anti-pattern</th><th>Vì sao hại</th><th>Cách đúng</th></tr></thead>
     <tbody>
-      <tr><td>Test implementation thay vì behavior</td><td>Đổi private method = vỡ test → chặn refactor</td><td>Assert kết quả/hành vi ("total đúng"), không assert "gọi setX()"</td></tr>
-      <tr><td>H2 cho integration test</td><td>Dialect khác → bug lọt tới prod</td><td>Testcontainers PostgreSQL</td></tr>
-      <tr><td>Mock cả class under test</td><td>Test cái mock → false confidence</td><td>Chỉ mock dependency</td></tr>
-      <tr><td>Test phụ thuộc môi trường CI</td><td>Pass CI, fail local → không debug được</td><td>Testcontainers tạo môi trường cô lập, chạy mọi nơi</td></tr>
-      <tr><td>Test code framework (Spring/Hibernate)</td><td>Tốn công, false confidence</td><td>Tin vendor, chỉ test logic app</td></tr>
-      <tr><td>Assert quá chặt (exact string log)</td><td>Đổi message vô hại = đỏ test</td><td>Assert thuộc tính ổn định, không phải chi tiết dễ đổi</td></tr>
+      <tr><td>Test implementation thay vì behavior</td><td>Đổi chi tiết nội bộ = vỡ test dù hành vi không đổi → chặn refactor</td><td>Assert kết quả/hành vi quan sát được, không assert "gọi setX()"</td></tr>
+      <tr><td>H2 cho integration test</td><td>Compatibility mode khác prod → bug dialect lọt tới production</td><td>Testcontainers PostgreSQL đúng version prod</td></tr>
+      <tr><td>Mock cả class under test</td><td>Test chạy logic của mock → false confidence, bug thật không bị bắt</td><td>Chỉ mock dependency</td></tr>
+      <tr><td>Test phụ thuộc môi trường CI</td><td>Pass CI, fail local (hoặc ngược lại) → không debug được, mất niềm tin</td><td>Testcontainers tạo môi trường cô lập, chạy mọi nơi</td></tr>
+      <tr><td>Test code framework (Spring/Hibernate)</td><td>Tốn công test cái vendor đã test → false confidence</td><td>Tin vendor, chỉ test logic nghiệp vụ</td></tr>
+      <tr><td>Assert quá chặt (exact log string)</td><td>Đổi message vô hại = đỏ test</td><td>Assert thuộc tính ổn định, không chi tiết dễ đổi</td></tr>
     </tbody>
   </table>
   </div>
@@ -459,17 +428,17 @@ class NotificationProviderTest {
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
     <p><strong>Q:</strong> Giải thích test pyramid.</p>
-    <p class="a">Nhiều unit (nhanh, mock dependency) : một số integration (chậm hơn, DB thật) : ít E2E (chậm nhất, toàn hệ thống). Tỉ lệ ~70:20:10. Lý do: feedback nhanh + confidence, chi phí CI hợp lý. Inverted pyramid (nhiều E2E) làm CI chậm, brittle, khó debug.</p>
+    <p class="a">Nhiều unit (nhanh, deterministic, mock dependency) : một số integration (chậm hơn, DB thật, bắt bug SQL/transaction) : ít E2E (chậm nhất, brittle, toàn hệ thống). ~70:20:10. Lý do: đẩy mỗi assertion xuống tầng thấp nhất bắt được bug → feedback nhanh + chi phí CI hợp lý. Inverted pyramid làm CI chậm, flaky, khó debug.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Test integration mất 45 phút, tối ưu xuống 10 phút.</p>
-    <p class="a">Testcontainers reuse singleton container (không tạo lại mỗi test class) + chạy song song; dùng <code>@DataJpaTest</code>/<code>@WebMvcTest</code> slice thay full <code>@SpringBootTest</code>; tách CI stage (unit trước cho feedback nhanh, integration sau); fixtures dùng chung tránh INSERT lặp; chỉ critical path mới integration, còn lại unit. Đo và parallelize theo thời gian thật.</p>
+    <p class="a">Testcontainers reuse singleton container (không tạo lại mỗi class) + chạy song song; dùng <code>@DataJpaTest</code>/<code>@WebMvcTest</code> slice thay full <code>@SpringBootTest</code> (nạp ít context); tách CI stage (unit trước cho feedback nhanh, integration sau); fixtures dùng chung tránh INSERT lặp; chỉ critical path mới integration, còn lại unit.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> 5 microservice, 80% coverage vẫn P1. Thiết kế chiến lược chất lượng.</p>
-    <p class="a">Coverage ≠ quality. Thêm contract test (Pact — bắt breaking API), mutation testing (đo test có thật sự bắt bug hay chỉ chạy qua), chaos testing (giết pod ngẫu nhiên — verify resilience), canary deploy (1% traffic bắt bug trước full rollout), observability (không test hết được mọi scenario thì quan sát prod), property-based test (sinh 10K input tìm edge case). Coverage chỉ là sàn, không phải mục tiêu.</p>
+    <p class="a">Coverage ≠ quality. Thêm contract test (Pact — bắt breaking API sớm), mutation testing (đo test có thật sự bắt bug), chaos testing (giết pod ngẫu nhiên — verify resilience), canary deploy (1% traffic bắt bug trước full rollout), observability (không test hết được mọi scenario thì quan sát prod), property-based test (sinh 10K input tìm edge case). Coverage chỉ là sàn.</p>
   </div>
 </section>
 
@@ -487,13 +456,13 @@ class NotificationProviderTest {
   <div class="feynman">
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
-      <li>Vì sao "80% coverage" không đảm bảo ít bug? Coverage đo gì?</li>
-      <li>Tỉ lệ pyramid và lý do mỗi tầng nhiều/ít? Inverted pyramid hại ở đâu?</li>
-      <li>Cho 2 khác biệt cụ thể H2 vs PostgreSQL khiến bug lọt.</li>
+      <li>Vì sao "80% coverage" không đảm bảo ít bug? Coverage đo gì, không đo gì? Mutation testing đo gì?</li>
+      <li>Tỉ lệ pyramid và lý do mỗi tầng nhiều/ít (theo tốc độ/confidence/phạm vi)? Inverted pyramid hại ở đâu?</li>
+      <li>Cho 2 khác biệt cụ thể H2 vs PostgreSQL khiến bug lọt. Vì sao gọi là "false confidence"?</li>
       <li>Contract test (Pact) chặn breaking change API thế nào, mà không cần chạy cả 2 service?</li>
       <li>"Test behavior, không test implementation" nghĩa là gì? Cho ví dụ một test brittle và bản sửa.</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = nắm chắc testing mức senior.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = nắm chắc testing mức senior.</div>
   </div>
 
   <h3>📚 Liên quan</h3>

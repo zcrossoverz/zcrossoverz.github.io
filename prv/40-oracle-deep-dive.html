@@ -32,17 +32,19 @@
       <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
       <a href="#real-problem">1. Bài toán: query 8s giờ peak</a>
       <div class="toc-section">Mental models</div>
-      <a href="#memory">2. SGA + PGA</a>
-      <a href="#mvcc">3. MVCC: UNDO + SCN</a>
-      <a href="#locking">4. Row lock qua ITL</a>
-      <a href="#redo">5. Redo log &amp; recovery</a>
-      <div class="toc-section">Production</div>
-      <a href="#sql">6. MERGE, analytic, pagination</a>
-      <a href="#tuning">7. Index, partition, AWR/ASH</a>
+      <a href="#memory">2.1 SGA + PGA</a>
+      <a href="#mvcc">2.2 MVCC: UNDO + SCN</a>
+      <a href="#locking">2.3 Row lock qua ITL</a>
+      <a href="#redo">2.4 Redo log &amp; recovery</a>
+      <div class="toc-section">Production code</div>
+      <a href="#merge">3.1 MERGE — upsert</a>
+      <a href="#pagination">3.2 Pagination đúng</a>
+      <a href="#analytic">3.3 Analytic functions</a>
+      <a href="#tuning">3.4 Index, partition, AWR/ASH</a>
       <div class="toc-section">Pitfalls</div>
-      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <a href="#antipatterns">4. Anti-patterns</a>
       <div class="toc-section">Áp dụng</div>
-      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#interview">5. 3-tier interview</a>
       <a href="#lab">🔧 Build &amp; drill</a>
       <a href="#feynman">🧠 Feynman test</a>
     </nav>
@@ -55,7 +57,7 @@
   <div class="meta-tag">Nhóm C · Database · File chống hiểu giả</div>
   <h1>Oracle Deep Dive — SGA/PGA, UNDO/SCN, Tuning</h1>
   <p class="lead">
-    Nhiều dev "dùng Oracle" nhưng không biết SGA khác PGA, vì sao có ORA-01555, hay ROWNUM khác ROW_NUMBER(). File này dạy kiến trúc Oracle đủ để <em>tune query chậm</em> và <em>đọc AWR</em>, không chỉ viết SQL chạy được — trên domain <strong>ShopFlow</strong>, một sàn e-commerce chạy Oracle cho hệ thống đơn hàng.
+    Nhiều dev "dùng Oracle" nhưng không biết SGA khác PGA, vì sao có ORA-01555, hay ROWNUM khác ROW_NUMBER(). File này giải thích kiến trúc Oracle (bộ nhớ, MVCC, locking) và quy trình tune query/đọc AWR — đủ để tune chứ không chỉ viết SQL chạy được. Domain: <strong>ShopFlow</strong> — một sàn e-commerce chạy Oracle cho hệ thống đơn hàng.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Hiểu memory/MVCC/locking Oracle, tune query, đọc AWR/ASH</div>
@@ -69,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Oracle với PostgreSQL gần như nhau, biết SQL là đủ."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> MVCC khác cơ bản: Oracle update in-place + version cũ vào <em>UNDO segment</em> (→ ORA-01555), PostgreSQL giữ version trong table (→ cần VACUUM). REPEATABLE READ Oracle không có; SERIALIZABLE Oracle chỉ là Snapshot Isolation. Mang giả định PG sang Oracle = bug.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> MVCC khác cơ bản: Oracle update <em>in-place</em> + đẩy giá trị cũ vào UNDO segment (→ ORA-01555 khi UNDO bị ghi đè), còn PostgreSQL giữ version cũ ngay trong table (→ cần VACUUM dọn). Oracle không có REPEATABLE READ; "SERIALIZABLE" của Oracle chỉ là Snapshot Isolation. Mang giả định PostgreSQL sang Oracle = bug âm thầm.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "ROWNUM dùng để phân trang, <code>WHERE ROWNUM BETWEEN 11 AND 20</code> lấy trang 2."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> ROWNUM gán <em>sau</em> khi lọc, trước ORDER BY → <code>ROWNUM &gt; 10</code> luôn rỗng (row đầu phải là 1). Phân trang đúng cần subquery + ROW_NUMBER() hoặc OFFSET FETCH (12c+).</div>
+    <div class="mc-right"><strong>Thực tế:</strong> ROWNUM được gán <em>khi row được chọn, trước ORDER BY</em>, và điều kiện <code>ROWNUM &gt; 1</code> luôn rỗng — vì row đầu tiên phải có ROWNUM = 1, nếu bị loại thì không có row nào đạt ROWNUM = 2. Phân trang đúng cần subquery + ROW_NUMBER() hoặc OFFSET FETCH (12c+).</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Query chậm thì thêm index là xong."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Phải đọc <em>execution plan</em> + AWR/ASH để biết nghẽn ở đâu (full scan, sai index, bind variable peeking, contention). Thêm index bừa có thể làm chậm INSERT/UPDATE và optimizer chọn sai.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Phải đọc <em>execution plan</em> + AWR/ASH để biết nghẽn thật ở đâu (full scan, sai index, bind variable peeking, contention, log file sync). Thêm index bừa làm chậm INSERT/UPDATE và đôi khi khiến optimizer chọn plan tệ hơn.</div>
   </div>
 </section>
 
@@ -85,17 +87,16 @@
   <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
   <div class="roadmap">
     <div class="roadmap-head">Thứ tự ưu tiên</div>
-    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> MVCC UNDO/SCN + ORA-01555 (3), SGA vs PGA (2), index khi nào dùng gì (7). Đây là gốc để tune.</div>
-    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Pagination đúng ROW_NUMBER/OFFSET (6), MERGE upsert (6), đọc execution plan + AWR/ASH workflow (7).</div>
-    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Row lock qua ITL (4), redo log/recovery (5), analytic functions.</div>
-    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> partitioning, hints, RAC vs sharding, shared pool/library cache.</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> MVCC UNDO/SCN + ORA-01555 (2.2), SGA vs PGA (2.1), index khi nào dùng gì (3.4). Gốc để tune.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Pagination đúng ROW_NUMBER/OFFSET (3.2), MERGE upsert (3.1), đọc execution plan + AWR/ASH workflow (3.4).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Row lock qua ITL (2.3), redo log/recovery (2.4), analytic functions (3.3).</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> partitioning, hints, RAC vs sharding, shared pool/library cache, bind variable peeking.</div>
   </div>
 </section>
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — query 8s giờ cao điểm <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow chạy Oracle. Trang "đơn hàng của tôi" bình thường 200ms, giờ cao điểm vọt 8s. Dev thêm index nhưng không đỡ. Có lúc job report ném <code>ORA-01555: snapshot too old</code>. AWR cho thấy "buffer busy waits" và "log file sync" cao.</p>
-
+  <p>ShopFlow chạy Oracle. Trang "đơn hàng của tôi" bình thường 200ms, giờ cao điểm vọt 8s. Dev thêm index nhưng không đỡ. Có lúc một job report ném <code>ORA-01555: snapshot too old</code>. AWR report cho thấy "buffer busy waits" và "log file sync" cao. Mỗi triệu chứng trỏ tới một phần kiến trúc Oracle mà nếu không hiểu thì chỉ đoán mò.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
     <div class="pause-q">Viết ra giấy:</div>
@@ -104,22 +105,24 @@
       <li>"Thêm index không đỡ" — những nguyên nhân nào khác ngoài thiếu index khiến query chậm giờ peak?</li>
       <li>Để biết nghẽn thật, bạn đọc report nào của Oracle và nhìn chỉ số gì trước?</li>
     </ol>
-    <div class="pause-hint">Đáp án: ORA-01555 = UNDO bị ghi đè trước khi report đọc xong snapshot (mục 3); chậm có thể do full scan/sai plan/contention/bind peeking (mục 7); đọc AWR/ASH nhìn top wait events + SQL by elapsed (mục 7). Đừng đọc tiếp khi chưa giải thích ORA-01555.</div>
+    <div class="pause-hint">Đáp án: ORA-01555 = phiên bản cũ trong UNDO bị ghi đè trước khi report đọc xong snapshot (2.2); chậm có thể do full scan/sai plan/contention/bind peeking (3.4); đọc AWR/ASH nhìn top wait events + SQL by elapsed time (3.4). Đừng đọc tiếp khi chưa giải thích được ORA-01555.</div>
   </div>
 </section>
 
 <section id="memory">
-  <h2>2. SGA + PGA <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.1 SGA + PGA — hai vùng bộ nhớ <span class="k-tag core">CORE ★</span></h2>
+  <p>Oracle chia bộ nhớ thành hai vùng, hiểu chúng là điều kiện để đọc đúng AWR:</p>
   <ul>
-    <li><strong>SGA</strong> (System Global Area): chia sẻ giữa mọi session — buffer cache (data block), shared pool (SQL/plan), redo log buffer.</li>
-    <li><strong>PGA</strong> (Program Global Area): riêng mỗi session — sort, hash join workarea. Sort lớn vượt PGA → tràn xuống temp tablespace (chậm).</li>
+    <li><strong>SGA</strong> (System Global Area) — vùng <em>chia sẻ</em> giữa mọi session. Gồm: <em>buffer cache</em> (cache các data block đọc từ disk — đọc trúng cache thì nhanh, miss thì phải đọc disk), <em>shared pool</em> (cache câu SQL đã parse + execution plan + library cache), và <em>redo log buffer</em>.</li>
+    <li><strong>PGA</strong> (Program Global Area) — vùng <em>riêng</em> của mỗi session. Gồm workarea cho sort và hash join. Quan trọng: nếu một thao tác sort/hash lớn vượt PGA cho phép, nó <em>tràn xuống temp tablespace</em> (đĩa) → chậm hẳn.</li>
   </ul>
-  <div class="callout info"><div class="ctitle">Vì sao quan trọng</div><p>Query chậm có thể do PGA nhỏ (sort to disk) hoặc buffer cache miss (đọc disk). Biết SGA/PGA để đọc đúng chỉ số trong AWR.</p></div>
+  <div class="callout info"><div class="ctitle">Vì sao quan trọng cho tuning</div><p>Một query chậm có thể do PGA nhỏ (sort phải ghi đĩa), hoặc do buffer cache miss nhiều (đọc disk thay vì RAM). Biết SGA/PGA giúp bạn đọc đúng chỉ số trong AWR ("buffer cache hit ratio", "PGA used vs target") thay vì chỉ nhìn "query chậm".</p></div>
 </section>
 
 <section id="mvcc">
-  <h2>3. MVCC: UNDO + SCN <span class="k-tag core">CORE ★</span></h2>
-  <p>Oracle update <em>in-place</em>, ghi giá trị cũ vào <strong>UNDO segment</strong>. <strong>SCN</strong> (System Change Number) là đồng hồ logic: mỗi query đọc theo SCN của mình; nếu row bị đổi sau SCN đó → đọc lại version cũ từ UNDO (read consistency).</p>
+  <h2>2.2 MVCC: UNDO + SCN <span class="k-tag core">CORE ★</span></h2>
+  <p>Như mọi DB MVCC, Oracle cho "readers don't block writers". Nhưng cơ chế khác PostgreSQL ở chỗ then chốt. Oracle update <em>in-place</em> (ghi đè row ngay trong data block), và <em>trước khi</em> ghi đè, nó copy giá trị cũ vào <strong>UNDO segment</strong>. <strong>SCN</strong> (System Change Number) là một đồng hồ logic tăng dần đánh dấu mỗi thay đổi. Khi một query bắt đầu, nó ghi nhớ SCN hiện tại làm "điểm nhìn"; nếu trong lúc chạy nó gặp một row đã bị sửa sau SCN đó, Oracle dùng UNDO để <em>dựng lại</em> phiên bản cũ đúng với SCN của query — đảm bảo query thấy một ảnh nhất quán tại thời điểm nó bắt đầu (read consistency).</p>
+  <p>Vấn đề: UNDO có dung lượng <em>hữu hạn</em> và bị tái sử dụng (ghi đè) khi đầy. Nếu một query chạy <em>quá lâu</em> (báo cáo lớn) và phiên bản cũ mà nó cần đã bị ghi đè trong UNDO bởi các giao dịch khác → Oracle không dựng lại được phiên bản đó → ném <code>ORA-01555: snapshot too old</code>. Đây là lý do report dài dễ gặp lỗi này. Khắc phục: tăng <code>UNDO_RETENTION</code> và kích thước UNDO tablespace, hoặc rút ngắn query / tách reporting khỏi OLTP.</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -127,76 +130,114 @@
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>Read consistency: query thấy snapshot tại SCN bắt đầu; version cũ dựng từ UNDO. ORA-01555 = UNDO chứa version cũ bị ghi đè (UNDO_RETENTION ngắn / UNDO nhỏ) trước khi query dài đọc xong → "snapshot too old".</p>
+      <p>Read consistency: query thấy snapshot tại SCN bắt đầu, phiên bản cũ dựng từ UNDO. ORA-01555 = UNDO chứa phiên bản cũ bị ghi đè (retention ngắn / UNDO nhỏ / nhiều DML) trước khi query dài đọc xong.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Tune UNDO_RETENTION + kích thước UNDO tablespace; tránh report chạy quá dài giữ snapshot; tách OLTP/reporting. Đọc đúng error để biết chỉnh UNDO chứ không phải index.</p>
+      <p>Tune UNDO_RETENTION + UNDO tablespace; tránh report giữ snapshot quá lâu; tách OLTP/reporting. Đọc đúng error để biết chỉnh UNDO chứ không phải index.</p>
     </div>
   </div>
 </section>
 
 <section id="locking">
-  <h2>4. Row lock qua ITL <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Oracle lock ở mức row, ghi thông tin lock vào <strong>ITL</strong> (Interested Transaction List) trong header của data block — không có lock manager riêng, không leo thang lock. "Writers don't block readers, readers don't block writers". Lock contention biểu hiện qua wait event (enq: TX).</p>
+  <h2>2.3 Row lock qua ITL <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Oracle khoá ở mức row, nhưng không có "lock manager" tập trung như nhiều DB khác — thông tin lock được ghi ngay vào <strong>ITL</strong> (Interested Transaction List) trong phần header của data block chứa row đó. Hệ quả: Oracle không "leo thang lock" (lock escalation) từ row lên table khi có nhiều row bị khoá, và "writers don't block readers, readers don't block writers". Lock contention (nhiều giao dịch tranh khoá cùng row) biểu hiện qua wait event <code>enq: TX - row lock contention</code> trong AWR.</p>
 </section>
 
 <section id="redo">
-  <h2>5. Redo log &amp; recovery <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Mọi thay đổi ghi <strong>redo</strong> (để recover) trước khi data file cập nhật (write-ahead). Commit = flush redo (đảm bảo durability). "log file sync" cao trong AWR = nghẽn ở việc ghi redo lúc commit (đĩa redo chậm / commit quá nhiều giao dịch nhỏ).</p>
+  <h2>2.4 Redo log &amp; recovery <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Để đảm bảo durability (cam kết D trong ACID) mà không phải ghi data file ngay lập tức (chậm, ngẫu nhiên), Oracle dùng <strong>write-ahead logging</strong>: mọi thay đổi được ghi vào <strong>redo log</strong> (ghi tuần tự, nhanh) <em>trước</em> khi data file được cập nhật. Khi COMMIT, Oracle flush redo xuống đĩa — đó là điểm đảm bảo "đã commit thì không mất". Vì vậy nếu trong AWR thấy "log file sync" cao, nghĩa là nghẽn ở khâu ghi redo lúc commit — thường do đĩa redo chậm hoặc do commit quá nhiều giao dịch nhỏ (mỗi commit một lần flush) → cân nhắc gom batch commit.</p>
 </section>
 
-<section id="sql">
-  <h2>6. MERGE, analytic, pagination đúng <span class="k-tag core">CORE ★</span></h2>
-  <pre><code class="language-sql">-- Upsert chuẩn Oracle
-MERGE INTO orders t USING (SELECT :id id, :total total FROM dual) s
+<section id="merge">
+  <h2>3.1 MERGE — upsert chuẩn Oracle <span class="k-tag core">CORE ★</span></h2>
+  <p>"Upsert" (có thì update, chưa có thì insert) nếu làm bằng "đọc rồi quyết định" sẽ dính race condition giữa lúc đọc và lúc ghi. <code>MERGE</code> làm cả hai trong <em>một câu lệnh atomic</em>:</p>
+  <pre><code class="language-sql">MERGE INTO orders t
+USING (SELECT :id AS id, :total AS total FROM dual) s
 ON (t.id = s.id)
-WHEN MATCHED THEN UPDATE SET t.total = s.total
-WHEN NOT MATCHED THEN INSERT (id, total) VALUES (s.id, s.total);
+WHEN MATCHED THEN
+  UPDATE SET t.total = s.total, t.updated_at = SYSTIMESTAMP
+WHEN NOT MATCHED THEN
+  INSERT (id, total, created_at) VALUES (s.id, s.total, SYSTIMESTAMP);</code></pre>
+</section>
 
--- Pagination ĐÚNG (ROWNUM gán trước ORDER BY → phải bọc subquery)
+<section id="pagination">
+  <h2>3.2 Pagination đúng — vì sao ROWNUM lừa <span class="k-tag core">CORE ★</span></h2>
+  <p>ROWNUM là một pseudo-column được Oracle gán <em>khi một row được chọn vào kết quả</em> — và quan trọng: gán <em>trước</em> khi ORDER BY sắp xếp, và theo cách "đếm tăng dần các row được giữ lại". Điều này dẫn tới một bẫy: điều kiện <code>WHERE ROWNUM &gt; 10</code> (hay <code>BETWEEN 11 AND 20</code>) <em>luôn trả rỗng</em>. Lý do: ROWNUM được kiểm tra <em>khi gán</em> — row đầu tiên được xét phải nhận ROWNUM = 1, nhưng <code>1 &gt; 10</code> là false nên nó bị loại; row tiếp theo lại được xét để gán ROWNUM = 1 (vì row trước bị loại, bộ đếm chưa tăng)... cứ thế không row nào vượt được. Phải <em>materialize</em> (bọc subquery, gán số thứ tự xong) rồi mới lọc:</p>
+  <pre><code class="language-sql">-- ❌ SAI: luôn rỗng, và ROWNUM gán trước ORDER BY
+SELECT * FROM orders WHERE ROWNUM BETWEEN 11 AND 20 ORDER BY created_at DESC;
+
+-- ✅ ĐÚNG (mọi version): bọc subquery, gán số thứ tự SAU khi đã sort
 SELECT * FROM (
   SELECT o.*, ROW_NUMBER() OVER (ORDER BY created_at DESC) rn FROM orders o
-) WHERE rn BETWEEN 11 AND 20;     -- hoặc OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY (12c+)</code></pre>
+) WHERE rn BETWEEN 11 AND 20;
+
+-- ✅ ĐÚNG (12c+): cú pháp chuẩn SQL
+SELECT * FROM orders ORDER BY created_at DESC
+  OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;</code></pre>
+</section>
+
+<section id="analytic">
+  <h2>3.3 Analytic functions — vũ khí senior <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Analytic (window) functions tính toán trên một "cửa sổ" các row liên quan mà không gộp chúng lại (khác GROUP BY) — giải nhiều bài toán mà nếu không có chúng phải self-join phức tạp:</p>
+  <pre><code class="language-sql">-- top 3 đơn giá trị nhất MỖI khách (không cần self-join)
+SELECT customer_id, order_id, total FROM (
+  SELECT customer_id, order_id, total,
+         ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY total DESC) rn
+  FROM orders
+) WHERE rn &lt;= 3;
+
+-- running total + so với đơn liền trước
+SELECT order_id, total,
+       SUM(total) OVER (ORDER BY created_at) AS running_total,
+       LAG(total) OVER (ORDER BY created_at) AS prev_total
+FROM orders;</code></pre>
 </section>
 
 <section id="tuning">
-  <h2>7. Index, partition, AWR/ASH <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <h2>3.4 Index, partition, AWR/ASH <span class="k-tag core">CORE ★</span></h2>
   <ul>
-    <li><strong>Index:</strong> B-tree (mặc định, high cardinality), bitmap (low cardinality, đọc nhiều ghi ít — KHÔNG cho OLTP vì bitmap lock rộng), composite (theo thứ tự cột trong WHERE).</li>
-    <li><strong>Partition:</strong> chia table lớn theo range (ngày)/list/hash → partition pruning chỉ quét phần cần.</li>
-    <li><strong>AWR/ASH workflow:</strong> AWR (snapshot định kỳ) → top wait events + SQL by elapsed time; ASH (active session history) → "lúc 14:00 session chờ gì". Tìm SQL tốn nhất → đọc plan → sửa.</li>
+    <li><strong>Index:</strong> B-tree (mặc định, hợp cột nhiều giá trị phân biệt — high cardinality); bitmap (hợp cột ít giá trị — low cardinality, đọc nhiều ghi ít — KHÔNG dùng cho OLTP vì bitmap lock cả nhóm row khi update); composite (nhiều cột, thứ tự cột phải khớp cách dùng trong WHERE).</li>
+    <li><strong>Partition:</strong> chia một table lớn thành nhiều phần theo range (vd theo tháng), list, hoặc hash → query có điều kiện trên cột phân vùng chỉ quét đúng phần cần (partition pruning) thay vì cả bảng.</li>
   </ul>
+  <pre><code class="language-text">Workflow chẩn đoán query chậm (dùng AWR/ASH thay vì đoán):
+1. AWR report khoảng thời gian peak → "Top 10 Foreground Wait Events"
+     buffer busy waits / log file sync / db file sequential read ... → biết loại nghẽn
+2. AWR "SQL ordered by Elapsed Time" → tìm câu SQL tốn nhất
+3. ASH (Active Session History) → "lúc 14:00 các session đang chờ gì"
+4. EXPLAIN PLAN / DBMS_XPLAN cho SQL nghi vấn:
+     FULL TABLE SCAN? sai index? bind variable peeking chọn plan tệ?
+5. Sửa theo BẰNG CHỨNG: index đúng, bind variable, partition, tách reporting — không cảm tính</code></pre>
 </section>
 
 <section id="antipatterns">
-  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <h2>4. Anti-patterns <span class="k-tag core">CORE ★</span></h2>
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — khi "tối ưu" làm chậm hơn / sai</div>
     <div class="bi-answer">
       <ul>
-        <li><strong>Bitmap index cho OLTP:</strong> bitmap lock cả nhóm row khi update → contention nặng. Bitmap chỉ cho data warehouse đọc nhiều.</li>
-        <li><strong>Thêm index bừa:</strong> mỗi index làm chậm INSERT/UPDATE và có thể khiến optimizer chọn sai plan. Đo trước, index theo query thật.</li>
-        <li><strong>PL/SQL SELECT INTO không bắt NO_DATA_FOUND/TOO_MANY_ROWS:</strong> lỗi runtime bất ngờ. Luôn handle exception.</li>
-        <li><strong>Hardcode literal thay bind variable:</strong> mỗi giá trị tạo một SQL mới → library cache bùng nổ (hard parse). Dùng bind variable.</li>
-        <li><strong><code>SELECT *</code> trên table lớn:</strong> kéo cột thừa, phá index-only scan.</li>
+        <li><strong>Bitmap index cho OLTP:</strong> bitmap khoá cả một nhóm row khi update một row → contention nặng dưới tải ghi. Bitmap chỉ cho data warehouse (đọc nhiều, ghi ít/batch).</li>
+        <li><strong>Thêm index bừa:</strong> mỗi index làm chậm INSERT/UPDATE (phải cập nhật index) và có thể khiến optimizer chọn plan sai. Index theo query thật, đo trước.</li>
+        <li><strong>PL/SQL SELECT INTO không bắt NO_DATA_FOUND / TOO_MANY_ROWS:</strong> lỗi runtime bất ngờ khi không có hoặc có nhiều row. Luôn handle exception.</li>
+        <li><strong>Hardcode literal thay bind variable:</strong> mỗi giá trị khác nhau tạo một câu SQL mới phải hard-parse → library cache (trong shared pool) bùng nổ, tốn CPU parse. Dùng bind variable để reuse plan.</li>
+        <li><strong><code>SELECT *</code> trên table lớn:</strong> kéo cột thừa, phá khả năng index-only scan, tốn I/O.</li>
       </ul>
-      <p><em>Quy tắc:</em> mọi tối ưu dựa trên execution plan + AWR thực đo, không cảm tính. Oracle khác PostgreSQL ở nhiều giả định — đừng mang nguyên xi.</p>
+      <p><em>Quy tắc:</em> mọi tối ưu dựa trên execution plan + AWR thực đo, không cảm tính. Và đừng mang giả định PostgreSQL sang Oracle nguyên xi — hai DB khác ở nhiều chỗ căn bản.</p>
     </div>
   </div>
 </section>
 
 <section id="interview">
-  <h2>🎯 3-tier interview framework</h2>
+  <h2>5. 3-tier interview framework</h2>
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
     <p><strong>Q:</strong> SGA và PGA khác gì?</p>
-    <p class="a">SGA chia sẻ mọi session (buffer cache, shared pool, redo buffer). PGA riêng mỗi session (sort, hash workarea). Sort vượt PGA → temp tablespace (chậm). Biết để đọc đúng chỉ số AWR.</p>
+    <p class="a">SGA chia sẻ mọi session (buffer cache, shared pool, redo buffer). PGA riêng mỗi session (sort, hash workarea). Sort vượt PGA → tràn temp tablespace (đĩa, chậm). Biết để đọc đúng chỉ số AWR.</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> Giải thích ORA-01555 và cách khắc phục.</p>
-    <p class="a">Query dài đọc theo SCN cũ, cần version cũ từ UNDO; nhưng UNDO bị ghi đè (retention ngắn / UNDO nhỏ / nhiều DML) → "snapshot too old". Fix: tăng UNDO_RETENTION + UNDO tablespace, rút ngắn query, tách reporting khỏi OLTP.</p>
+    <p class="a">Query dài đọc theo SCN cũ, cần phiên bản cũ từ UNDO; nhưng UNDO bị ghi đè (retention ngắn / UNDO nhỏ / nhiều DML đồng thời) trước khi query đọc xong → "snapshot too old". Fix: tăng UNDO_RETENTION + UNDO tablespace, rút ngắn query, tách reporting khỏi OLTP.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
@@ -209,8 +250,8 @@ SELECT * FROM (
   <div class="build-exercise">
     <div class="be-head">🔧 Lab bắt buộc — đọc plan &amp; reproduce (2 bài)</div>
     <div class="be-deliverable">
-      <p><strong>Lab 1 — Pagination sai.</strong> Viết <code>SELECT ... WHERE ROWNUM &gt; 10</code> → quan sát trả rỗng. Sửa bằng subquery ROW_NUMBER() hoặc OFFSET FETCH. Tiêu chí: giải thích ROWNUM gán trước ORDER BY nên row đầu phải là 1.</p>
-      <p><strong>Lab 2 — Plan thay đổi vì thiếu index.</strong> Bảng orders lớn; chạy <code>EXPLAIN PLAN</code> cho query lọc theo customer_id chưa index → FULL TABLE SCAN. Thêm index → INDEX RANGE SCAN, đo thời gian. Sau đó thêm điều kiện làm index vô hiệu (function trên cột) → quan sát plan đổi lại. Tiêu chí: đọc được plan và biết vì sao index bị bỏ qua.</p>
+      <p><strong>Lab 1 — Pagination sai.</strong> Viết <code>SELECT ... WHERE ROWNUM &gt; 10</code> → quan sát trả rỗng. Sửa bằng subquery ROW_NUMBER() hoặc OFFSET FETCH. Tiêu chí: giải thích ROWNUM gán khi chọn row (trước ORDER BY) nên row đầu phải là 1, không thể có "ROWNUM &gt; 10".</p>
+      <p><strong>Lab 2 — Plan thay đổi vì thiếu index.</strong> Bảng orders lớn; chạy <code>EXPLAIN PLAN</code> cho query lọc theo customer_id chưa index → FULL TABLE SCAN. Thêm index → INDEX RANGE SCAN, đo thời gian. Sau đó thêm điều kiện làm index vô hiệu (function trên cột, vd <code>UPPER(email)</code>) → quan sát plan quay lại full scan. Tiêu chí: đọc được plan và biết vì sao index bị bỏ qua.</p>
     </div>
   </div>
 </section>
@@ -220,17 +261,17 @@ SELECT * FROM (
     <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
     <ol class="fy-prompt">
       <li>SGA vs PGA khác gì? Sort lớn ảnh hưởng cái nào?</li>
-      <li>ORA-01555 xảy ra thế nào? Liên quan UNDO/SCN ra sao?</li>
+      <li>ORA-01555 xảy ra thế nào? Liên quan UNDO/SCN và read consistency ra sao?</li>
       <li>Vì sao <code>WHERE ROWNUM &gt; 10</code> luôn rỗng? Phân trang đúng làm sao?</li>
       <li>Bitmap index vì sao không dùng cho OLTP?</li>
       <li>Workflow đọc AWR/ASH để tìm query chậm là gì?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = tune được Oracle, không chỉ viết SQL.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = tune được Oracle, không chỉ viết SQL.</div>
   </div>
 
   <h3>📚 Liên quan</h3>
   <ol>
-    <li><a href="39-database-consistency.html">#39 Consistency</a> — MVCC, isolation (so sánh PG).</li>
+    <li><a href="39-database-consistency.html">#39 Consistency</a> — MVCC, isolation (so sánh PostgreSQL).</li>
     <li><a href="11-sql-advanced.html">#11 SQL Advanced</a> — analytic, window function.</li>
     <li><a href="23-performance-tuning.html">#23 Performance Tuning</a> — đọc plan, index.</li>
   </ol>

@@ -32,17 +32,19 @@
       <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
       <a href="#real-problem">1. Bài toán: flash sale sập</a>
       <div class="toc-section">Mental models</div>
-      <a href="#types">2. 5 loại perf test</a>
-      <a href="#metrics">3. Metrics + percentile</a>
-      <a href="#baseline">4. Baseline &amp; môi trường</a>
-      <a href="#bottleneck">5. Bottleneck analysis</a>
-      <a href="#jvm">6. JVM under load</a>
-      <div class="toc-section">Production</div>
-      <a href="#gatling">7. Gatling + CI gate</a>
+      <a href="#types">2.1 5 loại perf test</a>
+      <a href="#metrics">2.2 Metrics + percentile</a>
+      <a href="#baseline">2.3 Baseline &amp; môi trường</a>
+      <a href="#bottleneck">2.4 Bottleneck analysis</a>
+      <a href="#jvm">2.5 JVM under load</a>
+      <div class="toc-section">Production code</div>
+      <a href="#gatling">3.1 Gatling simulation</a>
+      <a href="#thread-dump">3.2 Đọc thread dump tìm nghẽn</a>
+      <a href="#ci-gate">3.3 Perf gate trong CI</a>
       <div class="toc-section">Pitfalls</div>
-      <a href="#antipatterns">⚠️ Anti-patterns</a>
+      <a href="#antipatterns">4. Anti-patterns</a>
       <div class="toc-section">Áp dụng</div>
-      <a href="#interview">🎯 3-tier interview</a>
+      <a href="#interview">5. 3-tier interview</a>
       <a href="#lab">🔧 Build &amp; drill</a>
       <a href="#feynman">🧠 Feynman test</a>
     </nav>
@@ -55,7 +57,7 @@
   <div class="meta-tag">Nhóm H · Testing · File chống hiểu giả</div>
   <h1>Performance Testing — Load, Stress, Soak, và Đọc Đúng Số</h1>
   <p class="lead">
-    "Chạy load test, RPS cao là ổn" là hiểu giả nguy hiểm. Lên thật: "load test khác stress/spike/soak ở chỗ nào?", "vì sao báo cáo latency trung bình là sai?", "tăng RPS mà p99 vọt — nghẽn ở đâu?" — là lộ. File này dạy 5 loại test, đọc percentile, và phân tích bottleneck có hệ thống, trên domain <strong>ShopFlow</strong> — flash sale của sàn e-commerce.
+    "Chạy load test, RPS cao là ổn" là hiểu giả nguy hiểm. File này giải thích 5 loại test trả lời câu hỏi gì khác nhau, vì sao báo latency trung bình là sai, và khi tăng tải thì tài nguyên nào cạn trước CPU — đọc một lần là đọc kết quả test không bị lừa. Domain: <strong>ShopFlow</strong> — flash sale của sàn e-commerce.
   </p>
   <div class="meta-grid">
     <div><strong>🎯 Mục tiêu</strong><br>Chọn đúng loại test, đọc p99, tìm bottleneck thật, gate trong CI</div>
@@ -69,15 +71,15 @@
   <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Load test với stress test giống nhau, đều bắn nhiều request."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Load test = ở tải <em>kỳ vọng</em> xem có đạt SLA. Stress test = đẩy <em>quá</em> giới hạn để tìm điểm gãy &amp; cách gãy. Spike = tải tăng đột ngột. Soak = tải vừa nhưng <em>kéo dài</em> để lộ memory leak. Mỗi loại trả lời câu hỏi khác.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Khác mục đích. Load test chạy ở tải <em>kỳ vọng</em> để xem có đạt SLA không. Stress test đẩy <em>vượt</em> giới hạn để tìm điểm gãy &amp; cách gãy (gãy mềm hay sập hẳn). Spike = tải tăng đột ngột rồi giảm. Soak = tải vừa nhưng <em>kéo dài</em> nhiều giờ để lộ memory leak. Mỗi loại trả lời một câu hỏi.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Latency trung bình 80ms nghĩa là user thấy nhanh."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Trung bình giấu đuôi. p99 = 2s nghĩa 1% request (có thể là khách VIP, hoặc mọi user vào giờ cao điểm) rất chậm. Luôn đọc p95/p99, không đọc mean.</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Trung bình bị đám đông request nhanh kéo xuống, giấu phần đuôi chậm. p99 = 2s nghĩa 1% request rất chậm — ở 2000 RPS là 20 request/giây tệ, có thể là khách VIP hoặc mọi người vào giờ cao điểm. Luôn đọc p95/p99, không đọc mean.</div>
   </div>
   <div class="misconception">
     <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Test trên máy dev nhỏ, nhân lên ước lượng production."</div>
-    <div class="mc-right"><strong>Thực tế:</strong> Bottleneck phi tuyến (connection pool, GC, lock contention) không scale tuyến tính. Test môi trường khác production → kết quả vô nghĩa. Cần môi trường giống prod (data size, network, cấu hình).</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Bottleneck phi tuyến — connection pool, GC, lock contention không scale tuyến tính theo tài nguyên. Một hệ chạy mượt ở 1000 RPS với DB nhỏ có thể sập ở 1100 RPS vì pool cạn. Test môi trường khác production → con số vô nghĩa.</div>
   </div>
 </section>
 
@@ -85,17 +87,16 @@
   <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
   <div class="roadmap">
     <div class="roadmap-head">Thứ tự ưu tiên</div>
-    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> 5 loại test &amp; mỗi cái trả lời gì (2), đọc percentile thay vì mean (3), bottleneck analysis có hệ thống (5). Đủ để không hiểu sai kết quả test.</div>
-    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Baseline + môi trường giống prod (4), JVM under load — GC pause (6).</div>
-    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Gatling script, perf gate trong CI, sizing hạ tầng.</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> 5 loại test &amp; mỗi cái trả lời gì (2.1), đọc percentile thay vì mean (2.2), bottleneck analysis có hệ thống (2.4, 3.2). Đủ để không hiểu sai kết quả test.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Baseline + môi trường giống prod (2.3), JVM under load — GC pause (2.5).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Gatling script (3.1), perf gate trong CI (3.3), sizing hạ tầng.</div>
     <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> profiling under load (async-profiler), coordinated omission, capacity planning.</div>
   </div>
 </section>
 
 <section id="real-problem">
   <h2>1. Bài toán thực tế — flash sale sập <span class="k-tag core">CORE ★</span></h2>
-  <p>ShopFlow mở flash sale lúc 12h. Bình thường 200 RPS chạy mượt. Lúc cao điểm 2.000 RPS, checkout p99 vọt từ 150ms lên 9s, rồi 504 hàng loạt. Dev nói "đã load test 1.000 RPS OK" — nhưng test trên staging (DB nhỏ, 1 pod) và chỉ nhìn latency trung bình.</p>
-
+  <p>ShopFlow mở flash sale lúc 12h. Bình thường 200 RPS chạy mượt. Lúc cao điểm 2.000 RPS, latency p99 của checkout vọt từ 150ms lên 9s, rồi 504 hàng loạt. Dev bảo "đã load test 1.000 RPS OK" — nhưng test đó chạy trên staging (DB nhỏ, 1 pod) và chỉ nhìn latency trung bình. Ba sai lầm về phương pháp test đã giấu mất vấn đề thật.</p>
   <div class="pause-block">
     <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
     <div class="pause-q">Viết ra giấy:</div>
@@ -104,29 +105,31 @@
       <li>Vì sao "latency trung bình OK" che giấu vấn đề? Số nào nên nhìn?</li>
       <li>p99 vọt khi tăng RPS thường do tài nguyên nào cạn trước (gợi ý: không phải CPU)?</li>
     </ol>
-    <div class="pause-hint">Đáp án: cần <strong>stress test</strong> để tìm breaking point (mục 2); nhìn p95/p99 không phải mean (mục 3); thường nghẽn ở connection pool / thread pool / lock trước CPU (mục 5). Đừng đọc tiếp khi chưa phân biệt load vs stress.</div>
+    <div class="pause-hint">Đáp án: cần <strong>stress test</strong> để tìm breaking point (2.1); nhìn p95/p99 không phải mean (2.2); thường nghẽn ở connection pool / thread pool / lock TRƯỚC CPU (2.4). Đừng đọc tiếp khi chưa phân biệt load vs stress.</div>
   </div>
 </section>
 
 <section id="types">
-  <h2>2. 5 loại performance test <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.1 5 loại performance test <span class="k-tag core">CORE ★</span></h2>
+  <p>Mỗi loại test mô phỏng một kiểu tải khác nhau để trả lời một <em>câu hỏi</em> khác nhau. Chạy sai loại = không trả lời được câu mình cần:</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Loại</th><th>Tải</th><th>Trả lời câu hỏi</th></tr></thead>
+    <thead><tr><th>Loại</th><th>Tải mô phỏng</th><th>Trả lời câu hỏi</th></tr></thead>
     <tbody>
-      <tr><td>Load</td><td>Bằng tải kỳ vọng</td><td>Có đạt SLA ở tải bình thường không?</td></tr>
-      <tr><td>Stress</td><td>Vượt giới hạn dần</td><td>Gãy ở mức nào? Gãy như thế nào (graceful hay sập)?</td></tr>
-      <tr><td>Spike</td><td>Tăng đột ngột rồi giảm</td><td>Chịu nổi flash sale/đột biến không? Phục hồi ra sao?</td></tr>
-      <tr><td>Soak (endurance)</td><td>Tải vừa, kéo dài nhiều giờ</td><td>Có memory leak / resource leak tích luỹ không?</td></tr>
-      <tr><td>Scalability</td><td>Tăng tải + tăng tài nguyên</td><td>Thêm pod có tăng throughput tuyến tính không?</td></tr>
+      <tr><td><strong>Load</strong></td><td>Bằng tải kỳ vọng (vd 200 RPS)</td><td>Ở tải bình thường, có đạt SLA (p99 &lt; X) không?</td></tr>
+      <tr><td><strong>Stress</strong></td><td>Tăng dần vượt giới hạn</td><td>Gãy ở mức nào? Gãy <em>thế nào</em> — chậm dần (graceful) hay sập đột ngột (504 hàng loạt)?</td></tr>
+      <tr><td><strong>Spike</strong></td><td>Tăng đột ngột (200→2000) rồi giảm</td><td>Chịu nổi flash sale/đột biến không? Phục hồi sau spike ra sao?</td></tr>
+      <tr><td><strong>Soak (endurance)</strong></td><td>Tải vừa nhưng kéo dài nhiều giờ</td><td>Có memory leak / resource leak tích luỹ dần không?</td></tr>
+      <tr><td><strong>Scalability</strong></td><td>Tăng tải song song tăng tài nguyên (pod)</td><td>Thêm pod có tăng throughput tuyến tính không, hay có nút thắt chung?</td></tr>
     </tbody>
   </table>
   </div>
+  <p>Ở bài toán phần 1, dev chỉ chạy load test (200/1000 RPS — tải kỳ vọng) nên không biết điểm gãy nằm ở ~1100 RPS; lẽ ra phải stress test để tìm breaking point, và spike test để mô phỏng đúng kịch bản flash sale.</p>
 </section>
 
 <section id="metrics">
-  <h2>3. Metrics + percentile <span class="k-tag core">CORE ★</span></h2>
-  <p>Đo: throughput (RPS), latency (p50/p95/p99/p99.9), error rate, và tài nguyên (CPU, memory, GC, connection pool). <strong>Đọc percentile, không đọc mean.</strong></p>
+  <h2>2.2 Metrics + percentile <span class="k-tag core">CORE ★</span></h2>
+  <p>Đo bốn nhóm: throughput (RPS), latency (p50/p95/p99/p99.9), error rate, và tài nguyên (CPU, memory, GC, connection pool). Quy tắc quan trọng nhất: <strong>đọc percentile, không đọc trung bình</strong>. Lý do đã giải ở phần cảnh báo — trung bình giấu đuôi. Nhưng có một cái bẫy tinh vi hơn:</p>
   <div class="three-level">
     <div class="tier-card t1">
       <h3>L1 — Biết tên</h3>
@@ -134,65 +137,107 @@
     </div>
     <div class="tier-card t2">
       <h3>L2 — Explain được</h3>
-      <p>Giải thích mean bị kéo bởi đa số nhanh, giấu 1% chậm; p99=2s nghĩa cứ 100 request có 1 cái 2s — ở 2000 RPS là 20 request/giây bị chậm. Hiểu "coordinated omission" làm tool báo p99 lạc quan.</p>
+      <p>Mean bị kéo bởi đa số nhanh, giấu 1% chậm; p99=2s ở 2000 RPS là 20 request/giây bị chậm. Hiểu "coordinated omission": tool đo theo mô hình đóng (closed-model) chờ response xong mới gửi tiếp → khi server chậm, tool tự giảm tải → p99 báo <em>lạc quan giả</em>, giấu mất mức độ tệ thật.</p>
     </div>
     <div class="tier-card t3">
       <h3>L3 — Apply được</h3>
-      <p>Đặt SLO theo percentile (p99 &lt; 300ms), gắn perf gate CI fail nếu p99 vượt; phân tích đuôi (tail latency) để tìm GC pause/lock; tránh coordinated omission bằng open-model load.</p>
+      <p>Đặt SLO theo percentile (p99 &lt; 300ms), gắn perf gate CI fail nếu p99 vượt; phân tích đuôi (tail latency) để tìm GC pause/lock; dùng open-model load (gửi theo nhịp cố định bất kể response) để tránh coordinated omission.</p>
     </div>
   </div>
 </section>
 
 <section id="baseline">
-  <h2>4. Baseline &amp; môi trường giống prod <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <p>Trước khi tối ưu, đo <strong>baseline</strong> (số hiện tại) để biết "tốt hơn" là bao nhiêu. Môi trường test phải giống prod ở: kích thước data (DB 10 triệu row khác 1000 row), cấu hình JVM/pool, network latency, số pod. Test trên môi trường nhỏ rồi nhân lên = sai vì bottleneck phi tuyến.</p>
+  <h2>2.3 Baseline &amp; môi trường giống prod <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Trước khi nói "đã tối ưu", phải có <strong>baseline</strong> — số đo hiện tại — để biết "tốt hơn" là bao nhiêu và có thật không. Và môi trường test phải giống production ở những thứ làm thay đổi bottleneck: <em>kích thước dữ liệu</em> (DB 10 triệu row hành xử khác 1000 row vì index/cache nóng hay nguội khác hẳn), cấu hình JVM/connection pool, độ trễ mạng, số pod. Đây là lý do "test máy nhỏ rồi nhân lên" sai — bottleneck phi tuyến không scale theo phép nhân.</p>
 </section>
 
 <section id="bottleneck">
-  <h2>5. Bottleneck analysis có hệ thống <span class="k-tag core">CORE ★</span></h2>
+  <h2>2.4 Bottleneck analysis — thứ tự cạn tài nguyên <span class="k-tag core">CORE ★</span></h2>
+  <p>Khi tăng tải mà p99 vọt, đừng đoán "thiếu CPU". Có một <em>thứ tự</em> tài nguyên thường cạn, và CPU hiếm khi là thủ phạm đầu. Lý do: phần lớn request backend dành thời gian <em>chờ</em> (chờ connection DB, chờ response downstream) chứ không tính toán — nên giới hạn hữu hạn của các "hàng đợi" đó cạn trước:</p>
   <pre><code class="language-text">Tăng tải, p99 vọt → kiểm tra theo thứ tự cạn-trước:
-1. Connection pool (DB) cạn → request chờ lấy connection (thường nghẽn đầu tiên)
-2. Thread pool cạn → request queue, 503/timeout
-3. Lock contention → nhiều thread BLOCKED trên monitor
-4. GC pause → stop-the-world dài → latency spike chu kỳ
-5. Downstream chậm → backpressure ngược lên
-6. CPU saturation → cuối cùng (thường không phải thủ phạm đầu)</code></pre>
-  <div class="callout info"><div class="ctitle">Quy tắc</div><p>Đừng đoán — đo. Kết hợp metric (USE: utilization/saturation), thread dump (đếm BLOCKED), GC log (pause time), và pool metric (active/idle/wait). Bottleneck thật thường là tài nguyên hữu hạn cạn trước CPU.</p></div>
+1. Connection pool (DB) cạn → request xếp hàng chờ lấy connection (thường nghẽn ĐẦU TIÊN)
+2. Thread pool cạn → request queue đầy → 503/timeout
+3. Lock contention → nhiều thread BLOCKED chờ cùng một monitor
+4. GC pause → stop-the-world dài → latency spike theo chu kỳ (p50 ổn, p99 nhảy)
+5. Downstream chậm → backpressure dội ngược lên
+6. CPU saturation → thường CUỐI cùng, không phải thủ phạm đầu</code></pre>
+  <div class="callout info"><div class="ctitle">Quy tắc: đừng đoán, hãy đo</div><p>Kết hợp metric (USE: utilization &amp; saturation), thread dump (đếm thread BLOCKED, tìm hot lock — xem 3.2), GC log (pause time), và pool metric (active/idle/threads-awaiting-connection). Khi pool metric cho thấy <code>active = max</code> và có thread đang chờ connection, bạn biết chắc nghẽn ở pool chứ không phải CPU.</p></div>
 </section>
 
 <section id="jvm">
-  <h2>6. JVM under load <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <h2>2.5 JVM under load <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>JVM có vài hành vi riêng ảnh hưởng kết quả perf test, phải tính tới để không đọc nhầm số:</p>
   <ul>
-    <li><strong>GC pause</strong> tạo tail latency: p50 ổn nhưng p99 nhảy theo chu kỳ GC. Chọn GC phù hợp (G1/ZGC) và đo pause.</li>
-    <li><strong>Warm-up / JIT:</strong> JVM chậm lúc đầu (interpreted) rồi nhanh khi JIT compile → bỏ qua phần warm-up khi đo.</li>
-    <li><strong>Heap sizing:</strong> heap nhỏ → GC nhiều; quá lớn → pause dài hơn. Đo, không đoán.</li>
+    <li><strong>GC pause tạo tail latency:</strong> khi GC chạy "stop-the-world", mọi thread tạm dừng → request đúng lúc đó bị chậm. Kết quả: p50 ổn định nhưng p99 nhảy theo chu kỳ GC. Chọn GC phù hợp (G1/ZGC cho pause thấp) và đo pause bằng <code>-Xlog:gc</code>.</li>
+    <li><strong>Warm-up / JIT:</strong> JVM lúc mới chạy thực thi bytecode kiểu thông dịch (chậm), rồi JIT biên dịch các đoạn nóng thành mã máy (nhanh). Vì vậy vài giây/phút đầu chậm hơn hẳn — phải <em>bỏ phần warm-up</em> khỏi số đo, nếu không latency bị tệ giả tạo.</li>
+    <li><strong>Heap sizing:</strong> heap quá nhỏ → GC chạy thường xuyên; quá lớn → mỗi lần GC quét lâu hơn (pause dài hơn). Phải đo để cân, không đoán.</li>
   </ul>
 </section>
 
 <section id="gatling">
-  <h2>7. Gatling + perf gate CI <span class="k-tag supp">SUPPLEMENTARY</span></h2>
-  <pre><code class="language-text">// Gatling DSL (ý tưởng): ramp tới 2000 user, assert p99
-setUp(
-  scn.injectOpen(rampUsersPerSec(10).to(2000).during(120))
-).assertions(
-  global.responseTime.percentile4.lt(300),  // p99 < 300ms
-  global.failedRequests.percent.lt(1)        // error < 1%
-)
-// CI gate: assertion fail → pipeline đỏ → chặn deploy</code></pre>
+  <h2>3.1 Gatling simulation <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-java">public class CheckoutSimulation extends Simulation {
+  HttpProtocolBuilder http = http.baseUrl("https://staging.shopflow.io");
+  ScenarioBuilder checkout = scenario("checkout")
+    .exec(http("place-order").post("/orders")
+          .body(StringBody("{\"sku\":\"SKU1\",\"qty\":1}"))
+          .check(status().is(201)));
+  {
+    setUp(
+      // OPEN model: ramp tới 2000 user/s — KHÔNG đợi response (tránh coordinated omission)
+      checkout.injectOpen(rampUsersPerSec(10).to(2000).during(Duration.ofSeconds(120)))
+    ).protocols(http).assertions(
+      global().responseTime().percentile(99.0).lt(300),   // p99 < 300ms
+      global().failedRequests().percent().lt(1.0)         // error < 1%
+    );
+  }
+}
+// assertion fail → exit code khác 0 → CI đỏ → chặn deploy (xem 3.3)</code></pre>
+</section>
+
+<section id="thread-dump">
+  <h2>3.2 Đọc thread dump tìm nghẽn <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-bash"># lấy thread dump đúng lúc p99 đang cao
+jstack &lt;pid&gt; &gt; dump.txt
+
+# đếm thread theo state → nghẽn ở đâu
+grep 'java.lang.Thread.State' dump.txt | sort | uniq -c
+#   180 BLOCKED        → lock contention (180 thread chờ monitor — hot lock)
+#    15 RUNNABLE
+#     5 WAITING
+
+# tìm hot lock: nhiều thread cùng "waiting to lock" một địa chỉ
+grep -A3 'waiting to lock &lt;0x...&gt;' dump.txt   # nhiều thread chờ cùng 1 lock
+grep 'locked &lt;0x...&gt;' dump.txt                # thread nào đang GIỮ lock đó
+
+# pool metric (HikariCP): active == max &amp;&amp; threadsAwaitingConnection &gt; 0
+#   → nghẽn ở DB connection pool, KHÔNG phải CPU</code></pre>
+</section>
+
+<section id="ci-gate">
+  <h2>3.3 Perf gate trong CI <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <pre><code class="language-yaml">perf-test:
+  runs-on: ubuntu-latest
+  steps:
+    - run: docker compose up -d app db        # môi trường giống prod (compose/Testcontainers)
+    - run: ./warm-up.sh                        # bỏ phần JIT warm-up khỏi số đo
+    - run: mvn gatling:test                    # assertion p99/error trong simulation
+    # gatling exit != 0 nếu p99 > 300ms hoặc error > 1% → job đỏ → chặn merge (regression perf)</code></pre>
 </section>
 
 <section id="antipatterns">
-  <h2>⚠️ Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <h2>4. Anti-patterns <span class="k-tag core">CORE ★</span></h2>
   <div class="break-it">
     <div class="bi-head">🔧 Counter-example — khi load test cho kết quả ĐÁNH LỪA</div>
     <div class="bi-answer">
+      <p>Một con số "đẹp" có thể hoàn toàn vô nghĩa nếu phương pháp sai:</p>
       <ul>
-        <li><strong>Đo cả warm-up:</strong> gộp phần JVM chưa JIT vào số → latency tệ giả tạo, hoặc cache lạnh → không phản ánh prod.</li>
-        <li><strong>Closed-model + coordinated omission:</strong> tool đợi response xong mới gửi tiếp → khi server chậm, tool tự giảm tải → p99 báo lạc quan, giấu mất vấn đề.</li>
-        <li><strong>Data nhỏ:</strong> DB 1000 row, mọi query trong cache/index nóng → prod 10 triệu row hành xử khác hẳn.</li>
-        <li><strong>Test một endpoint:</strong> prod là hỗn hợp request cạnh tranh tài nguyên; test đơn lẻ không thấy contention.</li>
+        <li><strong>Đo cả warm-up:</strong> gộp phần JVM chưa JIT/cache lạnh vào → latency tệ giả tạo, hoặc ngược lại không phản ánh prod.</li>
+        <li><strong>Closed-model + coordinated omission:</strong> tool đợi response xong mới gửi tiếp → khi server chậm, tool tự giảm nhịp gửi → p99 báo lạc quan, <em>giấu</em> mức tệ thật. Dùng open-model.</li>
+        <li><strong>Data nhỏ:</strong> DB 1000 row, mọi query nằm trong cache/index nóng → prod 10 triệu row hành xử khác hẳn.</li>
+        <li><strong>Test một endpoint riêng lẻ:</strong> prod là hỗn hợp nhiều loại request cạnh tranh cùng connection pool/CPU; test đơn lẻ không thấy contention.</li>
       </ul>
-      <p><em>Quy tắc:</em> môi trường + mô hình tải + dữ liệu phải giống prod, bỏ warm-up, dùng open-model. Sai một trong số đó = con số đẹp nhưng vô nghĩa.</p>
+      <p><em>Quy tắc:</em> môi trường + mô hình tải + dữ liệu phải giống prod, bỏ warm-up, dùng open-model. Sai một trong số đó = con số đẹp nhưng dối.</p>
     </div>
   </div>
   <div class="table-wrap">
@@ -209,21 +254,21 @@ setUp(
 </section>
 
 <section id="interview">
-  <h2>🎯 3-tier interview framework</h2>
+  <h2>5. 3-tier interview framework</h2>
   <div class="tier t1">
     <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Junior gate</span></div>
     <p><strong>Q:</strong> Load test khác stress test?</p>
-    <p class="a">Load = tải kỳ vọng, kiểm tra đạt SLA. Stress = vượt giới hạn để tìm điểm gãy và cách gãy. Thêm spike (đột biến), soak (kéo dài, tìm leak), scalability (thêm tài nguyên).</p>
+    <p class="a">Load = tải kỳ vọng, kiểm tra đạt SLA. Stress = vượt giới hạn để tìm điểm gãy và cách gãy. Thêm spike (đột biến), soak (kéo dài, tìm leak), scalability (thêm tài nguyên xem có tuyến tính).</p>
   </div>
   <div class="tier t2">
     <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
     <p><strong>Q:</strong> p99 vọt khi tăng RPS, tìm root cause thế nào?</p>
-    <p class="a">Đo theo thứ tự cạn-trước: connection pool wait → thread pool queue → lock contention (thread dump BLOCKED) → GC pause (GC log) → downstream → CPU cuối. Kết hợp USE metric + thread dump + pool metric. Không đoán, đo.</p>
+    <p class="a">Đo theo thứ tự cạn-trước: connection pool wait → thread pool queue → lock contention (thread dump đếm BLOCKED, tìm hot lock) → GC pause (GC log) → downstream → CPU cuối. Kết hợp USE metric + thread dump + pool metric. Không đoán, đo.</p>
   </div>
   <div class="tier t3">
     <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
     <p><strong>Q:</strong> Thiết kế perf testing cho hệ chuẩn bị flash sale 10×.</p>
-    <p class="a">Môi trường prod-like; baseline; stress để tìm breaking point; spike test mô phỏng flash sale; soak 8h tìm leak; perf gate CI theo p99; capacity plan (autoscale ngưỡng); chaos nhẹ (kill pod khi tải). Đọc percentile + tail analysis.</p>
+    <p class="a">Môi trường prod-like; baseline; stress để tìm breaking point; spike test mô phỏng đúng flash sale; soak 8h tìm leak; perf gate CI theo p99; capacity plan (ngưỡng autoscale); chaos nhẹ (kill pod khi tải). Đọc percentile + tail analysis, dùng open-model.</p>
   </div>
 </section>
 
@@ -232,7 +277,7 @@ setUp(
     <div class="be-head">🔧 Lab bắt buộc — đo &amp; đọc đúng (2 bài)</div>
     <div class="be-deliverable">
       <p><strong>Lab 1 — Mean lừa, p99 thật.</strong> Viết một endpoint mà 99% nhanh (10ms) nhưng 1% sleep 1s. Bắn 10K request bằng k6/Gatling. So sánh mean (~20ms, "đẹp") với p99 (~1s). Tiêu chí: giải thích vì sao mean che vấn đề và 1% đó ảnh hưởng ai ở 2000 RPS.</p>
-      <p><strong>Lab 2 — Tìm bottleneck connection pool.</strong> Set HikariCP <code>maximum-pool-size=5</code>, endpoint gọi DB query 100ms. Tăng tải tới khi p99 vọt. Quan sát pool metric (active=5, threads waiting). Tăng pool size hợp lý → p99 giảm. Tiêu chí: chứng minh nghẽn ở pool, không phải CPU.</p>
+      <p><strong>Lab 2 — Tìm bottleneck connection pool.</strong> Set HikariCP <code>maximum-pool-size=5</code>, endpoint gọi DB query 100ms. Tăng tải tới khi p99 vọt. Lấy thread dump → đếm BLOCKED, xem pool metric (active=5, threads waiting). Tăng pool size hợp lý → p99 giảm. Tiêu chí: chứng minh nghẽn ở pool, không phải CPU.</p>
     </div>
   </div>
 </section>
@@ -244,10 +289,10 @@ setUp(
       <li>5 loại perf test, mỗi loại trả lời câu hỏi gì?</li>
       <li>Vì sao latency trung bình lừa? p99 nói gì mà mean không nói?</li>
       <li>Khi tăng RPS, thứ tự tài nguyên cạn thường là gì? Vì sao CPU không phải đầu tiên?</li>
-      <li>Vì sao test môi trường nhỏ rồi nhân lên là sai?</li>
-      <li>Coordinated omission làm tool báo p99 sai thế nào?</li>
+      <li>Vì sao test môi trường nhỏ rồi nhân lên là sai (bottleneck phi tuyến)?</li>
+      <li>Coordinated omission làm tool báo p99 sai thế nào? Open-model sửa ra sao?</li>
     </ol>
-    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 = đọc kết quả perf test không bị lừa.</div>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 5 không nhìn tài liệu = đọc kết quả perf test không bị lừa.</div>
   </div>
 
   <h3>📚 Liên quan</h3>
@@ -263,6 +308,8 @@ setUp(
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 <script src="assets/scripts.js"></script>
 </body>
 </html>

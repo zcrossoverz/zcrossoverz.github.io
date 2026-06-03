@@ -1,434 +1,337 @@
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#10 - Spring WebFlux | Java Backend Interview Prep</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-<link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#10 — Spring WebFlux: Reactive, Mono/Flux, Backpressure (chống hiểu giả) | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
 <div class="topbar">
-  <button class="menu-toggle">☰</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Phase 2 - Spring Ecosystem<span class="sep">/</span><strong>#10 Spring WebFlux</strong></div>
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+  <div class="crumb">
+    <a href="index.html">Index</a>
+    <span class="sep">›</span>
+    <span>Nhóm B · Spring Ecosystem</span>
+    <span class="sep">›</span>
+    <span class="current">#10 Spring WebFlux</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌓</button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
 </div>
 
 <div class="layout">
-<aside class="sidebar">
-  <div class="toc-title">Mục lục</div>
-  <nav class="toc">
-    <a href="#intro">Tổng quan</a>
-    <a href="#anti-fake">Chống hiểu giả</a>
-    <a href="#scope-map">Cần nắm vs phụ</a>
-    <a href="#problem">1. Bài toán thực tế</a>
-    <a href="#mental-model">2. Mental model</a>
-    <div class="sub">
-      <a href="#blocking">Blocking vs non-blocking</a>
-      <a href="#mono-flux">Mono & Flux</a>
-      <a href="#backpressure">Backpressure</a>
-      <a href="#schedulers">Schedulers</a>
-      <a href="#operators">Operator map</a>
-      <a href="#reactor-context">Reactor Context</a>
-    </div>
-    <a href="#implementation">3. Code production</a>
-    <div class="sub">
-      <a href="#error-handling">Error handling</a>
-      <a href="#stepverifier">StepVerifier</a>
-    </div>
-    <a href="#debug">4. Debug lab</a>
-    <a href="#tradeoffs">5. Trade-offs</a>
-    <a href="#interview">6. Interview framework</a>
-    <a href="#checklist">Checklist</a>
-  </nav>
-</aside>
+  <aside class="sidebar" id="sidebar">
+    <nav class="toc">
+      <div class="toc-title">Trong file này</div>
+      <a href="#illusion">⚠️ Cảnh báo "hiểu giả"</a>
+      <a href="#roadmap">🗺️ Roadmap — nếu chỉ X giờ</a>
+      <a href="#real-problem">1. Bài toán: thread cạn ở giờ cao điểm</a>
+      <div class="toc-section">Mental models</div>
+      <a href="#blocking">2.1 Blocking vs Non-blocking I/O</a>
+      <a href="#streams">2.2 Reactive Streams spec</a>
+      <a href="#mono-flux">2.3 Mono &amp; Flux (lazy)</a>
+      <a href="#operators">2.4 Operators: map/flatMap/concatMap</a>
+      <a href="#backpressure">2.5 Backpressure</a>
+      <a href="#schedulers">2.6 Threading: subscribeOn vs publishOn</a>
+      <div class="toc-section">Production code</div>
+      <a href="#parallel">3.1 Parallel API calls</a>
+      <a href="#webclient">3.2 WebClient + R2DBC</a>
+      <a href="#context">3.3 Context propagation</a>
+      <div class="toc-section">Pitfalls</div>
+      <a href="#when">4.1 Khi nào KHÔNG dùng WebFlux</a>
+      <a href="#antipatterns">4.2 Anti-patterns</a>
+      <div class="toc-section">Áp dụng</div>
+      <a href="#interview">5. 3-tier interview</a>
+      <a href="#lab">🔧 Build &amp; drill</a>
+      <a href="#feynman">🧠 Feynman test</a>
+    </nav>
+  </aside>
 
-<main>
-<div class="content">
+  <main>
+    <div class="content">
 
 <section class="hero">
-  <span class="meta-tag">Phase 2 - Daily work - Senior differentiator</span>
-  <h1>#10 - Spring WebFlux: Reactive Programming, Reactor, Backpressure</h1>
-  <p class="lead">WebFlux không phải "Spring MVC nhưng nhanh hơn". Nó là mô hình non-blocking, event-loop và reactive streams. Dùng đúng thì rất hợp cho API gateway, streaming, fan-out I/O. Dùng sai với blocking JDBC hoặc <code>.block()</code> thì còn khó debug hơn MVC.</p>
+  <div class="meta-tag">Nhóm B · Spring Ecosystem · File chống hiểu giả</div>
+  <h1>Spring WebFlux — Reactive, Mono/Flux, Backpressure</h1>
+  <p class="lead">
+    WebFlux là chủ đề dễ "hiểu giả" nhất Spring: ai cũng biết "reactive là non-blocking, dùng Mono/Flux", nhưng "vì sao 4 thread của Netty phục vụ được hàng chục nghìn connection?", "một lệnh JDBC blocking trong reactive chain gây gì?", "flatMap vs concatMap khác nhau ở đâu?" thì lộ ngay. File này giải thích cơ chế event-loop, Reactive Streams contract, threading model và backpressure — đọc một lần là hiểu. Domain: <strong>ShopFlow</strong> — product page gọi nhiều service song song.
+  </p>
   <div class="meta-grid">
-    <div class="meta-item"><div class="k">Trọng tâm</div><div class="v">I/O concurrency</div></div>
-    <div class="meta-item"><div class="k">Ví dụ</div><div class="v">Travel search aggregator</div></div>
-    <div class="meta-item"><div class="k">Bẫy</div><div class="v">block trong event loop</div></div>
-    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#1 Async, #22 Resilience, #20 Kafka</div></div>
+    <div><strong>🎯 Mục tiêu</strong><br>Hiểu event-loop, Mono/Flux lazy, backpressure, threading; biết khi nào KHÔNG dùng</div>
+    <div><strong>📅 Thời lượng</strong><br>1-2 tuần · Sau #01 Concurrency, #06 Spring Boot</div>
+    <div><strong>📚 Prereq</strong><br>Thread/blocking I/O · CompletableFuture · functional Java</div>
+    <div><strong>🔥 Độ ưu tiên</strong><br>🟠 Cao — hỏi nhiều, và dễ dùng sai gây hại hơn không dùng</div>
   </div>
 </section>
 
-<section id="intro">
-<h2 class="no-border">WebFlux Giải Quyết Bài Toán Thread Bị Block</h2>
-<p>Spring MVC dùng thread-per-request. Nếu request chủ yếu chờ network, thread ngồi chờ phần lớn thời gian. WebFlux dùng event loop và non-blocking I/O: thread gửi request đi, trả lại event loop, rồi xử lý tiếp khi response về.</p>
-<p>Điểm quan trọng: WebFlux chỉ có lợi khi đường đi chính không blocking: WebClient, R2DBC, reactive Redis/Kafka. Nếu vẫn gọi JPA/JDBC/blocking SDK trực tiếp trên event loop, bạn phá mô hình.</p>
+<section id="illusion">
+  <h2>⚠️ Cảnh báo "hiểu giả" — 3 cái bẫy</h2>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Reactive nhanh hơn vì xử lý song song, nên dùng WebFlux thì request nào cũng nhanh hơn."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> WebFlux KHÔNG làm một request nhanh hơn — nó làm hệ thống phục vụ <em>nhiều concurrent connection hơn với ít thread hơn</em>. Lợi ích chỉ xuất hiện khi tải là <em>I/O-bound + concurrency cao</em> (nhiều request đang chờ I/O). Với CPU-bound hay tải thấp, nó không nhanh hơn mà còn khó viết/debug hơn.</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Cứ trả về Mono/Flux là đã reactive, an toàn."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Chỉ cần MỘT lệnh blocking (JDBC, <code>Thread.sleep</code>, <code>.block()</code>, thư viện đồng bộ) chạy trên thread event-loop của Netty là <em>đầu độc</em> toàn bộ — vì chỉ có ~số-CPU thread event-loop, một thread bị block làm nghẽn hàng nghìn connection nó đang phục vụ. "Reactive poison".</div>
+  </div>
+  <div class="misconception">
+    <div class="mc-wrong"><strong>Tưởng hiểu:</strong> "Mono/Flux khai báo xong là nó chạy luôn như một method bình thường."</div>
+    <div class="mc-right"><strong>Thực tế:</strong> Mono/Flux <em>lazy</em> — định nghĩa một pipeline mô tả việc sẽ làm, nhưng KHÔNG chạy gì cho đến khi có ai <code>subscribe()</code>. Trong WebFlux, framework subscribe hộ bạn khi trả về controller. Nếu bạn tạo một Mono rồi không subscribe (và không return), nó không bao giờ chạy — bug "im lặng" rất hay gặp.</div>
+  </div>
 </section>
 
-<section id="anti-fake">
-<h2>Kiến Trúc Học Chống "Hiểu Giả"</h2>
-<div class="pillar-grid">
-  <div class="pillar"><div class="num">1</div><h4>Không đồng nhất async</h4><p><code>Mono</code> không giống <code>CompletableFuture</code>; nó lazy và có backpressure với Flux.</p></div>
-  <div class="pillar"><div class="num">2</div><h4>Thread awareness</h4><p>Luôn biết operator nào chạy trên event loop, operator nào switch sang scheduler khác.</p></div>
-  <div class="pillar"><div class="num">3</div><h4>No manual subscribe</h4><p>Service trả <code>Mono/Flux</code>; framework hoặc caller compose/subscribe.</p></div>
-  <div class="pillar"><div class="num">4</div><h4>Know when not to use</h4><p>CRUD đơn giản với JPA blocking thường dùng MVC tốt hơn và dễ maintain hơn.</p></div>
-</div>
+<section id="roadmap">
+  <h2>🗺️ Roadmap — nếu chỉ có X giờ thì học gì</h2>
+  <div class="roadmap">
+    <div class="roadmap-head">Thứ tự ưu tiên</div>
+    <div class="roadmap-item core"><strong>1 giờ (CORE ★):</strong> Blocking vs non-blocking + event-loop (2.1), Mono/Flux lazy (2.3), threading subscribeOn/publishOn + "không block event-loop" (2.6). Gốc để không dùng sai.</div>
+    <div class="roadmap-item core"><strong>+1 giờ (CORE ★):</strong> Khi nào KHÔNG dùng WebFlux (4.1), anti-pattern block-in-pipeline + flatMap vs concatMap (4.2), operators (2.4).</div>
+    <div class="roadmap-item supp"><strong>+1 giờ (SUPPLEMENTARY):</strong> Reactive Streams spec + backpressure (2.2, 2.5), WebClient/R2DBC (3.2), context propagation (3.3).</div>
+    <div class="roadmap-item adv"><strong>Khi cần (ADVANCED):</strong> StepVerifier test, custom backpressure, Reactor Context, debugging reactive stack trace.</div>
+  </div>
 </section>
 
-<section id="scope-map">
-<h2>Cần Nắm Chắc, Nên Biết, Và Phần Phụ</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Tầng</th><th>Kiến thức</th><th>Mức cần đạt</th></tr></thead>
-  <tbody>
-    <tr><td><strong>A - Bắt buộc</strong></td><td>Blocking vs non-blocking, event loop, Mono/Flux lazy, backpressure, <code>map/flatMap/zip</code>, timeout/error handling</td><td>Viết được flow WebClient không block và debug được pipeline không chạy.</td></tr>
-    <tr><td><strong>B - Nên biết</strong></td><td>Schedulers, Reactor Context, WebClient pool/timeout, StepVerifier, BlockHound ở mức test</td><td>Tránh block event loop và test được reactive flow.</td></tr>
-    <tr><td><strong>C - Bonus</strong></td><td>Custom operator, Reactive Streams spec sâu, tuning Netty nâng cao</td><td>Không cần đào sâu nếu không xây framework/gateway lớn.</td></tr>
-  </tbody>
-</table>
-</div>
+<section id="real-problem">
+  <h2>1. Bài toán thực tế — thread cạn ở giờ cao điểm <span class="k-tag core">CORE ★</span></h2>
+  <p>Trang product page của ShopFlow phải gọi 4 service để dựng đủ thông tin: product, reviews, recommendation, inventory. Bản Spring MVC (Tomcat, blocking) gọi tuần tự, mỗi gọi chờ I/O ~150ms → ~600ms/request. Tệ hơn: Tomcat có pool ~200 thread, mỗi request <em>chiếm trọn một thread suốt thời gian chờ I/O</em> (thread ngồi không, chỉ ngủ). Lúc cao điểm 1.000 request đồng thời, 200 thread bị "giam" trong khi chờ downstream → request 201 trở đi phải xếp hàng → latency vọt, rồi timeout hàng loạt. CPU lúc đó chỉ ~10% — nghẽn không phải vì thiếu CPU mà vì <em>thread bị block đang phí phạm</em>.</p>
+
+  <div class="pause-block">
+    <div class="pause-head">⏸ Pause &amp; Predict — trước khi đọc lời giải</div>
+    <div class="pause-q">Viết ra giấy:</div>
+    <ol>
+      <li>CPU chỉ 10% mà hệ thống vẫn nghẽn — tài nguyên gì đang cạn? Vì sao một thread "ngồi chờ DB" lại là lãng phí?</li>
+      <li>WebFlux/Netty dùng ~4-8 thread mà phục vụ hàng chục nghìn connection. Một thread không-ngủ làm điều đó bằng cơ chế gì?</li>
+      <li>4 lời gọi service trên độc lập nhau. Nếu gọi <em>song song</em> thay vì tuần tự, latency lý tưởng còn bao nhiêu? (CompletableFuture ở #01 cũng làm được — vậy WebFlux thắng ở đâu?)</li>
+    </ol>
+    <div class="pause-hint">Đáp án: cạn <em>thread</em> (mỗi thread ~1MB stack, bị giam khi chờ I/O) chứ không phải CPU (2.1); event-loop xử lý event thay vì block-rồi-ngủ (2.1); song song → ~max(150ms)=150ms; WebFlux thắng ở chỗ giải phóng thread <em>trong lúc chờ</em> nên ít thread phục vụ nhiều connection hơn (CompletableFuture trên Tomcat vẫn giam thread chờ). Đừng đọc tiếp khi chưa tách "cạn thread" khỏi "thiếu CPU".</div>
+  </div>
 </section>
-
-<section id="problem">
-<h2>1. Bài Toán Thực Tế - Travel Search API Nghẽn Thread</h2>
-<p>API search du lịch phải gọi 4 provider: flight, hotel, promotion, weather. Spring MVC hiện tại gọi tuần tự, mỗi request mất khoảng 900ms, trong đó CPU thực sự làm việc chỉ vài chục ms.</p>
-
-<pre><code class="language-java">@RestController
-class TravelSearchController {
-    @GetMapping("/api/search")
-    public SearchResult search(SearchRequest request) {
-        Flights flights = flightClient.search(request);     // 300ms blocking
-        Hotels hotels = hotelClient.search(request);        // 250ms blocking
-        Promotions promos = promotionClient.find(request);  // 180ms blocking
-        Weather weather = weatherClient.forecast(request);  // 120ms blocking
-        return SearchResult.of(flights, hotels, promos, weather);
-    }
-}</code></pre>
-
-<div class="log-card">
-Tomcat threads: 200/200 active<br>
-Queue length: 1200<br>
-P99 latency: 11s<br>
-CPU: 35% nhưng request vẫn timeout vì thread đang chờ network.
-</div>
-</section>
-
-<section id="mental-model">
-<h2>2. Mental Model</h2>
 
 <section id="blocking">
-<h3>2.1 Blocking vs Non-blocking I/O</h3>
-<div class="diagram">
-<svg viewBox="0 0 760 320" role="img" aria-label="Blocking versus non blocking io">
-  <rect x="35" y="55" width="690" height="90" rx="10" fill="#fef2f2" stroke="#dc2626"></rect>
-  <text x="55" y="85" font-size="13" fill="#0f172a">Blocking MVC thread</text>
-  <rect x="190" y="70" width="80" height="38" rx="6" fill="#fee2e2" stroke="#dc2626"></rect>
-  <text x="230" y="94" text-anchor="middle" font-size="12">work</text>
-  <rect x="275" y="70" width="250" height="38" rx="6" fill="#fff7ed" stroke="#d97706"></rect>
-  <text x="400" y="94" text-anchor="middle" font-size="12">wait for remote API</text>
-  <rect x="530" y="70" width="80" height="38" rx="6" fill="#fee2e2" stroke="#dc2626"></rect>
-  <text x="570" y="94" text-anchor="middle" font-size="12">work</text>
-  <text x="380" y="130" text-anchor="middle" font-size="12" fill="#475569">Thread vẫn bị giữ trong lúc chờ.</text>
+  <h2>2.1 Blocking vs Non-blocking I/O — cốt lõi reactive <span class="k-tag core">CORE ★</span></h2>
+  <p>Đây là điều phải hiểu trước mọi thứ khác. Trong mô hình <strong>blocking</strong> (Spring MVC + Tomcat): mỗi request được gán cho một thread, và khi request gọi I/O (DB, API), thread đó <em>đứng yên chờ</em> kết quả — nó không làm gì khác, chỉ ngủ, nhưng vẫn chiếm ~1MB stack memory. Một downstream chậm 150ms = thread bị "giam" 150ms không phục vụ ai. Vì pool thread hữu hạn (~200), số request đồng thời tối đa ≈ số thread.</p>
+  <p>Trong mô hình <strong>non-blocking</strong> (WebFlux + Netty): một số ít thread "event-loop" (≈ số CPU core, vd 4-8) chạy <em>không bao giờ ngủ</em>. Khi một request cần I/O, thread <em>gửi lệnh I/O rồi quay sang xử lý request khác ngay</em>; khi I/O xong, hệ điều hành báo về (qua epoll/kqueue) và event-loop xử lý tiếp phần sau. Nhờ vậy một thread phục vụ được <em>hàng nghìn</em> connection đang chờ I/O cùng lúc.</p>
+  <pre><code class="language-text">Tomcat (Blocking):          Netty (Non-blocking):
+  ~200 threads                ~4-8 threads (= số CPU core)
+  ~200 request đồng thời       hàng chục nghìn concurrent connection
+  ~200MB RAM cho stack         ~vài MB cho event loop
+  Thread WAIT khi chờ I/O      Thread không ngủ, xử lý event liên tục</code></pre>
+  <div class="callout why"><div class="ctitle">Analogy</div><p>Blocking = một nhân viên gửi lệnh in rồi <em>đứng chờ máy in</em>, không phục vụ ai khác tới khi in xong. Non-blocking = nhân viên gửi lệnh in xong <em>quay sang phục vụ khách kế tiếp ngay</em>; khi máy in báo xong thì xử lý tiếp. Cùng một người (thread) phục vụ được nhiều khách hơn nhiều — miễn là việc chủ yếu là <em>chờ</em> (I/O), không phải <em>làm</em> (CPU).</p></div>
+</section>
 
-  <rect x="35" y="185" width="690" height="90" rx="10" fill="#ecfdf5" stroke="#059669"></rect>
-  <text x="55" y="215" font-size="13" fill="#0f172a">Non-blocking event loop</text>
-  <rect x="190" y="200" width="75" height="38" rx="6" fill="#d1fae5" stroke="#059669"></rect>
-  <text x="228" y="224" text-anchor="middle" font-size="12">start A</text>
-  <rect x="275" y="200" width="75" height="38" rx="6" fill="#d1fae5" stroke="#059669"></rect>
-  <text x="313" y="224" text-anchor="middle" font-size="12">start B</text>
-  <rect x="360" y="200" width="95" height="38" rx="6" fill="#dbeafe" stroke="#0284c7"></rect>
-  <text x="408" y="224" text-anchor="middle" font-size="12">handle C</text>
-  <rect x="465" y="200" width="115" height="38" rx="6" fill="#d1fae5" stroke="#059669"></rect>
-  <text x="523" y="224" text-anchor="middle" font-size="12">response A</text>
-  <text x="380" y="260" text-anchor="middle" font-size="12" fill="#475569">Thread không ngủ; nó xử lý event khác trong lúc remote API đang chạy.</text>
-</svg>
-<div class="caption">WebFlux thắng khi request chủ yếu là I/O wait và concurrency cao.</div>
-</div>
+<section id="streams">
+  <h2>2.2 Reactive Streams spec — hợp đồng giữa Publisher &amp; Subscriber <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>"Reactive Streams" là một <em>đặc tả</em> (không phải Java Stream!) định nghĩa cách dữ liệu async chảy giữa nguồn và đích, với một điểm then chốt: <strong>người nhận kiểm soát tốc độ</strong> (backpressure). Bốn interface:</p>
+  <pre><code class="language-text">Publisher<T>    → tạo dữ liệu (0..N item)
+Subscriber<T>   → tiêu thụ dữ liệu
+Subscription    → handle để cancel + request(n)  ← cơ chế backpressure
+Processor<T,R>  → vừa Publisher vừa Subscriber (transform)
+
+Luồng tương tác:
+  Subscriber.subscribe(Publisher)
+  Publisher → onSubscribe(Subscription)
+  Subscriber → Subscription.request(n)   ← "tôi sẵn sàng nhận n item"
+  Publisher → onNext(item) × (tối đa n)
+  Publisher → onComplete()  hoặc  onError()</code></pre>
+  <p>Điểm quan trọng: Publisher KHÔNG đẩy dữ liệu bừa — nó chỉ gửi đúng số item mà Subscriber <em>đã yêu cầu</em> qua <code>request(n)</code>. Đây là cơ sở của backpressure (2.5) — người nhận chậm thì yêu cầu ít, nguồn nhanh không làm tràn bộ nhớ.</p>
 </section>
 
 <section id="mono-flux">
-<h3>2.2 Mono và Flux</h3>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Type</th><th>Số item</th><th>Ví dụ</th><th>Ghi nhớ</th></tr></thead>
-  <tbody>
-    <tr><td><code>Mono&lt;T&gt;</code></td><td>0 hoặc 1</td><td>Find one hotel, call one API</td><td>Giống Optional async + lazy.</td></tr>
-    <tr><td><code>Flux&lt;T&gt;</code></td><td>0 đến N</td><td>Stream search results, notifications</td><td>Có thể infinite, có backpressure.</td></tr>
-  </tbody>
-</table>
-</div>
-<p><code>Mono/Flux</code> lazy: không chạy cho tới khi có subscriber. Trong controller WebFlux, framework subscribe khi gửi response.</p>
-</section>
-
-<section id="backpressure">
-<h3>2.3 Backpressure</h3>
-<p>Backpressure giải quyết producer nhanh hơn consumer. Subscriber nói <code>request(n)</code>, publisher chỉ gửi số lượng được yêu cầu thay vì đẩy vô hạn vào memory.</p>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Strategy</th><th>Hành vi</th><th>Dùng khi</th></tr></thead>
-  <tbody>
-    <tr><td>BUFFER</td><td>Giữ item trong buffer</td><td>Không muốn mất data, volume có giới hạn.</td></tr>
-    <tr><td>DROP</td><td>Bỏ item khi consumer chậm</td><td>Realtime UI, dữ liệu cũ không còn giá trị.</td></tr>
-    <tr><td>LATEST</td><td>Giữ item mới nhất</td><td>Progress/status stream.</td></tr>
-    <tr><td>ERROR</td><td>Fail nhanh khi overflow</td><td>Muốn bảo vệ hệ thống khỏi overload.</td></tr>
-  </tbody>
-</table>
-</div>
-</section>
-
-<section id="schedulers">
-<h3>2.4 Schedulers, subscribeOn, publishOn</h3>
-<p><code>subscribeOn</code> ảnh hưởng source subscription; thường dùng khi bọc blocking source. <code>publishOn</code> chuyển scheduler cho các operator phía sau nó.</p>
-<pre><code class="language-java">Mono.fromCallable(() -&gt; legacyBlockingClient.call())
-    .subscribeOn(Schedulers.boundedElastic())
-    .map(this::toDto);</code></pre>
-<p>Rule sống còn: không chạy JDBC, file I/O, <code>Thread.sleep</code>, <code>.block()</code> trên Netty event loop.</p>
+  <h2>2.3 Mono &amp; Flux — và tính LAZY <span class="k-tag core">CORE ★</span></h2>
+  <p>Project Reactor (thư viện Spring dùng) cung cấp hai Publisher chính:</p>
+  <ul>
+    <li><strong>Mono&lt;T&gt;</strong>: 0 hoặc 1 item. Giống <code>Optional&lt;T&gt;</code> nhưng async + lazy. Dùng cho "một kết quả": <code>findById</code>, một HTTP response.</li>
+    <li><strong>Flux&lt;T&gt;</strong>: 0..N item (có thể vô hạn). Giống <code>Stream&lt;T&gt;</code> nhưng async + lazy + có backpressure. Dùng cho "nhiều kết quả": query trả nhiều dòng, event stream.</li>
+  </ul>
+  <p><strong>Lazy là tính chất quan trọng nhất phải nhớ:</strong> khi bạn viết <code>Mono.just(x).map(...).flatMap(...)</code>, bạn chỉ <em>mô tả</em> một pipeline — chưa có gì chạy. Nó chỉ thực thi khi có ai gọi <code>subscribe()</code>. Trong WebFlux, framework tự subscribe khi controller <em>return</em> Mono/Flux. Hệ quả thực tế: nếu bạn tạo một Mono (vd để gọi một API ghi log) rồi <em>quên return / quên subscribe</em>, nó sẽ <em>không bao giờ chạy</em> — và không có lỗi báo ra. Đây là bug "im lặng" cực hay gặp với người mới.</p>
+  <div class="three-level">
+    <div class="tier-card t1">
+      <h3>L1 — Biết tên</h3>
+      <p>Biết "Mono = 0/1, Flux = 0/N, reactive non-blocking". <em>Symptom hiểu giả:</em> tin trả về Mono là đã reactive; tạo Mono rồi quên subscribe mà không hiểu vì sao không chạy.</p>
+    </div>
+    <div class="tier-card t2">
+      <h3>L2 — Explain được</h3>
+      <p>Giải thích event-loop phục vụ nhiều connection nhờ không block; Mono/Flux lazy chỉ chạy khi subscribe; phân biệt được map (đồng bộ) vs flatMap (async, trả Publisher) và vì sao block trong pipeline là độc.</p>
+    </div>
+    <div class="tier-card t3">
+      <h3>L3 — Apply được</h3>
+      <p>Thiết kế pipeline đúng: gọi song song bằng <code>zip</code>, chọn concatMap khi cần thứ tự, wrap blocking call trong <code>boundedElastic</code>, áp backpressure đúng strategy, và quyết định <em>có nên</em> dùng WebFlux cho bài toán này không (4.1).</p>
+    </div>
+  </div>
 </section>
 
 <section id="operators">
-<h3>2.5 Operator Map: Chọn Đúng Operator Là Nửa Trận</h3>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Operator</th><th>Dùng khi</th><th>Bẫy</th></tr></thead>
-  <tbody>
-    <tr><td><code>map</code></td><td>Transform sync từ T sang R</td><td>Không gọi async API bên trong rồi trả <code>Mono</code>.</td></tr>
-    <tr><td><code>flatMap</code></td><td>Transform async T sang <code>Mono/Flux</code></td><td>Concurrency mặc định có thể cao, cần giới hạn nếu fan-out lớn.</td></tr>
-    <tr><td><code>concatMap</code></td><td>Giữ thứ tự, xử lý lần lượt</td><td>Throughput thấp hơn flatMap.</td></tr>
-    <tr><td><code>zip</code></td><td>Chạy nhiều Mono độc lập rồi combine</td><td>Nếu một nguồn fail, toàn zip fail nếu không fallback.</td></tr>
-    <tr><td><code>switchIfEmpty</code></td><td>Fallback khi empty</td><td>Khác với error fallback.</td></tr>
-    <tr><td><code>onErrorResume</code></td><td>Fallback khi error</td><td>Đừng nuốt lỗi critical thành success giả.</td></tr>
-  </tbody>
-</table>
-</div>
+  <h2>2.4 Operators — map / flatMap / concatMap <span class="k-tag core">CORE ★</span></h2>
+  <p>Operator biến đổi pipeline. Ba cái hay nhầm nhất và là câu phỏng vấn kinh điển:</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Operator</th><th>Làm gì</th><th>Khi dùng</th></tr></thead>
+    <tbody>
+      <tr><td><code>map</code></td><td>Biến đổi item <em>đồng bộ</em> (T → R, không async)</td><td>Transform thuần: đổi DTO, format</td></tr>
+      <tr><td><code>flatMap</code></td><td>Biến đổi item thành một Mono/Flux khác (<em>async</em>), gộp kết quả — KHÔNG đảm bảo thứ tự (chạy concurrent)</td><td>Gọi API/DB cho mỗi item, không quan tâm thứ tự → nhanh nhất</td></tr>
+      <tr><td><code>concatMap</code></td><td>Như flatMap nhưng <em>giữ thứ tự</em> (subscribe tuần tự từng cái)</td><td>Cần kết quả đúng thứ tự input, chấp nhận chậm hơn</td></tr>
+      <tr><td><code>zip</code></td><td>Chờ nhiều Publisher độc lập, gộp khi tất cả emit</td><td>Gọi 4 service song song rồi gộp (3.1)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Khác biệt flatMap vs concatMap không phải tiểu tiết: dùng flatMap cho thứ tự quan trọng → kết quả bị trộn lung tung; dùng concatMap cho việc không cần thứ tự → mất hết lợi ích song song (chậm). Chọn sai là bug logic hoặc bug hiệu năng.</p>
 </section>
 
-<section id="reactor-context">
-<h3>2.6 Reactor Context: ThreadLocal Không Còn Là Câu Trả Lời Mặc Định</h3>
-<p>Reactive pipeline có thể đổi thread qua scheduler. Vì vậy correlation ID, tenant ID hoặc security metadata không nên dựa hoàn toàn vào ThreadLocal tự viết. Reactor cung cấp <code>Context</code> để truyền metadata theo subscriber.</p>
-
-<pre><code class="language-java">Mono&lt;SearchResult&gt; result = searchService.search(request)
-    .contextWrite(ctx -&gt; ctx.put("correlationId", correlationId));
-
-Mono&lt;String&gt; currentCorrelationId() {
-    return Mono.deferContextual(ctx -&gt;
-        Mono.just(ctx.getOrDefault("correlationId", "unknown")));
-}</code></pre>
-
-<p>Trong Spring Security reactive, security context cũng đi theo reactive context, không giống servlet stack dùng ThreadLocal đơn giản.</p>
-</section>
+<section id="backpressure">
+  <h2>2.5 Backpressure — chống tràn bộ nhớ <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p>Backpressure là cơ chế để <em>người nhận chậm không bị nguồn nhanh làm tràn</em>. Tình huống: producer tạo 1 triệu event/giây, consumer chỉ xử lý 1 nghìn/giây. Không có backpressure, event dồn vào buffer cho tới khi OOM (hoặc bị drop âm thầm). Với backpressure (qua <code>request(n)</code> ở 2.2), consumer chỉ yêu cầu lượng nó kham được, xử lý xong mới yêu cầu tiếp → luồng được điều tiết, không tràn.</p>
+  <pre><code class="language-text">Backpressure strategies khi buffer đầy:
+  BUFFER  → đệm event lại (mặc định — vẫn có thể OOM nếu nguồn quá nhanh quá lâu)
+  DROP    → bỏ event mới khi consumer đang bận
+  LATEST  → chỉ giữ event mới nhất, bỏ các event cũ chưa xử lý
+  ERROR   → ném OverflowException ngay</code></pre>
 </section>
 
-<section id="implementation">
-<h2>3. Production-Grade Implementation</h2>
-
-<h3>3.1 Fan-out Song Song Với WebClient</h3>
-<pre><code class="language-java">@RestController
-public class TravelSearchReactiveController {
-    private final WebClient flightClient;
-    private final WebClient hotelClient;
-    private final WebClient promotionClient;
-    private final WebClient weatherClient;
-
-    @GetMapping("/api/search")
-    public Mono&lt;SearchResult&gt; search(SearchRequest request) {
-        Mono&lt;Flights&gt; flights = flightClient.get()
-            .uri(uriBuilder -&gt; uriBuilder.path("/flights").queryParam("to", request.to()).build())
-            .retrieve()
-            .bodyToMono(Flights.class)
-            .timeout(Duration.ofMillis(600))
-            .onErrorReturn(Flights.empty());
-
-        Mono&lt;Hotels&gt; hotels = hotelClient.get()
-            .uri("/hotels?city={city}", request.city())
-            .retrieve()
-            .bodyToMono(Hotels.class)
-            .timeout(Duration.ofMillis(600))
-            .onErrorReturn(Hotels.empty());
-
-        Mono&lt;Promotions&gt; promos = promotionClient.get()
-            .uri("/promotions")
-            .retrieve()
-            .bodyToMono(Promotions.class)
-            .timeout(Duration.ofMillis(300))
-            .onErrorReturn(Promotions.empty());
-
-        Mono&lt;Weather&gt; weather = weatherClient.get()
-            .uri("/forecast?city={city}", request.city())
-            .retrieve()
-            .bodyToMono(Weather.class)
-            .timeout(Duration.ofMillis(300))
-            .onErrorReturn(Weather.unavailable());
-
-        return Mono.zip(flights, hotels, promos, weather)
-            .map(tuple -&gt; SearchResult.of(
-                tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4()));
-    }
-}</code></pre>
-
-<h3>3.2 WebClient Production Config</h3>
-<pre><code class="language-java">@Configuration
-public class WebClientConfig {
-    @Bean
-    WebClient travelWebClient(WebClient.Builder builder) {
-        ConnectionProvider provider = ConnectionProvider.builder("travel-provider")
-            .maxConnections(200)
-            .pendingAcquireTimeout(Duration.ofSeconds(2))
-            .maxIdleTime(Duration.ofSeconds(30))
-            .build();
-
-        HttpClient httpClient = HttpClient.create(provider)
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000)
-            .responseTimeout(Duration.ofSeconds(5));
-
-        return builder
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
-            .filter(correlationIdFilter())
-            .build();
-    }
-}</code></pre>
-
-<h3>3.3 Blocking Legacy Call: Cách Bọc Tạm Thời</h3>
-<pre><code class="language-java">@Service
-public class LegacyHotelAdapter {
-    private final LegacyHotelSdk sdk;
-
-    public Mono&lt;Hotels&gt; search(SearchRequest request) {
-        return Mono.fromCallable(() -&gt; sdk.search(request))
-            .subscribeOn(Schedulers.boundedElastic())
-            .timeout(Duration.ofSeconds(2));
-    }
-}</code></pre>
-<p>Đây là giải pháp chuyển tiếp. Nếu phần lớn stack vẫn blocking, MVC có thể là lựa chọn tốt hơn WebFlux.</p>
-
-<h3>3.4 Streaming Notification Với Server-Sent Events</h3>
-<pre><code class="language-java">@GetMapping(value = "/api/search/{searchId}/events",
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-public Flux&lt;ServerSentEvent&lt;SearchProgress&gt;&gt; streamProgress(@PathVariable String searchId) {
-    return progressService.stream(searchId)
-        .map(progress -&gt; ServerSentEvent.builder(progress)
-            .event("search-progress")
-            .id(progress.sequence())
-            .build())
-        .onBackpressureLatest();
-}</code></pre>
-
-<h3>3.5 Controlled Concurrency Với flatMap</h3>
-<pre><code class="language-java">public Flux&lt;ProviderResult&gt; searchManyProviders(List&lt;Provider&gt; providers, SearchRequest request) {
-    return Flux.fromIterable(providers)
-        .flatMap(provider -&gt; provider.search(request)
-            .timeout(Duration.ofMillis(700))
-            .onErrorResume(ex -&gt; Mono.just(ProviderResult.failed(provider.name()))),
-            8); // tối đa 8 provider chạy song song
-}</code></pre>
-
-<section id="error-handling">
-<h3>3.6 Error Handling, Timeout, Retry Có Kiểm Soát</h3>
-<p>Reactive error là terminal signal. Nếu một source trong <code>zip</code> fail mà không fallback, cả pipeline fail. Với fan-out provider, thường cần timeout ngắn, fallback rõ, và retry chỉ cho lỗi tạm thời.</p>
-
-<pre><code class="language-java">Mono&lt;ProviderResult&gt; callProvider(Provider provider, SearchRequest request) {
-    return provider.search(request)
-        .timeout(Duration.ofMillis(700))
-        .retryWhen(Retry.backoff(2, Duration.ofMillis(100))
-            .filter(this::isTransientError))
-        .onErrorResume(ex -&gt; Mono.just(ProviderResult.failed(provider.name())));
-}</code></pre>
-
-<div class="callout warn">
-  <div class="ctitle">Retry không miễn phí</div>
-  <p>Retry nhân tải lên dependency. Luôn có giới hạn số lần, backoff, timeout tổng và chỉ retry lỗi transient. Không retry validation error hoặc 4xx business error.</p>
-</div>
+<section id="schedulers">
+  <h2>2.6 Threading: subscribeOn vs publishOn + quy tắc vàng <span class="k-tag core">CORE ★</span></h2>
+  <p>Mặc định, pipeline reactive chạy trên thread của ai subscribe (thường là event-loop). Hai operator cho phép chuyển công việc sang thread khác — và chúng khác nhau ở <em>phạm vi ảnh hưởng</em>:</p>
+  <ul>
+    <li><strong><code>subscribeOn(scheduler)</code></strong>: ảnh hưởng <em>toàn bộ chain từ nguồn</em> (đặt ở đâu cũng tác động ngược lên source). Dùng khi <em>nguồn</em> là blocking (vd bọc một JDBC call).</li>
+    <li><strong><code>publishOn(scheduler)</code></strong>: ảnh hưởng <em>các operator SAU nó</em>. Dùng để chuyển context giữa chừng (vd: lấy data trên scheduler I/O, rồi xử lý CPU-heavy phần sau trên scheduler parallel).</li>
+  </ul>
+  <p>Các <strong>Scheduler</strong> chính: <code>boundedElastic()</code> — cho blocking I/O (JDBC, thư viện đồng bộ), tạo thread theo nhu cầu, tự thu hồi; <code>parallel()</code> — cho tính toán CPU-bound (số thread = số CPU); <code>single()</code> — một thread tuần tự; <code>immediate()</code> — thread hiện tại, không chuyển.</p>
+  <div class="callout danger"><div class="ctitle">⚠️ Quy tắc vàng: KHÔNG BAO GIỜ block trên thread event-loop</div><p>Vì chỉ có ~số-CPU thread event-loop, một thread bị block (bởi <code>Thread.sleep</code>, JDBC, <code>.block()</code>, hay bất kỳ thư viện đồng bộ nào) sẽ <em>treo toàn bộ</em> hàng nghìn connection nó đang phục vụ → "starvation" cả hệ thống. Bất kỳ blocking call bắt buộc nào phải được bọc trong <code>Schedulers.boundedElastic()</code> để đẩy sang thread riêng, không đụng event-loop. Đây là lỗi #1 khi mới dùng WebFlux.</p></div>
 </section>
 
-<section id="stepverifier">
-<h3>3.7 Test Reactive Flow Với StepVerifier</h3>
-<p>Đừng test WebFlux bằng cách gọi <code>.block()</code> khắp nơi. <code>StepVerifier</code> giúp assert signal: next, complete, error, timeout, virtual time.</p>
+<section id="parallel">
+  <h2>3.1 Parallel API calls — fix bài toán <span class="k-tag core">CORE ★</span></h2>
+  <pre><code class="language-java">// 4 service độc lập → gọi SONG SONG bằng zip → latency ≈ max(các call), không phải tổng
+public Mono&lt;ProductPage&gt; productPage(String id) {
+    Mono&lt;Product&gt;        product = productClient.get(id);          // mỗi cái non-blocking
+    Mono&lt;Reviews&gt;        reviews = reviewClient.get(id);
+    Mono&lt;Recommendation&gt; recs    = recClient.get(id)
+        .timeout(Duration.ofMillis(300))                           // chậm thì bỏ qua
+        .onErrorReturn(Recommendation.empty());                    // degrade gracefully
+    Mono&lt;Inventory&gt;      stock   = inventoryClient.get(id);
 
-<pre><code class="language-java">@Test
-void shouldFallbackWhenProviderTimeout() {
-    Mono&lt;ProviderResult&gt; result = service.callProvider(slowProvider, request);
+    return Mono.zip(product, reviews, recs, stock)                 // chờ TẤT CẢ, chạy song song
+        .map(t -&gt; new ProductPage(t.getT1(), t.getT2(), t.getT3(), t.getT4()));
+}
+// tuần tự: 150+150+150+150 = 600ms; song song (zip): ≈ 150ms — và KHÔNG giam thread khi chờ.</code></pre>
+</section>
 
-    StepVerifier.create(result)
-        .expectNextMatches(value -&gt; value.status() == ProviderStatus.FAILED)
-        .verifyComplete();
+<section id="webclient">
+  <h2>3.2 WebClient + R2DBC <span class="k-tag supp">SUPPLEMENTARY</span></h2>
+  <p><strong>WebClient</strong> là HTTP client non-blocking (thay <code>RestTemplate</code> blocking) — phải dùng nó trong WebFlux, vì <code>RestTemplate</code> block sẽ đầu độc event-loop. <strong>R2DBC</strong> là driver DB <em>reactive</em> (thay JDBC blocking) — vì JDBC vốn blocking, nếu vẫn dùng JDBC trong WebFlux thì phải bọc <code>boundedElastic</code>, còn R2DBC cho non-blocking thật từ DB.</p>
+  <pre><code class="language-java">WebClient client = WebClient.builder()
+    .baseUrl("https://api.shopflow.io")
+    .clientConnector(new ReactorClientHttpConnector(
+        HttpClient.create().responseTimeout(Duration.ofSeconds(2))))  // timeout bắt buộc
+    .build();
+
+Mono&lt;Product&gt; get(String id) {
+    return client.get().uri("/products/{id}", id)
+        .retrieve().bodyToMono(Product.class)
+        .retryWhen(Retry.backoff(2, Duration.ofMillis(100)));      // retry có backoff
+}
+
+// R2DBC reactive repository
+interface ProductRepo extends ReactiveCrudRepository&lt;Product, String&gt; {
+    Flux&lt;Product&gt; findByCategory(String cat);   // trả Flux, non-blocking từ DB
 }</code></pre>
-
-<p>Với endpoint, dùng <code>WebTestClient</code>. Với operator/pipeline thuần Reactor, dùng <code>StepVerifier</code>. Với blocking detection trong test, có thể thêm BlockHound ở mức vừa đủ.</p>
-</section>
 </section>
 
-<section id="debug">
-<h2>4. Debug Lab</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Triệu chứng</th><th>Câu hỏi</th><th>Fix</th></tr></thead>
-  <tbody>
-    <tr><td>Latency tăng khi concurrency cao</td><td>Có blocking trên event loop không?</td><td>Dùng BlockHound trong test, chuyển blocking sang boundedElastic.</td></tr>
-    <tr><td>Pipeline không chạy</td><td>Có subscriber không?</td><td>Controller return Mono/Flux, test dùng StepVerifier.</td></tr>
-    <tr><td>Error bị nuốt</td><td>Có <code>subscribe()</code> trong service không?</td><td>Return Mono và compose error handling.</td></tr>
-    <tr><td>Memory tăng</td><td>Buffer không giới hạn?</td><td>Giới hạn buffer, dùng drop/latest/error theo business.</td></tr>
-    <tr><td>Correlation ID mất sau scheduler switch</td><td>Đang dựa vào ThreadLocal?</td><td>Dùng Reactor Context hoặc integration tracing đúng.</td></tr>
-    <tr><td>Retry làm provider quá tải</td><td>Retry có backoff/limit/filter không?</td><td>Retry lỗi transient, có timeout tổng và concurrency limit.</td></tr>
-  </tbody>
-</table>
-</div>
+<section id="context">
+  <h2>3.3 Context propagation <span class="k-tag adv">ADVANCED</span></h2>
+  <p>Một cái bẫy của reactive: vì pipeline chạy trên nhiều thread khác nhau (chuyển qua scheduler), <code>ThreadLocal</code> (mà SecurityContext, MDC của log dùng) KHÔNG còn đúng — giá trị set ở thread này không thấy ở thread khác. Reactor giải bằng <strong>Reactor Context</strong> — một map gắn vào pipeline (đi theo data, không theo thread). Bạn đọc/ghi qua <code>contextWrite</code> / <code>Mono.deferContextual</code>; với MDC log thì dùng các tiện ích bắc cầu Context ↔ MDC. Quên điều này → traceId/MDC trống trong log reactive, security context null khi gọi sâu trong chain.</p>
 </section>
 
-<section id="tradeoffs">
-<h2>5. Trade-offs & Anti-Patterns</h2>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP1</span><h4><code>.block()</code> Trong WebFlux</h4></div>
-  <div class="pb"><p><code>.block()</code> giữ event-loop thread và có thể gây starvation/deadlock. Compose bằng <code>flatMap</code>, <code>zip</code>, <code>map</code> thay vì block.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP2</span><h4>Manual <code>subscribe()</code> Trong Service</h4></div>
-  <div class="pb"><p>Manual subscribe biến flow thành fire-and-forget, lỗi khó propagate, test khó. Service nên return <code>Mono/Flux</code>.</p></div>
-</div>
-<div class="pattern-card">
-  <div class="ph"><span class="badge">AP3</span><h4>Dùng WebFlux Cho CRUD JPA Đơn Giản</h4></div>
-  <div class="pb"><p>JPA blocking làm mất lợi ích chính của WebFlux. Nếu app chủ yếu CRUD với load vừa phải, Spring MVC đơn giản và dễ maintain hơn.</p></div>
-</div>
+<section id="when">
+  <h2>4.1 Khi nào KHÔNG dùng WebFlux <span class="k-tag core">CORE ★</span></h2>
+  <div class="break-it">
+    <div class="bi-head">🔧 Counter-example — WebFlux không phải mặc định tốt hơn</div>
+    <div class="bi-answer">
+      <p>WebFlux đánh đổi <em>độ phức tạp viết/debug</em> để lấy <em>khả năng chịu concurrency cao với ít thread</em>. Đổi này chỉ đáng khi bài toán thực sự cần. Đừng dùng khi:</p>
+      <ul>
+        <li><strong>Tải thấp / vừa:</strong> Spring MVC (Tomcat 200 thread) thừa sức. WebFlux không nhanh hơn mà code khó đọc, stack trace khó, học cong dốc — không đáng.</li>
+        <li><strong>CPU-bound:</strong> reactive giải bài toán <em>chờ I/O</em>; nếu request tốn CPU (mã hoá, xử lý ảnh) thì event-loop không cứu được — thậm chí block luôn event-loop.</li>
+        <li><strong>Stack còn blocking:</strong> nếu DB chỉ có JDBC (không R2DBC), thư viện đối tác blocking → bạn phải bọc <code>boundedElastic</code> khắp nơi = mất phần lớn lợi ích, lại thêm phức tạp. "Reactive nửa vời" thường tệ hơn MVC thuần.</li>
+        <li><strong>Team chưa quen:</strong> reactive bug (quên subscribe, block ẩn, context mất) rất khó debug; team non dễ tạo lỗi production khó tìm.</li>
+      </ul>
+      <p><em>Quy tắc:</em> chọn WebFlux khi <strong>I/O-bound + concurrency rất cao</strong> (API gateway, streaming, fan-out nhiều downstream) <em>và</em> toàn stack non-blocking được. Còn lại, Spring MVC (kèm CompletableFuture nếu cần song song) đơn giản và đủ.</p>
+    </div>
+  </div>
+</section>
+
+<section id="antipatterns">
+  <h2>4.2 Anti-patterns <span class="k-tag core">CORE ★</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Anti-pattern</th><th>Hậu quả</th><th>Cách đúng</th></tr></thead>
+    <tbody>
+      <tr><td>Block trong pipeline (JDBC, Thread.sleep, thư viện đồng bộ) trên event-loop</td><td>"Reactive poison" — treo cả nghìn connection trên thread đó → starvation</td><td>Bọc <code>subscribeOn(boundedElastic())</code> / dùng R2DBC, WebClient</td></tr>
+      <tr><td>Gọi <code>.block()</code> trong WebFlux context</td><td>Block event-loop; Reactor ném <code>IllegalStateException</code> ở một số chỗ</td><td>Trả về Mono/Flux, để framework subscribe</td></tr>
+      <tr><td>Tạo Mono rồi quên subscribe/return</td><td>Pipeline không chạy, không báo lỗi (bug im lặng)</td><td>Luôn return Mono/Flux từ controller; nếu side-effect thì subscribe có chủ đích</td></tr>
+      <tr><td>Dùng flatMap khi cần thứ tự</td><td>Kết quả bị trộn lung tung (vì chạy concurrent)</td><td>concatMap khi cần giữ thứ tự</td></tr>
+      <tr><td>Không handle error trong chain</td><td>Lỗi lan ra làm vỡ cả stream</td><td><code>onErrorReturn</code>/<code>onErrorResume</code> + timeout cho từng call</td></tr>
+    </tbody>
+  </table>
+  </div>
 </section>
 
 <section id="interview">
-<h2>6. Interview Framework</h2>
-<div class="tier t1">
-  <div class="tier-head"><span class="badge">Surface</span><span class="tier-title">Mono khác Flux?</span></div>
-  <p class="a"><code>Mono</code> emit 0 hoặc 1 item; <code>Flux</code> emit 0 đến N item. Cả hai lazy và async. <code>Flux</code> hỗ trợ backpressure cho stream nhiều item.</p>
-</div>
-<div class="tier t2">
-  <div class="tier-head"><span class="badge">Deep</span><span class="tier-title">subscribeOn khác publishOn?</span></div>
-  <p class="a"><code>subscribeOn</code> quyết định scheduler cho source subscription, thường dùng để bọc blocking source. <code>publishOn</code> chuyển scheduler cho các operator phía sau nó. Cần biết để không block event loop.</p>
-</div>
-<div class="tier t3">
-  <div class="tier-head"><span class="badge">Architecture</span><span class="tier-title">Khi nào chọn WebFlux thay MVC?</span></div>
-  <p class="a">Chọn WebFlux khi service I/O-bound, concurrency cao, fan-out nhiều API, streaming/SSE/WebSocket, và dependency có driver reactive. Không chọn khi team chưa quen reactive, logic CPU-bound, hoặc stack chủ yếu JPA/blocking SDK.</p>
-</div>
+  <h2>5. 3-tier interview framework</h2>
+  <div class="tier t1">
+    <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+    <p><strong>Q:</strong> WebFlux khác Spring MVC thế nào? Mono vs Flux?</p>
+    <p class="a">MVC blocking (1 thread/request, thread chờ I/O ngồi không); WebFlux non-blocking (event-loop ít thread, không ngủ, phục vụ nhiều connection). Mono = 0/1 item, Flux = 0/N item; cả hai lazy, chỉ chạy khi subscribe. WebFlux thắng khi I/O-bound + concurrency cao, không phải mọi lúc.</p>
+  </div>
+  <div class="tier t2">
+    <div class="tier-head"><span class="badge">Tầng 2 — Deep Dive</span><span class="tier-title">Senior gate</span></div>
+    <p><strong>Q:</strong> Điều gì xảy ra nếu gọi JDBC (blocking) trong một WebFlux handler? Sửa thế nào?</p>
+    <p class="a">JDBC block thread event-loop của Netty; vì chỉ có ~số-CPU thread, một thread bị giam làm treo hàng nghìn connection nó phục vụ → starvation toàn hệ thống ("reactive poison"). Fix: bọc call trong <code>Schedulers.boundedElastic()</code> để đẩy sang thread riêng, hoặc tốt hơn là dùng R2DBC (non-blocking thật). Đồng thời subscribeOn/publishOn để kiểm soát thread chạy phần nào.</p>
+  </div>
+  <div class="tier t3">
+    <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+</span></div>
+    <p><strong>Q:</strong> Khi nào chọn WebFlux thay Spring MVC cho một service mới?</p>
+    <p class="a">Chọn khi: I/O-bound (chủ yếu chờ downstream) + concurrency rất cao (API gateway, fan-out nhiều service, streaming/SSE/WebSocket) + toàn stack non-blocking khả thi (R2DBC, WebClient). KHÔNG chọn khi: tải thấp/vừa, CPU-bound, stack còn JDBC/thư viện blocking, hoặc team chưa quen (bug reactive khó debug). MVC + CompletableFuture đủ cho phần lớn trường hợp và đơn giản hơn nhiều.</p>
+  </div>
 </section>
 
-<section id="checklist">
-<h2>Checklist Thành Thạo</h2>
-<ul>
-  <li>Giải thích được vì sao blocking I/O lãng phí thread trong MVC.</li>
-  <li>Viết được flow <code>Mono.zip</code> gọi nhiều service song song với timeout/fallback.</li>
-  <li>Biết <code>Mono/Flux</code> lazy và không manual subscribe trong service.</li>
-  <li>Phân biệt <code>subscribeOn</code>, <code>publishOn</code>, <code>boundedElastic</code>, <code>parallel</code>.</li>
-  <li>Nêu được 3 trường hợp không nên dùng WebFlux.</li>
-  <li>Chọn đúng <code>map</code>, <code>flatMap</code>, <code>concatMap</code>, <code>zip</code>, <code>onErrorResume</code> theo use case.</li>
-  <li>Biết dùng Reactor Context cho metadata qua async boundary.</li>
-  <li>Viết được test reactive bằng <code>StepVerifier</code> thay vì block bừa.</li>
-</ul>
+<section id="lab">
+  <div class="build-exercise">
+    <div class="be-head">🔧 Lab bắt buộc — thấy event-loop &amp; reactive poison (2 bài)</div>
+    <div class="be-deliverable">
+      <p><strong>Lab 1 — Block đầu độc event-loop.</strong> Viết một WebFlux endpoint trả <code>Mono</code> nhưng bên trong gọi <code>Thread.sleep(200)</code> trực tiếp (không bọc scheduler). Bắn ~50 request đồng thời, đo latency tăng vọt (vì chỉ vài event-loop thread bị giam). Sửa bằng <code>Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())</code>, đo lại → cải thiện rõ. Tiêu chí: giải thích vì sao block event-loop hại hơn block thread Tomcat.</p>
+      <p><strong>Lab 2 — flatMap vs concatMap.</strong> Tạo một <code>Flux</code> các id, với mỗi id gọi một Mono có delay ngẫu nhiên. Dùng <code>flatMap</code> → quan sát kết quả ra <em>không theo thứ tự</em> input. Đổi sang <code>concatMap</code> → đúng thứ tự nhưng chậm hơn (tuần tự). Tiêu chí: nói được khi nào chọn cái nào và đánh đổi.</p>
+    </div>
+  </div>
 </section>
 
-<footer>
-  <span>Phase 2 - Spring Ecosystem</span>
-  <span>End of Phase 2</span>
-</footer>
+<section id="feynman">
+  <div class="feynman">
+    <div class="fy-head">🧠 Feynman Test — giải thích cho người chưa biết (&lt; 60s mỗi câu)</div>
+    <ol class="fy-prompt">
+      <li>Vì sao một thread "ngồi chờ DB" trong blocking model là lãng phí? Event-loop làm khác thế nào?</li>
+      <li>Mono/Flux "lazy" nghĩa là gì? Điều gì xảy ra nếu tạo Mono mà quên subscribe?</li>
+      <li>Vì sao block (JDBC/sleep) trong WebFlux là "reactive poison"? Sửa bằng gì?</li>
+      <li>subscribeOn vs publishOn khác nhau ở phạm vi nào? boundedElastic dùng cho gì?</li>
+      <li>flatMap vs concatMap khác gì? Khi nào chọn cái nào?</li>
+      <li>Khi nào KHÔNG nên dùng WebFlux?</li>
+    </ol>
+    <div class="fy-rule">Bí câu nào = quay lại đúng section. Trôi cả 6 không nhìn tài liệu = hiểu reactive đủ để dùng đúng (và biết khi nào đừng dùng).</div>
+  </div>
 
-</div>
-</main>
+  <h3>📚 Liên quan</h3>
+  <ol>
+    <li><a href="01-java-concurrency.html">#01 Concurrency</a> — thread pool, CompletableFuture (song song trên MVC).</li>
+    <li><a href="06-spring-boot.html">#06 Spring Boot</a> — cấu hình, Actuator.</li>
+    <li><a href="22-resilience-patterns.html">#22 Resilience</a> — timeout, circuit breaker, fallback trong chain.</li>
+  </ol>
+</section>
+
+    </div>
+  </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tài liệu nghiệp vụ ACH Gateway cho Backend</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --line: #d9e0ea;
+      --brand: #1f4b99;
+      --brand-2: #0e7c86;
+      --warn: #9a5b00;
+      --danger: #9b1c31;
+      --ok: #146c43;
+      --code-bg: #f1f5f9;
+      --shadow: 0 12px 30px rgba(15, 23, 42, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.65;
+    }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #17356d 0%, #0e7c86 100%);
+      color: white;
+      border-radius: 24px;
+      padding: 42px 46px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero:after {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      right: -130px;
+      top: -130px;
+      background: rgba(255,255,255,.12);
+    }
+    .hero h1 { margin: 0 0 12px; font-size: 42px; line-height: 1.15; letter-spacing: -.02em; }
+    .hero p { margin: 0; max-width: 850px; color: rgba(255,255,255,.9); font-size: 18px; }
+    .meta {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+      margin-top: 24px;
+    }
+    .toc {
+      position: sticky;
+      top: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+    }
+    .toc h2 { font-size: 16px; margin: 0 0 10px; }
+    .toc ol { padding-left: 18px; margin: 0; font-size: 14px; }
+    .toc li { margin: 7px 0; }
+    main {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 36px 42px;
+      box-shadow: var(--shadow);
+    }
+    section { padding: 8px 0 24px; border-bottom: 1px solid var(--line); }
+    section:last-child { border-bottom: none; }
+    h2 { font-size: 29px; line-height: 1.25; margin: 34px 0 14px; letter-spacing: -.015em; }
+    h3 { font-size: 22px; line-height: 1.3; margin: 26px 0 10px; }
+    h4 { font-size: 17px; margin: 20px 0 8px; }
+    p { margin: 10px 0; }
+    ul, ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 14px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top; }
+    th { background: #edf3ff; text-align: left; color: #17356d; }
+    tr:nth-child(even) td { background: #fbfcfe; }
+    .note, .warning, .danger, .success {
+      border-left: 5px solid var(--brand);
+      background: #f2f7ff;
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+    .warning { border-left-color: var(--warn); background: #fff7e8; }
+    .danger { border-left-color: var(--danger); background: #fff1f4; }
+    .success { border-left-color: var(--ok); background: #eefaf3; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fbfcff;
+    }
+    .card h4 { margin-top: 0; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 0 20px;
+      font-size: 14px;
+    }
+    .step {
+      padding: 9px 12px;
+      border: 1px solid #b8c5da;
+      border-radius: 999px;
+      background: #f8fbff;
+      white-space: nowrap;
+    }
+    .arrow { color: var(--muted); font-weight: 700; }
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--code-bg);
+      color: #334155;
+    }
+    .status.ok { color: var(--ok); background: #e9f8ef; }
+    .status.warn { color: var(--warn); background: #fff2da; }
+    .status.danger { color: var(--danger); background: #ffe8ed; }
+    .small { color: var(--muted); font-size: 13px; }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: .92em;
+    }
+    .checklist li { margin-bottom: 10px; }
+    .divider-title {
+      background: #f6f9ff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 20px;
+    }
+    .print-note { display: none; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; max-height: none; }
+      main { padding: 28px 22px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .hero { padding: 34px 26px; }
+      .hero h1 { font-size: 32px; }
+      .flow { align-items: stretch; }
+      .step { white-space: normal; }
+    }
+    @media print {
+      body { background: white; }
+      .page { max-width: none; padding: 0; }
+      .hero, main, .toc { box-shadow: none; border-radius: 0; }
+      .layout { display: block; }
+      .toc { position: static; border: none; page-break-after: always; }
+      main { border: none; padding: 0 20px; }
+      a { color: inherit; text-decoration: none; }
+      .print-note { display: block; }
+      section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Tài liệu nghiệp vụ ACH Gateway cho Backend</h1>
+      <p>Tài liệu giải thích từ căn bản đến thiết kế hệ thống: flow chuyển tiền, deposit, refund, reversal/return, copy transaction, tra soát, đối soát, trạng thái giao dịch, dữ liệu cần lưu và các lỗi nghiệp vụ thường gặp.</p>
+      <div class="meta">
+        <span class="pill">Phiên bản: 1.0</span>
+        <span class="pill">Ngày: 07/06/2026</span>
+        <span class="pill">Đối tượng: Backend, BA, QA, vận hành</span>
+        <span class="pill">Không bao gồm code mẫu</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>Mục lục</h2>
+        <ol>
+          <li><a href="#scope">Phạm vi và cách đọc</a></li>
+          <li><a href="#basic">ACH Gateway là gì?</a></li>
+          <li><a href="#actors">Vai trò và thuật ngữ</a></li>
+          <li><a href="#principles">Nguyên tắc thiết kế</a></li>
+          <li><a href="#architecture">Kiến trúc hệ thống đề xuất</a></li>
+          <li><a href="#domain-model">Domain model và dữ liệu cần lưu</a></li>
+          <li><a href="#state-machine">State machine giao dịch</a></li>
+          <li><a href="#flows-common">Flow nền tảng</a></li>
+          <li><a href="#deposit">Deposit / Inward Credit</a></li>
+          <li><a href="#refund">Refund, Return, Reversal</a></li>
+          <li><a href="#copy-transaction">Copy transaction</a></li>
+          <li><a href="#dispute">Tra soát</a></li>
+          <li><a href="#reconciliation">Đối soát và settlement</a></li>
+          <li><a href="#failure-cases">Case lỗi và xử lý</a></li>
+          <li><a href="#operations">Vận hành, bảo mật, audit</a></li>
+          <li><a href="#backend-checklist">Checklist backend</a></li>
+          <li><a href="#appendix">Phụ lục</a></li>
+          <li><a href="#sources">Nguồn tham khảo</a></li>
+        </ol>
+      </aside>
+
+      <main>
+        <section id="scope">
+          <h2>1. Phạm vi và cách đọc</h2>
+          <p>Tài liệu này nói về <strong>ACH Gateway</strong> dưới góc nhìn của một backend developer trong ngân hàng/fintech: nhận request từ channel hoặc core, validate nghiệp vụ, map message sang chuẩn bên ngoài, gửi sang ACH/NAPAS/switch, xử lý response, lưu trạng thái, phục vụ tra soát, đối soát và vận hành.</p>
+          <p>Không nên hiểu tài liệu này là spec chính thức của NAPAS, Nacha hay một tổ chức thanh toán cụ thể. Mỗi mạng thanh toán sẽ có bộ message, rule, cut-off, SLA, mã lỗi và cách settlement riêng. Khi làm thật, luôn đối chiếu với tài liệu thành viên, tài liệu kỹ thuật và quy trình vận hành nội bộ của ngân hàng.</p>
+          <div class="note">
+            <strong>Cách đọc nhanh:</strong> nếu chưa biết gì, đọc từ mục 2 đến mục 8. Nếu đang thiết kế hệ thống, đọc kỹ mục 5, 6, 7, 12, 13. Nếu đang debug tiền lệch hoặc timeout, đọc mục 10, 12, 13, 14.
+          </div>
+        </section>
+
+        <section id="basic">
+          <h2>2. ACH Gateway là gì?</h2>
+          <p><strong>ACH</strong> là Automated Clearing House: hệ thống xử lý thanh toán điện tử giữa các tổ chức tài chính, thường dùng cho giao dịch bán lẻ, giá trị thấp hoặc số lượng lớn. Trong bối cảnh Việt Nam, NAPAS là đơn vị trung gian thanh toán được cấp phép cung cấp dịch vụ chuyển mạch tài chính và bù trừ điện tử; NAPAS cũng đã chính thức ra mắt hệ thống ACH vào 06/2020 theo thông tin công bố của NAPAS.</p>
+          <p><strong>ACH Gateway</strong> là lớp hệ thống nằm giữa hệ sinh thái nội bộ của ngân hàng và mạng ACH. Nó không chỉ là API adapter. Nó là một <strong>payment control layer</strong>: kiểm soát định danh giao dịch, chống trùng, trạng thái, ghi nhận raw message, retry, timeout, tra soát, đối soát, settlement và audit.</p>
+
+          <h3>2.1 Gateway khác gì một API client?</h3>
+          <table>
+            <thead><tr><th>API client thường</th><th>ACH Gateway đúng nghĩa</th></tr></thead>
+            <tbody>
+              <tr><td>Gửi request rồi nhận response.</td><td>Quản lý vòng đời giao dịch từ lúc khởi tạo đến khi đóng sổ/settled.</td></tr>
+              <tr><td>Ít quan tâm trạng thái trung gian.</td><td>Có state machine, lịch sử trạng thái, xử lý unknown/timeout/manual review.</td></tr>
+              <tr><td>Retry đơn giản.</td><td>Retry phải có idempotency, correlation, duplicate detection và phân biệt resend/requery/reversal.</td></tr>
+              <tr><td>Log để debug.</td><td>Audit đủ phục vụ tra soát, khiếu nại, kiểm toán, đối soát và pháp lý.</td></tr>
+              <tr><td>Không quản lý settlement.</td><td>Theo dõi giao dịch đã hạch toán nội bộ, đã bù trừ, đã quyết toán hay còn lệch.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>2.2 Các nhóm nghiệp vụ thường có</h3>
+          <div class="grid-2">
+            <div class="card"><h4>Tra cứu</h4><p>Account inquiry, name inquiry, bank inquiry, check trạng thái giao dịch, query original transaction.</p></div>
+            <div class="card"><h4>Chuyển tiền / thanh toán</h4><p>Credit transfer, debit/direct debit, payment, bill payment, merchant payment, batch payment.</p></div>
+            <div class="card"><h4>Deposit / nhận tiền</h4><p>Ghi Có tài khoản khách hàng khi nhận lệnh chuyển tiền từ ACH; hoặc cash-in/top-up nếu sản phẩm dùng ACH để nạp tiền.</p></div>
+            <div class="card"><h4>Refund / return / reversal</h4><p>Hoàn tiền, trả lại giao dịch, đảo giao dịch sai, xử lý timeout hoặc phát sinh sau settlement.</p></div>
+            <div class="card"><h4>Tra soát</h4><p>Mở case điều tra khi khách hàng/đối tác báo lỗi: đã trừ tiền chưa nhận, nhận sai, duplicate, nghi gian lận.</p></div>
+            <div class="card"><h4>Đối soát</h4><p>So khớp giữa gateway, core, file/report ACH, GL/kế toán và báo cáo vận hành.</p></div>
+          </div>
+        </section>
+
+        <section id="actors">
+          <h2>3. Vai trò và thuật ngữ</h2>
+          <p>Trong tài liệu quốc tế về ACH, hay gặp các vai trò như Originator, ODFI, ACH Operator, RDFI và Receiver. Trong hệ thống NAPAS/ACH nội địa, tên gọi có thể khác, nhưng logic tương đương vẫn tồn tại: bên khởi tạo, ngân hàng gửi, mạng chuyển mạch/bù trừ, ngân hàng nhận và người nhận.</p>
+
+          <table>
+            <thead><tr><th>Thuật ngữ</th><th>Ý nghĩa nghiệp vụ</th><th>Backend cần lưu ý</th></tr></thead>
+            <tbody>
+              <tr><td>Originator</td><td>Bên khởi tạo lệnh thanh toán: khách hàng, doanh nghiệp, core banking, ví, merchant, payroll system.</td><td>Phải xác định ai chịu trách nhiệm pháp lý và ai có quyền khởi tạo.</td></tr>
+              <tr><td>ODFI / Sending Bank</td><td>Ngân hàng/tổ chức gửi lệnh vào mạng ACH.</td><td>Hệ thống của bạn có thể đóng vai trò bank gửi đối với outward transaction.</td></tr>
+              <tr><td>ACH Operator / Switch</td><td>Mạng chuyển mạch, clearing, routing, settlement.</td><td>Đây là external system cần map message, mã lỗi, cut-off, SLA.</td></tr>
+              <tr><td>RDFI / Receiving Bank</td><td>Ngân hàng/tổ chức nhận lệnh.</td><td>Hệ thống của bạn có thể đóng vai trò bank nhận đối với inward transaction.</td></tr>
+              <tr><td>Receiver / Beneficiary</td><td>Người/tài khoản nhận tiền hoặc người bị ghi nợ trong direct debit.</td><td>Thông tin người nhận cần snapshot tại thời điểm giao dịch.</td></tr>
+              <tr><td>Settlement</td><td>Quyết toán/bù trừ tiền thật giữa các tổ chức thành viên.</td><td>Không nhầm với response success; success chưa chắc đã settled.</td></tr>
+              <tr><td>Clearing</td><td>Quá trình trao đổi, kiểm tra, phân loại và tính toán nghĩa vụ thanh toán.</td><td>Cần report và reconciliation theo phiên/ngày.</td></tr>
+              <tr><td>Return</td><td>Giao dịch bị trả lại bởi ngân hàng nhận hoặc mạng do không thể/không được xử lý.</td><td>Return là lifecycle riêng, có thể sau khi original đã báo success tạm thời.</td></tr>
+              <tr><td>Reversal</td><td>Đảo giao dịch sai do lỗi nhập sai tài khoản, sai số tiền, duplicate hoặc lỗi nghiệp vụ hợp lệ theo rule.</td><td>Không dùng reversal như refund tùy tiện; thường bị giới hạn thời gian và lý do.</td></tr>
+              <tr><td>Refund</td><td>Hoàn tiền cho giao dịch đã thành công, thường là giao dịch mới liên kết original.</td><td>Refund có thể đi qua cùng rail hoặc rail khác; phải quản lý hạn mức và trạng thái riêng.</td></tr>
+              <tr><td>Tra soát</td><td>Investigation/dispute/case management khi có nghi vấn hoặc khiếu nại.</td><td>Không xử lý bằng update tay trạng thái; phải có case, evidence, action và audit.</td></tr>
+              <tr><td>Đối soát</td><td>So khớp dữ liệu giữa các hệ thống và report bên ngoài.</td><td>Là nguồn phát hiện lệch tiền quan trọng nhất sau production.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="warning">
+            <strong>Lưu ý thuật ngữ:</strong> trong một số dự án, “deposit” có thể nghĩa là nhận lệnh ghi Có từ ACH vào tài khoản khách hàng; ở dự án khác lại nghĩa là nạp tiền vào ví/tài khoản bằng ACH. Khi thiết kế, phải định nghĩa rõ deposit thuộc chiều inward hay outward, debit hay credit.
+          </div>
+        </section>
+
+        <section id="principles">
+          <h2>4. Nguyên tắc thiết kế ACH Gateway</h2>
+          <h3>4.1 Tách 4 loại trạng thái</h3>
+          <p>Một lỗi rất phổ biến là chỉ có một field <span class="kbd">status</span> rồi dùng nó cho mọi thứ. Với payment, nên tách rõ ít nhất 4 trạng thái:</p>
+          <table>
+            <thead><tr><th>Loại trạng thái</th><th>Trả lời câu hỏi</th><th>Ví dụ</th></tr></thead>
+            <tbody>
+              <tr><td>Business transaction status</td><td>Giao dịch nghiệp vụ đang ở đâu?</td><td>INIT, PROCESSING, SUCCESS, FAILED, UNKNOWN, REVERSED, REFUNDED.</td></tr>
+              <tr><td>External message status</td><td>Message gửi sang ACH đã gửi/nhận/ACK thế nào?</td><td>SENT, ACKED, NACKED, TIMEOUT, CALLBACK_RECEIVED.</td></tr>
+              <tr><td>Posting/accounting status</td><td>Tiền trong core/ledger đã được debit/credit/release chưa?</td><td>RESERVED, DEBITED, CREDITED, RELEASED, COMPENSATED.</td></tr>
+              <tr><td>Settlement/reconciliation status</td><td>Đã khớp file/report và quyết toán chưa?</td><td>UNRECONCILED, MATCHED, BREAK, SETTLED, ADJUSTED.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>4.2 Không tin response realtime là sự thật cuối cùng</h3>
+          <p>Response realtime chỉ nói rằng tại thời điểm đó mạng/đối tác trả về gì. Với payment, sự thật cuối cùng thường đến từ nhiều nguồn: core posting, ACH response, callback, query status, settlement file, reconciliation report, GL và tra soát. Vì vậy gateway cần thiết kế để sống chung với trạng thái <strong>UNKNOWN</strong>.</p>
+
+          <h3>4.3 Idempotency là bắt buộc</h3>
+          <p>Trong hệ thống thanh toán, retry là bình thường: timeout, mất mạng, callback chậm, job chạy lại, user bấm lại, channel gửi lại, message duplicate từ ACH. Do đó mọi command quan trọng phải có idempotency key và quy tắc duplicate rõ ràng.</p>
+          <ul>
+            <li>Same request, same idempotency key: trả lại kết quả cũ hoặc trạng thái đang xử lý.</li>
+            <li>Same external reference nhưng khác nội dung tiền/tài khoản: reject vì nghi duplicate/corruption.</li>
+            <li>Retry gửi message: không tạo transaction mới nếu mục tiêu là tiếp tục original.</li>
+            <li>Copy transaction: phải tạo ID mới và external reference mới, chỉ liên kết original để tham khảo.</li>
+          </ul>
+
+          <h3>4.4 Append-only cho tiền và audit</h3>
+          <p>Không nên “sửa lại lịch sử” bằng cách update amount/status cũ mà không để dấu vết. Những hành động ảnh hưởng tiền nên sinh event/adjustment mới: debit, credit, release, refund, reversal, fee adjustment, manual correction. Backend dễ debug hơn, kế toán dễ kiểm toán hơn.</p>
+
+          <h3>4.5 Phân biệt retry, requery, reverse, refund</h3>
+          <table>
+            <thead><tr><th>Hành động</th><th>Mục tiêu</th><th>Khi dùng</th><th>Rủi ro nếu dùng sai</th></tr></thead>
+            <tbody>
+              <tr><td>Retry send</td><td>Gửi lại cùng intent/message khi chưa chắc đã nhận.</td><td>Lỗi kỹ thuật trước khi có ACK hoặc theo rule idempotent của provider.</td><td>Có thể duplicate tiền nếu provider không idempotent.</td></tr>
+              <tr><td>Requery</td><td>Hỏi lại trạng thái original.</td><td>Timeout/unknown sau khi đã gửi.</td><td>Nếu query không đủ correlation, có thể đọc nhầm giao dịch.</td></tr>
+              <tr><td>Reversal</td><td>Đảo giao dịch sai theo rule.</td><td>Duplicate, sai amount, sai receiver, erroneous entry.</td><td>Bị reject, vi phạm rule, hoặc làm customer mất niềm tin.</td></tr>
+              <tr><td>Refund</td><td>Hoàn tiền như giao dịch mới.</td><td>Merchant refund, customer compensation, business cancellation.</td><td>Refund trùng hoặc refund khi original chưa success.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="architecture">
+          <h2>5. Kiến trúc hệ thống đề xuất</h2>
+          <p>Một ACH Gateway tốt nên được thiết kế theo domain rõ ràng, không dồn hết vào một service handler dài. Các module dưới đây có thể nằm trong một monolith modular hoặc nhiều service, tùy quy mô.</p>
+
+          <h3>5.1 Các module chính</h3>
+          <table>
+            <thead><tr><th>Module</th><th>Trách nhiệm</th><th>Lưu ý backend</th></tr></thead>
+            <tbody>
+              <tr><td>Channel/API Adapter</td><td>Nhận request từ mobile, internet banking, core, merchant, backoffice.</td><td>Không chứa quá nhiều rule payment; chỉ normalize input và auth.</td></tr>
+              <tr><td>Validation & Risk</td><td>Validate amount, account, bank, product, limit, blacklist, AML/fraud basic.</td><td>Tách hard reject và soft/manual review.</td></tr>
+              <tr><td>Transaction Orchestrator</td><td>Điều phối flow, tạo transaction, gọi posting, gửi ACH, xử lý result.</td><td>Nên đi qua state machine, không update tùy tiện.</td></tr>
+              <tr><td>Message Mapper</td><td>Map internal model sang message ACH/ISO8583/ISO20022/provider-specific.</td><td>Versioning theo spec; lưu raw request/response.</td></tr>
+              <tr><td>Connector</td><td>Kết nối HTTPS/MQ/SFTP/VPN/mTLS với ACH hoặc đối tác.</td><td>Timeout, circuit breaker, retry policy, signature, encryption.</td></tr>
+              <tr><td>Inbox/Outbox</td><td>Đảm bảo event/message được xử lý bền vững.</td><td>At-least-once delivery, idempotent consumer.</td></tr>
+              <tr><td>Posting/Ledger Adapter</td><td>Debit/credit/reserve/release trong core hoặc internal ledger.</td><td>Không gộp với ACH response; có trạng thái riêng.</td></tr>
+              <tr><td>Reconciliation Engine</td><td>Import file/report, match, phát hiện lệch, tạo break.</td><td>Phải lưu cả raw file và normalized records.</td></tr>
+              <tr><td>Dispute/Case Management</td><td>Tra soát, quản lý evidence, SLA, maker-checker, hành động xử lý.</td><td>Không cho sửa tay giao dịch gốc không audit.</td></tr>
+              <tr><td>Backoffice/Ops</td><td>Search transaction, retry/query/manual action, export report.</td><td>Phân quyền cực chặt; mọi action phải audit.</td></tr>
+              <tr><td>Notification</td><td>Thông báo kết quả cho channel/core/customer.</td><td>Notification thất bại không đồng nghĩa giao dịch thất bại.</td></tr>
+              <tr><td>Config/Rule Engine</td><td>Bank routing, limit, fee, cut-off, message version, calendar.</td><td>Có effective date và approval workflow.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>5.2 Luồng kiến trúc tổng quát</h3>
+          <div class="flow" aria-label="architecture flow">
+            <span class="step">Channel/Core</span><span class="arrow">→</span>
+            <span class="step">Gateway API</span><span class="arrow">→</span>
+            <span class="step">Validate/Risk</span><span class="arrow">→</span>
+            <span class="step">State Machine</span><span class="arrow">→</span>
+            <span class="step">Posting</span><span class="arrow">→</span>
+            <span class="step">Message Mapper</span><span class="arrow">→</span>
+            <span class="step">ACH Connector</span><span class="arrow">→</span>
+            <span class="step">Callback/Query</span><span class="arrow">→</span>
+            <span class="step">Recon/Settlement</span>
+          </div>
+
+          <h3>5.3 Event-driven nhưng không buông kiểm soát</h3>
+          <p>Payment thường cần event-driven vì các bước có thể đến muộn: callback, return, recon file, manual case. Tuy nhiên event-driven không có nghĩa là mất kiểm soát. Mỗi event phải có:</p>
+          <ul>
+            <li>Correlation ID liên kết với transaction gốc.</li>
+            <li>Event type rõ ràng: request accepted, funds reserved, message sent, response received, posted, return received, recon matched.</li>
+            <li>Idempotency key cho event để consumer xử lý lặp không sinh tiền hai lần.</li>
+            <li>Ordering rule: event cũ đến sau không được overwrite trạng thái mới hơn nếu không hợp lệ.</li>
+          </ul>
+
+          <h3>5.4 Không nên thiết kế theo kiểu “status string tự do”</h3>
+          <p>Backend nên có bảng trạng thái được định nghĩa rõ, allowed transition rõ, action nào được phép ở trạng thái nào rõ. Ví dụ: giao dịch <span class="status ok">SUCCESS</span> đã <span class="status ok">SETTLED</span> thì không cho retry send; chỉ cho refund/reversal nếu đủ điều kiện và tạo transaction liên kết.</p>
+        </section>
+
+        <section id="domain-model">
+          <h2>6. Domain model và dữ liệu cần lưu</h2>
+          <p>Phần này không phải thiết kế bảng vật lý bắt buộc, mà là danh sách <strong>khái niệm dữ liệu</strong> backend nên có. Tên bảng/cột tùy chuẩn dự án.</p>
+
+          <h3>6.1 Transaction chính</h3>
+          <table>
+            <thead><tr><th>Nhóm dữ liệu</th><th>Ví dụ field</th><th>Tại sao cần?</th></tr></thead>
+            <tbody>
+              <tr><td>Identity</td><td>transaction_id, business_ref, idempotency_key, correlation_id, original_transaction_id.</td><td>Truy vết, chống trùng, liên kết refund/reversal/tra soát.</td></tr>
+              <tr><td>Direction</td><td>OUTWARD, INWARD, ON_US, OFF_US.</td><td>Flow xử lý khác nhau giữa gửi đi và nhận về.</td></tr>
+              <tr><td>Payment type</td><td>CREDIT_TRANSFER, DIRECT_DEBIT, DEPOSIT, REFUND, REVERSAL, RETURN.</td><td>Rule khác nhau về posting, limit, settlement, SLA.</td></tr>
+              <tr><td>Amount</td><td>amount, currency, fee, vat, net_amount.</td><td>Đối soát tiền và hạch toán.</td></tr>
+              <tr><td>Parties</td><td>sender bank/account/name, receiver bank/account/name, merchant/customer identifiers.</td><td>Tra soát và xác minh giao dịch.</td></tr>
+              <tr><td>Status</td><td>business_status, posting_status, external_status, settlement_status.</td><td>Không lẫn response với hạch toán và settlement.</td></tr>
+              <tr><td>Time</td><td>created_at, sent_at, responded_at, posted_at, settlement_date, value_date.</td><td>Cut-off, SLA, aging, đối soát theo ngày.</td></tr>
+              <tr><td>Reason</td><td>error_code, error_message, return_reason, dispute_reason.</td><td>Mapping lỗi, báo cáo chất lượng, tra soát.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>6.2 Message log</h3>
+          <p>Mỗi giao dịch có thể phát sinh nhiều message: inquiry, payment request, ACK, response, callback, query, return, reversal, refund, recon notification. Không nên chỉ lưu raw cuối cùng.</p>
+          <ul>
+            <li>Lưu cả request và response raw, nhưng cần masking/encryption cho dữ liệu nhạy cảm.</li>
+            <li>Lưu message version, message type, direction, endpoint/queue, HTTP status hoặc transport status.</li>
+            <li>Lưu external reference: message id, original message id, trace number, retrieval/reference number, settlement date, bank code.</li>
+            <li>Lưu signature/hash để chứng minh message không bị sửa.</li>
+          </ul>
+
+          <h3>6.3 Ledger/posting event</h3>
+          <p>Nếu gateway có trách nhiệm gọi core để debit/credit/reserve, nên lưu posting event độc lập. Một transaction có thể có nhiều posting event: reserve, debit final, release, credit beneficiary, fee debit, refund credit, reversal debit/credit.</p>
+          <div class="danger">
+            <strong>Không được chỉ nhìn ACH success rồi kết luận đã trừ/ghi tiền.</strong> Có thể ACH success nhưng core posting fail, hoặc core debit success nhưng gửi ACH timeout. Đây là nguồn lệch tiền kinh điển.
+          </div>
+
+          <h3>6.4 Bảng liên kết nghiệp vụ</h3>
+          <table>
+            <thead><tr><th>Khái niệm</th><th>Mục đích</th></tr></thead>
+            <tbody>
+              <tr><td>original_transaction_link</td><td>Liên kết refund, reversal, return, copied transaction, dispute case với giao dịch gốc.</td></tr>
+              <tr><td>state_history</td><td>Lưu mọi chuyển trạng thái: from, to, reason, actor, source, timestamp.</td></tr>
+              <tr><td>idempotency_registry</td><td>Chống request trùng từ channel, job, callback, ACH.</td></tr>
+              <tr><td>reconciliation_batch</td><td>Thông tin file/report đối soát: source, date, checksum, imported_by, status.</td></tr>
+              <tr><td>reconciliation_item</td><td>Từng dòng đối soát normalized và kết quả match.</td></tr>
+              <tr><td>dispute_case</td><td>Case tra soát, SLA, reason, evidence, owner, action, final resolution.</td></tr>
+              <tr><td>manual_action_audit</td><td>Ai query/retry/refund/reverse/adjust khi nào, lý do gì, maker/checker nào duyệt.</td></tr>
+              <tr><td>partner_bank_config</td><td>Bank code, routing, service availability, message version, maintenance window.</td></tr>
+              <tr><td>business_calendar</td><td>Ngày làm việc, holiday, cut-off, settlement cycle.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>6.5 Snapshot dữ liệu tại thời điểm giao dịch</h3>
+          <p>Không chỉ lưu account_id rồi sau này join ra tên hiện tại. Tên tài khoản, bank code, product, fee, limit, exchange rate, risk result nên được snapshot tại thời điểm giao dịch. Khi tra soát sau vài tháng, dữ liệu master có thể đã thay đổi.</p>
+        </section>
+
+        <section id="state-machine">
+          <h2>7. State machine giao dịch</h2>
+          <p>State machine giúp backend biết trạng thái nào được đi tiếp, trạng thái nào là terminal, trạng thái nào cần job xử lý, trạng thái nào cần manual review.</p>
+
+          <h3>7.1 State machine outward credit transfer tham khảo</h3>
+          <div class="flow">
+            <span class="step">RECEIVED</span><span class="arrow">→</span>
+            <span class="step">VALIDATED</span><span class="arrow">→</span>
+            <span class="step">FUNDS_RESERVED / DEBITED</span><span class="arrow">→</span>
+            <span class="step">SENT_TO_ACH</span><span class="arrow">→</span>
+            <span class="step">ACKED</span><span class="arrow">→</span>
+            <span class="step">SUCCESS / FAILED / UNKNOWN</span><span class="arrow">→</span>
+            <span class="step">POSTING_FINALIZED</span><span class="arrow">→</span>
+            <span class="step">RECONCILED</span><span class="arrow">→</span>
+            <span class="step">SETTLED / CLOSED</span>
+          </div>
+
+          <table>
+            <thead><tr><th>State</th><th>Ý nghĩa</th><th>Action được phép</th></tr></thead>
+            <tbody>
+              <tr><td>RECEIVED</td><td>Gateway nhận request, chưa validate xong.</td><td>Validate, reject input, check duplicate.</td></tr>
+              <tr><td>VALIDATED</td><td>Thông tin hợp lệ về format/business rule.</td><td>Reserve/debit funds, risk check, route bank.</td></tr>
+              <tr><td>FUNDS_RESERVED</td><td>Đã giữ tiền, chưa final debit.</td><td>Send ACH, release nếu reject trước khi gửi.</td></tr>
+              <tr><td>DEBITED</td><td>Đã trừ tiền customer/internal account.</td><td>Send ACH, query nếu unknown, refund/reversal nếu cần.</td></tr>
+              <tr><td>SENT_TO_ACH</td><td>Đã gửi message ra ngoài, chưa có kết quả chắc chắn.</td><td>Chờ response/callback, query, timeout watcher.</td></tr>
+              <tr><td>ACKED</td><td>Mạng đã nhận message ở tầng kỹ thuật.</td><td>Chờ business response/settlement.</td></tr>
+              <tr><td>SUCCESS</td><td>Business response thành công.</td><td>Finalize posting, notify, chờ recon/settlement.</td></tr>
+              <tr><td>FAILED</td><td>Business response thất bại trước khi settlement.</td><td>Release/refund debit, notify, close nếu khớp.</td></tr>
+              <tr><td>UNKNOWN</td><td>Không biết kết quả cuối.</td><td>Không tự refund ngay; query, chờ callback, đưa manual review.</td></tr>
+              <tr><td>RECONCILED</td><td>Đã khớp report/file.</td><td>Mark settled hoặc tạo break nếu lệch.</td></tr>
+              <tr><td>CLOSED</td><td>Không còn action tự động.</td><td>Chỉ mở case/adjustment có kiểm soát.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>7.2 Terminal state không có nghĩa là không phát sinh nữa</h3>
+          <p>Giao dịch đã SUCCESS/CLOSED vẫn có thể phát sinh return, reversal, refund hoặc dispute. Vì vậy cần phân biệt:</p>
+          <ul>
+            <li><strong>Terminal của original flow</strong>: flow gửi tiền ban đầu đã xong.</li>
+            <li><strong>Lifecycle hậu giao dịch</strong>: return/refund/reversal/dispute/recon adjustment có thể phát sinh sau đó.</li>
+          </ul>
+
+          <h3>7.3 Unknown state là first-class citizen</h3>
+          <p>Đừng coi UNKNOWN như lỗi hiếm. Trong payment, UNKNOWN phải có thiết kế riêng: timeout watcher, query job, retry-safe, SLA, manual queue, reconciliation override và rule không tự động gây double-credit/double-debit.</p>
+        </section>
+
+        <section id="flows-common">
+          <h2>8. Flow nền tảng</h2>
+
+          <h3>8.1 Account inquiry / name inquiry</h3>
+          <p>Tra cứu tài khoản thường được dùng trước khi chuyển tiền để xác minh tài khoản người nhận có tồn tại, đang hoạt động, có chấp nhận giao dịch hay không, và tên chủ tài khoản là gì.</p>
+          <div class="flow">
+            <span class="step">Channel nhập thông tin</span><span class="arrow">→</span>
+            <span class="step">Validate format</span><span class="arrow">→</span>
+            <span class="step">Route receiving bank</span><span class="arrow">→</span>
+            <span class="step">Send inquiry</span><span class="arrow">→</span>
+            <span class="step">Receive result</span><span class="arrow">→</span>
+            <span class="step">Normalize response</span><span class="arrow">→</span>
+            <span class="step">Return to channel</span>
+          </div>
+          <h4>Lưu ý nghiệp vụ</h4>
+          <ul>
+            <li>Inquiry success không đảm bảo payment success. Tài khoản có thể bị khóa, hết hạn mức, bank offline hoặc thông tin thay đổi sau inquiry.</li>
+            <li>Không cache tên/tình trạng tài khoản quá lâu nếu dùng cho payment thật.</li>
+            <li>Không log full account number/name bừa bãi; cần masking theo chính sách bảo mật.</li>
+            <li>Cần lưu inquiry_ref để sau này chứng minh đã tra cứu trước khi chuyển, nếu rule nội bộ yêu cầu.</li>
+          </ul>
+
+          <h3>8.2 Outward credit transfer</h3>
+          <p>Đây là flow ngân hàng của bạn gửi tiền ra ngân hàng khác.</p>
+          <ol>
+            <li>Channel/core gửi request chuyển tiền.</li>
+            <li>Gateway validate: format, amount, currency, bank code, account, product, limit, fee, duplicate.</li>
+            <li>Risk/AML/fraud rule kiểm tra nếu có.</li>
+            <li>Reserve hoặc debit tiền người gửi, tùy mô hình hạch toán.</li>
+            <li>Map message và gửi sang ACH.</li>
+            <li>Nhận ACK/response/callback.</li>
+            <li>Nếu success: finalize posting, notify channel, chờ đối soát.</li>
+            <li>Nếu failed trước khi chắc chắn tiền đi: release/refund nội bộ.</li>
+            <li>Nếu timeout/unknown: query trạng thái, không tự ý gửi lại hoặc refund nếu chưa rõ.</li>
+            <li>Cuối ngày/phiên: đối soát settlement.</li>
+          </ol>
+
+          <h3>8.3 Inward transfer</h3>
+          <p>Đây là flow ngân hàng của bạn nhận lệnh từ ACH để ghi Có/ghi Nợ tài khoản khách hàng.</p>
+          <ol>
+            <li>Gateway nhận message inbound từ ACH.</li>
+            <li>Verify transport, signature, schema, duplicate message.</li>
+            <li>Validate beneficiary account/customer/product.</li>
+            <li>Post vào core: credit/debit tùy loại giao dịch.</li>
+            <li>Trả response cho ACH đúng thời hạn.</li>
+            <li>Lưu raw message, posting result, response sent.</li>
+            <li>Đối soát inbound với report ACH và core ledger.</li>
+          </ol>
+          <div class="warning">
+            <strong>Case khó:</strong> nhận message inbound, core credit thành công, nhưng response gửi ACH timeout. Nếu ACH gửi lại message duplicate, gateway phải nhận ra original đã posted và trả kết quả idempotent, không credit thêm lần nữa.
+          </div>
+
+          <h3>8.4 Direct debit / ghi Nợ</h3>
+          <p>Direct debit là flow bên nhận tiền khởi tạo yêu cầu ghi Nợ tài khoản payer, thường cần mandate/authorization trước. Đây là flow rủi ro hơn credit transfer vì customer có thể dispute “không ủy quyền”.</p>
+          <ul>
+            <li>Phải lưu thông tin mandate/authorization: ai ủy quyền, kênh nào, thời điểm nào, phạm vi nào, số tiền tối đa, hiệu lực.</li>
+            <li>Phải có rule revocation/cancel mandate.</li>
+            <li>Return unauthorized cần theo dõi riêng vì ảnh hưởng risk score và phí/phạt.</li>
+            <li>Không reinitiate giao dịch unauthorized nếu rule không cho phép.</li>
+          </ul>
+
+          <h3>8.5 Batch payment</h3>
+          <p>Batch payment là nhiều transaction trong một file/lô: payroll, supplier payment, bulk transfer. Batch có 2 tầng trạng thái: trạng thái file/lô và trạng thái từng item.</p>
+          <table>
+            <thead><tr><th>Tầng</th><th>Trạng thái ví dụ</th><th>Lưu ý</th></tr></thead>
+            <tbody>
+              <tr><td>Batch</td><td>UPLOADED, VALIDATING, PARTIALLY_ACCEPTED, SENT, REJECTED, SETTLED.</td><td>Batch rejected không đồng nghĩa mọi item đều chưa xử lý nếu lỗi xảy ra giữa chừng.</td></tr>
+              <tr><td>Item</td><td>VALID, INVALID, SENT, SUCCESS, FAILED, RETURNED, REFUNDED.</td><td>Đối soát và tra soát thường ở level item.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="deposit">
+          <h2>9. Deposit / Inward Credit</h2>
+          <p>Trong ACH Gateway, “deposit” thường rơi vào một trong hai nghĩa sau:</p>
+          <ul>
+            <li><strong>Inward credit deposit:</strong> ngân hàng của bạn nhận lệnh từ ACH và ghi Có tài khoản khách hàng.</li>
+            <li><strong>Cash-in/top-up deposit:</strong> khách hàng nạp tiền vào tài khoản/ví/sản phẩm của bạn thông qua ACH rail.</li>
+          </ul>
+
+          <h3>9.1 Flow inward credit deposit</h3>
+          <div class="flow">
+            <span class="step">ACH sends credit</span><span class="arrow">→</span>
+            <span class="step">Gateway verifies</span><span class="arrow">→</span>
+            <span class="step">Duplicate check</span><span class="arrow">→</span>
+            <span class="step">Account validation</span><span class="arrow">→</span>
+            <span class="step">Credit core</span><span class="arrow">→</span>
+            <span class="step">Send response</span><span class="arrow">→</span>
+            <span class="step">Recon</span>
+          </div>
+
+          <h4>Business rule quan trọng</h4>
+          <ul>
+            <li>Nếu account không tồn tại/không nhận được tiền: reject/return theo mã lỗi provider.</li>
+            <li>Nếu duplicate message: không credit lại, trả kết quả dựa trên original.</li>
+            <li>Nếu account bị hạn chế: có thể reject, hold, hoặc đưa manual review tùy rule nội bộ.</li>
+            <li>Nếu credit core thành công nhưng response ra ngoài fail: mark <span class="status warn">POSTED_RESPONSE_UNKNOWN</span>, chờ duplicate/callback/recon, không tự reverse.</li>
+            <li>Nếu response success nhưng core chưa credit do lỗi async: mark break nghiêm trọng, cần auto-repair hoặc manual escalation.</li>
+          </ul>
+
+          <h3>9.2 Flow cash-in/top-up deposit</h3>
+          <p>Ở sản phẩm ví hoặc tài khoản nội bộ, deposit có thể là khách hàng kéo tiền từ ngân hàng khác vào hệ thống của bạn. Khi đó logic thường giống direct debit hoặc credit push tùy mô hình.</p>
+          <ol>
+            <li>Khách hàng tạo yêu cầu nạp tiền.</li>
+            <li>Gateway kiểm tra mandate/liên kết tài khoản nếu là debit pull.</li>
+            <li>Tạo transaction deposit với amount, source bank, target wallet/account.</li>
+            <li>Gửi request sang ACH hoặc chờ incoming credit.</li>
+            <li>Khi tiền chắc chắn nhận/settled hoặc theo rule prefunding, credit balance nội bộ.</li>
+            <li>Đối soát với report ACH và ledger ví/core.</li>
+          </ol>
+
+          <div class="danger">
+            <strong>Không credit ví quá sớm nếu rail có rủi ro return.</strong> Nếu business buộc credit realtime, cần có reserve/risk limit/negative balance policy để xử lý return sau đó.
+          </div>
+
+          <h3>9.3 Các case deposit hay lỗi</h3>
+          <table>
+            <thead><tr><th>Case</th><th>Dấu hiệu</th><th>Cách xử lý</th></tr></thead>
+            <tbody>
+              <tr><td>Duplicate inbound</td><td>Cùng external reference/message id/amount/beneficiary.</td><td>Trả idempotent response, không post thêm.</td></tr>
+              <tr><td>Wrong beneficiary</td><td>Account tồn tại nhưng tên không khớp rule.</td><td>Tuỳ policy: reject, hold, hoặc manual review.</td></tr>
+              <tr><td>Posting timeout</td><td>Core không trả lời sau khi gateway nhận inbound.</td><td>Query core trước; không gửi success nếu chưa chắc đã post, trừ khi có cơ chế async đảm bảo.</td></tr>
+              <tr><td>Late return</td><td>Giao dịch deposit đã credit nhưng sau đó bị return.</td><td>Tạo return/reversal/adjustment liên kết original; không sửa âm thầm original.</td></tr>
+              <tr><td>Recon missing</td><td>Core có credit nhưng ACH report không có, hoặc ngược lại.</td><td>Tạo reconciliation break và case điều tra.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="refund">
+          <h2>10. Refund, Return, Reversal</h2>
+          <p>Ba khái niệm này hay bị dùng lẫn. Với backend payment, phải tách rõ vì rule, message, hạch toán và rủi ro khác nhau.</p>
+
+          <h3>10.1 So sánh nhanh</h3>
+          <table>
+            <thead><tr><th>Loại</th><th>Bản chất</th><th>Ai khởi tạo?</th><th>Khi nào dùng?</th><th>Thiết kế dữ liệu</th></tr></thead>
+            <tbody>
+              <tr><td>Refund</td><td>Giao dịch mới để hoàn tiền.</td><td>Merchant/bank/backoffice/system.</td><td>Hủy đơn, hoàn dịch vụ, goodwill, compensation.</td><td>New transaction, linked original, refund amount, reason, approval.</td></tr>
+              <tr><td>Return</td><td>Trả lại giao dịch qua network vì không xử lý được/không được phép.</td><td>Receiving bank/network/customer dispute tùy loại.</td><td>Invalid account, closed account, unauthorized debit, insufficient funds, reject after presentment.</td><td>Return record linked original, return reason, return settlement date.</td></tr>
+              <tr><td>Reversal</td><td>Đảo giao dịch sai theo rule.</td><td>Originator/sending bank hoặc hệ thống theo quy trình.</td><td>Duplicate, sai amount, sai receiver, erroneous entry.</td><td>Reversal transaction linked original, reason, deadline, approval, evidence.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>10.2 Refund flow</h3>
+          <div class="flow">
+            <span class="step">Refund request</span><span class="arrow">→</span>
+            <span class="step">Check original</span><span class="arrow">→</span>
+            <span class="step">Check refundable amount</span><span class="arrow">→</span>
+            <span class="step">Approval if needed</span><span class="arrow">→</span>
+            <span class="step">Create refund transaction</span><span class="arrow">→</span>
+            <span class="step">Post/send ACH</span><span class="arrow">→</span>
+            <span class="step">Recon</span>
+          </div>
+          <h4>Rule cần có</h4>
+          <ul>
+            <li>Original phải ở trạng thái đủ điều kiện: thường là SUCCESS/SETTLED hoặc đã debit/credit chắc chắn.</li>
+            <li>Tổng refund không vượt quá amount gốc, trừ khi có rule bồi hoàn/fee riêng.</li>
+            <li>Cho phép partial refund hay chỉ full refund?</li>
+            <li>Refund có đi cùng rail ACH không, hay hạch toán nội bộ?</li>
+            <li>Refund có cần maker-checker không?</li>
+            <li>Refund timeout phải đi vào UNKNOWN và query/recon, không bấm refund lại tạo giao dịch mới.</li>
+          </ul>
+
+          <h3>10.3 Reversal flow</h3>
+          <p>Reversal nên được dùng cho erroneous entry, không phải công cụ “undo mọi thứ”. Trong ACH của Mỹ, Nacha nêu rằng reversal phải được truyền sao cho RDFI nhận trong vòng 5 banking days sau settlement date của erroneous entry. Mạng khác có thể có thời hạn khác, nên phải cấu hình theo provider.</p>
+          <ol>
+            <li>Phát hiện lỗi: duplicate, sai amount, sai account, sai ngày, sai người nhận.</li>
+            <li>Kiểm tra thời hạn reversal và reason có hợp lệ.</li>
+            <li>Kiểm tra original đã đi ra network và trạng thái hiện tại.</li>
+            <li>Freeze manual action khác trên original để tránh refund/reversal trùng.</li>
+            <li>Tạo reversal transaction liên kết original.</li>
+            <li>Gửi message reversal/adjustment theo rule provider.</li>
+            <li>Nhận response và đối soát reversal.</li>
+            <li>Cập nhật trạng thái original: REVERSED/PARTIALLY_REVERSED/REVERSAL_FAILED.</li>
+          </ol>
+
+          <h3>10.4 Return flow</h3>
+          <p>Return thường phát sinh từ phía nhận hoặc network. Backend phải xử lý return như một event đến muộn, không giả định original còn ở trạng thái processing.</p>
+          <ol>
+            <li>Nhận return message/file/report.</li>
+            <li>Match với original bằng external reference/original msg id/amount/date/parties.</li>
+            <li>Kiểm tra return reason và thời hạn.</li>
+            <li>Apply accounting: debit lại người đã được credit, release/refund người bị debit, hoặc đưa vào suspense nếu không thể hạch toán ngay.</li>
+            <li>Cập nhật original và tạo return record.</li>
+            <li>Notify channel/customer nếu policy yêu cầu.</li>
+            <li>Đối soát return settlement.</li>
+          </ol>
+
+          <h3>10.5 Ma trận xử lý khi refund/reversal/return đụng nhau</h3>
+          <table>
+            <thead><tr><th>Tình huống</th><th>Rủi ro</th><th>Rule khuyến nghị</th></tr></thead>
+            <tbody>
+              <tr><td>Original đang UNKNOWN, user đòi refund.</td><td>Refund trùng nếu original thực ra success.</td><td>Chỉ cho mở case/query; refund cần approval đặc biệt hoặc chờ xác minh.</td></tr>
+              <tr><td>Đã refund xong, sau đó nhận return của original.</td><td>Customer nhận tiền hai lần.</td><td>Recon break nghiêm trọng; cần recovery/adjustment.</td></tr>
+              <tr><td>Đang reversal pending, ops bấm refund.</td><td>Double compensation.</td><td>Lock original theo action group; chỉ một action tiền được active.</td></tr>
+              <tr><td>Partial refund nhiều lần.</td><td>Vượt amount gốc.</td><td>Maintain refundable balance = original amount - successful refunds - pending refunds.</td></tr>
+              <tr><td>Return không match original.</td><td>Không biết hạch toán vào đâu.</td><td>Đưa suspense/unmatched return, mở recon break và case tra soát.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="copy-transaction">
+          <h2>11. Copy transaction</h2>
+          <p>“Copy transaction” thường là chức năng backoffice/channel dùng để tạo một giao dịch mới dựa trên thông tin giao dịch cũ. Nó rất tiện cho vận hành, nhưng cực nguy hiểm nếu copy cả định danh external hoặc trạng thái.</p>
+
+          <h3>11.1 Copy transaction không phải retry</h3>
+          <table>
+            <thead><tr><th>Retry</th><th>Copy transaction</th></tr></thead>
+            <tbody>
+              <tr><td>Cùng business intent, tiếp tục xử lý original.</td><td>Tạo business intent mới dựa trên dữ liệu cũ.</td></tr>
+              <tr><td>Không sinh transaction_id mới nếu hệ thống đang retry cùng request.</td><td>Luôn sinh transaction_id mới.</td></tr>
+              <tr><td>Giữ idempotency/correlation của original theo rule.</td><td>Có idempotency/external reference mới.</td></tr>
+              <tr><td>Dùng cho lỗi kỹ thuật/tạm thời.</td><td>Dùng cho user muốn làm lại giao dịch hoặc ops tạo lệnh thay thế.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>11.2 Những field được copy và không được copy</h3>
+          <table>
+            <thead><tr><th>Nên copy</th><th>Không được copy</th><th>Cần cân nhắc</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Receiver bank/account/name snapshot, amount đề xuất, currency, remittance info, product type.</td>
+                <td>transaction_id, msg_id, trace number, system trace, retrieval/reference number, idempotency key, settlement date, status, raw message, signature.</td>
+                <td>Fee, exchange rate, limit result, risk result, account name inquiry result, purpose code.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>11.3 Flow copy transaction an toàn</h3>
+          <ol>
+            <li>User/ops chọn transaction gốc.</li>
+            <li>Hệ thống kiểm tra quyền copy và trạng thái original.</li>
+            <li>Tạo draft transaction mới, chỉ prefill field được phép.</li>
+            <li>Chạy lại validation, limit, fee, risk, account inquiry nếu cần.</li>
+            <li>User xác nhận.</li>
+            <li>Gateway tạo ID/reference mới và xử lý như transaction mới.</li>
+            <li>Lưu link <span class="kbd">copied_from_transaction_id</span> để audit.</li>
+          </ol>
+
+          <div class="danger">
+            <strong>Không bao giờ copy raw message rồi gửi lại nguyên xi.</strong> Message cũ chứa ID, timestamp, signature, trace và settlement context cũ. Gửi lại có thể bị reject hoặc tệ hơn là duplicate payment khó kiểm soát.
+          </div>
+        </section>
+
+        <section id="dispute">
+          <h2>12. Tra soát</h2>
+          <p><strong>Tra soát</strong> là quá trình điều tra và xử lý một giao dịch có nghi vấn, khiếu nại hoặc lệch thông tin. Tra soát không phải là “update status bằng tay”. Nó là một case management workflow có evidence, SLA, owner, action và kết quả cuối.</p>
+
+          <h3>12.1 Nguồn phát sinh tra soát</h3>
+          <ul>
+            <li>Khách hàng báo đã bị trừ tiền nhưng người nhận chưa nhận.</li>
+            <li>Người nhận báo chưa nhận dù bên gửi báo thành công.</li>
+            <li>Giao dịch bị duplicate debit/credit.</li>
+            <li>Sai số tiền, sai người nhận, sai nội dung.</li>
+            <li>Timeout/UNKNOWN quá SLA.</li>
+            <li>Reconciliation phát hiện lệch.</li>
+            <li>ACH/NAPAS/ngân hàng đối tác gửi inquiry/request.</li>
+            <li>Nghi ngờ gian lận hoặc unauthorized debit.</li>
+          </ul>
+
+          <h3>12.2 Loại case tra soát</h3>
+          <table>
+            <thead><tr><th>Case type</th><th>Mô tả</th><th>Evidence cần lấy</th></tr></thead>
+            <tbody>
+              <tr><td>BENEFICIARY_NOT_CREDITED</td><td>Bên gửi success nhưng người nhận nói chưa nhận.</td><td>ACH response, receiving bank response, settlement report, beneficiary posting proof.</td></tr>
+              <tr><td>SENDER_DEBITED_NO_RESULT</td><td>Người gửi bị trừ tiền nhưng giao dịch timeout/unknown.</td><td>Core debit event, outgoing message log, query status, ACH report.</td></tr>
+              <tr><td>DUPLICATE_TRANSACTION</td><td>Cùng giao dịch bị xử lý hai lần.</td><td>Idempotency keys, external refs, core ledger, ACH refs, user action logs.</td></tr>
+              <tr><td>WRONG_ACCOUNT</td><td>Gửi nhầm tài khoản hoặc account mapping sai.</td><td>Inquiry result, original request, confirmation screen, customer authorization.</td></tr>
+              <tr><td>AMOUNT_MISMATCH</td><td>Số tiền giữa các hệ thống không khớp.</td><td>Request amount, fee, core posting, ACH amount, settlement amount.</td></tr>
+              <tr><td>UNAUTHORIZED_DEBIT</td><td>Khách hàng phủ nhận ủy quyền ghi Nợ.</td><td>Mandate/authorization, consent evidence, device/IP/channel logs.</td></tr>
+              <tr><td>REFUND_NOT_RECEIVED</td><td>Refund đã tạo nhưng customer chưa nhận.</td><td>Refund transaction, original link, ACH refund response, receiving bank evidence.</td></tr>
+              <tr><td>RECON_BREAK</td><td>Lệch phát hiện qua đối soát.</td><td>Recon item, source file, normalized keys, transaction and posting events.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>12.3 Lifecycle case tra soát</h3>
+          <div class="flow">
+            <span class="step">OPEN</span><span class="arrow">→</span>
+            <span class="step">CLASSIFY</span><span class="arrow">→</span>
+            <span class="step">COLLECT_EVIDENCE</span><span class="arrow">→</span>
+            <span class="step">QUERY/PARTNER_REQUEST</span><span class="arrow">→</span>
+            <span class="step">ANALYZE</span><span class="arrow">→</span>
+            <span class="step">PROPOSE_ACTION</span><span class="arrow">→</span>
+            <span class="step">APPROVE</span><span class="arrow">→</span>
+            <span class="step">EXECUTE</span><span class="arrow">→</span>
+            <span class="step">CLOSE</span>
+          </div>
+
+          <h4>Giải thích từng bước</h4>
+          <ol>
+            <li><strong>Open:</strong> tạo case, ghi nguồn yêu cầu, customer, transaction liên quan, SLA.</li>
+            <li><strong>Classify:</strong> xác định case type, severity, cần xử lý tiền ngay hay điều tra trước.</li>
+            <li><strong>Collect evidence:</strong> gom raw message, core posting, status history, recon result, log, chứng từ.</li>
+            <li><strong>Query/partner request:</strong> gửi query status hoặc inquiry tới ACH/ngân hàng đối tác nếu cần.</li>
+            <li><strong>Analyze:</strong> so sánh evidence để xác định tiền đang nằm ở đâu và ai chịu trách nhiệm.</li>
+            <li><strong>Propose action:</strong> refund, reversal, return, repost, manual adjustment, reject claim, hoặc escalate.</li>
+            <li><strong>Approve:</strong> maker-checker với hạn mức và phân quyền.</li>
+            <li><strong>Execute:</strong> hệ thống tạo transaction/action mới, không sửa tay original.</li>
+            <li><strong>Close:</strong> ghi kết luận, thông báo, attach evidence, chốt SLA.</li>
+          </ol>
+
+          <h3>12.4 Hành động xử lý sau tra soát</h3>
+          <table>
+            <thead><tr><th>Action</th><th>Khi dùng</th><th>Lưu ý</th></tr></thead>
+            <tbody>
+              <tr><td>Query status</td><td>Giao dịch unknown hoặc thông tin không đủ.</td><td>Không làm thay đổi tiền, chỉ cập nhật evidence/status.</td></tr>
+              <tr><td>Refund customer</td><td>Ngân hàng quyết định hoàn tiền cho customer.</td><td>Phải tạo refund transaction và track recoverable nếu cần thu hồi từ đối tác.</td></tr>
+              <tr><td>Reversal</td><td>Giao dịch sai có rule reversal hợp lệ.</td><td>Kiểm tra thời hạn và reason.</td></tr>
+              <tr><td>Return/Reject</td><td>Inbound không xử lý được hoặc unauthorized.</td><td>Phải dùng đúng return reason.</td></tr>
+              <tr><td>Repost</td><td>Tiền đã nhận đúng nhưng posting nội bộ fail.</td><td>Repost phải idempotent, có approval nếu ảnh hưởng tiền.</td></tr>
+              <tr><td>Manual GL adjustment</td><td>Lệch kế toán không thể xử lý bằng payment message.</td><td>Chỉ finance/ops được phép, audit cực chặt.</td></tr>
+              <tr><td>Reject claim</td><td>Evidence chứng minh giao dịch đúng.</td><td>Cần lý do rõ và tài liệu phản hồi.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>12.5 Thiết kế case management</h3>
+          <ul class="checklist">
+            <li><strong>Case không chỉ là text note.</strong> Nó phải liên kết transaction, message, posting, recon item, customer và partner request.</li>
+            <li><strong>Có SLA và aging.</strong> Case quá hạn cần escalation.</li>
+            <li><strong>Có severity.</strong> Lệch tiền lớn, duplicate credit, suspected fraud phải ưu tiên cao.</li>
+            <li><strong>Có maker-checker.</strong> Người tạo đề xuất refund/reversal không nên là người duyệt.</li>
+            <li><strong>Có action lock.</strong> Khi một refund/reversal đang pending, không cho tạo action tiền khác trên cùng original nếu không có override.</li>
+            <li><strong>Có evidence snapshot.</strong> Evidence lấy lúc điều tra cần lưu lại, vì dữ liệu gốc có thể thay đổi.</li>
+            <li><strong>Có communication log.</strong> Lưu thông tin đã gửi/nhận từ đối tác, khách hàng, branch, ACH.</li>
+          </ul>
+        </section>
+
+        <section id="reconciliation">
+          <h2>13. Đối soát và settlement</h2>
+          <p><strong>Đối soát</strong> là quá trình so khớp dữ liệu giữa các hệ thống để đảm bảo không lệch tiền, lệch trạng thái, lệch phí hoặc thiếu giao dịch. Với ACH Gateway, đối soát là chức năng sống còn, không phải report phụ.</p>
+
+          <h3>13.1 Các nguồn dữ liệu cần đối soát</h3>
+          <table>
+            <thead><tr><th>Nguồn</th><th>Chứa gì?</th><th>Vai trò</th></tr></thead>
+            <tbody>
+              <tr><td>Gateway transaction DB</td><td>Transaction, status, external refs, amount, parties.</td><td>Trung tâm nghiệp vụ của gateway.</td></tr>
+              <tr><td>Gateway message log</td><td>Raw request/response/callback/query.</td><td>Chứng cứ kỹ thuật và mapping.</td></tr>
+              <tr><td>Core banking / ledger</td><td>Debit/credit/reserve/release/fee.</td><td>Sự thật nội bộ về tiền khách hàng.</td></tr>
+              <tr><td>ACH/NAPAS report/file</td><td>Transaction processed, return, settlement, fee, batch.</td><td>Sự thật từ mạng thanh toán.</td></tr>
+              <tr><td>GL/accounting</td><td>Bút toán tổng hợp, clearing account, suspense account.</td><td>Sự thật kế toán.</td></tr>
+              <tr><td>Partner/receiving bank report</td><td>Confirmation từ đối tác nếu có.</td><td>Bổ sung cho tra soát hoặc dispute.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>13.2 Các tầng đối soát</h3>
+          <ol>
+            <li><strong>Technical reconciliation:</strong> message gửi đi có ACK/response/callback đầy đủ không?</li>
+            <li><strong>Business reconciliation:</strong> trạng thái transaction trong gateway có khớp trạng thái ACH không?</li>
+            <li><strong>Posting reconciliation:</strong> gateway success/failed có khớp core debit/credit/release không?</li>
+            <li><strong>Settlement reconciliation:</strong> amount và fee trong settlement file có khớp expected settlement không?</li>
+            <li><strong>GL reconciliation:</strong> tổng tiền clearing/suspense/fee có khớp sổ kế toán không?</li>
+          </ol>
+
+          <h3>13.3 Flow đối soát đề xuất</h3>
+          <div class="flow">
+            <span class="step">Receive file/report</span><span class="arrow">→</span>
+            <span class="step">Verify checksum/schema</span><span class="arrow">→</span>
+            <span class="step">Normalize records</span><span class="arrow">→</span>
+            <span class="step">Deterministic match</span><span class="arrow">→</span>
+            <span class="step">Detect breaks</span><span class="arrow">→</span>
+            <span class="step">Auto-resolve safe cases</span><span class="arrow">→</span>
+            <span class="step">Manual queue</span><span class="arrow">→</span>
+            <span class="step">Close batch</span>
+          </div>
+
+          <h3>13.4 Matching key</h3>
+          <p>Matching nên ưu tiên key chính xác, không match mơ hồ ngay từ đầu.</p>
+          <table>
+            <thead><tr><th>Độ ưu tiên</th><th>Key</th><th>Lưu ý</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>External transaction reference/message id/original msg id</td><td>Key tốt nhất nếu provider đảm bảo unique.</td></tr>
+              <tr><td>2</td><td>Trace number + settlement date + sending/receiving bank</td><td>Cần cẩn thận nếu trace reset theo ngày.</td></tr>
+              <tr><td>3</td><td>Amount + currency + account + date + bank + service type</td><td>Dùng cho fuzzy candidate, cần manual/score.</td></tr>
+              <tr><td>4</td><td>Batch id + item sequence</td><td>Hữu ích cho batch/file.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>13.5 Các loại reconciliation break</h3>
+          <table>
+            <thead><tr><th>Break type</th><th>Ví dụ</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>MISSING_IN_GATEWAY</td><td>ACH report có giao dịch nhưng gateway không có.</td><td>Kiểm tra inbound/callback lost, import bổ sung hoặc mở case.</td></tr>
+              <tr><td>MISSING_IN_ACH</td><td>Gateway gửi success nhưng ACH report không có.</td><td>Query ACH, kiểm tra message log, có thể reverse/refund nếu xác nhận không đi.</td></tr>
+              <tr><td>MISSING_IN_CORE</td><td>Gateway/ACH success nhưng core không debit/credit.</td><td>Repost hoặc manual posting có approval.</td></tr>
+              <tr><td>AMOUNT_MISMATCH</td><td>Amount gateway khác settlement/core.</td><td>Kiểm tra fee, currency, partial return/refund, data corruption.</td></tr>
+              <tr><td>STATUS_MISMATCH</td><td>Gateway failed nhưng ACH settled success.</td><td>Ưu tiên bảo vệ tiền: kiểm tra posting, bồi hoàn/recover.</td></tr>
+              <tr><td>DUPLICATE</td><td>Hai record cùng external reference hoặc cùng payment intent.</td><td>Lock action, điều tra double posting.</td></tr>
+              <tr><td>FEE_MISMATCH</td><td>Phí report khác expected fee.</td><td>Điều chỉnh fee config hoặc GL adjustment.</td></tr>
+              <tr><td>LATE_RETURN</td><td>Return đến sau khi original đã close.</td><td>Tạo return event và adjustment liên kết original.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>13.6 Auto-resolve vs manual resolve</h3>
+          <p>Không phải break nào cũng cần người xử lý. Nhưng chỉ auto-resolve khi rule an toàn và có bằng chứng đủ mạnh.</p>
+          <table>
+            <thead><tr><th>Có thể auto</th><th>Nên manual</th></tr></thead>
+            <tbody>
+              <tr><td>Callback đến muộn nhưng khớp hoàn toàn với ACH report và core posting.</td><td>Amount mismatch, missing core posting, duplicate credit/debit.</td></tr>
+              <tr><td>Gateway UNKNOWN nhưng ACH report success và core đã debit/credit đúng.</td><td>Gateway failed nhưng ACH settled success.</td></tr>
+              <tr><td>Fee difference do fee config đã có effective date rõ.</td><td>Return không match original.</td></tr>
+              <tr><td>Record duplicate trong file do import lại cùng checksum.</td><td>Suspected fraud/unauthorized debit.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>13.7 Settlement không chỉ là đổi status</h3>
+          <p>Khi một giao dịch được settlement, hệ thống có thể cần:</p>
+          <ul>
+            <li>Mark transaction settlement_status = SETTLED.</li>
+            <li>Update clearing account/GL nếu gateway quản lý bút toán.</li>
+            <li>Close pending reserve hoặc suspense.</li>
+            <li>Ghi settlement batch/item id.</li>
+            <li>Khóa một số action như retry, nhưng vẫn cho phép dispute/refund theo rule.</li>
+          </ul>
+        </section>
+
+        <section id="failure-cases">
+          <h2>14. Case lỗi và xử lý</h2>
+
+          <h3>14.1 Timeout khi gửi ACH</h3>
+          <table>
+            <thead><tr><th>Trạng thái thật</th><th>Gateway thấy gì?</th><th>Xử lý đúng</th></tr></thead>
+            <tbody>
+              <tr><td>ACH chưa nhận message.</td><td>HTTP timeout.</td><td>Có thể retry nếu transport đảm bảo chưa nhận hoặc provider idempotent.</td></tr>
+              <tr><td>ACH đã nhận và xử lý success.</td><td>HTTP timeout.</td><td>Query status/callback/recon, không resend như transaction mới.</td></tr>
+              <tr><td>ACH đã nhận nhưng reject.</td><td>HTTP timeout.</td><td>Query để lấy final result, sau đó release/refund nếu failed.</td></tr>
+            </tbody>
+          </table>
+          <p>Rule backend: sau khi request đã rời hệ thống, nếu không có bằng chứng chắc chắn là chưa nhận, hãy xem nó là <span class="status warn">UNKNOWN</span>.</p>
+
+          <h3>14.2 Debit success, ACH failed</h3>
+          <p>Nếu đã trừ tiền người gửi nhưng ACH trả failed chắc chắn trước settlement, cần release hoặc refund debit tùy mô hình. Nếu failed không chắc chắn, phải query trước. Mọi bồi hoàn phải có posting event và audit.</p>
+
+          <h3>14.3 ACH success, core credit failed</h3>
+          <p>Đây là lỗi nghiêm trọng ở inbound/deposit. Tiền từ network có thể đã về nghĩa vụ của ngân hàng, nhưng customer chưa được credit. Cần:</p>
+          <ul>
+            <li>Mark break severity high.</li>
+            <li>Retry/repost core theo idempotency.</li>
+            <li>Nếu core không thể post, đưa vào suspense và mở case manual.</li>
+            <li>Không trả success cho customer nếu chưa có evidence posting, trừ khi business chấp nhận eventual posting và có job đảm bảo.</li>
+          </ul>
+
+          <h3>14.4 Response success nhưng notify channel fail</h3>
+          <p>Notification fail không làm giao dịch fail. Gateway nên lưu notification status riêng và cho channel query lại. Không refund chỉ vì mobile không nhận được response.</p>
+
+          <h3>14.5 Duplicate request từ channel</h3>
+          <p>Ví dụ mobile gửi lại vì timeout. Nếu cùng idempotency key và payload, trả lại transaction cũ. Nếu cùng key nhưng payload khác, reject. Nếu không có key nhưng giống mạnh về amount/account/time/user, có thể đưa duplicate suspicion hoặc yêu cầu confirm.</p>
+
+          <h3>14.6 Duplicate inbound từ ACH</h3>
+          <p>ACH hoặc partner có thể gửi lại message vì không nhận ACK. Gateway phải check external message id/original ref/amount/beneficiary để trả response idempotent, không post tiền hai lần.</p>
+
+          <h3>14.7 Late callback</h3>
+          <p>Callback đến sau khi transaction đã được query/recon update. Không được overwrite trạng thái mới hơn nếu transition không hợp lệ. Nên lưu callback như message event, sau đó state machine quyết định có update business status hay không.</p>
+
+          <h3>14.8 Clock, timezone, settlement date</h3>
+          <p>Payment bị ảnh hưởng bởi timezone, holiday, cut-off, settlement cycle. Backend nên lưu thời gian ở UTC kèm timezone/business date nếu cần, và tách:</p>
+          <ul>
+            <li><strong>transaction date:</strong> lúc user tạo giao dịch.</li>
+            <li><strong>value date:</strong> ngày hiệu lực tiền.</li>
+            <li><strong>settlement date:</strong> ngày bù trừ/quyết toán.</li>
+            <li><strong>business date:</strong> ngày nghiệp vụ theo calendar của hệ thống.</li>
+          </ul>
+        </section>
+
+        <section id="operations">
+          <h2>15. Vận hành, bảo mật, audit</h2>
+
+          <h3>15.1 Backoffice cần gì?</h3>
+          <ul>
+            <li>Search transaction theo nhiều key: transaction id, msg id, original msg id, trace, account, amount, date, bank, customer.</li>
+            <li>Xem timeline: request, validation, posting, send ACH, response, callback, query, recon, dispute, manual actions.</li>
+            <li>Action có kiểm soát: query status, retry safe, open dispute, request refund/reversal, export evidence.</li>
+            <li>Dashboard: unknown aging, recon breaks, failed posting, pending settlement, high-risk returns, duplicate suspicion.</li>
+            <li>Maker-checker cho action tiền.</li>
+          </ul>
+
+          <h3>15.2 Audit log bắt buộc</h3>
+          <p>Audit log nên trả lời được: ai làm gì, lúc nào, trước/sau ra sao, lý do gì, từ IP/device/session nào, có approval nào, tác động tới transaction nào.</p>
+          <table>
+            <thead><tr><th>Action</th><th>Cần audit</th></tr></thead>
+            <tbody>
+              <tr><td>Manual status change</td><td>Gần như không nên cho phép; nếu có, cần approval và reason bắt buộc.</td></tr>
+              <tr><td>Refund/reversal/adjustment</td><td>Maker, checker, amount, reason, evidence, linked transaction.</td></tr>
+              <tr><td>Retry/query</td><td>Actor, source, retry attempt, response, correlation id.</td></tr>
+              <tr><td>Config change</td><td>Old/new config, effective date, approver.</td></tr>
+              <tr><td>Data export</td><td>Ai export, filter gì, file nào, mục đích gì.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>15.3 Bảo mật dữ liệu</h3>
+          <ul>
+            <li>Mask account number, card number, citizen ID, phone, email trong log UI.</li>
+            <li>Encrypt raw message nếu chứa PII hoặc dữ liệu tài chính nhạy cảm.</li>
+            <li>Tách quyền xem full data và quyền action tiền.</li>
+            <li>Không đưa raw signature/private key vào log.</li>
+            <li>Retention policy: giữ đủ lâu cho tra soát/kiểm toán, nhưng không giữ vô hạn nếu luật/chính sách không cho phép.</li>
+          </ul>
+
+          <h3>15.4 Observability</h3>
+          <p>Metric quan trọng:</p>
+          <ul>
+            <li>Transaction count/value theo status, bank, product, direction.</li>
+            <li>Timeout rate, unknown aging, retry count.</li>
+            <li>Posting failure rate.</li>
+            <li>Reconciliation break count/value theo loại.</li>
+            <li>Refund/reversal/return volume và amount.</li>
+            <li>Latency từng bước: validation, core posting, ACH response, callback, settlement.</li>
+            <li>Duplicate detected và idempotency hit rate.</li>
+          </ul>
+
+          <h3>15.5 Business continuity</h3>
+          <p>Gateway phải có kịch bản khi ACH down, core down, message queue down, recon file đến trễ, hoặc private link/VPN lỗi.</p>
+          <ul>
+            <li>Maintenance mode theo bank/service.</li>
+            <li>Graceful degradation: inquiry down thì có cho payment không?</li>
+            <li>Store-and-forward cho batch hoặc low-priority flow nếu rule cho phép.</li>
+            <li>Manual upload/download recon file khi API/SFTP fail.</li>
+            <li>Runbook cho UNKNOWN spike và settlement break.</li>
+          </ul>
+        </section>
+
+        <section id="backend-checklist">
+          <h2>16. Checklist backend khi làm chức năng</h2>
+
+          <h3>16.1 Trước khi implement một flow mới</h3>
+          <ul class="checklist">
+            <li>Đã xác định direction: inward/outward/on-us/off-us?</li>
+            <li>Đã xác định payment type: credit/debit/deposit/refund/reversal/return?</li>
+            <li>Đã biết nguồn sự thật cuối: response, callback, query, settlement file hay core?</li>
+            <li>Đã có idempotency key và duplicate rule?</li>
+            <li>Đã có state machine và allowed transitions?</li>
+            <li>Đã có mapping mã lỗi provider sang mã lỗi nội bộ?</li>
+            <li>Đã biết action khi timeout/unknown?</li>
+            <li>Đã biết cách hạch toán debit/credit/release/fee?</li>
+            <li>Đã có raw message storage và masking?</li>
+            <li>Đã có reconciliation fields đủ match?</li>
+            <li>Đã có case tra soát nếu có lệch?</li>
+          </ul>
+
+          <h3>16.2 Khi thiết kế API nội bộ</h3>
+          <ul>
+            <li>API tạo giao dịch nên trả transaction id ngay cả khi processing async.</li>
+            <li>API query status nên trả rõ business status, posting status, settlement status nếu cần.</li>
+            <li>Không expose raw provider code trực tiếp cho FE nếu chưa normalize.</li>
+            <li>Error response phải phân biệt reject chắc chắn và unknown/pending.</li>
+            <li>Không cho FE quyết định retry money movement mà không qua idempotency.</li>
+          </ul>
+
+          <h3>16.3 Khi làm job retry/query</h3>
+          <ul>
+            <li>Job phải select theo trạng thái hợp lệ và aging hợp lý.</li>
+            <li>Mỗi attempt phải được lưu.</li>
+            <li>Backoff/circuit breaker theo partner.</li>
+            <li>Job chạy lại không được tạo tiền hai lần.</li>
+            <li>Quá số lần query thì chuyển manual review, không loop vô hạn.</li>
+          </ul>
+
+          <h3>16.4 Khi làm đối soát</h3>
+          <ul>
+            <li>Import file phải idempotent bằng checksum/file id/source/date.</li>
+            <li>Không mất raw file.</li>
+            <li>Normalized item phải giữ line number/record id để trace.</li>
+            <li>Match rule phải versioned; thay rule không làm mất lịch sử kết quả cũ.</li>
+            <li>Break phải có owner, severity, aging và resolution.</li>
+          </ul>
+
+          <h3>16.5 Khi làm tra soát</h3>
+          <ul>
+            <li>Không sửa transaction gốc để “cho khớp”.</li>
+            <li>Mọi hoàn tiền/đảo tiền phải là transaction/action mới.</li>
+            <li>Case phải giữ evidence và communication log.</li>
+            <li>Action tiền phải maker-checker.</li>
+            <li>Đóng case phải có final reason và kết quả thông báo.</li>
+          </ul>
+        </section>
+
+        <section id="appendix">
+          <h2>17. Phụ lục</h2>
+
+          <h3>17.1 Mapping status gợi ý</h3>
+          <table>
+            <thead><tr><th>Nhóm</th><th>Status</th><th>Ý nghĩa</th></tr></thead>
+            <tbody>
+              <tr><td>Initial</td><td>CREATED / RECEIVED</td><td>Đã tạo request.</td></tr>
+              <tr><td>Validation</td><td>VALIDATED / REJECTED</td><td>Qua hoặc fail validation.</td></tr>
+              <tr><td>Money</td><td>RESERVED / DEBITED / CREDITED / RELEASED</td><td>Trạng thái hạch toán.</td></tr>
+              <tr><td>External</td><td>SENT / ACKED / NACKED / TIMEOUT</td><td>Trạng thái message với ACH.</td></tr>
+              <tr><td>Business</td><td>SUCCESS / FAILED / UNKNOWN / PENDING</td><td>Kết quả nghiệp vụ.</td></tr>
+              <tr><td>Aftercare</td><td>REFUND_PENDING / REFUNDED / REVERSAL_PENDING / REVERSED / RETURNED / DISPUTED</td><td>Phát sinh sau giao dịch.</td></tr>
+              <tr><td>Recon</td><td>UNRECONCILED / MATCHED / BREAK / SETTLED / ADJUSTED</td><td>Đối soát và quyết toán.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>17.2 Mã lỗi nội bộ nên phân nhóm</h3>
+          <ul>
+            <li><strong>Validation:</strong> invalid amount, invalid account format, unsupported bank, missing field.</li>
+            <li><strong>Account:</strong> account not found, closed, dormant, blocked, cannot credit, cannot debit.</li>
+            <li><strong>Limit/Risk:</strong> over limit, velocity limit, blacklist, suspected fraud, AML hold.</li>
+            <li><strong>Funds:</strong> insufficient funds, hold failed, posting failed.</li>
+            <li><strong>External:</strong> ACH unavailable, timeout, invalid signature, provider reject, duplicate external.</li>
+            <li><strong>Settlement/Recon:</strong> missing report, amount mismatch, status mismatch, unmatched return.</li>
+            <li><strong>Manual:</strong> pending approval, manual review, case opened.</li>
+          </ul>
+
+          <h3>17.3 Những câu hỏi backend nên hỏi BA/spec owner</h3>
+          <ol>
+            <li>Giao dịch được coi là thành công ở thời điểm nào: response success, core posted, hay settlement matched?</li>
+            <li>Nếu timeout sau khi debit thì SLA query bao lâu? Khi nào được refund?</li>
+            <li>Refund/reversal có deadline không? Có partial không?</li>
+            <li>Return có thể đến sau bao lâu? Khi đến thì hạch toán thế nào?</li>
+            <li>Deposit có credit realtime không hay chờ settlement?</li>
+            <li>Duplicate detection dựa trên key nào?</li>
+            <li>Account inquiry có bắt buộc trước payment không?</li>
+            <li>Tra soát có SLA và mẫu phản hồi đối tác chưa?</li>
+            <li>Đối soát theo ngày nào: transaction date, business date, settlement date?</li>
+            <li>Manual adjustment ai được duyệt và hạn mức bao nhiêu?</li>
+          </ol>
+
+          <h3>17.4 Anti-patterns cần tránh</h3>
+          <ul>
+            <li>Chỉ có một bảng transaction và một field status cho tất cả mọi thứ.</li>
+            <li>Timeout thì tự động gửi lại như giao dịch mới.</li>
+            <li>Refund bằng cách update amount/status giao dịch gốc.</li>
+            <li>Không lưu raw message vì “log đã có rồi”.</li>
+            <li>Không có UNKNOWN state.</li>
+            <li>Không có state history.</li>
+            <li>Không có idempotency cho callback/inbound.</li>
+            <li>Đối soát bằng Excel thủ công nhưng không import kết quả vào hệ thống.</li>
+            <li>Backoffice cho sửa status trực tiếp không maker-checker.</li>
+            <li>Không tách posting status và ACH status.</li>
+          </ul>
+        </section>
+
+        <section id="sources">
+          <h2>18. Nguồn tham khảo</h2>
+          <p class="small">Các nguồn dưới đây dùng để grounding khái niệm chung. Rule triển khai cụ thể phải theo tài liệu chính thức của provider/mạng thanh toán mà dự án đang tích hợp.</p>
+          <ol>
+            <li>Nacha, <a href="https://www.nacha.org/content/ach-payments-fact-sheet" target="_blank" rel="noopener">ACH Payments Fact Sheet</a>: ACH credit/debit, Direct Deposit, Same Day ACH.</li>
+            <li>Nacha Developer Guide, <a href="https://achdevguide.nacha.org/how-ach-works" target="_blank" rel="noopener">How ACH Works</a>: vai trò Originator, ODFI, ACH Operator, RDFI, Receiver.</li>
+            <li>Nacha Developer Guide, <a href="https://achdevguide.nacha.org/ach-file-overview" target="_blank" rel="noopener">ACH File Overview</a>: ACH file fixed-width 94 characters và record sequence.</li>
+            <li>Nacha, <a href="https://www.nacha.org/rules/reversals-and-enforcement" target="_blank" rel="noopener">Reversals and Enforcement</a>: reversal và thời hạn 5 banking days trong ACH Network của Mỹ.</li>
+            <li>Nacha, <a href="https://www.nacha.org/content/account-validation-resource-center" target="_blank" rel="noopener">Account Validation Resource Center</a>: account validation cho ACH debit/web debit.</li>
+            <li>ISO 20022, <a href="https://www.iso20022.org/iso-20022" target="_blank" rel="noopener">What is ISO 20022</a> và <a href="https://www.iso20022.org/iso-20022-message-definitions" target="_blank" rel="noopener">Message Definitions</a>: chuẩn message tài chính.</li>
+            <li>Federal Reserve Financial Services, <a href="https://www.frbservices.org/resources/resource-centers/same-day-ach/fedach-processing-schedule.html" target="_blank" rel="noopener">FedACH Processing Schedule</a>: ví dụ về lịch processing/settlement của một ACH Operator.</li>
+            <li>NAPAS, <a href="https://en.napas.com.vn/development-journey" target="_blank" rel="noopener">Development Journey</a>: NAPAS officially launched ACH in 06/2020.</li>
+            <li>NAPAS, <a href="https://en.napas.com.vn/napas-for-a-cashless-society" target="_blank" rel="noopener">For a cashless society</a>: NAPAS là payment intermediary licensed for financial switching and electronic clearing services in Vietnam.</li>
+            <li>NAPAS, <a href="https://napas.com.vn/napas-vi-mot-xa-hoi-khong-tien-mat" target="_blank" rel="noopener">Vì một xã hội không tiền mặt</a>: các dịch vụ trung gian thanh toán được cấp phép.</li>
+          </ol>
+
+          <div class="note">
+            <strong>Ghi chú cuối:</strong> Tài liệu này cố tình tập trung vào logic nghiệp vụ và thiết kế backend, không đưa code mẫu. Khi triển khai thật, nên biến các mục checklist thành test case, runbook vận hành và rule trong state machine/config.
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

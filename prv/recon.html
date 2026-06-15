@@ -221,6 +221,17 @@
   <a href="#edge-cases">12. Edge cases</a>
   <a href="#anti-patterns">13. Anti-patterns</a>
   <a href="#delivery">14. Lộ trình triển khai</a>
+
+  <div class="group">Part II · Refinements</div>
+  <a href="#part-two">Tổng quan 6 spine</a>
+  <a href="#spine-determinism">15. Determinism spine</a>
+  <a href="#spine-allocation">16. Allocation &amp; conservation</a>
+  <a href="#spine-readiness">17. Readiness spine</a>
+  <a href="#spine-discrepancy">18. Discrepancy lifecycle</a>
+  <a href="#spine-financial">19. Financial action spine</a>
+  <a href="#spine-governance">20. Governance spine</a>
+  <a href="#seam-map">21. Seam map</a>
+  <a href="#guardrails">22. Guardrails &amp; ưu tiên</a>
 </nav>
 
 <main>
@@ -1147,8 +1158,402 @@ UNIQUE(RUN_ID, MATCH_GROUP_KEY)</code></pre>
 </div>
 </section>
 
+<section id="part-two" class="anchor">
+<h2>Part II — Production-grade refinements: sáu spine và các seam</h2>
+<p class="lead" style="max-width:none;color:#d7e1f5">Phần này hợp nhất kết quả của ba vòng design review. Part I mô tả flow và pattern; Part II siết những chỗ phân biệt một blueprint "đẹp về layering" với một reconciliation platform sống được lâu trong production: tính tái lập (determinism), bảo toàn (conservation), nhận diện sẵn sàng nguồn (readiness), vòng đời discrepancy, hành động tài chính, và governance. Tất cả gom thành <b>sáu spine</b> cộng một <b>seam map</b> — vì khi đã chia theo spine, rủi ro production dịch từ "thiếu feature" sang "khe nối giữa các spine".</p>
+
+<div class="callout why">
+  <div class="label">Nguyên tắc xuyên suốt Part II</div>
+  <p>Gap thì có thật, nhưng lời giải phải <b>bị chặn biên, có governance và explicit</b> — không biến hệ thống thành một "generic reconciliation framework" trước khi biết cardinality thật của dữ liệu NAPAS/Core. Mỗi spine bên dưới đều kèm giới hạn để chống over-engineering.</p>
+</div>
+
+<div class="grid3">
+  <div class="card"><h4><span class="pill blue">1</span> Determinism</h4><p>Cùng input + execution context + engine → cùng output. Fingerprint hóa và khóa nguồn nondeterminism.</p></div>
+  <div class="card"><h4><span class="pill green">2</span> Allocation &amp; Conservation</h4><p>Cardinality-aware matching, allocation ledger, bảo toàn theo component, conservation gate là publication barrier.</p></div>
+  <div class="card"><h4><span class="pill violet">3</span> Readiness</h4><p>File completeness, CDC watermark, replica position... thống nhất thành một readiness condition.</p></div>
+  <div class="card"><h4><span class="pill amber">4</span> Discrepancy lifecycle</h4><p>Surrogate identity + observation xuyên run, fuzzy reattach, decision overlay, weak-label loop.</p></div>
+  <div class="card"><h4><span class="pill red">5</span> Financial action</h4><p>FinancialAction aggregate tách khỏi case machine; reversal/correction là action mới.</p></div>
+  <div class="card"><h4><span class="pill gray">6</span> Governance</h4><p>Một pipeline cho mọi thay đổi có thể đổi kết luận tài chính; code định nghĩa envelope, config chọn bên trong.</p></div>
+</div>
+
+<div class="mermaid">
+flowchart LR
+  R["3 · Readiness"] --> A["2 · Allocation/Conservation"] --> X["4 · Discrepancy lifecycle"] --> F["5 · Financial action"]
+  D["1 · Determinism"] -.->|"chứng minh kết quả"| A
+  G["6 · Governance"] -.->|"chi phối thay đổi"| D
+  G -.-> A
+  G -.-> X
+  G -.-> F
+</div>
+</section>
+
+<section id="spine-determinism" class="anchor">
+<h2>15. Determinism spine — nền tảng của replay và audit</h2>
+
+<p>Ba phần tưởng rời nhau — config/reference snapshot, conservation invariant, golden replay — thực ra phục vụ <b>một cam kết duy nhất</b>:</p>
+
+<pre><code>same effective inputs
++ same execution context
++ same engine implementation
+→ same output</code></pre>
+
+<div class="callout warn">
+  <div class="label">Công thức ban đầu còn thiếu engine</div>
+  <p><code>same raw + same CONFIG_SNAPSHOT_HASH → same output</code> là <b>chưa đủ</b>. Kết quả còn phụ thuộc engine version, normalization schema và matching algorithm. Thiếu chúng thì "replay" chỉ là "chạy lại", không phải deterministic reproduction.</p>
+</div>
+
+<h3>15.1 DeterminismContext và fingerprint</h3>
+<pre><code>DeterminismContext {
+  rawInputSetHash
+  configSnapshotHash        // resolved config, không phải toàn bảng
+  engineVersion
+  schemaVersion
+  algorithmVersion
+  timezone
+  locale
+  decimalPolicyVersion
+}
+
+EXECUTION_FINGERPRINT = hash(
+  rawInputSetHash, configSnapshotHash,
+  engineVersion, schemaVersion, algorithmVersion)
+
+OUTPUT_FINGERPRINT = hash(canonicalize(results))</code></pre>
+<p>Golden replay chỉ cần một luật: <b>cùng <code>EXECUTION_FINGERPRINT</code> phải cho cùng <code>OUTPUT_FINGERPRINT</code></b>. <code>OUTPUT_FINGERPRINT</code> bắt buộc tính trên output đã <i>canonicalize</i> (sort + normalize); nếu không, hai kết quả giống hệt nghiệp vụ nhưng khác thứ tự dòng sẽ báo false diff.</p>
+
+<div class="callout why">
+  <div class="label">Resolved config, không phải raw config</div>
+  <p>Version hóa <b>phần config đã resolve</b>: nếu run chỉ dùng 20 trong 500 bank mapping thì snapshot đúng 20 giá trị đã tham gia kết quả. Đây mới là thứ chứng minh được giá trị nào thực sự ảnh hưởng lên output. Dùng effective-dated config (<code>valid_from/valid_to/version</code>) rồi lưu danh sách version đã resolve + hash.</p>
+</div>
+
+<h3>15.2 Khóa các nguồn nondeterminism</h3>
+<p>Cùng dữ liệu và context, output vẫn lệch nếu còn các nguồn dưới đây:</p>
+<div class="proscons">
+  <div class="cons"><b>Phải loại bỏ</b><br/>Duyệt HashMap không ổn định · parallel chọn candidate theo race · <code>now()</code> trong rule · timezone mặc định của máy · sort thiếu tie-breaker · floating point · candidate "first N" · random không seed.</div>
+  <div class="pros"><b>Phải đảm bảo</b><br/>Stable ordering + explicit tie-breaker · fixed timezone · BigDecimal policy · no ambient clock · no unseeded random · canonical output.</div>
+</div>
+
+<div class="callout ok">
+  <div class="label">Determinism không cấm parallel</div>
+  <p>"Stable ordering" không có nghĩa "chạy serial". Yêu cầu là <b>deterministic reduction</b>: partition theo stable key, merge theo thứ tự cố định — vẫn song song được. Khi cố ý đổi algorithm thì regenerate goldens qua một "blessed re-baseline" có review, không để baseline tự trôi.</p>
+</div>
+</section>
+
+<section id="spine-allocation" class="anchor">
+<h2>16. Allocation &amp; Conservation spine</h2>
+
+<h3>16.1 Cardinality-aware matching — không subset-sum tùy ý</h3>
+<p>MatchGroup chỉ thực sự là "group" khi engine biết cardinality được phép. Mỗi loại reconciliation gắn một <code>MatchPlan</code>:</p>
+<pre><code>interface MatchPlan {
+  MatchCardinality cardinality();    // ONE_TO_ONE | ONE_TO_MANY | MANY_TO_ONE | MANY_TO_MANY
+  GroupingPolicy   groupingPolicy(); // theo business key, KHÔNG theo tổng tiền
+  AllocationPolicy allocationPolicy();
+  AmountBasis      amountBasis();
+}</code></pre>
+<table>
+<thead><tr><th>Cặp nguồn</th><th>Cardinality</th><th>Grouping key</th></tr></thead>
+<tbody>
+<tr><td>NAPAS txn ↔ Gateway txn</td><td><span class="pill blue">ONE_TO_ONE</span></td><td>transaction reference</td></tr>
+<tr><td>Gateway txn ↔ Core entries</td><td><span class="pill green">ONE_TO_MANY</span></td><td>core booking group / payment reference</td></tr>
+<tr><td>NAPAS net ↔ Settlement</td><td><span class="pill amber">MANY_TO_ONE</span></td><td>session + bank + currency</td></tr>
+</tbody>
+</table>
+<div class="callout danger">
+  <div class="label">Không chạy arbitrary subset-sum</div>
+  <p>Tự tìm tập con có tổng bằng nhau vừa bùng nổ độ phức tạp, vừa <b>che giấu lỗi reference</b>: NAPAS A=100, B=200 và Gateway C=300 có thể là ba giao dịch vô can. N:M chỉ chạy trong <b>bounded candidate set</b> (cùng session, currency, transaction family, account/reference family, time window) và grouping theo <i>business key</i>, không theo tổng tiền. Fuzzy/N:M chỉ bật ở nơi business semantics cho phép.</p>
+</div>
+
+<h3>16.2 AmountBasis, equation, rounding, tolerance — bốn lớp tách bạch</h3>
+<p>Gộp gross/net vào "tolerance" là cái bẫy mất tiền. Phải mô hình hóa rõ:</p>
+<pre><code>AmountBasis: PRINCIPAL | GROSS | NET | FEE | TAX | SETTLEMENT_AMOUNT
+
+// amount equation — quan hệ cấu trúc, KHÔNG dùng tolerance để "bù"
+Gateway.gross - Gateway.fee = NAPAS.net
+Gateway.principal           = NAPAS.transactionAmount</code></pre>
+<p>Tolerance là <b>lớp cuối cùng</b>, mặc định <code>= 0</code>, chỉ cấu hình theo currency / transaction type / amount component / source pair / rounding mode / effective date (ví dụ VND principal = 0; USD FX = 0.01; fee/tax theo policy). Khoản nằm trong tolerance vẫn nên ghi <code>MATCHED_WITHIN_TOLERANCE</code> kèm residual để theo dõi drift, không "nuốt" im lặng.</p>
+
+<h3>16.3 Allocation ledger</h3>
+<p>Conservation phải đọc từ <b>fact allocation</b>, không suy từ nhãn MATCHED/MISMATCH.</p>
+<pre><code>MatchAllocation {
+  allocationId, matchGroupId, sourceRecordId,
+  amountComponent,     // principal | fee | tax | net
+  allocatedAmount, allocatedQuantity, allocationStatus
+}</code></pre>
+<p>Happy case 1:1 vẫn dùng allocation tối giản (<code>allocatedAmount = full, remaining = 0</code>) nhưng schema không khóa cứng một record chỉ có một counterpart.</p>
+
+<h3>16.4 Conservation invariant — theo từng component</h3>
+<p>Với từng bucket/source:</p>
+<pre><code>// amount — phải đúng cho TỪNG component, không chỉ total
+openingOpenAmount + currentRunSourceAmount
+  = matchedAmount + newlyOpenedAmount + closingOpenAmount
+  + invalidAmount + excludedAmount
+
+// quantity
+openingOpenCount + currentEligibleCount
+  = consumedCount + newlyOpenCount + closingOpenCount
+  + invalidCount + excludedCount
+
+// referential
+allocation -&gt; record tồn tại ; result -&gt; match group ; case -&gt; result/evaluation</code></pre>
+<div class="callout warn">
+  <div class="label">Total cân nhưng component lệch</div>
+  <p>Đây chính là ca gateway-gross khớp napas-net rồi phí "tự bù". Vì vậy conservation là <b>vector theo component</b>, không phải scalar trên total. Allocation ledger là nơi enforce AmountBasis của 16.2.</p>
+</div>
+
+<h3>16.5 Conservation Gate là publication barrier</h3>
+<div class="mermaid">
+flowchart TD
+  M["Match"] --> CL["Classify"]
+  CL --> PP["Persist PROVISIONAL results"]
+  PP --> CG{"Conservation Gate"}
+  CG -->|"pass"| V["VALIDATED"]
+  CG -->|"fail"| Q["QUARANTINED · ENGINE_INCONSISTENT"]
+  V --> CASE["Create cases"]
+  V --> OUT["Publish outbox"]
+  V --> CLOSE["Close run"]
+  Q --> ALERT["Quarantine scope · alert · giữ diagnostic"]
+</div>
+<p>Result mang trạng thái <code>PROVISIONAL → VALIDATED | QUARANTINED</code>. Chỉ <code>VALIDATED</code> mới được tạo case, publish outbox, xuất báo cáo hoặc feed downstream. <code>QUARANTINED</code> vẫn được persist để debug — "không publish" khác "rollback mất hết".</p>
+<div class="callout danger">
+  <div class="label">ENGINE_INCONSISTENT: không auto-retry</div>
+  <p>Vi phạm bảo toàn là <b>bug deterministic</b>; retry với cùng input/context chỉ tái tạo lỗi. Phải quarantine scope, chặn downstream, alert, giữ artifact chẩn đoán. Đây không phải business discrepancy nên tuyệt đối không đóng là <code>CLOSED_WITH_BREAKS</code>.</p>
+</div>
+
+<h3>16.6 Open item ledger — carry-forward và aging</h3>
+<p>Break do timing có thể mở ở phiên S1 và đối ứng ở S2. Không copy item cũ sang từng run mới (đẻ trùng); dùng một sub-ledger độc lập, mỗi run tạo một evaluation:</p>
+<pre><code>RECON_OPEN_ITEM             { openItemId, businessIdentity, openedScopeId,
+                             currentStatus, remainingOpenAmount, remainingQuantity,
+                             firstSeenAt, lastEvaluatedAt, resolvedScopeId }
+RECON_OPEN_ITEM_EVALUATION  { openItemId, runId, candidateRecordId, decision, evaluatedAt }
+
+candidate_set(run) = current_run_records + eligible_open_items(prev_runs)</code></pre>
+<div class="callout why">
+  <div class="label">Tách matchability khỏi severity</div>
+  <p>Hết grace period không có nghĩa item hết được match. Core posting về ngày 5 vẫn phải link để đóng item, nhưng không còn là benign timing. Tách hai trục:</p>
+  <pre><code>matchingEligibility       = ELIGIBLE_FOR_LATE_MATCH
+operationalClassification = ESCALATED_MISSING_POSTING
+
+aging:  0–1d TIMING_CANDIDATE · 2–3d LATE_POSTING · &gt;3d MISSING_POSTING_CONFIRMED + escalate</code></pre>
+</div>
+</section>
+
+<section id="spine-readiness" class="anchor">
+<h2>17. Readiness spine — completeness là điều kiện, không phải giả định</h2>
+
+<p>Watermark không phải cơ chế thứ hai bên cạnh Source Readiness; nó <b>chính là</b> một readiness predicate. Gộp tất cả vào một interface để orchestration xử lý thống nhất:</p>
+<pre><code>interface ReadinessCondition {
+  ReadinessResult evaluate(ReconScope scope);   // READY | WAITING | INVALID | TIMED_OUT
+}
+
+// các condition cụ thể
+NapasReportCompleteCondition
+CoreExtractReadyCondition
+GatewayCdcWatermarkCondition
+ReplicaReplayPositionCondition
+SettlementFileSignatureCondition</code></pre>
+<p>"Gateway read-model đã bắt kịp watermark W" và "Core file đã hoàn thành" được đánh giá cùng một chỗ. <code>TIMED_OUT</code> là input cho quyết định ở Governance/SLA: chờ thêm (<code>WAITING_FOR_SOURCE</code>) hay chạy partial có chủ đích.</p>
+
+<h3>17.1 Snapshot nguồn động — chọn chiến lược, đừng hand-wave</h3>
+<p>"Dùng as-of snapshot" mới là yêu cầu, chưa phải giải pháp. Bốn lựa chọn thực tế:</p>
+<table>
+<thead><tr><th>Phương án</th><th>Cơ chế</th><th>Đánh đổi</th></tr></thead>
+<tbody>
+<tr><td>A · Append-only ledger</td><td>Real-time ghi event bất biến (PAYMENT_RECEIVED, CORE_POSTING_CONFIRMED...); recon đọc ledger.</td><td>Lineage/replay tốt; phải đổi transaction flow, đảm bảo không mất event.</td></tr>
+<tr><td>B · CDC → read model</td><td>CDC sang reconciliation store; recon đọc materialized table.</td><td>Giảm tải DB real-time; eventual consistency, cần watermark.</td></tr>
+<tr><td>C · Read replica + watermark</td><td>Đọc replica và xác nhận replay position ≥ required watermark.</td><td>Đơn giản; phải kiểm watermark, không giả định đã đủ.</td></tr>
+<tr><td>D · Snapshot isolation / temporal table</td><td>Dùng version store của DB.</td><td>Hợp khi batch không quá dài; version store tốn tài nguyên nếu batch lâu.</td></tr>
+</tbody>
+</table>
+<div class="callout ok">
+  <div class="label">Khuyến nghị</div>
+  <p>Dedicated reconciliation read model + (append-only events hoặc CDC) + source watermark. Không chạy query nặng trực tiếp trên bảng phục vụ real-time.</p>
+</div>
+</section>
+
+<section id="spine-discrepancy" class="anchor">
+<h2>18. Discrepancy lifecycle spine</h2>
+
+<h3>18.1 Surrogate identity, không phải natural key</h3>
+<p>Case không thể neo vào <code>scopeKey</code> (một scope có hàng nghìn discrepancy) cũng không thể neo vào natural key — vì key vỡ đúng ở ca quan trọng nhất: wrong reference, reference reused, reference corrected ở report V2. Tách <b>identity / fingerprint / link evidence</b>:</p>
+<pre><code>DiscrepancySubject {     // identity thật, gán lúc first-detection, không đổi
+  discrepancyId,         // UUID / sequence
+  firstDetectedAt, currentStatus, canonicalIdentityConfidence
+}
+DiscrepancyObservation { // mỗi lần một run nhìn thấy
+  discrepancyId, runId, resultId,
+  observedReferences, fingerprint, linkConfidence
+}
+
+fingerprint = hash(sourcePair, amount, currency, dateBucket,
+                   direction, accountToken, availableReferences)  // tìm candidate, KHÔNG phải unique key</code></pre>
+
+<h3>18.2 Linking xuyên run/version</h3>
+<div class="mermaid">
+flowchart LR
+  NEW["Report V2 · observation mới"] --> L["DiscrepancyLinker"]
+  L -->|"exact lineage"| E["EXACT_REATTACH"]
+  L -->|"evidence cao"| P["PROBABLE_REATTACH"]
+  L -->|"mơ hồ"| A["AMBIGUOUS → adjudication queue"]
+  L -->|"không khớp"| N["NEW_DISCREPANCY"]
+</div>
+<p><code>PROBABLE</code>/<code>AMBIGUOUS</code> không tự merge nếu risk cao — đẩy vào hàng đợi con người. Merge phải reversible: phát hiện sai thì ghi <i>split event</i>, không xóa.</p>
+
+<h3>18.3 Decision overlay — không sửa kết quả engine</h3>
+<p>Operator không bao giờ ghi đè <code>RECON_RESULT</code>. Tách ba lớp để vừa audit được, vừa đo được chất lượng engine:</p>
+<pre><code>engineClassification    = MISSING_IN_CORE
+operatorOverride        = TIMING
+effectiveClassification = TIMING
+
+operations: FORCE_MATCH | UNMATCH | SPLIT_GROUP | MERGE_GROUP
+            | RECLASSIFY | EXCLUDE_WITH_REASON | REOPEN
+mỗi op lưu: actor, reasonCode, comment, evidence, beforeState, afterState,
+            timestamp, approval, idempotencyKey</code></pre>
+<p>Phân quyền theo rủi ro: giá trị nhỏ một operator; giá trị lớn maker-checker; critical cần supervisor. Khi report version mới đến, override cần policy <code>REVALIDATE_REQUIRED | STILL_VALID | INVALIDATED_BY_NEW_SOURCE</code>.</p>
+
+<div class="callout why">
+  <div class="label">Overlay là feedback loop, nhưng override là weak-label</div>
+  <p>Đo được <code>overrideRate</code> theo rule/source-pair/team → tín hiệu engine yếu (ví dụ 42% <code>MISSING_IN_CORE → TIMING</code> = grace window ngắn / readiness chưa đủ / late-posting detection kém). Nhưng operator cũng force-match sai, chọn reason cho nhanh. Nên phân tầng <code>UNREVIEWED → REVIEWED → CONFIRMED_LABEL → REJECTED</code>; chỉ <code>CONFIRMED_LABEL</code> mới được dùng để tune rule / đánh giá matcher / train model. Để chi phí kham được, confirm-label một <i>mẫu</i> thiên về high-amount/high-risk/high-disagreement.</p>
+</div>
+</section>
+
+<section id="spine-financial" class="anchor">
+<h2>19. Financial action spine — tách khỏi case state machine</h2>
+
+<p>Nhồi <code>REVERSAL_PROPOSED</code>, <code>CORRECTION_PENDING</code>... vào <code>ExceptionCase</code> làm phình case machine và trộn hai bounded context (điều tra discrepancy vs thực hiện hành động tài chính). Giữ case mỏng; mọi hành động tài chính là aggregate riêng dùng chung một lifecycle.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4>Case state machine (mỏng)</h4>
+    <pre><code>OPEN
+UNDER_INVESTIGATION
+ACTION_REQUIRED
+MONITORING
+RESOLVED
+ESCALATED
+CANCELLED</code></pre>
+    <p class="small">Case chỉ <i>quan sát</i> kết quả action, không mang state tài chính.</p>
+  </div>
+  <div class="card">
+    <h4>FinancialAction (aggregate)</h4>
+    <pre><code>FinancialAction {
+  actionId, caseId, type, amount, currency,
+  status, idempotencyKey,
+  reversesActionId, correctsActionId
+}
+type:   ADJUSTMENT | REVERSAL | CORRECTION
+        | REFUND | RECOVERY | MANUAL_POSTING
+status: DRAFT → PENDING_APPROVAL → APPROVED
+        → EXECUTION_PENDING → EXECUTING
+        → SUCCEEDED | FAILED
+        | OUTCOME_UNKNOWN | CANCELLED</code></pre>
+  </div>
+</div>
+
+<p>Run đã đóng là <b>immutable</b>: phát hiện sai không sửa Run #10 thành RUNNING, mà tạo correction run / re-evaluation mới. Adjustment sai không xóa — dùng compensating chain:</p>
+<pre><code>A: ADJUSTMENT  +1.000.000  SUCCEEDED
+B: REVERSAL    -1.000.000  reversesActionId = A
+C: CORRECTION    +900.000  correctsActionId = A</code></pre>
+
+<div class="callout danger">
+  <div class="label">OUTCOME_UNKNOWN và guard cho RESOLVED</div>
+  <p><code>OUTCOME_UNKNOWN</code> (timeout sau posting) phải dùng status inquiry, <b>không auto-retry</b>. Và invariant nối hai aggregate: case <b>không được tới <code>RESOLVED</code></b> khi còn bất kỳ action nào ở <code>{EXECUTING, OUTCOME_UNKNOWN, PENDING_*}</code> — chỉ được tới <code>MONITORING</code>. Đây là chỗ tiền biến mất thật.</p>
+</div>
+</section>
+
+<section id="spine-governance" class="anchor">
+<h2>20. Governance spine — trục thật là governance, không phải code-vs-DB</h2>
+
+<p>"Logic ở code, param ở DB" là dichotomy sai. Một thay đổi config có thể nguy hiểm hơn đổi code — <code>tolerance: 0 → 10.000.000</code> chỉ là sửa một row. Trục thật: <b>bất kỳ thay đổi nào có thể làm đổi kết luận tài chính đều đi qua cùng một governance pipeline</b>.</p>
+
+<div class="mermaid">
+flowchart LR
+  DR["Draft"] --> PR["Peer review"] --> SIM["Historical simulation"] --> IMP["Impact report"] --> MC["Maker-checker"] --> VER["Immutable version"] --> EFF["Effective date"] --> ACT["Activation"] --> MON["Monitoring"]
+  MON -.->|"nếu cần"| RB["Rollback"]
+</div>
+
+<p>Áp dụng cho cả: code · rule order · threshold · tolerance · reference data mapping · cut-off policy · status mapping · match policy.</p>
+
+<div class="callout why">
+  <div class="label">Code định nghĩa envelope, config chọn bên trong</div>
+  <pre><code>Code defines capabilities and invariants.
+Config selects behavior inside the allowed envelope.</code></pre>
+  <p>Config có thể chọn <code>tolerance = 0.01</code> nhưng <b>không</b> tự phát minh thuật toán subset-sum mới nếu engine chưa hỗ trợ. <i>Widening</i> envelope (bật cardinality mới cho một source pair, nâng trần tolerance) là <b>code-tier</b> governance; <i>moving within</i> envelope là <b>config-tier</b>. Ranh giới hai tier là thứ phải thiết kế cẩn thận.</p>
+</div>
+
+<p>Các invariant config <b>không được tắt</b>: <code>no double consumption</code>, <code>conservation must hold</code>, <code>financial posting requires idempotency</code>, <code>maker != checker</code>. Và golden-replay harness (spine 15) chính là nền <code>simulate-on-history</code> dùng chung cho cả release code lẫn publish config.</p>
+</section>
+
+<section id="seam-map" class="anchor">
+<h2>21. Seam map — rủi ro production nằm giữa các spine</h2>
+
+<p>Spine là <i>concern</i> cắt ngang, không phải module rời. Một "spine decomposition" hay chết ở chỗ team build 6 silo rồi các contract liên-spine rơi qua khe. Đây là các seam bắt buộc phải thống nhất:</p>
+
+<div class="mermaid">
+flowchart TB
+  R["Readiness"] -->|"watermark / TIMED_OUT"| SLA["SLA · partial-run"]
+  AL["Allocation"] -->|"đọc fact, theo component"| CON["Conservation Gate"]
+  FA["FinancialAction"] -->|"guard điều kiện RESOLVED"| CASE["Case"]
+  OI["Open-item close"] -->|"kiểm action tồn tại trước khi đóng"| FA
+  OV["Override label"] --> WL["Weak-label adjudication"]
+  DL["Discrepancy link"] --> WL
+</div>
+
+<table>
+<thead><tr><th>Seam</th><th>Contract bắt buộc</th><th>Bỏ qua thì hỏng gì</th></tr></thead>
+<tbody>
+<tr><td>Conservation ↔ Allocation</td><td>Gate tính từ allocation ledger, bảo toàn theo từng component (không từ nhãn MATCHED/MISMATCH).</td><td>Total cân nhưng component lệch → mất tiền ẩn.</td></tr>
+<tr><td>FinancialAction ↔ Case</td><td>Case không RESOLVED khi còn action in-flight; OUTCOME_UNKNOWN ⇒ inquiry, no auto-retry.</td><td>Đóng case khi tiền chưa chắc đã đi.</td></tr>
+<tr><td>Open-item ↔ FinancialAction</td><td>Trước khi late-match đóng item, kiểm đã có adjustment cho item chưa; nếu có → route sang reversal.</td><td><b>Trả tiền hai lần.</b></td></tr>
+<tr><td>Readiness ↔ SLA</td><td>Kết quả readiness (kể cả TIMED_OUT) feed quyết định deadline / partial-run.</td><td>Chạy trên nguồn thiếu hoặc treo vô hạn.</td></tr>
+<tr><td>Override ↔ Discrepancy link</td><td>Cả hai đẻ weak-label → dùng chung một cơ chế human-adjudication + confirm-label.</td><td>Hai loop entity-resolution trùng lặp, khó tin cậy.</td></tr>
+</tbody>
+</table>
+
+<div class="callout danger">
+  <div class="label">Seam nguy hiểm nhất: double-pay</div>
+  <p>Item đã <code>ESCALATED_MISSING_POSTING</code> có thể đã được tạo adjustment bù. Khi Core posting thật về ngày 5, đường late-match phải kiểm <i>đã có FinancialAction cho item này chưa</i> — nếu có, không được âm thầm close, phải tạo reversal/đối soát lại cái fix. Đây là seam giữa Open-item và FinancialAction, không nằm trong spine nào.</p>
+</div>
+</section>
+
+<section id="guardrails" class="anchor">
+<h2>22. Guardrails chống over-design và thứ tự ưu tiên</h2>
+
+<h3>22.1 Ba giới hạn phải giữ</h3>
+<div class="grid3">
+  <div class="card"><h4><span class="pill amber">1</span> Không N:M/fuzzy đại trà</h4><p>Chỉ bật cardinality cao và fuzzy reattach ở nơi business semantics cho phép. Không subset-sum trên toàn phiên.</p></div>
+  <div class="card"><h4><span class="pill amber">2</span> Config không phải DSL tự do</h4><p>Governance tốt không cứu được một rule DSL quá tự do, khó chứng minh. Code giữ logic và invariant.</p></div>
+  <div class="card"><h4><span class="pill amber">3</span> Override không phải ground-truth</h4><p>Override phải được review và phân tầng độ tin cậy trước khi dùng để tune/eval.</p></div>
+</div>
+
+<h3>22.2 Thứ tự sửa blueprint</h3>
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">P0</div><h4>Trước khi gọi là production-grade</h4></div>
+  <p>Cardinality-aware matching + allocation model · open-item ledger/carry-forward · execution+config snapshot đầy đủ (gồm engine version) · conservation/completeness invariant · dedicated source snapshot/read model · golden replay + property-based tests. <span class="badge">allocation model phải có trước conservation invariant</span></p>
+</div>
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">P1</div><h4>Trước khi vận hành thực tế</h4></div>
+  <p>Manual override overlay · case identity xuyên run/version · correction/reversal lifecycle · batch SLA + backpressure + capacity model · security/PII baseline + separation of duties. <span class="badge">security baseline là P0 nếu chạy trên dữ liệu tài khoản thật</span></p>
+</div>
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">P2</div><h4>Tối ưu maintainability</h4></div>
+  <p>Hashed key/index · data-driven policy có governance · Day-1 migration/backfill (shadow mode) · advanced N:M candidate optimization.</p>
+</div>
+
+<h3>22.3 Security/PII baseline</h3>
+<div class="proscons">
+  <div class="pros"><b>Bắt buộc trước pilot dữ liệu thật</b><br/>Mask account/card · RBAC · audit append-only · encryption in transit/at rest · key management · maker-checker separation · log redaction · raw file access control.</div>
+  <div class="cons"><b>Có thể làm sau</b><br/>Fine-grained ABAC · dynamic data masking · HSM nâng cao · tamper-evident external ledger · behavior anomaly detection.</div>
+</div>
+<p class="small">Checksum chỉ phát hiện thay đổi; chữ ký/MAC mới xác thực nguồn — không dùng checksum đơn thuần làm bằng chứng authenticity.</p>
+
+<div class="callout ok">
+  <div class="label">Definition of done v2</div>
+  <p>Ngoài DoD của Part I: kết quả tái lập được từ <code>EXECUTION_FINGERPRINT</code>; conservation theo component pass trước khi publish; open item carry-forward và aging đúng; case sống xuyên report version qua surrogate identity; mọi hành động tài chính idempotent, có reversal/correction, không đóng case khi tiền còn in-flight; mọi thay đổi đổi-kết-luận đi qua governance pipeline có simulate-on-history.</p>
+</div>
+</section>
+
 <footer>
-Production Reconciliation Architecture · ACH Gateway · Dark Edition · Generated 2026
+Production Reconciliation Architecture · ACH Gateway · Dark Edition · Refined Edition · Generated 2026
 </footer>
 
 </div>

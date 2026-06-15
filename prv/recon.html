@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Production Reconciliation Architecture — ACH Gateway</title>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true, wrap: true },
+    themeVariables: {
+      background: '#0b1020',
+      primaryColor: '#172036',
+      primaryTextColor: '#e8eefc',
+      primaryBorderColor: '#4f7cff',
+      lineColor: '#8091b3',
+      secondaryColor: '#1c2740',
+      tertiaryColor: '#11192b',
+      noteBkgColor: '#1a2237',
+      noteTextColor: '#e8eefc',
+      noteBorderColor: '#6d82c4'
+    }
+  });
+</script>
+<style>
+  :root {
+    --bg: #070b14;
+    --bg-2: #0a1020;
+    --sidebar: #090e1a;
+    --panel: #0f1728;
+    --panel-2: #131d31;
+    --panel-3: #17233a;
+    --ink: #edf3ff;
+    --ink-2: #c7d2e8;
+    --ink-3: #8ea0bf;
+    --line: #253553;
+    --line-soft: #1b2942;
+    --brand: #6690ff;
+    --brand-2: #8f7dff;
+    --cyan: #42d6df;
+    --green: #41d891;
+    --amber: #f3b95f;
+    --red: #ff6b7b;
+    --violet: #ad8cff;
+    --code: #060a12;
+    --shadow: 0 18px 50px rgba(0,0,0,.28);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; background: var(--bg); }
+  body {
+    margin: 0;
+    color: var(--ink-2);
+    background:
+      radial-gradient(circle at 82% 0%, rgba(91,89,255,.13), transparent 28%),
+      radial-gradient(circle at 15% 10%, rgba(28,189,210,.09), transparent 26%),
+      var(--bg);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.72;
+    font-size: 15.5px;
+  }
+  a { color: #9db7ff; }
+  .layout { display: flex; max-width: 1680px; margin: 0 auto; min-height: 100vh; }
+  nav.toc {
+    position: sticky; top: 0; align-self: flex-start;
+    width: 330px; min-width: 330px; height: 100vh; overflow-y: auto;
+    background: rgba(9,14,26,.96); border-right: 1px solid var(--line-soft);
+    padding: 28px 18px 70px; backdrop-filter: blur(18px);
+  }
+  .logo {
+    display:flex; align-items:center; gap:12px; padding: 0 10px 18px;
+    border-bottom:1px solid var(--line-soft); margin-bottom:18px;
+  }
+  .logo-mark {
+    width:38px; height:38px; border-radius:12px;
+    display:grid; place-items:center; color:white; font-weight:800;
+    background:linear-gradient(145deg,#4f7cff,#8f6dff);
+    box-shadow:0 10px 30px rgba(79,124,255,.28);
+  }
+  .logo b { display:block; color:var(--ink); font-size:14px; }
+  .logo span { display:block; color:var(--ink-3); font-size:11px; margin-top:2px; }
+  nav.toc .group { margin:18px 8px 8px; color:#62789e; text-transform:uppercase; font-size:10px; letter-spacing:.14em; font-weight:700; }
+  nav.toc a {
+    display:block; text-decoration:none; color:#92a2bd; padding:6px 10px;
+    border-radius:9px; font-size:13px; transition:.18s ease;
+  }
+  nav.toc a:hover { background:#141f34; color:#fff; transform:translateX(2px); }
+  nav.toc a.lvl2 { padding-left:24px; font-size:12.2px; color:#7486a6; }
+  main { flex:1; min-width:0; padding-bottom:100px; }
+  header.hero {
+    position:relative; overflow:hidden; padding:64px 62px 54px;
+    border-bottom:1px solid var(--line-soft);
+    background:linear-gradient(135deg,rgba(20,32,62,.96),rgba(17,24,49,.96) 55%,rgba(28,20,58,.96));
+  }
+  header.hero:before {
+    content:""; position:absolute; width:480px; height:480px; right:-150px; top:-240px;
+    border-radius:50%; background:radial-gradient(circle,#6b6dff55,transparent 67%);
+  }
+  .kicker { color:#8fb2ff; text-transform:uppercase; letter-spacing:.18em; font-size:11.5px; font-weight:800; }
+  h1 { color:#fff; font-size:40px; line-height:1.14; max-width:1050px; margin:14px 0 18px; letter-spacing:-.02em; }
+  .lead { max-width:1060px; font-size:17px; color:#d7e1f5; }
+  .meta { display:flex; gap:16px; flex-wrap:wrap; margin-top:28px; }
+  .meta > div { min-width:190px; padding:12px 14px; border:1px solid #334667; background:#0e1730aa; border-radius:12px; }
+  .meta span { display:block; color:#7f93b8; font-size:11px; text-transform:uppercase; letter-spacing:.09em; }
+  .meta b { display:block; color:#f0f5ff; font-size:13px; margin-top:3px; }
+  .wrap { padding:0 58px; }
+  section {
+    margin:30px 0; padding:34px 38px;
+    border:1px solid var(--line-soft); border-radius:var(--radius);
+    background:linear-gradient(180deg,rgba(16,24,41,.96),rgba(12,19,33,.96));
+    box-shadow:var(--shadow);
+  }
+  section > h2 {
+    margin:0 0 22px; padding-bottom:14px; border-bottom:1px solid var(--line);
+    color:#f6f8ff; font-size:27px; line-height:1.25; letter-spacing:-.01em;
+  }
+  h3 { color:#9cb6ff; font-size:20px; margin-top:34px; }
+  h4 { color:#eef3ff; font-size:16px; margin-top:26px; }
+  p, li { color:var(--ink-2); }
+  strong, b { color:#f2f6ff; }
+  code {
+    padding:2px 6px; border:1px solid #2b3b5d; border-radius:6px;
+    color:#b8caff; background:#101a2d; font-family:"SFMono-Regular",Consolas,monospace; font-size:12.8px;
+  }
+  pre {
+    overflow:auto; padding:20px 22px; border-radius:13px; background:var(--code);
+    border:1px solid #1c2941; color:#dce7ff; font-size:13px; line-height:1.58;
+  }
+  pre code { border:0; background:transparent; padding:0; color:inherit; }
+  table { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.4px; }
+  th, td { border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top; }
+  th { color:#ecf3ff; background:#17243a; }
+  td { background:#10192a; }
+  tr:nth-child(even) td { background:#0d1626; }
+  .mermaid {
+    margin:22px 0; padding:20px; overflow:auto; border-radius:13px;
+    border:1px dashed #39517e; background:#09101d;
+  }
+  .callout {
+    margin:18px 0; padding:15px 18px; border-radius:0 12px 12px 0;
+    border-left:4px solid var(--brand); background:#12213d;
+  }
+  .callout.ok { border-left-color:var(--green); background:#0f2b26; }
+  .callout.warn { border-left-color:var(--amber); background:#302413; }
+  .callout.danger { border-left-color:var(--red); background:#321821; }
+  .callout.why { border-left-color:var(--violet); background:#221a3c; }
+  .label { color:#fff; text-transform:uppercase; font-weight:800; font-size:10.5px; letter-spacing:.12em; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .card {
+    padding:17px 18px; border:1px solid var(--line); background:#101a2c; border-radius:13px;
+  }
+  .card h4 { margin:0 0 8px; color:#f2f6ff; }
+  .card p { margin:7px 0; font-size:13.5px; }
+  .pill {
+    display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:800;
+  }
+  .pill.blue { background:#1b3568; color:#a8c1ff; }
+  .pill.green { background:#123c2d; color:#75e8b2; }
+  .pill.amber { background:#493316; color:#ffd18b; }
+  .pill.red { background:#4a1e2a; color:#ff9aa7; }
+  .pill.violet { background:#30265f; color:#c8b9ff; }
+  .pill.gray { background:#263247; color:#b8c5d9; }
+  .stage { margin:22px 0; padding:18px 20px; border:1px solid #2b3a59; border-radius:14px; background:#0d1728; }
+  .stage-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .stage-no { min-width:30px; height:30px; border-radius:9px; display:grid; place-items:center; font-weight:900; color:#fff; background:linear-gradient(145deg,#507cff,#825fff); }
+  .stage h4 { margin:0; }
+  .proscons { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pros, .cons { border-radius:11px; padding:12px 14px; }
+  .pros { background:#0e2b25; border:1px solid #245e4a; }
+  .cons { background:#2c1b22; border:1px solid #66404b; }
+  .small { color:var(--ink-3); font-size:12px; }
+  .anchor { scroll-margin-top:16px; }
+  .badge { font-size:10px; border:1px solid #445b88; color:#a9bdf1; border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  footer { color:#62718e; text-align:center; font-size:12px; padding:30px; }
+  @media(max-width:1180px){
+    nav.toc{display:none}.wrap,header.hero{padding-left:22px;padding-right:22px}
+    .grid2,.grid3,.grid4,.proscons{grid-template-columns:1fr}
+    h1{font-size:32px}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <div><b>Reconciliation Architecture</b><span>ACH Gateway · Production Blueprint</span></div>
+  </div>
+
+  <div class="group">Foundation</div>
+  <a href="#purpose">1. Mục tiêu &amp; phạm vi</a>
+  <a href="#mental-model">2. Mental model đúng</a>
+  <a class="lvl2" href="#four-ledgers">2.1 Bốn lớp dữ liệu</a>
+  <a class="lvl2" href="#two-way">2.2 Hai phép đối soát</a>
+
+  <div class="group">Production flow</div>
+  <a href="#overview">3. Kiến trúc tổng thể</a>
+  <a href="#flow">4. Flow production chi tiết</a>
+  <a class="lvl2" href="#phase-a">A. Session control</a>
+  <a class="lvl2" href="#phase-b">B. Source intake</a>
+  <a class="lvl2" href="#phase-c">C. Recon engine</a>
+  <a class="lvl2" href="#phase-d">D. Result &amp; close</a>
+  <a class="lvl2" href="#phase-e">E. Exception workflow</a>
+
+  <div class="group">Architecture</div>
+  <a href="#patterns">5. Design patterns</a>
+  <a href="#class-design">6. Class/package design</a>
+  <a href="#pacs008">7. Convention từ pacs.008</a>
+  <a href="#state-model">8. State model</a>
+
+  <div class="group">Data &amp; operations</div>
+  <a href="#database">9. Thiết kế database</a>
+  <a href="#performance">10. Performance &amp; scaling</a>
+  <a href="#observability">11. Observability &amp; audit</a>
+  <a href="#edge-cases">12. Edge cases</a>
+  <a href="#anti-patterns">13. Anti-patterns</a>
+  <a href="#delivery">14. Lộ trình triển khai</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="kicker">ACH Gateway · Reconciliation · Production Architecture</div>
+  <h1>Thiết kế hệ thống đối soát production: flow, architecture, design pattern, database và edge cases</h1>
+  <p class="lead">
+    Tài liệu này mô tả cách xây dựng một reconciliation subsystem đủ an toàn cho môi trường ngân hàng:
+    tách transaction reconciliation, clearing và settlement; kiểm soát source readiness; xử lý dữ liệu bất biến;
+    đảm bảo idempotency; phân loại discrepancy; tạo workflow tra soát/điều chỉnh riêng; và áp dụng convention
+    từ codebase pacs.008 hiện tại mà không ép batch reconciliation phải biến thành message handler.
+  </p>
+  <div class="meta">
+    <div><span>Đối tượng</span><b>Backend developer mới làm reconciliation</b></div>
+    <div><span>Kiến trúc</span><b>Batch pipeline + exception workflow</b></div>
+    <div><span>Nguyên tắc</span><b>Detect automatically, move money manually</b></div>
+    <div><span>Mức chất lượng</span><b>Production / audit-ready / restartable</b></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="purpose" class="anchor">
+<h2>1. Mục tiêu, phạm vi và nguyên tắc nền tảng</h2>
+
+<p>Reconciliation không chỉ là “so hai bảng xem có giống nhau không”. Trong hệ thống thanh toán, nó là một <b>financial control subsystem</b>: chứng minh rằng dữ liệu giao dịch, hạch toán khách hàng, kết quả clearing và quyết toán liên ngân hàng đang nhất quán; khi không nhất quán, hệ thống phải phát hiện đúng, phân loại đúng, giữ bằng chứng và đưa sai lệch vào một workflow có kiểm soát.</p>
+
+<div class="grid3">
+  <div class="card">
+    <h4><span class="pill blue">Correctness</span></h4>
+    <p>Không tạo mismatch giả do thiếu file, chưa đủ page, lệch timezone, sai phiên hoặc dữ liệu còn đang thay đổi.</p>
+  </div>
+  <div class="card">
+    <h4><span class="pill green">Recoverability</span></h4>
+    <p>Job lỗi giữa chừng có thể resume/restart từ checkpoint; không mất dấu vết và không tạo case trùng.</p>
+  </div>
+  <div class="card">
+    <h4><span class="pill violet">Auditability</span></h4>
+    <p>Biết chính xác input nào, rule version nào, code version nào và ai đã xử lý từng discrepancy.</p>
+  </div>
+</div>
+
+<div class="callout danger">
+  <div class="label">Nguyên tắc an toàn tài chính</div>
+  <p><b>Reconciliation engine chỉ phát hiện, phân loại và đề xuất.</b> Mọi thao tác làm thay đổi tiền thật như ghi có bù, thu hồi, refund hoặc journal adjustment phải đi qua workflow riêng, có idempotency, maker-checker và audit trail.</p>
+</div>
+
+<h3>1.1 Những gì hệ thống này phải làm</h3>
+<ul>
+  <li>Nhận biết một phiên nào đã đủ điều kiện để đối soát.</li>
+  <li>Thu thập và đóng băng dữ liệu từ NAPAS, Gateway, Core và nguồn settlement nếu có.</li>
+  <li>Chuẩn hóa dữ liệu về canonical model.</li>
+  <li>Kiểm tra control totals theo đúng bucket nghiệp vụ.</li>
+  <li>Match từng giao dịch và xác định chỗ sai lệch.</li>
+  <li>Tạo kết quả cấp giao dịch, cấp phiên và exception case.</li>
+  <li>Chạy lại an toàn, không đếm trùng, không tạo adjustment trùng.</li>
+  <li>Hỗ trợ audit, vận hành, SLA, aging và escalation.</li>
+</ul>
+
+<h3>1.2 Những gì không nên nhét vào cùng một batch</h3>
+<ul>
+  <li>Chờ phản hồi tra soát nhiều giờ/ngày.</li>
+  <li>Tự động hạch toán điều chỉnh tiền.</li>
+  <li>Retry mù financial posting.</li>
+  <li>Giữ transaction DB từ lúc gather cho đến lúc người vận hành resolve case.</li>
+</ul>
+</section>
+
+<section id="mental-model" class="anchor">
+<h2>2. Mental model đúng trước khi thiết kế</h2>
+
+<h3 id="four-ledgers" class="anchor">2.1 Bốn lớp dữ liệu cần phân biệt</h3>
+
+<div class="grid4">
+  <div class="card"><h4>① Gateway ledger</h4><p>Gateway đã nhận/gửi message nào, trạng thái xử lý, reference mapping, session, direction.</p></div>
+  <div class="card"><h4>② Core posting</h4><p>Hạch toán thật trên tài khoản khách hàng hoặc GL: debit/credit, amount, posting status, core reference.</p></div>
+  <div class="card"><h4>③ Clearing result</h4><p>Dữ liệu NAPAS về giao dịch được ghi nhận trong clearing và net position theo phiên.</p></div>
+  <div class="card"><h4>④ Settlement result</h4><p>Kết quả quyết toán cuối cùng hoặc sao kê tài khoản quyết toán, nếu ngân hàng có nguồn dữ liệu này.</p></div>
+</div>
+
+<div class="callout why">
+  <div class="label">Tại sao phải tách clearing và settlement?</div>
+  <p>Gateway khớp với báo cáo giao dịch NAPAS chưa đồng nghĩa nghĩa vụ liên ngân hàng đã được quyết toán xong. Vì vậy phải tách <b>transaction matching</b>, <b>clearing control</b> và <b>settlement confirmation</b> thành các kết luận khác nhau.</p>
+</div>
+
+<h3 id="two-way" class="anchor">2.2 Hai phép đối soát 2 chiều</h3>
+
+<div class="mermaid">
+flowchart LR
+  N["NAPAS clearing data"] <-->|"External reconciliation"| G["ACH Gateway"]
+  G <-->|"Internal reconciliation"| C["Core Banking"]
+  N -.->|"Net position"| S["Settlement result"]
+</div>
+
+<table>
+<thead><tr><th>Phép đối soát</th><th>Câu hỏi nghiệp vụ</th><th>Khi lệch thường kiểm tra đâu?</th></tr></thead>
+<tbody>
+<tr><td>Gateway ↔ NAPAS</td><td>Gateway và hệ thống clearing có ghi nhận cùng giao dịch, amount, direction, session và trạng thái không?</td><td>Message ingest, network, mapping, report, session assignment, missing/resend.</td></tr>
+<tr><td>Gateway ↔ Core</td><td>Gateway nghĩ đã xử lý nhưng Core có thực sự posting đúng tài khoản, đúng chiều, đúng amount không?</td><td>Core timeout, posting result, duplicate posting, reversal, late posting.</td></tr>
+<tr><td>NAPAS net ↔ Settlement</td><td>Net obligation được tính có khớp với kết quả quyết toán cuối cùng không?</td><td>Net position, fee, liquidity, failed/deferred settlement, statement.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="overview" class="anchor">
+<h2>3. Kiến trúc tổng thể đề xuất</h2>
+
+<div class="mermaid">
+flowchart TB
+  TRG["Scheduler / Report-arrival Event"] --> ORCH["Reconciliation Orchestrator"]
+  ORCH --> LOCK["Scope Lock & Idempotency Guard"]
+  ORCH --> READY["Source Readiness Gate"]
+  READY --> RAW["Immutable Raw Intake"]
+  RAW --> NORM["Normalization & Validation"]
+  NORM --> CT["Control Total Engine"]
+  CT --> MATCH["Matching Engine"]
+  MATCH --> CLASS["Discrepancy Classifier"]
+  CLASS --> RESULT["Result Persistence"]
+  RESULT --> CLOSE["Run Closer"]
+  RESULT --> CASE["Exception Case Creator"]
+  CASE --> WF["Exception Workflow"]
+  WF --> INV["Investigation / Status Inquiry"]
+  WF --> ADJ["Adjustment Proposal"]
+  ADJ --> MC["Maker-Checker"]
+  MC --> EXEC["Financial Action Executor"]
+  RESULT --> OUT["Outbox Events"]
+  OUT --> OBS["Reporting / Alerting / Downstream"]
+</div>
+
+<h3>3.1 Hai runtime khác nhau</h3>
+
+<div class="grid2">
+  <div class="card">
+    <h4>Runtime A — Reconciliation batch</h4>
+    <p>Ngắn hạn, deterministic, restartable. Nhiệm vụ là đọc dữ liệu đóng băng, so sánh, ghi kết quả và đóng run.</p>
+    <p><b>Không chờ con người, không chờ tra soát lâu, không tự di chuyển tiền.</b></p>
+  </div>
+  <div class="card">
+    <h4>Runtime B — Exception workflow</h4>
+    <p>Dài hạn, có SLA, có thể kéo dài nhiều ngày. Quản lý recheck, investigation, approval và adjustment.</p>
+    <p><b>Cho phép human task và state transition rõ ràng.</b></p>
+  </div>
+</div>
+
+<div class="callout ok">
+  <div class="label">Kết quả kiến trúc</div>
+  <p>Một discrepancy kéo dài ba ngày không làm reconciliation batch giữ trạng thái RUNNING ba ngày. Batch có thể đóng là <code>CLOSED_WITH_BREAKS</code>, còn case tiếp tục sống độc lập trong workflow.</p>
+</div>
+</section>
+
+<section id="flow" class="anchor">
+<h2>4. Flow production chi tiết</h2>
+
+<div class="mermaid">
+flowchart TD
+  A["A. Session Control<br/>scope · lock · run"]
+  B["B. Source Intake<br/>readiness · completeness · raw snapshot"]
+  C["C. Recon Engine<br/>normalize · control totals · match · classify"]
+  D["D. Result & Close<br/>persist · case creation · close run"]
+  E["E. Exception Workflow<br/>recheck · investigate · approve · adjust"]
+  A --> B --> C --> D --> E
+</div>
+
+<h3 id="phase-a" class="anchor">A. Session Control</h3>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">1</div><h4>Nhận trigger nhưng chưa chạy ngay</h4></div>
+  <p>Trigger có thể đến từ scheduler sau cut-off hoặc event khi nhận đủ report. Trigger chỉ là tín hiệu “hãy kiểm tra”, không phải bằng chứng chắc chắn rằng nguồn đã đầy đủ.</p>
+  <p><b>Vì sao?</b> Scheduler có thể chạy khi file đến chậm; event có thể đến cho page đầu tiên; report resend có thể đến sau một bản trước đó.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">2</div><h4>Xây dựng ReconScope</h4></div>
+  <pre><code>ReconScope {
+  businessDate,
+  sessionCode,
+  direction,
+  currency,
+  transactionFamily,
+  reportVersion
+}</code></pre>
+  <p>Scope là business identity của một lần đối soát. Không nên dùng mỗi ngày hoặc mỗi runId vì sẽ không phân biệt phiên, chiều, currency hay version report.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">3</div><h4>Acquire lock và kiểm tra idempotency</h4></div>
+  <p>Tạo <code>scopeKey</code> từ scope rồi dùng unique constraint hoặc distributed lock để ngăn hai node chạy cùng một scope.</p>
+  <pre><code>scopeKey =
+businessDate + "|" + sessionCode + "|" + direction
++ "|" + currency + "|" + transactionFamily + "|" + reportVersion</code></pre>
+  <p><b>Không dùng runId làm idempotency key:</b> runId là ID của attempt, mỗi lần retry có thể khác nhau.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">4</div><h4>Tạo ReconRun và audit metadata</h4></div>
+  <p>Lưu code version, rule version, node, trigger type, start time và correlation ID. Điều này giúp audit biết kết quả được tạo bởi logic nào.</p>
+</div>
+
+<h3 id="phase-b" class="anchor">B. Source Intake</h3>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">5</div><h4>Source Readiness Gate</h4></div>
+  <p>Mỗi nguồn phải trả một trạng thái rõ ràng:</p>
+  <pre><code>NOT_AVAILABLE
+ARRIVING
+INCOMPLETE
+READY
+INVALID
+SUPERSEDED</code></pre>
+  <p>Chỉ khi tất cả nguồn bắt buộc là <code>READY</code> mới tiếp tục. Nếu Core extract chưa về, run phải là <code>WAITING_FOR_SOURCE</code>, không tạo hàng nghìn <code>MISSING_IN_CORE</code> giả.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">6</div><h4>Kiểm tra completeness</h4></div>
+  <ul>
+    <li>Đủ page/chunk chưa?</li>
+    <li>Header count có bằng số record thực tế?</li>
+    <li>Checksum/signature có hợp lệ?</li>
+    <li>Business date và session trong file có đúng scope?</li>
+    <li>Report có phải bản active mới nhất hay đã bị supersede?</li>
+  </ul>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">7</div><h4>Lưu raw input bất biến</h4></div>
+  <p>Raw file/payload phải được lưu immutable, kèm checksum, version, source metadata. Không chỉnh sửa bản gốc để “sửa lỗi dữ liệu”. Mọi correction phải tạo version mới.</p>
+  <div class="proscons">
+    <div class="pros"><b>Ưu điểm</b><br/>Replay được, audit được, so sánh resend được, không phụ thuộc hệ thống nguồn còn giữ dữ liệu.</div>
+    <div class="cons"><b>Nhược điểm</b><br/>Tốn storage; cần retention policy, encryption và lifecycle rõ ràng.</div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">8</div><h4>Chụp snapshot Gateway/Core</h4></div>
+  <p>Không query bảng transaction “động” trong suốt nhiều giờ. Chụp snapshot theo <code>asOfTime</code> hoặc sử dụng consistent read. Snapshot phải ghi rõ cursor/range và tiêu chí lọc.</p>
+</div>
+
+<h3 id="phase-c" class="anchor">C. Reconciliation Engine</h3>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">9</div><h4>Normalize về CanonicalRecord</h4></div>
+  <pre><code>CanonicalRecord {
+  sourceParty,
+  businessDate,
+  sessionCode,
+  direction,
+  transactionType,
+  amount,
+  currency,
+  feeAmount,
+  status,
+  primaryReference,
+  originalReference,
+  messageId,
+  coreReference,
+  occurredAt,
+  rawRecordId
+}</code></pre>
+  <p>Canonical model giúp matching engine không phụ thuộc XML DTO, DB entity hay format file cụ thể.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">10</div><h4>Validate, enrich và deduplicate</h4></div>
+  <p>Trước khi match, loại riêng record lỗi schema/nghiệp vụ; resolve mapping status; enrich bank code; phát hiện duplicate thật và duplicate do resend.</p>
+  <p><b>Không silently drop record lỗi.</b> Record invalid phải có kết quả <code>INVALID_RECORD</code> và xuất hiện trong summary.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">11</div><h4>Control totals theo bucket</h4></div>
+  <p>Không chỉ so count và tổng tiền toàn phiên. Cần nhóm theo:</p>
+  <pre><code>session + currency + direction + transactionType + statusGroup</code></pre>
+  <p>Mỗi bucket lưu count, gross amount, fee amount, debit amount, credit amount, net amount.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">12</div><h4>External matching: Gateway ↔ NAPAS</h4></div>
+  <p>Matching nhiều cấp:</p>
+  <ol>
+    <li><b>Exact primary key:</b> reference chuẩn của scheme.</li>
+    <li><b>Composite key:</b> reference + transactionType + direction + businessDate + currency.</li>
+    <li><b>Candidate match:</b> dùng thuộc tính phụ để đề xuất, nhưng không tự kết luận.</li>
+  </ol>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">13</div><h4>Internal matching: Gateway ↔ Core</h4></div>
+  <p>So core reference, account direction, amount, posting state và accounting date. Phải nhận diện late posting, reversal và multiple postings.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">14</div><h4>Settlement reconciliation nếu có nguồn</h4></div>
+  <p>So net position/obligation từ clearing với settlement confirmation hoặc statement. Không suy ra settlement final chỉ từ trạng thái transaction.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">15</div><h4>Classify discrepancy theo rule priority</h4></div>
+  <p>Rule nguy hiểm hơn phải chạy trước. Ví dụ <code>STATUS_CONFLICT</code> phải thắng <code>AMOUNT_MISMATCH</code> nếu giao dịch vừa lệch trạng thái vừa lệch tiền.</p>
+  <pre><code>priority:
+1. SOURCE_INVALID / SOURCE_INCOMPLETE
+2. STATUS_CONFLICT
+3. MULTIPLE_POSTINGS / DUPLICATE
+4. AMOUNT_MISMATCH / CURRENCY_MISMATCH
+5. MISSING_*
+6. TIMING / LATE_POSTING
+7. MATCHED</code></pre>
+</div>
+
+<h3 id="phase-d" class="anchor">D. Result persistence và đóng run</h3>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">16</div><h4>Persist theo batch và checkpoint</h4></div>
+  <p>Không chờ tới cuối job mới persist. Mỗi stage ghi checkpoint, số lượng đã xử lý và cursor để restart.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">17</div><h4>Tạo result cấp giao dịch và summary cấp phiên</h4></div>
+  <p>Mỗi match group tạo một <code>ReconResult</code>. Summary tổng hợp theo discrepancy type, currency, direction, risk level và amount exposure.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">18</div><h4>Tạo exception case idempotent</h4></div>
+  <p>Case key nên dựa trên <code>scopeKey + matchGroupKey + discrepancyType + ruleVersion</code>. Chạy lại cùng dữ liệu không được tạo case mới.</p>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="stage-no">19</div><h4>Đóng run</h4></div>
+  <pre><code>COMPLETED_MATCHED
+CLOSED_WITH_BREAKS
+WAITING_FOR_SOURCE
+FAILED
+SUPERSEDED</code></pre>
+  <p>Run đã xử lý xong nhưng còn case không được giữ ở <code>RUNNING</code>. Nó phải đóng là <code>CLOSED_WITH_BREAKS</code>.</p>
+</div>
+
+<h3 id="phase-e" class="anchor">E. Exception workflow</h3>
+
+<div class="mermaid">
+stateDiagram-v2
+  [*] --> OPEN
+  OPEN --> RECHECK_PENDING: timing/late source
+  RECHECK_PENDING --> AUTO_RESOLVED: matched after recheck
+  RECHECK_PENDING --> UNDER_INVESTIGATION: still mismatch
+  OPEN --> UNDER_INVESTIGATION
+  UNDER_INVESTIGATION --> RESOLVED_NO_ADJUSTMENT
+  UNDER_INVESTIGATION --> ADJUSTMENT_PROPOSED
+  ADJUSTMENT_PROPOSED --> APPROVAL_PENDING
+  APPROVAL_PENDING --> EXECUTION_PENDING: approved
+  APPROVAL_PENDING --> REJECTED: rejected
+  EXECUTION_PENDING --> RESOLVED_ADJUSTED
+  UNDER_INVESTIGATION --> ESCALATED: SLA breached
+  AUTO_RESOLVED --> [*]
+  RESOLVED_NO_ADJUSTMENT --> [*]
+  RESOLVED_ADJUSTED --> [*]
+  REJECTED --> UNDER_INVESTIGATION
+  ESCALATED --> UNDER_INVESTIGATION
+</div>
+
+<p>Exception workflow nên có owner, SLA, risk level, evidence, comments, approval history và liên kết đến financial action. Hệ thống có thể tự động recheck read-only, nhưng không tự động posting tiền nếu chưa có policy được duyệt.</p>
+</section>
+
+<section id="patterns" class="anchor">
+<h2>5. Design patterns nên sử dụng và cách chúng móc nối</h2>
+
+<h3>5.1 Template Method — cố định khung chạy</h3>
+<p><b>Cơ chế:</b> lớp orchestrator định nghĩa thứ tự các stage; từng stage được triển khai riêng.</p>
+<pre><code>public final ReconSummary run(ReconScope scope) {
+    ReconRun run = runService.start(scope);
+    sourceReadinessStage.execute(run);
+    rawIntakeStage.execute(run);
+    normalizeStage.execute(run);
+    controlTotalStage.execute(run);
+    matchStage.execute(run);
+    classifyStage.execute(run);
+    resultStage.execute(run);
+    return closeStage.execute(run);
+}</code></pre>
+<p><b>Tác dụng:</b> mọi run đi cùng một lifecycle, lỗi được quản lý tập trung, dễ trace.</p>
+<div class="proscons">
+  <div class="pros"><b>Ưu điểm:</b> flow rõ, enforce thứ tự, phù hợp convention handler/orchestrator.</div>
+  <div class="cons"><b>Nhược điểm:</b> nếu dùng inheritance quá sâu sẽ cứng. Nên dùng composition: orchestrator gọi các Stage bean.</div>
+</div>
+
+<h3>5.2 Strategy + Registry — thay đổi rule/source mà không sửa orchestrator</h3>
+<p><b>Cơ chế:</b> mỗi source adapter, matcher hoặc classifier rule là một strategy. Spring inject danh sách và registry chọn theo type.</p>
+<pre><code>interface ReconSource {
+    SourceType supports();
+    SourceSnapshot load(ReconScope scope);
+}
+
+interface MatchRule {
+    int priority();
+    boolean matches(MatchContext ctx);
+    Discrepancy classify(MatchContext ctx);
+}</code></pre>
+<p><b>Móc nối:</b> Template Method gọi Stage; Stage dùng Registry; Registry giữ các Strategy.</p>
+<div class="mermaid">
+flowchart LR
+  O["ReconOrchestrator"] --> ST["MatchStage"]
+  ST --> REG["MatcherRegistry"]
+  REG --> M1["ExternalMatcher"]
+  REG --> M2["InternalMatcher"]
+  REG --> M3["SettlementMatcher"]
+</div>
+
+<h3>5.3 Pipeline / Chain of Responsibility — xử lý record qua nhiều bước</h3>
+<p><b>Cơ chế:</b> record đi qua chuỗi validator/enricher/deduplicator. Mỗi processor làm một việc nhỏ.</p>
+<pre><code>RawRecord
+  -> SchemaValidator
+  -> BusinessValidator
+  -> StatusMapper
+  -> ReferenceNormalizer
+  -> DuplicateDetector
+  -> CanonicalRecord</code></pre>
+<p><b>Khi nên dùng:</b> normalize/validate có nhiều bước độc lập và cần thay đổi thứ tự. <b>Không nên dùng</b> cho lifecycle tài chính dài hạn; phần đó nên dùng State/Workflow.</p>
+
+<h3>5.4 Specification — biểu diễn điều kiện nghiệp vụ</h3>
+<p><b>Cơ chế:</b> đóng gói điều kiện như “có ở NAPAS nhưng không có ở Gateway” hoặc “NAPAS rejected nhưng Core posted” thành specification có thể compose.</p>
+<pre><code>Specification&lt;MatchGroup&gt; statusConflict =
+    napasRejected.and(corePosted);
+
+Specification&lt;MatchGroup&gt; missingInCore =
+    napasPresent.and(gatewayPresent).and(coreAbsent);</code></pre>
+<p><b>Tác dụng:</b> rule dễ đọc, dễ test, tránh if/else lồng sâu.</p>
+
+<h3>5.5 State Pattern — ép transition hợp lệ</h3>
+<p><b>Cơ chế:</b> trạng thái case/run không được set tùy ý. Transition service kiểm tra state hiện tại, action, quyền và guard condition.</p>
+<pre><code>case.transition(APPROVE_ADJUSTMENT, actor);
+
+OPEN -> UNDER_INVESTIGATION       allowed
+APPROVAL_PENDING -> EXECUTION     allowed when approved
+RESOLVED -> OPEN                  forbidden unless reopen policy</code></pre>
+<p><b>Móc nối:</b> Exception Workflow gọi State Machine; State Machine ghi CaseEvent và phát OutboxEvent.</p>
+
+<h3>5.6 Builder / Factory — dựng object phức tạp</h3>
+<p>Dùng Builder cho investigation request, adjustment proposal hoặc summary có nhiều field; dùng Factory khi object phụ thuộc transaction family/source type.</p>
+<p><b>Không nên:</b> dùng Builder cho entity đơn giản chỉ có vài field; dễ làm code dài không cần thiết.</p>
+
+<h3>5.7 Repository + Application Service — tách persistence khỏi nghiệp vụ</h3>
+<p>Repository chỉ truy cập dữ liệu. Application service điều phối transaction boundary, locking và invariant.</p>
+<pre><code>ReconResultRepository      // CRUD/query
+ReconResultPersistService  // transaction, batching, dedup, invariant</code></pre>
+<p>Đây là convention nên kế thừa từ luồng pacs.008: handler/orchestrator không tự gọi nhiều repository rời rạc rồi tự quản lý transaction.</p>
+
+<h3>5.8 Outbox Pattern — không mất event sau khi commit DB</h3>
+<p>Khi persist result/case xong, ghi event vào bảng outbox trong cùng transaction. Worker khác publish ra Kafka/RabbitMQ.</p>
+<div class="mermaid">
+sequenceDiagram
+  participant S as ResultService
+  participant DB as Database
+  participant W as OutboxWorker
+  participant MQ as Message Broker
+  S->>DB: TX: save result + save outbox
+  DB-->>S: commit
+  W->>DB: poll unpublished
+  W->>MQ: publish
+  W->>DB: mark published
+</div>
+<p><b>Tại sao không publish trực tiếp rồi commit DB?</b> Có thể publish thành công nhưng DB rollback, hoặc DB commit nhưng publish thất bại.</p>
+
+<h3>5.9 Idempotency Pattern — chạy lại không tạo tác dụng phụ trùng</h3>
+<p>Áp dụng ở ba cấp:</p>
+<ul>
+  <li><b>Run:</b> unique scope key.</li>
+  <li><b>Result:</b> unique match group key trong một active report version.</li>
+  <li><b>Financial action:</b> idempotency key độc lập, kiểm tra trước khi posting.</li>
+</ul>
+
+<h3>5.10 Retry + Circuit Breaker + Bulkhead</h3>
+<table>
+<thead><tr><th>Pattern</th><th>Dùng cho</th><th>Không dùng cho</th></tr></thead>
+<tbody>
+<tr><td>Retry</td><td>Read-only query, file download, transient network lỗi.</td><td>Financial posting nếu chưa có idempotency và status inquiry.</td></tr>
+<tr><td>Circuit Breaker</td><td>Ngăn gọi liên tục vào Core/NAPAS đang lỗi.</td><td>Không thay thế business error handling.</td></tr>
+<tr><td>Bulkhead</td><td>Tách thread pool/connection pool giữa intake, matching, reporting.</td><td>Không chia quá nhỏ làm vận hành phức tạp.</td></tr>
+</tbody>
+</table>
+
+<h3>5.11 Workflow/Saga — cho quá trình dài hạn</h3>
+<p>Exception resolution kéo dài nhiều bước và có tác dụng phụ. Có thể dùng workflow engine hoặc state machine persisted. Nếu dùng Saga, mỗi financial action cần compensation rõ ràng; tuy nhiên trong ngân hàng, compensation thường không phải “undo kỹ thuật” mà là một giao dịch điều chỉnh mới có audit.</p>
+
+<div class="callout warn">
+  <div class="label">Đừng over-engineer</div>
+  <p>Pattern là công cụ, không phải mục tiêu. Orchestrator + Stage + Strategy + State + Outbox + Idempotency đã giải quyết phần lớn nhu cầu. Chỉ thêm workflow engine, rule engine hoặc event sourcing khi có lý do vận hành rõ ràng.</p>
+</div>
+</section>
+
+<section id="class-design" class="anchor">
+<h2>6. Thiết kế package và class đề xuất</h2>
+
+<pre><code>reconciliation/
+├── application/
+│   ├── ReconciliationOrchestrator
+│   ├── ReconRunService
+│   ├── ReconCloseService
+│   └── stage/
+│       ├── SourceReadinessStage
+│       ├── RawIntakeStage
+│       ├── NormalizeStage
+│       ├── ControlTotalStage
+│       ├── MatchStage
+│       ├── ClassifyStage
+│       └── ResultPersistStage
+├── domain/
+│   ├── model/
+│   │   ├── ReconScope
+│   │   ├── ReconRun
+│   │   ├── CanonicalRecord
+│   │   ├── MatchGroup
+│   │   ├── ReconResult
+│   │   └── ExceptionCase
+│   ├── source/
+│   │   ├── ReconSource
+│   │   └── SourceRegistry
+│   ├── matching/
+│   │   ├── Matcher
+│   │   ├── MatchKeyPolicy
+│   │   └── MatcherRegistry
+│   ├── rule/
+│   │   ├── MatchRule
+│   │   ├── RuleRegistry
+│   │   └── specification/
+│   └── state/
+│       ├── CaseStateMachine
+│       └── RunStateMachine
+├── infrastructure/
+│   ├── source/
+│   │   ├── NapasReportSource
+│   │   ├── GatewayLedgerSource
+│   │   ├── CorePostingSource
+│   │   └── SettlementSource
+│   ├── persistence/
+│   ├── messaging/
+│   ├── lock/
+│   └── storage/
+├── interface/
+│   ├── scheduler/
+│   ├── listener/
+│   ├── api/
+│   └── admin/
+└── exceptionworkflow/
+    ├── CaseWorkflowService
+    ├── InvestigationService
+    ├── AdjustmentProposalService
+    ├── ApprovalService
+    └── FinancialActionExecutor</code></pre>
+
+<h3>6.1 Dependency rule</h3>
+<div class="mermaid">
+flowchart TB
+  UI["interface"] --> APP["application"]
+  APP --> DOM["domain"]
+  INF["infrastructure"] --> DOM
+  INF --> APP
+  DOM -. "không phụ thuộc framework" .-> DOM
+</div>
+
+<p>Domain model và rule không nên phụ thuộc XML DTO, JPA entity hoặc Spring component cụ thể. Infrastructure adapter chuyển dữ liệu ngoài thành domain object.</p>
+
+<h3>6.2 Class interaction điển hình</h3>
+<div class="mermaid">
+sequenceDiagram
+  participant T as Trigger
+  participant O as Orchestrator
+  participant G as ReadinessGate
+  participant S as SourceRegistry
+  participant M as MatchingEngine
+  participant R as RuleRegistry
+  participant P as PersistService
+  participant C as CaseCreator
+  T->>O: run(scope)
+  O->>G: verify(scope)
+  G->>S: status of required sources
+  S-->>G: READY
+  O->>S: snapshot(scope)
+  S-->>O: SourceSnapshots
+  O->>M: match(canonical datasets)
+  M-->>O: MatchGroups
+  O->>R: classify(groups)
+  R-->>O: ReconResults
+  O->>P: save results + summary + outbox
+  P->>C: create cases idempotently
+  O-->>T: COMPLETED_MATCHED / CLOSED_WITH_BREAKS
+</div>
+</section>
+
+<section id="pacs008" class="anchor">
+<h2>7. Áp dụng convention từ codebase pacs.008 hiện tại</h2>
+
+<table>
+<thead><tr><th>Convention pacs.008 nên giữ</th><th>Áp dụng cho reconciliation</th><th>Điểm không nên sao chép máy móc</th></tr></thead>
+<tbody>
+<tr><td>Handler chỉ điều phối</td><td><code>ReconciliationOrchestrator</code> chỉ điều phối stage.</td><td>Recon không phải request-response handler; phải hỗ trợ checkpoint và batch.</td></tr>
+<tr><td>Persist service riêng, transaction boundary rõ</td><td><code>ReconPersistService</code> ghi result/summary/outbox.</td><td>Không bọc toàn bộ hàng trăm nghìn record trong một transaction.</td></tr>
+<tr><td>Builder cho message ra</td><td>Builder cho investigation request/adjustment proposal.</td><td>Không mặc định mọi discrepancy đều dùng pacs.028.</td></tr>
+<tr><td>Strategy + Registry thay switch</td><td>Source, Matcher, Rule, Resolver registry.</td><td>Không tạo registry cho mọi class nếu chỉ có một implementation.</td></tr>
+<tr><td>Idempotency khi nhận message</td><td>Idempotency theo scope, report version, case key.</td><td>Không dùng messageId duy nhất cho cả batch.</td></tr>
+<tr><td>Fail-loud</td><td>Stage lỗi phải FAILED + alert + checkpoint.</td><td>Không rollback toàn bộ run nếu lỗi chỉ ở một chunk có thể quarantine.</td></tr>
+</tbody>
+</table>
+
+<div class="callout why">
+  <div class="label">Tư duy đúng</div>
+  <p>Mượn <b>code organization convention</b> của pacs.008 để codebase thống nhất; không mượn nguyên lifecycle real-time cho một bài toán batch, nhiều nguồn, có checkpoint và workflow dài hạn.</p>
+</div>
+</section>
+
+<section id="state-model" class="anchor">
+<h2>8. State model cho run, source và exception case</h2>
+
+<h3>8.1 ReconRun</h3>
+<pre><code>CREATED
+WAITING_FOR_SOURCE
+READY
+RUNNING
+COMPLETED_MATCHED
+CLOSED_WITH_BREAKS
+FAILED
+CANCELLED
+SUPERSEDED</code></pre>
+
+<h3>8.2 SourceSnapshot</h3>
+<pre><code>DISCOVERED
+ARRIVING
+INCOMPLETE
+READY
+INVALID
+ACTIVE
+SUPERSEDED
+ARCHIVED</code></pre>
+
+<h3>8.3 ExceptionCase</h3>
+<pre><code>OPEN
+RECHECK_PENDING
+UNDER_INVESTIGATION
+ADJUSTMENT_PROPOSED
+APPROVAL_PENDING
+EXECUTION_PENDING
+RESOLVED_NO_ADJUSTMENT
+RESOLVED_ADJUSTED
+AUTO_RESOLVED
+REJECTED
+ESCALATED
+CANCELLED</code></pre>
+
+<h3>8.4 Guard conditions ví dụ</h3>
+<table>
+<thead><tr><th>Transition</th><th>Điều kiện</th></tr></thead>
+<tbody>
+<tr><td>WAITING_FOR_SOURCE → READY</td><td>Tất cả required source active và completeness passed.</td></tr>
+<tr><td>RUNNING → COMPLETED_MATCHED</td><td>Job hoàn tất, zero open break, totals hợp lệ.</td></tr>
+<tr><td>RUNNING → CLOSED_WITH_BREAKS</td><td>Job hoàn tất, có discrepancy/case.</td></tr>
+<tr><td>APPROVAL_PENDING → EXECUTION_PENDING</td><td>Đủ maker-checker, không cùng user, amount trong limit.</td></tr>
+<tr><td>EXECUTION_PENDING → RESOLVED_ADJUSTED</td><td>Financial action confirmed thành công và reconciliation recheck passed.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="database" class="anchor">
+<h2>9. Thiết kế database</h2>
+
+<h3>9.1 Nguyên tắc</h3>
+<ul>
+  <li>Tách raw input, normalized record, result và workflow data.</li>
+  <li>Không update raw data; version mới thay vì overwrite.</li>
+  <li>Dùng unique constraint làm hàng rào idempotency cuối cùng.</li>
+  <li>Lưu amount bằng decimal chính xác, currency riêng.</li>
+  <li>Partition theo business date hoặc settlement date nếu volume lớn.</li>
+  <li>Không lưu blob/file lớn trực tiếp trong DB nếu object storage phù hợp hơn; DB lưu URI + checksum.</li>
+</ul>
+
+<h3>9.2 Các bảng chính</h3>
+
+<table>
+<thead><tr><th>Bảng</th><th>Mục đích</th><th>Key/index quan trọng</th></tr></thead>
+<tbody>
+<tr><td><code>RECON_SCOPE</code></td><td>Business identity của scope.</td><td>Unique(scope_key).</td></tr>
+<tr><td><code>RECON_RUN</code></td><td>Mỗi attempt thực thi.</td><td>Index(scope_id, status), started_at.</td></tr>
+<tr><td><code>RECON_STAGE_EXECUTION</code></td><td>Checkpoint từng stage/chunk.</td><td>Unique(run_id, stage_code, chunk_no).</td></tr>
+<tr><td><code>RECON_SOURCE_OBJECT</code></td><td>File/report/snapshot metadata.</td><td>Unique(source_type, business_key, version), checksum.</td></tr>
+<tr><td><code>RECON_RAW_RECORD</code></td><td>Record đã parse tối thiểu, liên kết raw.</td><td>source_object_id, line_no.</td></tr>
+<tr><td><code>RECON_CANONICAL_RECORD</code></td><td>Dữ liệu chuẩn hóa để match.</td><td>match_key, source_party, business_date.</td></tr>
+<tr><td><code>RECON_CONTROL_TOTAL</code></td><td>Totals theo bucket/source.</td><td>run_id + bucket_hash + source_party.</td></tr>
+<tr><td><code>RECON_MATCH_GROUP</code></td><td>Nhóm record tương ứng giữa các nguồn.</td><td>Unique(run_id, match_group_key).</td></tr>
+<tr><td><code>RECON_RESULT</code></td><td>Kết quả classification.</td><td>run_id, discrepancy_type, risk_level.</td></tr>
+<tr><td><code>RECON_EXCEPTION_CASE</code></td><td>Case cần xử lý.</td><td>Unique(case_key), owner, status, sla_due_at.</td></tr>
+<tr><td><code>RECON_CASE_EVENT</code></td><td>Audit event append-only.</td><td>case_id, event_time.</td></tr>
+<tr><td><code>RECON_ADJUSTMENT</code></td><td>Proposal/approval/execution.</td><td>Unique(financial_idempotency_key).</td></tr>
+<tr><td><code>RECON_OUTBOX</code></td><td>Reliable event publishing.</td><td>status, created_at; index unpublished.</td></tr>
+</tbody>
+</table>
+
+<h3>9.3 DDL khái niệm</h3>
+<pre><code>RECON_SCOPE
+-----------
+ID                  bigint PK
+SCOPE_KEY           varchar(300) UNIQUE NOT NULL
+BUSINESS_DATE       date NOT NULL
+SESSION_CODE        varchar(30) NOT NULL
+DIRECTION           varchar(20) NOT NULL
+CURRENCY            varchar(3) NOT NULL
+TRANSACTION_FAMILY  varchar(40) NOT NULL
+REPORT_VERSION      varchar(50) NOT NULL
+STATUS              varchar(30) NOT NULL
+CREATED_AT          timestamp NOT NULL
+
+RECON_RUN
+---------
+ID                  bigint PK
+SCOPE_ID            bigint FK NOT NULL
+RUN_NO              int NOT NULL
+STATUS              varchar(30) NOT NULL
+TRIGGER_TYPE        varchar(30)
+AS_OF_TIME          timestamp
+RULE_VERSION        varchar(50)
+APP_VERSION         varchar(50)
+STARTED_AT          timestamp
+FINISHED_AT         timestamp
+ERROR_CODE          varchar(100)
+ERROR_MESSAGE       varchar(2000)
+UNIQUE(SCOPE_ID, RUN_NO)
+
+RECON_RESULT
+------------
+ID                  bigint PK
+RUN_ID              bigint FK NOT NULL
+MATCH_GROUP_KEY     varchar(500) NOT NULL
+EXTERNAL_STATUS     varchar(30)
+INTERNAL_STATUS     varchar(30)
+SETTLEMENT_STATUS   varchar(30)
+OVERALL_STATUS      varchar(30) NOT NULL
+DISCREPANCY_TYPE    varchar(50)
+RISK_LEVEL          varchar(20)
+EXPOSURE_AMOUNT     decimal(19,2)
+CURRENCY            varchar(3)
+RULE_CODE           varchar(100)
+RULE_VERSION        varchar(50)
+CREATED_AT          timestamp NOT NULL
+UNIQUE(RUN_ID, MATCH_GROUP_KEY)</code></pre>
+
+<h3>9.4 Index và partition</h3>
+<ul>
+  <li>Partition canonical/result theo <code>business_date</code> hàng tháng nếu volume lớn.</li>
+  <li>Index composite theo <code>(business_date, session_code, direction, match_key)</code>.</li>
+  <li>Index case theo <code>(status, sla_due_at, owner_team)</code> cho dashboard vận hành.</li>
+  <li>Không tạo quá nhiều index trên bảng ingest lớn; insert throughput sẽ giảm.</li>
+</ul>
+
+<h3>9.5 Retention</h3>
+<p>Raw source và audit thường có thời hạn lưu khác normalized data. Chính sách retention phải được phê duyệt theo yêu cầu pháp lý/nội bộ; job archive phải giữ checksum và khả năng truy vết.</p>
+</section>
+
+<section id="performance" class="anchor">
+<h2>10. Performance, batch sizing và scaling</h2>
+
+<ul>
+  <li>Đọc theo chunk; không load toàn bộ phiên vào heap nếu hàng trăm nghìn/millions record.</li>
+  <li>Ưu tiên sort-merge join hoặc hash partition theo match key thay vì query DB từng record.</li>
+  <li>Batch insert/update với prepared statement.</li>
+  <li>Checkpoint mỗi chunk; chunk phải idempotent.</li>
+  <li>Parallelize theo bucket độc lập: direction/currency/partition hash.</li>
+  <li>Giới hạn concurrency với bulkhead để không ảnh hưởng transaction processing real-time.</li>
+</ul>
+
+<div class="callout warn">
+  <div class="label">N+1 là lỗi kiến trúc nghiêm trọng</div>
+  <p>Không được loop qua từng NAPAS record rồi query Gateway/Core một lần. Hãy prefetch theo batch hoặc materialize snapshot có index phù hợp.</p>
+</div>
+
+<h3>10.1 Khi nào dùng database matching?</h3>
+<p>DB matching phù hợp khi dữ liệu đã nằm cùng hệ quản trị, có index tốt và cần query/audit linh hoạt. In-memory matching nhanh nhưng rủi ro memory. Distributed processing chỉ cần khi volume thực sự vượt khả năng một node/batch window.</p>
+</section>
+
+<section id="observability" class="anchor">
+<h2>11. Observability, audit và vận hành</h2>
+
+<h3>11.1 Metrics</h3>
+<ul>
+  <li>run duration, stage duration, records/sec.</li>
+  <li>source delay, incomplete source count.</li>
+  <li>matched count/amount, break count/amount.</li>
+  <li>discrepancy by type/risk/source.</li>
+  <li>case aging, SLA breach, adjustment value.</li>
+</ul>
+
+<h3>11.2 Logs</h3>
+<p>Mọi log phải có <code>scopeKey</code>, <code>runId</code>, <code>stage</code>, <code>chunkNo</code>, <code>correlationId</code>. Không log toàn bộ payload chứa dữ liệu nhạy cảm.</p>
+
+<h3>11.3 Audit</h3>
+<ul>
+  <li>Ai đổi owner/status/case?</li>
+  <li>Ai đề xuất và ai duyệt adjustment?</li>
+  <li>Rule version nào tạo discrepancy?</li>
+  <li>Input checksum và report version nào được dùng?</li>
+  <li>Financial action đã gửi với idempotency key nào?</li>
+</ul>
+
+<h3>11.4 Alerting</h3>
+<table>
+<thead><tr><th>Mức</th><th>Ví dụ</th></tr></thead>
+<tbody>
+<tr><td>Critical</td><td>Status conflict, settlement mismatch lớn, duplicate posting, adjustment execution uncertain.</td></tr>
+<tr><td>High</td><td>Source overdue, run failed sau retry, break amount vượt threshold.</td></tr>
+<tr><td>Medium</td><td>Case sắp quá SLA, control total mismatch nhỏ.</td></tr>
+<tr><td>Info</td><td>Run completed matched, report superseded.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="edge-cases" class="anchor">
+<h2>12. Edge cases bắt buộc thiết kế trước</h2>
+
+<h3>12.1 Source và version</h3>
+<ul>
+  <li>Report đến thiếu page nhưng header không rõ total page.</li>
+  <li>Report resend giống checksum cũ: ignore idempotently.</li>
+  <li>Report resend khác checksum: tạo version mới, supersede bản cũ.</li>
+  <li>Hai report cùng version nhưng nội dung khác: đánh dấu conflict, không tự chọn.</li>
+  <li>Core extract hoàn tất sau khi run đã đóng: tạo re-run/version mới hoặc recheck case.</li>
+</ul>
+
+<h3>12.2 Time và session</h3>
+<ul>
+  <li>Timezone UTC/GMT+7; DST nếu hệ thống ngoài Việt Nam.</li>
+  <li>Giao dịch sát cut-off rơi phiên kế.</li>
+  <li>Business date khác calendar date.</li>
+  <li>Ngày lễ/cuối tuần, phiên kéo dài hoặc chạy bù.</li>
+  <li>Clock skew giữa hệ thống.</li>
+</ul>
+
+<h3>12.3 Matching</h3>
+<ul>
+  <li>Reference bị reuse giữa payment và return.</li>
+  <li>Một giao dịch có nhiều core posting.</li>
+  <li>Amount bằng nhau nhưng currency khác.</li>
+  <li>Count/tổng tiền khớp do các mismatch bù trừ lẫn nhau.</li>
+  <li>Reference normalized sai do trim/case/leading zero.</li>
+  <li>Candidate fuzzy match không được tự động coi là matched.</li>
+</ul>
+
+<h3>12.4 Financial action</h3>
+<ul>
+  <li>Core timeout sau khi đã posting: trạng thái uncertain, phải inquiry trước retry.</li>
+  <li>Maker và checker là cùng một người.</li>
+  <li>Approval hết hạn nhưng execution vẫn chạy.</li>
+  <li>Adjustment đã thành công nhưng outbox publish lỗi.</li>
+  <li>Reconciliation recheck sau adjustment vẫn lệch.</li>
+</ul>
+
+<h3>12.5 Operational</h3>
+<ul>
+  <li>Job node chết giữa chunk.</li>
+  <li>Distributed lock hết hạn khi job vẫn chạy.</li>
+  <li>DB deadlock hoặc storage tạm hết dung lượng.</li>
+  <li>Rule version thay đổi giữa hai chunk.</li>
+  <li>Deploy giữa lúc run đang chạy.</li>
+</ul>
+
+<div class="callout danger">
+  <div class="label">Uncertain outcome</div>
+  <p>Trạng thái nguy hiểm nhất không phải SUCCESS hay FAILED mà là <b>không biết thao tác tiền đã thành công chưa</b>. Với timeout sau financial posting, tuyệt đối không retry mù; phải dùng idempotency key và status inquiry.</p>
+</div>
+</section>
+
+<section id="anti-patterns" class="anchor">
+<h2>13. Anti-patterns và lựa chọn thay thế</h2>
+
+<table>
+<thead><tr><th>Anti-pattern</th><th>Vì sao sai</th><th>Thay thế</th></tr></thead>
+<tbody>
+<tr><td>Một service khổng lồ làm tất cả</td><td>Không test được, transaction boundary mơ hồ.</td><td>Orchestrator + Stage + Strategy.</td></tr>
+<tr><td>Đọc trực tiếp nguồn động rồi match</td><td>Kết quả thay đổi trong lúc chạy.</td><td>Snapshot/as-of + raw immutable.</td></tr>
+<tr><td>Không phân biệt source not ready và missing record</td><td>Tạo mismatch giả hàng loạt.</td><td>Readiness Gate.</td></tr>
+<tr><td>Switch theo source/type ở nhiều nơi</td><td>Khó mở rộng, logic phân tán.</td><td>Strategy + Registry.</td></tr>
+<tr><td>Publish event trực tiếp sau save</td><td>Có thể mất event hoặc event ma.</td><td>Transactional Outbox.</td></tr>
+<tr><td>Giữ run RUNNING cho đến khi case resolve</td><td>Batch không bao giờ kết thúc.</td><td>CLOSED_WITH_BREAKS + workflow riêng.</td></tr>
+<tr><td>Retry mọi exception</td><td>Có thể duplicate posting.</td><td>Retry policy theo operation type.</td></tr>
+<tr><td>Chỉ kiểm tổng count/amount</td><td>Mismatch có thể bù trừ nhau.</td><td>Control totals + line-by-line.</td></tr>
+<tr><td>Dùng float/double cho tiền</td><td>Sai số.</td><td>Decimal/BigDecimal.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="delivery" class="anchor">
+<h2>14. Lộ trình triển khai an toàn</h2>
+
+<h3>Phase 1 — Foundation</h3>
+<ul>
+  <li>Scope/run/source model.</li>
+  <li>Raw immutable intake.</li>
+  <li>Readiness Gate.</li>
+  <li>External + internal exact matching.</li>
+  <li>Result/summary/audit.</li>
+</ul>
+
+<h3>Phase 2 — Production hardening</h3>
+<ul>
+  <li>Checkpoint/restart.</li>
+  <li>Outbox, metrics, alerting.</li>
+  <li>Report versioning/supersede.</li>
+  <li>Partition/chunk/parallel bucket.</li>
+  <li>Exception case workflow và SLA.</li>
+</ul>
+
+<h3>Phase 3 — Financial resolution</h3>
+<ul>
+  <li>Investigation integration.</li>
+  <li>Adjustment proposal.</li>
+  <li>Maker-checker và limit.</li>
+  <li>Financial executor idempotent.</li>
+  <li>Post-adjustment re-reconciliation.</li>
+</ul>
+
+<h3>Phase 4 — Settlement và intelligence</h3>
+<ul>
+  <li>Settlement statement reconciliation.</li>
+  <li>Trend/anomaly detection.</li>
+  <li>Rule version management.</li>
+  <li>Operational dashboard và capacity forecasting.</li>
+</ul>
+
+<div class="callout ok">
+  <div class="label">Definition of done cho production</div>
+  <p>Một phiên có thể chạy lại, resume sau lỗi, xử lý report resend, không tạo case trùng, có audit đầy đủ, không retry mù thao tác tiền, đóng run độc lập với case, và chứng minh được kết quả dựa trên đúng input/version/rule nào.</p>
+</div>
+</section>
+
+<footer>
+Production Reconciliation Architecture · ACH Gateway · Dark Edition · Generated 2026
+</footer>
+
+</div>
+</main>
+</div>
+</body>
+</html>

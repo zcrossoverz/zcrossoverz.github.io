@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cẩm nang ôn phỏng vấn Backend Java từ cơ bản đến thực chiến</title>
+  <meta name="description" content="Tài liệu ôn phỏng vấn Backend Java chi tiết cho người mới: Java Core, Spring Boot, JPA, JWT, Security, Concurrency, Redis, Microservices, Kubernetes, Git, BPMN, Logging và xử lý sự cố production." />
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: #0f1b2d;
+      --panel-2: #142238;
+      --text: #e9f1ff;
+      --muted: #9fb1c9;
+      --line: #263a55;
+      --primary: #7dd3fc;
+      --primary-2: #38bdf8;
+      --green: #86efac;
+      --yellow: #fde68a;
+      --red: #fda4af;
+      --code: #07101c;
+      --shadow: 0 18px 50px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top right, #12355b 0, transparent 28%), var(--bg);
+      color: var(--text);
+      line-height: 1.72;
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: 310px minmax(0,1fr); min-height: 100vh; }
+    aside {
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+      border-right: 1px solid var(--line); background: rgba(8,17,31,.94);
+      backdrop-filter: blur(14px); padding: 24px 18px 40px;
+    }
+    .brand { font-weight: 800; font-size: 18px; line-height: 1.3; margin-bottom: 14px; }
+    .badge { display: inline-block; border: 1px solid #28527a; color: #c8edff; padding: 3px 9px; border-radius: 999px; font-size: 12px; margin-bottom: 16px; }
+    #search { width: 100%; border: 1px solid var(--line); background: #0a1626; color: var(--text); border-radius: 10px; padding: 11px 12px; outline: none; margin-bottom: 14px; }
+    #search:focus { border-color: var(--primary-2); box-shadow: 0 0 0 3px rgba(56,189,248,.14); }
+    nav a { display: block; padding: 7px 10px; border-radius: 8px; color: var(--muted); font-size: 14px; }
+    nav a:hover { background: var(--panel-2); color: var(--text); text-decoration: none; }
+    .progress-box { margin-top: 20px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-size: 13px; color: var(--muted); }
+    .progress { height: 8px; border-radius: 999px; overflow: hidden; background: #07101d; margin-top: 8px; }
+    .progress span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,var(--primary-2),var(--green)); }
+    main { width: min(1120px, calc(100vw - 310px)); padding: 42px 46px 90px; }
+    .hero { padding: 32px; border: 1px solid #2b496a; background: linear-gradient(145deg, rgba(20,45,74,.95), rgba(13,28,47,.96)); border-radius: 22px; box-shadow: var(--shadow); margin-bottom: 26px; }
+    .hero h1 { font-size: clamp(30px, 4vw, 54px); line-height: 1.08; margin: 0 0 16px; letter-spacing: -.03em; }
+    .hero p { color: #c3d7ee; font-size: 17px; max-width: 860px; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .pill { padding: 7px 11px; border-radius: 999px; background: #0b1d31; border: 1px solid #274766; font-size: 13px; color: #cbeaff; }
+    section { scroll-margin-top: 20px; margin: 32px 0; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: rgba(15,27,45,.94); box-shadow: 0 12px 32px rgba(0,0,0,.18); }
+    section.filtered-out { display: none; }
+    h2 { margin: 0 0 15px; font-size: 28px; line-height: 1.25; }
+    h3 { margin-top: 28px; line-height: 1.35; color: #dff5ff; }
+    h4 { color: #ccecff; margin-top: 22px; }
+    p, li { color: #d5e0ee; }
+    .lead { font-size: 17px; color: #c9dbef; }
+    .toc-grid, .grid-2, .grid-3 { display: grid; gap: 14px; }
+    .toc-grid { grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); }
+    .grid-2 { grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--panel-2); }
+    .card h3, .card h4 { margin-top: 0; }
+    .card p:last-child { margin-bottom: 0; }
+    .callout { border-left: 4px solid var(--primary-2); padding: 12px 15px; margin: 16px 0; border-radius: 8px; background: #0a192b; }
+    .callout.good { border-color: var(--green); }
+    .callout.warn { border-color: var(--yellow); }
+    .callout.danger { border-color: var(--red); }
+    code { background: #07101d; border: 1px solid #1a3048; border-radius: 6px; padding: 1px 5px; color: #dff7ff; }
+    pre { overflow: auto; background: var(--code); border: 1px solid #20364f; border-radius: 12px; padding: 16px; color: #d8f2ff; line-height: 1.55; }
+    pre code { border: 0; padding: 0; background: transparent; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; display: block; overflow-x: auto; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; min-width: 130px; }
+    th { background: #13243a; color: #dff5ff; }
+    td { color: #d7e3f1; }
+    details { margin: 12px 0; border: 1px solid var(--line); border-radius: 12px; background: #0b1728; }
+    summary { cursor: pointer; padding: 13px 15px; font-weight: 700; color: #eaf7ff; }
+    details > div { padding: 0 15px 16px; }
+    .checklist label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; color: #dce7f3; }
+    .checklist input { margin-top: 6px; transform: scale(1.15); accent-color: var(--primary-2); }
+    .q { border-left: 3px solid #4c83b6; padding-left: 12px; margin: 16px 0; }
+    .q strong { color: var(--yellow); }
+    .answer { color: #d9fbe6; }
+    .mini { font-size: 13px; color: var(--muted); }
+    .priority { font-weight: 800; color: var(--yellow); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #35516d; margin-right: 6px; color: #bcd6ee; }
+    .top-btn { position: fixed; right: 22px; bottom: 22px; border: 1px solid #3a648c; background: #10253e; color: white; border-radius: 999px; width: 44px; height: 44px; cursor: pointer; display: none; }
+    .mobile-toggle { display: none; position: fixed; top: 12px; left: 12px; z-index: 20; border: 1px solid var(--line); background: #10233a; color: white; border-radius: 9px; padding: 8px 10px; }
+    @media (max-width: 900px) {
+      .layout { display: block; }
+      aside { position: fixed; z-index: 15; width: 310px; transform: translateX(-105%); transition: .2s; }
+      aside.open { transform: translateX(0); }
+      main { width: 100%; padding: 64px 18px 80px; }
+      .mobile-toggle { display: block; }
+      section { padding: 20px; }
+    }
+    @media print {
+      aside, .mobile-toggle, .top-btn, #search { display: none !important; }
+      main { width: 100%; padding: 0; }
+      body { background: white; color: black; }
+      section, .hero { box-shadow: none; break-inside: avoid-page; background: white; color: black; border-color: #bbb; }
+      p, li, td { color: #111; }
+      h1,h2,h3,h4,th { color: #000; }
+      pre, code { color: #111; background: #f3f3f3; }
+    }
+  </style>
+</head>
+<body>
+<button class="mobile-toggle" onclick="document.querySelector('aside').classList.toggle('open')">☰ Mục lục</button>
+<div class="layout">
+  <aside>
+    <div class="brand">Cẩm nang Backend Java</div>
+    <div class="badge">Từ người mới → phỏng vấn 3 năm kinh nghiệm</div>
+    <input id="search" placeholder="Tìm: JWT, Redis, N+1, deadlock..." />
+    <nav>
+      <a href="#bat-dau">0. Cách học tài liệu</a>
+      <a href="#lo-trinh">1. Lộ trình ôn tập</a>
+      <a href="#du-an">2. Giới thiệu dự án</a>
+      <a href="#java-core">3. Java Core</a>
+      <a href="#solid-pattern">4. SOLID & Design Pattern</a>
+      <a href="#spring">5. Spring Boot & MVC</a>
+      <a href="#jpa-db">6. JPA & Oracle Database</a>
+      <a href="#auth-security">7. Login, JWT & Security</a>
+      <a href="#concurrency">8. Async, Thread & Concurrency</a>
+      <a href="#redis">9. Redis & Caching</a>
+      <a href="#microservice">10. Microservices</a>
+      <a href="#container">11. Docker, K8S, OpenShift</a>
+      <a href="#deploy">12. Deploy & CI/CD</a>
+      <a href="#git">13. Git</a>
+      <a href="#bpmn">14. BPMN</a>
+      <a href="#logging">15. Logging & Observability</a>
+      <a href="#troubleshoot">16. Memory leak & High CPU</a>
+      <a href="#rest">17. REST API</a>
+      <a href="#questions">18. Bộ câu hỏi phỏng vấn</a>
+      <a href="#cheatsheet">19. Cheat sheet trước giờ phỏng vấn</a>
+    </nav>
+    <div class="progress-box">
+      Tiến độ checklist: <strong id="progressText">0%</strong>
+      <div class="progress"><span id="progressBar"></span></div>
+      <div class="mini" style="margin-top:8px">Dấu tích được lưu trên trình duyệt.</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>Cẩm nang ôn phỏng vấn Backend Java</h1>
+      <p>Tài liệu này giải thích từng chủ đề theo cách dành cho người mới: bắt đầu từ khái niệm, ví dụ đơn giản, cách dùng trong dự án thật, lỗi thường gặp và cách trả lời khi phỏng vấn.</p>
+      <div class="pill-row">
+        <span class="pill">Java</span><span class="pill">Spring Boot</span><span class="pill">JPA</span><span class="pill">Oracle</span><span class="pill">JWT</span><span class="pill">Redis</span><span class="pill">Concurrency</span><span class="pill">Microservices</span><span class="pill">Kubernetes</span><span class="pill">Git</span>
+      </div>
+    </div>
+
+    <section id="bat-dau" data-title="cách học tài liệu bắt đầu">
+      <h2>0. Cách dùng tài liệu này mà không bị ngợp</h2>
+      <p class="lead">Bạn không cần biết toàn bộ mọi thứ ở mức chuyên gia. Với khoảng 3 năm kinh nghiệm, mục tiêu thực tế là: <strong>hiểu bản chất phần mình ghi trong CV, giải thích được bằng lời của mình và kể được một ví dụ thực tế.</strong></p>
+      <div class="grid-3">
+        <div class="card"><h3>Mức 1 — Biết khái niệm</h3><p>Giải thích được “nó là gì” và “dùng để làm gì”. Ví dụ: Redis là kho dữ liệu in-memory, thường dùng làm cache.</p></div>
+        <div class="card"><h3>Mức 2 — Biết áp dụng</h3><p>Nói được cách dùng trong Spring Boot hoặc dự án. Ví dụ: dùng cache-aside với TTL để giảm query DB.</p></div>
+        <div class="card"><h3>Mức 3 — Biết trade-off</h3><p>Nói được khi nào không nên dùng, lỗi nào có thể xảy ra và cách xử lý. Đây là mức khiến câu trả lời có chiều sâu.</p></div>
+      </div>
+      <div class="callout good"><strong>Công thức học mỗi chủ đề:</strong> Định nghĩa → ví dụ → dùng ở đâu trong dự án → lỗi từng gặp → cách sửa → một câu trả lời phỏng vấn 30–60 giây.</div>
+      <h3>Ba nguyên tắc quan trọng</h3>
+      <ol>
+        <li>Không nói đã làm production nếu thực tế chỉ mới đọc hoặc làm thử.</li>
+        <li>Không cố thuộc lòng định nghĩa sách giáo khoa; hãy diễn giải bằng ví dụ nghiệp vụ.</li>
+        <li>Với những phần rất rộng như virtual threads, microservices hay Kubernetes, chỉ cần chắc phần cốt lõi và nói đúng phạm vi kinh nghiệm.</li>
+      </ol>
+    </section>
+
+    <section id="lo-trinh" data-title="lộ trình ôn tập 7 ngày 14 ngày ưu tiên">
+      <h2>1. Lộ trình ôn tập thực tế</h2>
+      <h3>Lộ trình 7 ngày nếu phỏng vấn gần</h3>
+      <table>
+        <tr><th>Ngày</th><th>Nội dung chính</th><th>Kết quả cần đạt</th></tr>
+        <tr><td>1</td><td>Giới thiệu dự án, vai trò, luồng một API</td><td>Nói trôi chảy 2–3 phút, có số liệu và ví dụ</td></tr>
+        <tr><td>2</td><td>Java Core, OOP, Collection, Exception</td><td>Trả lời được các câu nền tảng</td></tr>
+        <tr><td>3</td><td>Spring Boot, MVC, DI, Transaction</td><td>Hiểu luồng request và Spring proxy</td></tr>
+        <tr><td>4</td><td>JPA, SQL, Oracle, index, N+1</td><td>Kể được một case tối ưu truy vấn</td></tr>
+        <tr><td>5</td><td>JWT, OWASP, Redis</td><td>Giải thích login/logout và cache-aside</td></tr>
+        <tr><td>6</td><td>Concurrency, async, idempotency</td><td>Giải quyết được double request/lost update</td></tr>
+        <tr><td>7</td><td>Docker/K8S, CI/CD, Git, mock interview</td><td>Ghép mọi thứ thành trải nghiệm dự án</td></tr>
+      </table>
+      <h3>Checklist ưu tiên</h3>
+      <div class="checklist">
+        <label><input type="checkbox" data-progress />Tôi giới thiệu được dự án gần nhất trong 2–3 phút.</label>
+        <label><input type="checkbox" data-progress />Tôi giải thích được request đi qua Controller → Service → Repository → DB.</label>
+        <label><input type="checkbox" data-progress />Tôi hiểu DI, transaction, N+1, index và JWT.</label>
+        <label><input type="checkbox" data-progress />Tôi giải thích được race condition, idempotency và Redis cache.</label>
+        <label><input type="checkbox" data-progress />Tôi mô tả được pipeline deploy và cách xử lý một sự cố production.</label>
+      </div>
+    </section>
+
+    <section id="du-an" data-title="giới thiệu dự án vai trò STAR production">
+      <h2>2. Giới thiệu dự án — phần quan trọng nhất</h2>
+      <p>Nhiều cuộc phỏng vấn không bắt đầu bằng thuật toán mà bắt đầu bằng câu: <em>“Hãy giới thiệu dự án gần nhất và phần bạn phụ trách.”</em> Câu trả lời này quyết định người phỏng vấn sẽ đào sâu vào đâu.</p>
+      <h3>Cấu trúc trả lời 6 phần</h3>
+      <ol>
+        <li><strong>Bối cảnh:</strong> Dự án phục vụ ai, giải quyết vấn đề gì.</li>
+        <li><strong>Kiến trúc:</strong> Monolith hay microservice, có những hệ thống nào giao tiếp.</li>
+        <li><strong>Tech stack:</strong> Java, Spring Boot, Oracle, Redis, Docker, K8S...</li>
+        <li><strong>Vai trò cá nhân:</strong> Bạn trực tiếp làm module/API nào.</li>
+        <li><strong>Vấn đề khó:</strong> Một lỗi hoặc bài toán cụ thể.</li>
+        <li><strong>Kết quả:</strong> Tối ưu bao nhiêu, giảm lỗi gì, cải thiện quy trình ra sao.</li>
+      </ol>
+      <div class="callout"><strong>Mẫu nói:</strong> “Dự án của em là hệ thống ACH Gateway kết nối core banking với NAPAS. Em phụ trách backend Java Spring Boot, chủ yếu xử lý API giao dịch, trạng thái message và đối soát. Hệ thống sử dụng Oracle, Redis và triển khai trên OpenShift. Một bài toán em từng xử lý là tránh ghi nhận giao dịch trùng khi bên ngoài retry. Em kết hợp business key duy nhất ở database, kiểm tra idempotency và log correlation ID để truy vết.”</div>
+      <h3>Chuẩn bị ba câu chuyện theo STAR</h3>
+      <div class="grid-3">
+        <div class="card"><h4>Tối ưu hiệu năng</h4><p><strong>S:</strong> API chậm.<br><strong>T:</strong> Giảm latency.<br><strong>A:</strong> Xem execution plan, sửa query/index, giảm dữ liệu load.<br><strong>R:</strong> Nêu kết quả đo được.</p></div>
+        <div class="card"><h4>Lỗi production</h4><p><strong>S:</strong> Giao dịch lỗi/tồn đọng.<br><strong>T:</strong> Tìm root cause.<br><strong>A:</strong> Dùng log, trace ID, SQL, thread dump.<br><strong>R:</strong> Khôi phục và ngăn tái diễn.</p></div>
+        <div class="card"><h4>Yêu cầu gấp</h4><p><strong>S:</strong> Deadline ngắn.<br><strong>T:</strong> Đảm bảo đúng nghiệp vụ.<br><strong>A:</strong> Chia task, test case, review rủi ro.<br><strong>R:</strong> Giao đúng hạn, không phát sinh lỗi nghiêm trọng.</p></div>
+      </div>
+      <h3>Những con số nên nhớ</h3>
+      <p>Không cần bịa số. Chỉ cần nhớ dữ liệu thật hoặc khoảng tương đối: số lượng service, số API bạn làm, số bản ghi/ngày, thời gian response trước và sau, số người trong team, tần suất deploy.</p>
+    </section>
+
+    <section id="java-core" data-title="java core oop collection hashmap exception jvm memory">
+      <h2>3. Java Core từ cơ bản</h2>
+      <h3>3.1 Class và Object</h3>
+      <p><strong>Class</strong> là bản thiết kế; <strong>object</strong> là một thực thể được tạo từ bản thiết kế đó.</p>
+      <pre><code>public class BankAccount {
+    private String accountNo;
+    private BigDecimal balance;
+
+    public void deposit(BigDecimal amount) {
+        balance = balance.add(amount);
+    }
+}
+
+BankAccount account = new BankAccount(); // object</code></pre>
+
+      <h3>3.2 Bốn tính chất OOP</h3>
+      <table>
+        <tr><th>Khái niệm</th><th>Hiểu đơn giản</th><th>Ví dụ</th></tr>
+        <tr><td>Encapsulation</td><td>Che giấu dữ liệu, chỉ cho phép truy cập qua cách kiểm soát</td><td>balance là private; cập nhật qua deposit()</td></tr>
+        <tr><td>Abstraction</td><td>Chỉ cho người dùng thấy điều cần dùng, giấu chi tiết bên trong</td><td>PaymentService.pay() không để caller biết từng bước xử lý</td></tr>
+        <tr><td>Inheritance</td><td>Lớp con kế thừa thuộc tính/hành vi lớp cha</td><td>CreditPayment extends Payment</td></tr>
+        <tr><td>Polymorphism</td><td>Cùng một interface nhưng nhiều cách thực thi</td><td>PaymentProcessor có NapasProcessor và VisaProcessor</td></tr>
+      </table>
+      <div class="callout warn"><strong>Lưu ý:</strong> Trong dự án doanh nghiệp, composition thường an toàn hơn inheritance vì giảm phụ thuộc cứng giữa các class.</div>
+
+      <h3>3.3 Interface và abstract class</h3>
+      <table>
+        <tr><th>Interface</th><th>Abstract class</th></tr>
+        <tr><td>Mô tả “khả năng” hoặc hợp đồng</td><td>Mô tả một họ đối tượng có trạng thái/hành vi chung</td></tr>
+        <tr><td>Một class có thể implement nhiều interface</td><td>Chỉ extend một class</td></tr>
+        <tr><td>Phù hợp để tách implementation</td><td>Phù hợp khi có logic dùng chung đáng kể</td></tr>
+      </table>
+
+      <h3>3.4 Overload và Override</h3>
+      <ul>
+        <li><strong>Overload:</strong> cùng tên method nhưng khác danh sách tham số; quyết định ở compile time.</li>
+        <li><strong>Override:</strong> class con viết lại method của class cha/interface; quyết định ở runtime.</li>
+      </ul>
+
+      <h3>3.5 equals() và hashCode()</h3>
+      <p>HashMap và HashSet dùng <code>hashCode()</code> để chọn bucket, sau đó dùng <code>equals()</code> để so sánh chính xác. Nếu hai object được coi là bằng nhau theo <code>equals()</code>, chúng phải có cùng hash code.</p>
+      <pre><code>@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Customer other)) return false;
+    return Objects.equals(customerId, other.customerId);
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(customerId);
+}</code></pre>
+
+      <h3>3.6 Collection thường gặp</h3>
+      <table>
+        <tr><th>Loại</th><th>Đặc điểm</th><th>Khi dùng</th></tr>
+        <tr><td>ArrayList</td><td>Truy cập index nhanh, thêm cuối nhanh</td><td>Danh sách thông thường, đọc nhiều</td></tr>
+        <tr><td>LinkedList</td><td>Node liên kết; truy cập index chậm</td><td>Ít dùng hơn trong business code</td></tr>
+        <tr><td>HashSet</td><td>Không trùng, không đảm bảo thứ tự</td><td>Kiểm tra tồn tại nhanh</td></tr>
+        <tr><td>HashMap</td><td>Key-value, trung bình O(1)</td><td>Tra cứu theo key</td></tr>
+        <tr><td>TreeMap</td><td>Sắp xếp theo key, O(log n)</td><td>Cần dữ liệu có thứ tự</td></tr>
+        <tr><td>ConcurrentHashMap</td><td>An toàn hơn khi nhiều thread truy cập</td><td>Shared state trong môi trường concurrent</td></tr>
+      </table>
+
+      <h3>3.7 HashMap hoạt động thế nào?</h3>
+      <p>Khi gọi <code>put(key, value)</code>, Java tính hash của key để xác định bucket. Nếu bucket đã có phần tử, Java so sánh key bằng hash và <code>equals()</code>. Khi collision nhiều, từ Java 8 bucket có thể chuyển từ linked list sang tree để cải thiện hiệu năng trong điều kiện phù hợp.</p>
+      <div class="q"><strong>Câu hỏi:</strong> HashMap có thread-safe không?<br><span class="answer">Không. Nếu nhiều thread cùng sửa HashMap, có thể mất dữ liệu hoặc trạng thái không nhất quán. Dùng ConcurrentHashMap hoặc đồng bộ phù hợp.</span></div>
+
+      <h3>3.8 Exception</h3>
+      <ul>
+        <li><strong>Checked exception:</strong> compiler bắt buộc xử lý hoặc khai báo, ví dụ IOException.</li>
+        <li><strong>Unchecked exception:</strong> kế thừa RuntimeException, thường biểu thị lỗi lập trình hoặc business validation.</li>
+        <li><strong>Error:</strong> lỗi nghiêm trọng của JVM như OutOfMemoryError; thường không nên catch để tiếp tục như bình thường.</li>
+      </ul>
+      <pre><code>public class BusinessException extends RuntimeException {
+    private final String code;
+
+    public BusinessException(String code, String message) {
+        super(message);
+        this.code = code;
+    }
+}</code></pre>
+      <p><strong>Try-with-resources</strong> giúp tự đóng tài nguyên:</p>
+      <pre><code>try (InputStream in = Files.newInputStream(path)) {
+    // đọc file
+}</code></pre>
+
+      <h3>3.9 Stack, Heap và Garbage Collector</h3>
+      <ul>
+        <li><strong>Stack:</strong> biến local, frame của method, mỗi thread có stack riêng.</li>
+        <li><strong>Heap:</strong> object được cấp phát, dùng chung giữa các thread.</li>
+        <li><strong>Metaspace:</strong> metadata của class.</li>
+        <li><strong>Garbage Collector:</strong> thu hồi object không còn được tham chiếu.</li>
+      </ul>
+      <div class="callout danger"><strong>Java vẫn có memory leak</strong> khi object không còn hữu ích nhưng vẫn bị giữ tham chiếu, ví dụ static List tăng mãi, cache không TTL, ThreadLocal không remove hoặc listener không unregister.</div>
+    </section>
+
+    <section id="solid-pattern" data-title="solid design pattern strategy factory builder adapter proxy">
+      <h2>4. SOLID và Design Pattern</h2>
+      <p>SOLID không phải luật cứng. Đây là các nguyên tắc giúp code dễ thay đổi, dễ test và giảm phụ thuộc.</p>
+      <h3>4.1 SOLID</h3>
+      <div class="grid-2">
+        <div class="card"><h4>S — Single Responsibility</h4><p>Một class chỉ nên có một lý do để thay đổi. Không để một service vừa validate, vừa gọi DB, vừa gửi email, vừa build báo cáo.</p></div>
+        <div class="card"><h4>O — Open/Closed</h4><p>Mở cho mở rộng, đóng cho sửa đổi. Thêm phương thức thanh toán mới bằng class mới thay vì sửa một chuỗi if/else rất dài.</p></div>
+        <div class="card"><h4>L — Liskov Substitution</h4><p>Class con phải có thể thay thế class cha mà không phá hành vi mong đợi.</p></div>
+        <div class="card"><h4>I — Interface Segregation</h4><p>Interface nên nhỏ và đúng mục đích. Không ép class implement method nó không cần.</p></div>
+        <div class="card"><h4>D — Dependency Inversion</h4><p>Business logic phụ thuộc abstraction thay vì implementation cụ thể.</p></div>
+      </div>
+      <pre><code>public interface PaymentProcessor {
+    PaymentResult process(PaymentRequest request);
+}
+
+@Service
+public class NapasPaymentProcessor implements PaymentProcessor {
+    public PaymentResult process(PaymentRequest request) {
+        // xử lý NAPAS
+    }
+}</code></pre>
+
+      <h3>4.2 Một số pattern nên biết</h3>
+      <table>
+        <tr><th>Pattern</th><th>Dùng khi nào</th><th>Ví dụ</th></tr>
+        <tr><td>Strategy</td><td>Nhiều thuật toán/cách xử lý có thể thay thế</td><td>Mỗi loại giao dịch có một handler</td></tr>
+        <tr><td>Factory</td><td>Tạo đúng object theo loại đầu vào</td><td>Chọn processor theo paymentType</td></tr>
+        <tr><td>Builder</td><td>Object có nhiều field tùy chọn</td><td>Tạo response hoặc request phức tạp</td></tr>
+        <tr><td>Adapter</td><td>Chuyển interface hệ thống ngoài thành interface nội bộ</td><td>Adapter cho API NAPAS/Core</td></tr>
+        <tr><td>Template Method</td><td>Nhiều flow có các bước chung</td><td>Validate → process → persist → notify</td></tr>
+        <tr><td>Chain of Responsibility</td><td>Chuỗi validator/handler</td><td>Kiểm tra format, quyền, hạn mức</td></tr>
+        <tr><td>Proxy</td><td>Bổ sung hành vi trước/sau method</td><td>@Transactional, @Async, Spring Security</td></tr>
+      </table>
+      <details><summary>Ví dụ Strategy + Factory đơn giản</summary><div>
+      <pre><code>public interface TransferHandler {
+    String type();
+    void handle(TransferRequest request);
+}
+
+@Component
+class InternalTransferHandler implements TransferHandler {
+    public String type() { return "INTERNAL"; }
+    public void handle(TransferRequest request) { /* ... */ }
+}
+
+@Component
+class TransferHandlerFactory {
+    private final Map&lt;String, TransferHandler&gt; handlers;
+
+    TransferHandlerFactory(List&lt;TransferHandler&gt; list) {
+        handlers = list.stream().collect(Collectors.toMap(
+            TransferHandler::type,
+            Function.identity()
+        ));
+    }
+
+    TransferHandler get(String type) {
+        return Optional.ofNullable(handlers.get(type))
+            .orElseThrow(() -&gt; new IllegalArgumentException("Unsupported type"));
+    }
+}</code></pre>
+      </div></details>
+    </section>
+
+    <section id="spring" data-title="spring boot mvc dependency injection bean transactional filter interceptor controller advice">
+      <h2>5. Spring Boot và MVC</h2>
+      <h3>5.1 Spring Boot là gì?</h3>
+      <p>Spring Framework cung cấp IoC, DI, transaction, web MVC và nhiều module. Spring Boot giúp cấu hình nhanh hơn nhờ auto-configuration, starter dependency và embedded server.</p>
+
+      <h3>5.2 Luồng một HTTP request</h3>
+      <ol>
+        <li>Request vào web server.</li>
+        <li>Đi qua Filter, ví dụ authentication filter.</li>
+        <li>DispatcherServlet tìm controller phù hợp.</li>
+        <li>Interceptor có thể chạy trước/sau controller.</li>
+        <li>Controller parse request và gọi service.</li>
+        <li>Service xử lý nghiệp vụ, gọi repository/client.</li>
+        <li>Response được Jackson serialize thành JSON.</li>
+      </ol>
+      <div class="callout"><strong>Nguyên tắc:</strong> Controller mỏng, Service giữ business logic, Repository phụ trách truy cập dữ liệu. Không để mọi thứ trong Controller.</div>
+
+      <h3>5.3 Dependency Injection</h3>
+      <p>Thay vì class tự tạo dependency bằng <code>new</code>, Spring tạo và tiêm dependency vào. Điều này giảm coupling và giúp test dễ hơn.</p>
+      <pre><code>@Service
+public class TransferService {
+    private final TransferRepository repository;
+
+    public TransferService(TransferRepository repository) {
+        this.repository = repository;
+    }
+}</code></pre>
+      <p>Constructor injection được ưu tiên vì dependency rõ ràng, field có thể final và test thuận tiện.</p>
+
+      <h3>5.4 Các annotation phổ biến</h3>
+      <table>
+        <tr><th>Annotation</th><th>Ý nghĩa</th></tr>
+        <tr><td>@RestController</td><td>Controller trả dữ liệu, thường là JSON</td></tr>
+        <tr><td>@Service</td><td>Đánh dấu business service</td></tr>
+        <tr><td>@Repository</td><td>Data access layer, có exception translation</td></tr>
+        <tr><td>@Component</td><td>Bean Spring chung</td></tr>
+        <tr><td>@Configuration + @Bean</td><td>Khai báo bean bằng Java config</td></tr>
+        <tr><td>@Value / @ConfigurationProperties</td><td>Đọc cấu hình</td></tr>
+      </table>
+
+      <h3>5.5 Bean scope và thread safety</h3>
+      <p>Mặc định bean Spring là singleton: cả ứng dụng dùng chung một instance. Singleton không tự động thread-safe. Nếu bean chứa mutable field dùng chung, nhiều request có thể ghi đè nhau.</p>
+      <pre><code>@Service
+public class BadService {
+    private String currentUser; // nguy hiểm vì nhiều request dùng chung
+}</code></pre>
+      <p>Service nên stateless: dữ liệu theo request nằm trong biến local hoặc truyền qua tham số.</p>
+
+      <h3>5.6 DTO, Entity và Mapper</h3>
+      <ul>
+        <li><strong>Entity:</strong> mô hình dữ liệu persistence.</li>
+        <li><strong>Request DTO:</strong> dữ liệu client gửi vào.</li>
+        <li><strong>Response DTO:</strong> dữ liệu API trả ra.</li>
+        <li><strong>Mapper:</strong> chuyển đổi giữa các model.</li>
+      </ul>
+      <p>Không nên expose entity trực tiếp vì dễ lộ field, dính lazy loading, vòng lặp JSON và phụ thuộc chặt API vào DB schema.</p>
+
+      <h3>5.7 Validation và xử lý lỗi</h3>
+      <pre><code>public record CreateTransferRequest(
+    @NotBlank String accountNo,
+    @NotNull @Positive BigDecimal amount
+) {}
+
+@PostMapping("/transfers")
+public ResponseEntity&lt;TransferResponse&gt; create(
+        @Valid @RequestBody CreateTransferRequest request) {
+    return ResponseEntity.ok(service.create(request));
+}</code></pre>
+      <pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(BusinessException.class)
+    ResponseEntity&lt;ErrorResponse&gt; handle(BusinessException ex) {
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse(ex.getMessage()));
+    }
+}</code></pre>
+
+      <h3>5.8 @Transactional và Spring Proxy</h3>
+      <p>Spring thường tạo proxy quanh bean. Khi method được gọi qua proxy, Spring bắt đầu transaction, gọi method thật, sau đó commit hoặc rollback.</p>
+      <div class="callout danger"><strong>Self-invocation:</strong> Một method trong cùng class gọi method khác có <code>@Transactional</code> có thể bypass proxy, nên transaction không chạy như kỳ vọng.</div>
+      <p>Mặc định Spring rollback với RuntimeException và Error; checked exception cần cấu hình nếu muốn rollback.</p>
+    </section>
+
+    <section id="jpa-db" data-title="jpa hibernate oracle database transaction n+1 index lock sql">
+      <h2>6. JPA, Hibernate và Oracle Database</h2>
+      <h3>6.1 JPA và Hibernate khác nhau thế nào?</h3>
+      <p><strong>JPA</strong> là đặc tả API cho ORM. <strong>Hibernate</strong> là một implementation phổ biến của JPA. Spring Data JPA giúp viết repository thuận tiện hơn.</p>
+
+      <h3>6.2 Entity lifecycle</h3>
+      <table>
+        <tr><th>Trạng thái</th><th>Ý nghĩa</th></tr>
+        <tr><td>Transient</td><td>Object mới tạo, chưa được persistence context quản lý</td></tr>
+        <tr><td>Managed</td><td>Được quản lý; thay đổi có thể tự được ghi xuống DB</td></tr>
+        <tr><td>Detached</td><td>Từng managed nhưng context đã đóng hoặc object bị detach</td></tr>
+        <tr><td>Removed</td><td>Được đánh dấu để xóa</td></tr>
+      </table>
+
+      <h3>6.3 Persistence Context và Dirty Checking</h3>
+      <p>Trong transaction, khi lấy entity từ DB, Hibernate giữ entity trong persistence context. Nếu sửa field của entity managed, Hibernate phát hiện thay đổi và tạo SQL UPDATE lúc flush/commit.</p>
+      <pre><code>@Transactional
+public void updateStatus(Long id, String status) {
+    Transfer transfer = repository.findById(id).orElseThrow();
+    transfer.setStatus(status); // không cần gọi save trong nhiều trường hợp
+}</code></pre>
+
+      <h3>6.4 Lazy và Eager</h3>
+      <ul>
+        <li><strong>Lazy:</strong> dữ liệu quan hệ chỉ tải khi truy cập.</li>
+        <li><strong>Eager:</strong> tải ngay cùng entity chính.</li>
+      </ul>
+      <p>Eager không phải lúc nào cũng tốt vì có thể tải dư dữ liệu. Lazy cũng có rủi ro <code>LazyInitializationException</code> nếu truy cập quan hệ khi session đã đóng.</p>
+
+      <h3>6.5 N+1 Query</h3>
+      <p>Ví dụ: lấy 100 order bằng 1 query, sau đó mỗi order lại query customer riêng → tổng 101 query.</p>
+      <p>Cách xử lý:</p>
+      <ul>
+        <li>Fetch join.</li>
+        <li>EntityGraph.</li>
+        <li>DTO projection.</li>
+        <li>Batch fetching.</li>
+        <li>Thiết kế query theo đúng use case thay vì load graph object lớn.</li>
+      </ul>
+      <pre><code>@Query("select o from Order o join fetch o.customer where o.status = :status")
+List&lt;Order&gt; findWithCustomer(@Param("status") String status);</code></pre>
+
+      <h3>6.6 ACID và Transaction</h3>
+      <table>
+        <tr><th>Chữ</th><th>Ý nghĩa</th></tr>
+        <tr><td>Atomicity</td><td>Hoặc toàn bộ thành công, hoặc rollback</td></tr>
+        <tr><td>Consistency</td><td>Dữ liệu giữ đúng rule/invariant</td></tr>
+        <tr><td>Isolation</td><td>Transaction song song không làm nhau thấy trạng thái không hợp lệ</td></tr>
+        <tr><td>Durability</td><td>Commit rồi thì dữ liệu bền vững</td></tr>
+      </table>
+
+      <h3>6.7 Isolation level</h3>
+      <table>
+        <tr><th>Mức</th><th>Ngăn được</th><th>Đổi lại</th></tr>
+        <tr><td>Read Uncommitted</td><td>Hầu như không</td><td>Nhanh nhưng rủi ro dirty read</td></tr>
+        <tr><td>Read Committed</td><td>Dirty read</td><td>Phổ biến, vẫn có non-repeatable read</td></tr>
+        <tr><td>Repeatable Read</td><td>Dirty + non-repeatable read</td><td>Lock/version nhiều hơn</td></tr>
+        <tr><td>Serializable</td><td>Mức cô lập cao nhất</td><td>Giảm concurrency</td></tr>
+      </table>
+
+      <h3>6.8 Optimistic Lock và Pessimistic Lock</h3>
+      <p><strong>Optimistic lock</strong> phù hợp khi xung đột ít. Dùng cột version; nếu bản ghi đã bị người khác cập nhật, update thất bại.</p>
+      <pre><code>@Version
+private Long version;</code></pre>
+      <p><strong>Pessimistic lock</strong> khóa bản ghi ngay khi đọc để ngăn transaction khác sửa. Phù hợp khi xung đột cao nhưng có thể gây chờ và deadlock.</p>
+
+      <h3>6.9 Index</h3>
+      <p>Index giống mục lục sách: giúp tìm dữ liệu nhanh hơn nhưng tốn dung lượng và làm insert/update chậm hơn vì phải cập nhật index.</p>
+      <h4>Composite index</h4>
+      <p>Index <code>(status, created_at)</code> thường hữu ích cho query lọc theo status và thời gian. Thứ tự cột rất quan trọng vì database thường dùng tốt phần tiền tố bên trái của index.</p>
+      <div class="callout warn">Dùng function lên cột, ép kiểu sai, wildcard đầu chuỗi như <code>LIKE '%abc'</code> hoặc select phần lớn bảng có thể khiến optimizer không dùng index.</div>
+
+      <h3>6.10 Cách tối ưu query</h3>
+      <ol>
+        <li>Đo query nào chậm, không tối ưu theo cảm giác.</li>
+        <li>Xem execution plan.</li>
+        <li>Kiểm tra số bản ghi, độ chọn lọc và join condition.</li>
+        <li>Chỉ lấy cột cần thiết.</li>
+        <li>Thêm/sửa index hợp lý.</li>
+        <li>Tránh N+1.</li>
+        <li>Phân trang đúng cách.</li>
+        <li>Đo lại trước và sau.</li>
+      </ol>
+    </section>
+
+    <section id="auth-security" data-title="login logout jwt rsa sha aes owasp authentication authorization security">
+      <h2>7. Login, JWT và Security</h2>
+      <h3>7.1 Authentication và Authorization</h3>
+      <ul>
+        <li><strong>Authentication:</strong> Xác minh bạn là ai.</li>
+        <li><strong>Authorization:</strong> Sau khi biết bạn là ai, kiểm tra bạn được làm gì.</li>
+      </ul>
+
+      <h3>7.2 Luồng login dùng JWT</h3>
+      <ol>
+        <li>Client gửi username/password qua HTTPS.</li>
+        <li>Server tìm user và verify password hash.</li>
+        <li>Server tạo access token, có thể kèm refresh token.</li>
+        <li>Client gửi access token trong header Authorization.</li>
+        <li>Security filter verify chữ ký, expiration, issuer/audience và tạo Authentication.</li>
+        <li>Controller hoặc method security kiểm tra role/permission.</li>
+      </ol>
+
+      <h3>7.3 JWT gồm gì?</h3>
+      <p>JWT thường có ba phần: Header, Payload và Signature. Payload chỉ được encode Base64URL, không mặc định được mã hóa. Vì vậy không đặt password, private key hoặc dữ liệu nhạy cảm vào payload.</p>
+      <div class="callout"><strong>Access token</strong> nên sống ngắn. <strong>Refresh token</strong> sống lâu hơn, cần quản lý chặt, rotation và khả năng thu hồi.</div>
+
+      <h3>7.4 Logout với JWT</h3>
+      <p>Vì JWT thường stateless, server không nhất thiết lưu access token. Một số cách logout:</p>
+      <ul>
+        <li>Client xóa token; đơn giản nhưng token bị đánh cắp vẫn còn hiệu lực đến khi hết hạn.</li>
+        <li>Blacklist token trong Redis đến hết TTL.</li>
+        <li>Thu hồi refresh token; access token ngắn hạn tự hết hạn.</li>
+        <li>Dùng token version để vô hiệu hóa hàng loạt token của user.</li>
+      </ul>
+
+      <h3>7.5 RSA, AES, SHA, BCrypt</h3>
+      <table>
+        <tr><th>Công nghệ</th><th>Loại</th><th>Dùng để làm gì</th></tr>
+        <tr><td>RSA</td><td>Bất đối xứng</td><td>Mã hóa dữ liệu nhỏ hoặc ký số</td></tr>
+        <tr><td>AES</td><td>Đối xứng</td><td>Mã hóa dữ liệu hiệu quả</td></tr>
+        <tr><td>SHA-256</td><td>Hash</td><td>Tạo fingerprint/checksum, không thể giải mã ngược</td></tr>
+        <tr><td>BCrypt/Argon2</td><td>Password hashing</td><td>Lưu password an toàn hơn nhờ salt và cost</td></tr>
+        <tr><td>Base64</td><td>Encoding</td><td>Biểu diễn bytes thành text; không phải bảo mật</td></tr>
+      </table>
+
+      <h3>7.6 OWASP — hiểu theo tình huống</h3>
+      <div class="grid-2">
+        <div class="card"><h4>Broken Access Control</h4><p>User A đổi ID trên URL và xem dữ liệu User B. Cách tránh: kiểm tra quyền trên chính resource, không chỉ kiểm tra role.</p></div>
+        <div class="card"><h4>Injection</h4><p>Không nối chuỗi SQL từ input. Dùng parameterized query/JPA binding.</p></div>
+        <div class="card"><h4>Security Misconfiguration</h4><p>Không bật debug trên production, không expose actuator nhạy cảm, không dùng default password.</p></div>
+        <div class="card"><h4>Cryptographic Failure</h4><p>Không lưu plaintext password, không hard-code key, dùng TLS và thuật toán chuẩn.</p></div>
+        <div class="card"><h4>SSRF</h4><p>Không cho user tùy ý nhập URL để server gọi nội bộ. Cần allowlist và chặn private IP.</p></div>
+        <div class="card"><h4>Logging Failure</h4><p>Có audit log và cảnh báo, nhưng phải mask token, password, số tài khoản nhạy cảm.</p></div>
+      </div>
+    </section>
+
+    <section id="concurrency" data-title="concurrency async sync thread multithreading virtual thread race condition deadlock">
+      <h2>8. Async, Sync, đa luồng và Concurrent Request</h2>
+      <h3>8.1 Sync và Async</h3>
+      <ul>
+        <li><strong>Synchronous:</strong> caller chờ công việc hoàn tất rồi mới đi tiếp.</li>
+        <li><strong>Asynchronous:</strong> caller gửi việc và có thể làm việc khác; kết quả đến sau qua future, callback hoặc message.</li>
+      </ul>
+      <p>Async không đồng nghĩa với chạy song song. Một tác vụ có thể async nhưng vẫn chỉ chạy trên một thread/event loop.</p>
+
+      <h3>8.2 Concurrency và Parallelism</h3>
+      <ul>
+        <li><strong>Concurrency:</strong> nhiều công việc cùng tồn tại và được tiến hành xen kẽ.</li>
+        <li><strong>Parallelism:</strong> thực sự chạy đồng thời trên nhiều core.</li>
+      </ul>
+
+      <h3>8.3 Race condition</h3>
+      <p>Hai thread cùng đọc balance = 100, mỗi thread cộng 10 và ghi 110. Kết quả đúng phải là 120 nhưng bị mất một lần cập nhật.</p>
+      <pre><code>class Counter {
+    private int value;
+    public void increment() { value++; } // không atomic
+}</code></pre>
+      <p>Có thể xử lý bằng synchronized, AtomicInteger, lock, database atomic update hoặc optimistic lock tùy phạm vi.</p>
+
+      <h3>8.4 synchronized, volatile và Atomic</h3>
+      <table>
+        <tr><th>Công cụ</th><th>Giải quyết</th><th>Không giải quyết</th></tr>
+        <tr><td>synchronized</td><td>Mutual exclusion + visibility</td><td>Có thể giảm throughput nếu lock lớn</td></tr>
+        <tr><td>volatile</td><td>Visibility và ordering của một biến</td><td>Không làm phép tăng value++ thành atomic</td></tr>
+        <tr><td>AtomicInteger</td><td>CAS cho thao tác atomic đơn giản</td><td>Không thay thế transaction phức tạp nhiều biến</td></tr>
+      </table>
+
+      <h3>8.5 Deadlock</h3>
+      <p>Thread A giữ lock 1 chờ lock 2; thread B giữ lock 2 chờ lock 1. Cả hai chờ nhau mãi.</p>
+      <p>Cách giảm:</p>
+      <ul>
+        <li>Luôn lấy lock theo cùng thứ tự.</li>
+        <li>Giữ lock trong thời gian ngắn.</li>
+        <li>Không gọi network/DB lâu khi đang giữ lock.</li>
+        <li>Dùng tryLock với timeout khi phù hợp.</li>
+      </ul>
+
+      <h3>8.6 Thread Pool</h3>
+      <p>Tạo thread có chi phí. Thread pool tái sử dụng thread và giới hạn số lượng công việc chạy đồng thời.</p>
+      <ul>
+        <li>corePoolSize: số thread lõi.</li>
+        <li>maximumPoolSize: số thread tối đa.</li>
+        <li>queue: nơi chờ.</li>
+        <li>rejection policy: xử lý khi pool và queue đầy.</li>
+      </ul>
+      <div class="callout warn">Queue không giới hạn có thể làm memory tăng mạnh. Pool quá lớn có thể gây context switching và làm DB/external API quá tải.</div>
+
+      <h3>8.7 CompletableFuture</h3>
+      <pre><code>CompletableFuture&lt;User&gt; userFuture =
+    CompletableFuture.supplyAsync(() -&gt; userClient.getUser(id), executor);
+
+CompletableFuture&lt;Account&gt; accountFuture =
+    CompletableFuture.supplyAsync(() -&gt; accountClient.getAccount(id), executor);
+
+return userFuture.thenCombine(accountFuture, UserAccountResponse::new)
+    .orTimeout(2, TimeUnit.SECONDS)
+    .exceptionally(ex -&gt; fallback());</code></pre>
+      <p>Cần executor riêng, timeout, exception handling và tránh dùng common pool mù quáng trong hệ thống server.</p>
+
+      <h3>8.8 @Async</h3>
+      <p><code>@Async</code> chạy method qua executor. Tương tự <code>@Transactional</code>, self-invocation trong cùng class có thể không đi qua proxy. Ngoài ra transaction và security context không tự động truyền theo cách bạn mong muốn.</p>
+
+      <h3>8.9 Virtual Threads</h3>
+      <p>Virtual thread là thread nhẹ do JVM quản lý, phù hợp với lượng lớn tác vụ blocking I/O. Nó giúp mô hình code tuần tự dễ đọc hơn mà vẫn chịu được nhiều request chờ I/O.</p>
+      <ul>
+        <li>Phù hợp: HTTP call, DB call, file I/O.</li>
+        <li>Không làm CPU-bound nhanh hơn.</li>
+        <li>Connection pool DB vẫn là giới hạn thật.</li>
+        <li>Không nên tạo hàng nghìn connection chỉ vì có hàng nghìn virtual thread.</li>
+      </ul>
+
+      <h3>8.10 Concurrent request trong nghiệp vụ</h3>
+      <p>Ví dụ user bấm thanh toán hai lần hoặc hệ thống đối tác retry cùng request.</p>
+      <p>Các lớp bảo vệ:</p>
+      <ol>
+        <li>Idempotency key hoặc business reference duy nhất.</li>
+        <li>Unique constraint trong database.</li>
+        <li>Kiểm tra trạng thái trước khi xử lý.</li>
+        <li>Optimistic/pessimistic lock nếu cần.</li>
+        <li>Redis lock chỉ là lớp hỗ trợ, không nên là bảo vệ duy nhất.</li>
+      </ol>
+      <pre><code>CREATE UNIQUE INDEX uk_transfer_external_ref
+ON transfer(external_reference);</code></pre>
+    </section>
+
+    <section id="redis" data-title="redis cache caching ttl stampede hot key distributed lock">
+      <h2>9. Redis và Caching</h2>
+      <h3>9.1 Redis là gì?</h3>
+      <p>Redis là data store in-memory, truy cập rất nhanh. Redis có thể dùng làm cache, session store, distributed lock, rate limit, counter, queue/stream và nhiều mục đích khác.</p>
+
+      <h3>9.2 Data type cơ bản</h3>
+      <table>
+        <tr><th>Type</th><th>Ví dụ dùng</th></tr>
+        <tr><td>String</td><td>Cache JSON, token blacklist, counter</td></tr>
+        <tr><td>Hash</td><td>Lưu object dạng field-value</td></tr>
+        <tr><td>List</td><td>Queue đơn giản</td></tr>
+        <tr><td>Set</td><td>Tập không trùng</td></tr>
+        <tr><td>Sorted Set</td><td>Leaderboard, lịch theo score</td></tr>
+        <tr><td>Stream</td><td>Event stream/consumer group</td></tr>
+      </table>
+
+      <h3>9.3 Cache-aside</h3>
+      <ol>
+        <li>Ứng dụng tìm dữ liệu trong Redis.</li>
+        <li>Nếu có, trả cache hit.</li>
+        <li>Nếu không, query database.</li>
+        <li>Ghi kết quả vào Redis với TTL.</li>
+        <li>Trả kết quả.</li>
+      </ol>
+      <pre><code>public Customer getCustomer(String id) {
+    Customer cached = cache.get("customer:" + id);
+    if (cached != null) return cached;
+
+    Customer customer = repository.findById(id).orElseThrow();
+    cache.set("customer:" + id, customer, Duration.ofMinutes(10));
+    return customer;
+}</code></pre>
+
+      <h3>9.4 Cache invalidation</h3>
+      <p>Khi dữ liệu DB thay đổi, cache cũ có thể stale. Cách thường dùng là update DB rồi xóa cache. Request sau sẽ load dữ liệu mới.</p>
+      <div class="callout warn">Nếu xóa cache trước rồi update DB, một request khác có thể đọc DB cũ và ghi lại cache cũ. Thứ tự và transaction cần được cân nhắc.</div>
+
+      <h3>9.5 Các sự cố cache</h3>
+      <table>
+        <tr><th>Vấn đề</th><th>Ý nghĩa</th><th>Cách xử lý</th></tr>
+        <tr><td>Penetration</td><td>Request dữ liệu không tồn tại liên tục xuyên xuống DB</td><td>Cache null ngắn hạn, Bloom filter</td></tr>
+        <tr><td>Stampede/Breakdown</td><td>Hot key hết hạn, nhiều request cùng query DB</td><td>Single-flight/lock, refresh ahead</td></tr>
+        <tr><td>Avalanche</td><td>Nhiều key hết hạn cùng lúc</td><td>TTL jitter, phân tán expiration</td></tr>
+        <tr><td>Hot key</td><td>Một key nhận lưu lượng cực lớn</td><td>Local cache, replicate/shard, thiết kế key</td></tr>
+        <tr><td>Big key</td><td>Value quá lớn</td><td>Chia nhỏ, giới hạn kích thước</td></tr>
+      </table>
+
+      <h3>9.6 Distributed lock</h3>
+      <p>Cách cơ bản: <code>SET lock-key unique-token NX PX 30000</code>. Khi unlock phải kiểm tra token đúng owner và nên dùng Lua script để thao tác atomic.</p>
+      <div class="callout danger">Lock có timeout, network partition và failover. Với giao dịch quan trọng, cần thêm unique constraint, idempotency và state machine ở database.</div>
+    </section>
+
+    <section id="microservice" data-title="microservices saga outbox retry circuit breaker timeout api gateway">
+      <h2>10. Microservices</h2>
+      <h3>10.1 Microservice là gì?</h3>
+      <p>Hệ thống được chia thành các service nhỏ hơn theo domain/business capability, có thể phát triển và deploy độc lập. Microservice không chỉ là “nhiều project Spring Boot”.</p>
+
+      <h3>10.2 Lợi ích và chi phí</h3>
+      <table>
+        <tr><th>Lợi ích</th><th>Chi phí</th></tr>
+        <tr><td>Deploy độc lập</td><td>Giao tiếp mạng có thể lỗi</td></tr>
+        <tr><td>Scale từng service</td><td>Khó debug end-to-end</td></tr>
+        <tr><td>Team ownership rõ</td><td>Distributed transaction phức tạp</td></tr>
+        <tr><td>Cô lập failure tốt hơn nếu thiết kế đúng</td><td>Vận hành, monitoring, security khó hơn</td></tr>
+      </table>
+
+      <h3>10.3 Giao tiếp đồng bộ và bất đồng bộ</h3>
+      <ul>
+        <li><strong>REST/gRPC:</strong> cần phản hồi ngay, dễ hiểu nhưng tạo coupling theo thời gian.</li>
+        <li><strong>Message broker:</strong> giảm coupling, chịu spike tốt nhưng eventual consistency và duplicate message.</li>
+      </ul>
+
+      <h3>10.4 Reliability pattern</h3>
+      <ul>
+        <li><strong>Timeout:</strong> không chờ vô hạn.</li>
+        <li><strong>Retry:</strong> chỉ retry lỗi tạm thời; có backoff và giới hạn.</li>
+        <li><strong>Circuit breaker:</strong> tạm dừng gọi dependency đang lỗi liên tục.</li>
+        <li><strong>Bulkhead:</strong> tách resource để một dependency không làm sập toàn hệ thống.</li>
+        <li><strong>Rate limit:</strong> bảo vệ hệ thống khỏi quá tải.</li>
+      </ul>
+      <div class="callout warn">Retry có thể tạo duplicate. Chỉ retry operation idempotent hoặc có idempotency key.</div>
+
+      <h3>10.5 Distributed Transaction</h3>
+      <p>Không thể dễ dàng dùng một transaction ACID qua nhiều database/service. Hai hướng phổ biến:</p>
+      <ul>
+        <li><strong>Saga:</strong> mỗi bước có local transaction và compensating action nếu bước sau thất bại.</li>
+        <li><strong>Transactional Outbox:</strong> ghi business data và event vào cùng một DB transaction; worker phát event sau, tránh trạng thái “DB commit nhưng message chưa gửi”.</li>
+      </ul>
+
+      <h3>10.6 Idempotent Consumer</h3>
+      <p>Message broker có thể giao lại message. Consumer nên lưu message ID đã xử lý hoặc thiết kế update có điều kiện để xử lý lặp không gây hậu quả.</p>
+
+      <h3>10.7 Observability trong microservice</h3>
+      <p>Mỗi request cần correlation ID/trace ID. Logs, metrics và traces phải giúp nối luồng từ API Gateway qua nhiều service.</p>
+    </section>
+
+    <section id="container" data-title="docker kubernetes k8s openshift ocp pod deployment service configmap secret ingress probe">
+      <h2>11. Docker, Kubernetes và OpenShift</h2>
+      <h3>11.1 Docker</h3>
+      <ul>
+        <li><strong>Image:</strong> bản đóng gói bất biến gồm app và dependency.</li>
+        <li><strong>Container:</strong> instance đang chạy của image.</li>
+        <li><strong>Dockerfile:</strong> công thức build image.</li>
+      </ul>
+      <pre><code>FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY app.jar app.jar
+USER 10001
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre>
+      <p>Best practice: image nhỏ, multi-stage build, không chạy root, không nhúng secret, log ra stdout/stderr.</p>
+
+      <h3>11.2 Kubernetes object cơ bản</h3>
+      <table>
+        <tr><th>Object</th><th>Vai trò</th></tr>
+        <tr><td>Pod</td><td>Đơn vị chạy nhỏ nhất, chứa một hoặc nhiều container</td></tr>
+        <tr><td>Deployment</td><td>Quản lý replica, rollout, rollback cho stateless app</td></tr>
+        <tr><td>Service</td><td>Địa chỉ ổn định và load balance đến Pod</td></tr>
+        <tr><td>ConfigMap</td><td>Cấu hình không nhạy cảm</td></tr>
+        <tr><td>Secret</td><td>Dữ liệu nhạy cảm; cần kiểm soát truy cập và mã hóa phù hợp</td></tr>
+        <tr><td>Ingress/Route</td><td>Expose HTTP/HTTPS ra ngoài cluster</td></tr>
+        <tr><td>Job/CronJob</td><td>Tác vụ chạy một lần hoặc theo lịch</td></tr>
+        <tr><td>StatefulSet</td><td>Workload cần identity/storage ổn định</td></tr>
+      </table>
+
+      <h3>11.3 Liveness, Readiness và Startup Probe</h3>
+      <ul>
+        <li><strong>Readiness fail:</strong> Pod tạm thời không nhận traffic nhưng không nhất thiết restart.</li>
+        <li><strong>Liveness fail:</strong> Kubernetes restart container.</li>
+        <li><strong>Startup probe:</strong> cho app thời gian khởi động trước khi liveness kiểm tra.</li>
+      </ul>
+      <div class="callout danger">Không để liveness phụ thuộc trực tiếp vào DB ngoài. Nếu DB chập chờn, toàn bộ pod có thể restart hàng loạt và làm tình hình tệ hơn.</div>
+
+      <h3>11.4 Request và Limit</h3>
+      <ul>
+        <li><strong>Request:</strong> lượng tài nguyên scheduler dùng để xếp pod.</li>
+        <li><strong>Limit:</strong> trần tài nguyên. Memory vượt limit có thể bị OOMKilled; CPU vượt limit bị throttling.</li>
+      </ul>
+
+      <h3>11.5 Rolling Update</h3>
+      <p>Deployment tạo pod mới dần, chỉ đưa vào nhận traffic khi readiness pass, sau đó dừng pod cũ. App cần backward-compatible với database/API trong thời gian hai version cùng chạy.</p>
+
+      <h3>11.6 OpenShift</h3>
+      <p>OpenShift xây trên Kubernetes và bổ sung công cụ vận hành, bảo mật, route, image stream và quy trình enterprise. OpenShift thường hạn chế chạy container bằng root thông qua security policy/SCC.</p>
+    </section>
+
+    <section id="deploy" data-title="deploy ci cd pipeline rolling blue green canary flyway liquibase">
+      <h2>12. Deploy và CI/CD</h2>
+      <h3>12.1 CI và CD</h3>
+      <ul>
+        <li><strong>Continuous Integration:</strong> thường xuyên merge code, tự động build/test/scan.</li>
+        <li><strong>Continuous Delivery/Deployment:</strong> tự động đưa artifact đến môi trường; deployment có thể cần approval hoặc hoàn toàn tự động.</li>
+      </ul>
+
+      <h3>12.2 Pipeline điển hình</h3>
+      <ol>
+        <li>Push code / tạo pull request.</li>
+        <li>Compile và unit test.</li>
+        <li>Static analysis và dependency scan.</li>
+        <li>Build JAR.</li>
+        <li>Build Docker image.</li>
+        <li>Push image lên registry.</li>
+        <li>Deploy lên DEV/UAT/PROD.</li>
+        <li>Health check và smoke test.</li>
+        <li>Monitor error rate/latency.</li>
+        <li>Rollback nếu cần.</li>
+      </ol>
+
+      <h3>12.3 Chiến lược deploy</h3>
+      <table>
+        <tr><th>Chiến lược</th><th>Ý nghĩa</th></tr>
+        <tr><td>Rolling</td><td>Thay pod cũ bằng pod mới dần dần</td></tr>
+        <tr><td>Blue-Green</td><td>Hai môi trường; chuyển traffic sang bản mới khi sẵn sàng</td></tr>
+        <tr><td>Canary</td><td>Đưa một phần nhỏ traffic sang bản mới để quan sát</td></tr>
+      </table>
+
+      <h3>12.4 Database migration an toàn</h3>
+      <p>Dùng Flyway/Liquibase để version hóa schema. Thay đổi production nên theo hướng expand-and-contract:</p>
+      <ol>
+        <li>Thêm column/table mới theo cách backward-compatible.</li>
+        <li>Deploy code có thể đọc cả cấu trúc cũ và mới.</li>
+        <li>Migrate/backfill dữ liệu.</li>
+        <li>Chuyển hoàn toàn sang cấu trúc mới.</li>
+        <li>Sau cùng mới xóa cấu trúc cũ.</li>
+      </ol>
+    </section>
+
+    <section id="git" data-title="git branch merge rebase reset revert conflict cherry pick stash">
+      <h2>13. Git</h2>
+      <h3>13.1 Workflow cơ bản</h3>
+      <pre><code>git checkout -b feature/transfer-validation
+git add .
+git commit -m "feat: validate transfer amount"
+git push -u origin feature/transfer-validation</code></pre>
+      <p>Sau đó tạo Pull Request, review, sửa comment, resolve conflict và merge.</p>
+
+      <h3>13.2 Fetch và Pull</h3>
+      <ul>
+        <li><code>git fetch</code>: tải metadata/commit từ remote nhưng chưa nhập vào branch hiện tại.</li>
+        <li><code>git pull</code>: fetch rồi merge hoặc rebase tùy cấu hình.</li>
+      </ul>
+
+      <h3>13.3 Merge và Rebase</h3>
+      <ul>
+        <li><strong>Merge:</strong> giữ lịch sử phân nhánh, tạo merge commit khi cần.</li>
+        <li><strong>Rebase:</strong> viết lại base của commit để lịch sử thẳng hơn.</li>
+      </ul>
+      <div class="callout warn">Không rebase những commit đã chia sẻ rộng trên branch chung nếu team không thống nhất, vì sẽ viết lại lịch sử.</div>
+
+      <h3>13.4 Reset và Revert</h3>
+      <ul>
+        <li><strong>Reset:</strong> di chuyển HEAD; có thể thay đổi working tree. Thường dùng cho local.</li>
+        <li><strong>Revert:</strong> tạo commit mới đảo ngược commit cũ; an toàn hơn cho branch đã push.</li>
+      </ul>
+
+      <h3>13.5 Resolve conflict</h3>
+      <ol>
+        <li>Đọc cả hai thay đổi, không chỉ chọn “ours/theirs” mù quáng.</li>
+        <li>Hiểu business intent.</li>
+        <li>Sửa file, chạy test.</li>
+        <li><code>git add</code> và tiếp tục merge/rebase.</li>
+      </ol>
+
+      <h3>13.6 Lệnh hữu ích</h3>
+      <table>
+        <tr><th>Lệnh</th><th>Dùng khi nào</th></tr>
+        <tr><td>git stash</td><td>Cất thay đổi tạm thời</td></tr>
+        <tr><td>git cherry-pick</td><td>Lấy một commit cụ thể từ branch khác</td></tr>
+        <tr><td>git reflog</td><td>Tìm lại commit/HEAD sau thao tác nhầm</td></tr>
+        <tr><td>git log --oneline --graph</td><td>Xem lịch sử gọn</td></tr>
+      </table>
+    </section>
+
+    <section id="bpmn" data-title="bpmn process gateway event pool lane service task">
+      <h2>14. BPMN</h2>
+      <p>BPMN là ký pháp mô hình hóa quy trình nghiệp vụ. Backend developer cần đọc được flow, điều kiện, actor và event.</p>
+      <table>
+        <tr><th>Thành phần</th><th>Ý nghĩa</th></tr>
+        <tr><td>Start/End Event</td><td>Điểm bắt đầu/kết thúc quy trình</td></tr>
+        <tr><td>Task</td><td>Một công việc</td></tr>
+        <tr><td>User Task</td><td>Con người thực hiện</td></tr>
+        <tr><td>Service Task</td><td>Hệ thống thực hiện</td></tr>
+        <tr><td>Exclusive Gateway</td><td>Chọn một nhánh theo điều kiện</td></tr>
+        <tr><td>Parallel Gateway</td><td>Tách hoặc gộp nhiều nhánh song song</td></tr>
+        <tr><td>Inclusive Gateway</td><td>Có thể chọn một hoặc nhiều nhánh</td></tr>
+        <tr><td>Pool/Lane</td><td>Thể hiện participant hoặc bộ phận</td></tr>
+        <tr><td>Message Flow</td><td>Trao đổi message giữa participant</td></tr>
+      </table>
+      <h3>Cách đọc một sơ đồ BPMN</h3>
+      <ol>
+        <li>Xác định ai tham gia qua pool/lane.</li>
+        <li>Tìm start event và end event.</li>
+        <li>Đi theo sequence flow.</li>
+        <li>Tại gateway, đọc điều kiện từng nhánh.</li>
+        <li>Tìm timeout, error event và bước bù.</li>
+        <li>Chuyển thành state machine/API/event khi thiết kế backend.</li>
+      </ol>
+    </section>
+
+    <section id="logging" data-title="logging observability log metrics trace correlation id prometheus grafana elk">
+      <h2>15. Logging và Observability</h2>
+      <h3>15.1 Log level</h3>
+      <table>
+        <tr><th>Level</th><th>Dùng khi nào</th></tr>
+        <tr><td>TRACE</td><td>Chi tiết rất sâu, thường chỉ bật khi điều tra</td></tr>
+        <tr><td>DEBUG</td><td>Thông tin hỗ trợ debug</td></tr>
+        <tr><td>INFO</td><td>Sự kiện nghiệp vụ/hệ thống quan trọng bình thường</td></tr>
+        <tr><td>WARN</td><td>Bất thường nhưng hệ thống vẫn xử lý được</td></tr>
+        <tr><td>ERROR</td><td>Lỗi khiến operation thất bại hoặc cần chú ý</td></tr>
+      </table>
+      <pre><code>log.info("Transfer accepted transferId={} externalRef={} amount={}",
+         transferId, externalRef, amount);</code></pre>
+      <p>Không log password, access token, private key hoặc dữ liệu nhạy cảm đầy đủ.</p>
+
+      <h3>15.2 Logs, Metrics, Traces</h3>
+      <ul>
+        <li><strong>Logs:</strong> chuyện gì đã xảy ra, kèm context.</li>
+        <li><strong>Metrics:</strong> số liệu theo thời gian như request count, latency, error rate.</li>
+        <li><strong>Traces:</strong> đường đi của một request qua nhiều service.</li>
+      </ul>
+      <p>Correlation ID hoặc trace ID nên xuất hiện trong mọi log liên quan đến cùng request.</p>
+
+      <h3>15.3 Metric quan trọng</h3>
+      <ul>
+        <li>Request rate, error rate, p95/p99 latency.</li>
+        <li>CPU, memory, GC pause, thread count.</li>
+        <li>DB pool active/pending, query time.</li>
+        <li>Redis hit rate và latency.</li>
+        <li>Queue lag, consumer error, retry count.</li>
+      </ul>
+
+      <h3>15.4 Một lỗi nên log ở đâu?</h3>
+      <p>Tránh log cùng stack trace ở repository, service và controller vì tạo log trùng. Thường layer xử lý cuối cùng hoặc boundary sẽ log đầy đủ, layer dưới thêm context hoặc throw exception có nghĩa.</p>
+    </section>
+
+    <section id="troubleshoot" data-title="memory leak high cpu heap dump thread dump gc jstack jmap production">
+      <h2>16. Memory Leak, High CPU và xử lý sự cố</h2>
+      <h3>16.1 Memory leak trong Java</h3>
+      <p>GC chỉ thu hồi object không còn reachable. Nếu object vẫn được tham chiếu dù không còn hữu ích, GC không thể xóa.</p>
+      <h4>Nguyên nhân thường gặp</h4>
+      <ul>
+        <li>Static collection tăng không giới hạn.</li>
+        <li>Cache không TTL hoặc eviction.</li>
+        <li>ThreadLocal không remove trong thread pool.</li>
+        <li>Listener/callback không unregister.</li>
+        <li>Đọc file/stream nhưng không đóng.</li>
+        <li>Giữ object graph lớn trong session hoặc queue.</li>
+      </ul>
+
+      <h3>16.2 Quy trình điều tra memory</h3>
+      <ol>
+        <li>Xem memory usage và GC pattern.</li>
+        <li>Kiểm tra heap có tăng liên tục sau full GC không.</li>
+        <li>Lấy heap dump đúng thời điểm.</li>
+        <li>Dùng Eclipse MAT/JProfiler/VisualVM để xem dominator tree và retained size.</li>
+        <li>Xác định object nào giữ nhiều bộ nhớ và đường tham chiếu đến GC root.</li>
+        <li>Sửa root cause, load test và so sánh trước/sau.</li>
+      </ol>
+
+      <h3>16.3 High CPU</h3>
+      <p>Nguyên nhân có thể là vòng lặp vô hạn, regex xấu, serialization lớn, GC liên tục, thread contention, retry storm hoặc query/logic CPU-bound.</p>
+      <h4>Quy trình điều tra</h4>
+      <ol>
+        <li>Xác định process/pod có CPU cao.</li>
+        <li>Lấy nhiều thread dump cách nhau vài giây.</li>
+        <li>Tìm thread RUNNABLE lặp lại ở cùng stack.</li>
+        <li>Map native thread ID nếu cần.</li>
+        <li>Kiểm tra GC, request rate và dependency.</li>
+        <li>Dùng Java Flight Recorder/profiler để thấy hot method.</li>
+      </ol>
+
+      <h3>16.4 Connection pool cạn</h3>
+      <p>Dấu hiệu: request chờ connection, timeout tăng nhưng DB có thể chưa quá tải. Nguyên nhân: query chậm, transaction dài, connection leak hoặc pool nhỏ/traffic tăng.</p>
+      <p>Cách xử lý: metric pool, slow query, timeout hợp lý, đóng resource, transaction ngắn và không gọi external API khi đang giữ DB transaction.</p>
+
+      <h3>16.5 Mẫu trả lời phỏng vấn</h3>
+      <div class="callout good">“Khi CPU tăng cao, em không đoán ngay nguyên nhân. Em kiểm tra metric theo pod, lấy thread dump nhiều lần để tìm thread nóng lặp lại, đối chiếu trace/log, sau đó dùng JFR nếu cần. Nếu CPU đi kèm GC cao thì em kiểm tra allocation và heap; nếu thread bị BLOCKED nhiều thì kiểm tra contention. Sau khi sửa em load test và theo dõi p95, CPU và GC trước/sau.”</div>
+    </section>
+
+    <section id="rest" data-title="rest api http status idempotent put patch 401 403 pagination">
+      <h2>17. Thiết kế REST API</h2>
+      <h3>17.1 HTTP Method</h3>
+      <table>
+        <tr><th>Method</th><th>Ý nghĩa</th><th>Idempotent?</th></tr>
+        <tr><td>GET</td><td>Đọc dữ liệu</td><td>Có</td></tr>
+        <tr><td>POST</td><td>Tạo mới/thực hiện command</td><td>Không mặc định</td></tr>
+        <tr><td>PUT</td><td>Thay thế toàn bộ resource tại URI</td><td>Có</td></tr>
+        <tr><td>PATCH</td><td>Cập nhật một phần</td><td>Tùy thiết kế</td></tr>
+        <tr><td>DELETE</td><td>Xóa resource</td><td>Thường có về hiệu ứng cuối</td></tr>
+      </table>
+
+      <h3>17.2 Status code hay hỏi</h3>
+      <table>
+        <tr><th>Code</th><th>Dùng khi nào</th></tr>
+        <tr><td>200</td><td>Thành công, có response body</td></tr>
+        <tr><td>201</td><td>Tạo resource thành công</td></tr>
+        <tr><td>202</td><td>Đã nhận và xử lý async</td></tr>
+        <tr><td>204</td><td>Thành công, không có body</td></tr>
+        <tr><td>400</td><td>Request không hợp lệ</td></tr>
+        <tr><td>401</td><td>Chưa xác thực hoặc token không hợp lệ</td></tr>
+        <tr><td>403</td><td>Đã xác thực nhưng không đủ quyền</td></tr>
+        <tr><td>404</td><td>Không tìm thấy resource</td></tr>
+        <tr><td>409</td><td>Xung đột trạng thái/duplicate</td></tr>
+        <tr><td>422</td><td>Hiểu request nhưng vi phạm validation nghiệp vụ</td></tr>
+        <tr><td>429</td><td>Quá giới hạn request</td></tr>
+        <tr><td>500</td><td>Lỗi nội bộ không mong đợi</td></tr>
+        <tr><td>503</td><td>Dịch vụ tạm không sẵn sàng</td></tr>
+        <tr><td>504</td><td>Gateway timeout khi chờ upstream</td></tr>
+      </table>
+
+      <h3>17.3 Error response thống nhất</h3>
+      <pre><code>{
+  "code": "TRANSFER_LIMIT_EXCEEDED",
+  "message": "Số tiền vượt hạn mức",
+  "traceId": "7f9d...",
+  "timestamp": "2026-06-28T10:15:00+07:00"
+}</code></pre>
+
+      <h3>17.4 Pagination</h3>
+      <p>Offset pagination dễ dùng nhưng có thể chậm với offset lớn và dữ liệu thay đổi. Keyset/cursor pagination dùng cột sắp xếp ổn định, phù hợp dataset lớn.</p>
+    </section>
+
+    <section id="questions" data-title="câu hỏi phỏng vấn trả lời mẫu java spring jpa redis security k8s">
+      <h2>18. Bộ câu hỏi phỏng vấn kèm hướng trả lời</h2>
+
+      <details open><summary>1. Hãy giới thiệu dự án gần nhất</summary><div><p>Nói theo 6 phần: nghiệp vụ, kiến trúc, tech stack, vai trò, vấn đề khó, kết quả. Không kể lan man toàn bộ dự án.</p></div></details>
+      <details><summary>2. Spring Bean singleton có thread-safe không?</summary><div><p>Không tự động thread-safe. Singleton chỉ nói có một instance. Nếu bean stateless thì thường ổn; nếu có mutable shared field thì có race condition.</p></div></details>
+      <details><summary>3. @Transactional hoạt động thế nào?</summary><div><p>Spring dùng proxy để mở transaction trước khi gọi method và commit/rollback sau đó. Self-invocation có thể bypass proxy. Mặc định rollback với RuntimeException.</p></div></details>
+      <details><summary>4. N+1 query là gì?</summary><div><p>Một query lấy danh sách, sau đó mỗi phần tử phát sinh thêm query cho relation. Xử lý bằng fetch join, EntityGraph, DTO projection hoặc batch fetching.</p></div></details>
+      <details><summary>5. Vì sao index làm query nhanh hơn?</summary><div><p>Index tạo cấu trúc tìm kiếm riêng giúp giảm số block phải đọc. Đổi lại tốn storage và làm thao tác ghi chậm hơn.</p></div></details>
+      <details><summary>6. JWT có mã hóa payload không?</summary><div><p>Thông thường không. Payload chỉ encode, ai có token cũng có thể đọc. Signature chỉ đảm bảo token không bị sửa.</p></div></details>
+      <details><summary>7. 401 và 403 khác nhau thế nào?</summary><div><p>401 là chưa xác thực hoặc credential không hợp lệ. 403 là đã xác thực nhưng không có quyền.</p></div></details>
+      <details><summary>8. Làm sao chống giao dịch trùng?</summary><div><p>Dùng business reference/idempotency key, unique constraint ở DB, kiểm tra state, transaction và có thể lock. Không chỉ dựa vào Redis lock.</p></div></details>
+      <details><summary>9. volatile có làm value++ thread-safe không?</summary><div><p>Không. value++ gồm đọc, cộng, ghi; volatile chỉ đảm bảo visibility/order, không đảm bảo toàn bộ chuỗi thao tác atomic.</p></div></details>
+      <details><summary>10. Khi nào dùng virtual thread?</summary><div><p>Khi có nhiều tác vụ blocking I/O và muốn giữ code tuần tự dễ đọc. Không giúp CPU-bound nhanh hơn và vẫn bị giới hạn bởi DB pool/external service.</p></div></details>
+      <details><summary>11. Cache-aside là gì?</summary><div><p>Đọc cache trước; miss thì đọc DB và ghi cache. Khi update thường update DB rồi xóa cache để lần đọc sau nạp mới.</p></div></details>
+      <details><summary>12. Redis bị down thì hệ thống nên thế nào?</summary><div><p>Tùy Redis là cache hay source of truth. Nếu chỉ là cache, có fallback về DB có giới hạn, timeout ngắn, circuit breaker và tránh tạo stampede.</p></div></details>
+      <details><summary>13. Retry có nguy hiểm gì?</summary><div><p>Có thể khuếch đại tải và tạo duplicate. Cần retry lỗi tạm thời, backoff, jitter, giới hạn số lần và idempotency.</p></div></details>
+      <details><summary>14. Liveness và Readiness khác nhau?</summary><div><p>Readiness quyết định có nhận traffic không. Liveness quyết định container có cần restart không.</p></div></details>
+      <details><summary>15. Merge và Rebase?</summary><div><p>Merge giữ lịch sử nhánh và có thể tạo merge commit. Rebase viết lại commit lên base mới để lịch sử thẳng hơn; tránh rebase shared history nếu không thống nhất.</p></div></details>
+      <details><summary>16. Java có GC sao vẫn memory leak?</summary><div><p>GC chỉ xóa object không reachable. Nếu object không còn hữu ích nhưng vẫn bị static collection/cache/listener giữ tham chiếu, nó không được thu hồi.</p></div></details>
+      <details><summary>17. Cách điều tra API chậm?</summary><div><p>Xem p95/p99, trace, slow query, external API latency, thread/connection pool, CPU/GC, payload và cache hit rate. Đo trước rồi mới tối ưu.</p></div></details>
+      <details><summary>18. HashMap và ConcurrentHashMap khác gì?</summary><div><p>HashMap không thread-safe. ConcurrentHashMap hỗ trợ concurrent access với cơ chế đồng bộ/CAS phân tán hơn, nhưng compound operation vẫn cần dùng API atomic như compute.</p></div></details>
+      <details><summary>19. SHA có phải encryption không?</summary><div><p>Không. SHA là hash một chiều. Encryption có key và có thể decrypt; hash dùng để tạo digest.</p></div></details>
+      <details><summary>20. Vì sao không gọi external API trong transaction dài?</summary><div><p>Vì transaction giữ DB connection/lock trong lúc chờ network, dễ cạn pool, tăng contention và deadlock. Nên rút ngắn transaction hoặc thiết kế outbox/state machine.</p></div></details>
+    </section>
+
+    <section id="cheatsheet" data-title="cheat sheet tóm tắt trước phỏng vấn checklist">
+      <h2>19. Cheat sheet trước giờ phỏng vấn</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Java/Spring</h3>
+          <ul>
+            <li>Constructor injection, service stateless.</li>
+            <li>HashMap: hash → bucket → equals.</li>
+            <li>@Transactional chạy qua proxy.</li>
+            <li>RuntimeException rollback mặc định.</li>
+            <li>N+1: fetch join/EntityGraph/projection.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>DB/Concurrency</h3>
+          <ul>
+            <li>Index giúp đọc nhanh, làm ghi tốn hơn.</li>
+            <li>Optimistic lock khi conflict ít.</li>
+            <li>Idempotency + unique constraint chống duplicate.</li>
+            <li>volatile không làm ++ atomic.</li>
+            <li>Transaction ngắn, không giữ lock khi gọi network.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Security/Redis</h3>
+          <ul>
+            <li>401 chưa xác thực; 403 thiếu quyền.</li>
+            <li>JWT payload không mặc định mã hóa.</li>
+            <li>SHA là hash; AES/RSA là encryption.</li>
+            <li>Cache-aside, TTL và invalidation.</li>
+            <li>Redis lock không thay thế DB constraint.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>K8S/Production</h3>
+          <ul>
+            <li>Readiness ngắt traffic; liveness restart.</li>
+            <li>OOMKilled do memory limit.</li>
+            <li>High CPU: metrics → thread dump → JFR.</li>
+            <li>Memory leak: heap dump → dominator tree.</li>
+            <li>Logs + metrics + traces + correlation ID.</li>
+          </ul>
+        </div>
+      </div>
+      <h3>Checklist cuối</h3>
+      <div class="checklist">
+        <label><input type="checkbox" data-progress />Tôi không phóng đại mức kinh nghiệm.</label>
+        <label><input type="checkbox" data-progress />Tôi có 3 câu chuyện STAR.</label>
+        <label><input type="checkbox" data-progress />Tôi có một ví dụ query chậm và cách tối ưu.</label>
+        <label><input type="checkbox" data-progress />Tôi có một ví dụ concurrent request/idempotency.</label>
+        <label><input type="checkbox" data-progress />Tôi có một ví dụ sự cố production và quy trình điều tra.</label>
+        <label><input type="checkbox" data-progress />Tôi biết nói “phần này em mới tìm hiểu/chưa dùng production” khi cần.</label>
+      </div>
+      <div class="callout good"><strong>Điểm quan trọng nhất:</strong> Người phỏng vấn không cần bạn nhớ mọi API. Họ muốn thấy bạn hiểu hệ thống mình đã làm, biết suy luận khi có lỗi và trung thực về phạm vi kinh nghiệm.</div>
+    </section>
+
+    <p class="mini" style="text-align:center;margin-top:34px">Tài liệu tự học Backend Java — có thể tìm kiếm, đánh dấu tiến độ và in thành PDF trực tiếp từ trình duyệt.</p>
+  </main>
+</div>
+<button class="top-btn" id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  const search = document.getElementById('search');
+  const sections = [...document.querySelectorAll('main section')];
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    sections.forEach(s => {
+      const text = (s.dataset.title + ' ' + s.innerText).toLowerCase();
+      s.classList.toggle('filtered-out', q && !text.includes(q));
+    });
+  });
+
+  const boxes = [...document.querySelectorAll('[data-progress]')];
+  const saved = JSON.parse(localStorage.getItem('javaInterviewProgress') || '{}');
+  boxes.forEach((b, i) => {
+    b.checked = !!saved[i];
+    b.addEventListener('change', updateProgress);
+  });
+  function updateProgress() {
+    const state = {};
+    boxes.forEach((b, i) => state[i] = b.checked);
+    localStorage.setItem('javaInterviewProgress', JSON.stringify(state));
+    const done = boxes.filter(b => b.checked).length;
+    const pct = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    document.getElementById('progressText').textContent = pct + '%';
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+  updateProgress();
+
+  const topBtn = document.getElementById('topBtn');
+  window.addEventListener('scroll', () => topBtn.style.display = window.scrollY > 600 ? 'block' : 'none');
+  document.querySelectorAll('aside a').forEach(a => a.addEventListener('click', () => document.querySelector('aside').classList.remove('open')));
+</script>
+</body>
+</html>

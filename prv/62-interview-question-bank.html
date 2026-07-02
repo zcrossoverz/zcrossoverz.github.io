@@ -58,6 +58,9 @@
   .qb-boxtag { font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); }
   .qb-star { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-faint); padding: 2px; }
   .qb-star.on { color: var(--warning); }
+  .qb-tagchip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); padding: 2px 9px; border-radius: 999px; cursor: pointer; transition: all .12s; font-family: var(--font-mono); }
+  .qb-tagchip:hover { color: var(--accent); border-color: var(--accent); }
+  .qb-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .qb-q { font-size: 1.06rem; font-weight: 600; line-height: 1.5; color: var(--text); }
   .qb-reveal { margin-top: 12px; appearance: none; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: var(--radius); cursor: pointer; transition: all .14s; }
   .qb-reveal:hover { background: var(--accent); color: #fff; }
@@ -75,6 +78,8 @@
   .qb-eli5 b { color: var(--success); }
   .qb-gotcha { background: var(--warning-soft); border-left: 3px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
   .qb-gotcha b { color: var(--warning); }
+  .qb-term { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
+  .qb-term b { color: var(--accent); }
   .qb-refs { margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
   .qb-refs .rlab { font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em; font-size: 11px; margin-right: 4px; }
   .qb-refs a { color: var(--info); }
@@ -101,6 +106,8 @@
   .qb-toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-weight: 700; font-size: 15px; padding: 11px 22px; border-radius: 999px; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; }
   .qb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .qb-empty { text-align: center; color: var(--text-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 40px 20px; }
+  .qb-loaderr { border: 1px solid var(--danger); background: var(--warning-soft); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+  .toc .qb-old { font-size: 9px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px; }
   @media (max-width: 620px) { .qb-count { margin-left: 0; width: 100%; } .qb-qcard { padding: 20px 16px; } }
 </style>
 </head>
@@ -130,7 +137,7 @@
 <section class="hero">
   <span class="meta-tag">Question Bank · Active Recall</span>
   <h1>Bộ Câu Hỏi Phỏng Vấn Backend</h1>
-  <p class="lead">Ngân hàng câu hỏi phỏng vấn backend phân theo <strong>Junior → Middle → Senior</strong>, đáp án giảng giải cho người mới, kèm reference. Học bằng <strong>active recall</strong> (tự nghĩ trước khi xem đáp án) và <strong>spaced repetition</strong> (lặp lại ngắt quãng) — hai kỹ thuật học được chứng minh giữ kiến thức lâu nhất.</p>
+  <p class="lead">Ngân hàng câu hỏi phỏng vấn backend phân theo <strong>Junior → Middle → Senior</strong>, đáp án giảng giải bằng ngôn ngữ đơn giản cho người mới, kèm reference. Mỗi câu có <strong>tag</strong> — bấm tag để lọc các câu cùng chủ đề nhỏ. Học bằng <strong>active recall</strong> (tự nghĩ trước khi xem đáp án) và <strong>spaced repetition</strong> (lặp lại ngắt quãng).</p>
 </section>
 
 <div class="study-banner" id="how">
@@ -177,7 +184,7 @@
 
 <div class="qb-controls">
   <div class="qb-row">
-    <input class="qb-search" id="qbSearch" type="search" placeholder="Tìm câu hỏi, chủ đề, từ khoá..." autocomplete="off">
+    <input class="qb-search" id="qbSearch" type="search" placeholder="Tìm câu hỏi, chủ đề, tag..." autocomplete="off">
     <select id="qbGroup"><option value="__all">Tất cả nhóm</option></select>
     <select id="qbTopic"><option value="__all">Tất cả chủ đề</option></select>
   </div>
@@ -196,10 +203,10 @@
   </div>
 </div>
 
-<div id="qbView"></div>
+<div id="qbView"><div class="qb-empty">Đang nạp ngân hàng câu hỏi…</div></div>
 
 <footer>
-  <span>#62 · html/62-interview-question-bank.html</span>
+  <span>#62 · dữ liệu tách theo nhóm trong <code>html/qbank/data/</code> · muốn thêm câu xem <code>qbank/GUIDE.md</code></span>
   <span>Tiến độ lưu trong trình duyệt (localStorage).</span>
 </footer>
 
@@ -210,1013 +217,164 @@
 <div class="qb-toast" id="qbToast"></div>
 
 <script src="assets/scripts.js"></script>
+<script src="qbank/manifest.js"></script>
 <script>
 /* =========================================================
-   QUESTION BANK DATA
-   Mỗi object: { id, g(group), t(topic), lv(junior|middle|senior),
-                 core(bool), q, a(HTML), refs:[[title,url]] }
+   QUESTION BANK ENGINE v2
+   - Dữ liệu KHÔNG nằm ở đây nữa. Mỗi nhóm 1 file: qbank/data/*.js
+   - Mỗi file gọi QB.register({group, order, prefix, status, questions})
+   - Câu hỏi: { id:"web-001", legacy:1, t, lv, core, tags:[], q, a, refs }
+   - Thêm câu / thêm nhóm: xem qbank/GUIDE.md
    ========================================================= */
-const QUESTIONS = [
-/* DATA_START */
-
-/* ===================== NỀN TẢNG & WEB ===================== */
-{ id:1, g:"Nền tảng & Web", t:"Web & HTTP", lv:"junior", core:true,
-  q:"HTTP là gì? Vì sao người ta nói HTTP là giao thức <em>stateless</em>?",
-  a:"<p><strong>HTTP</strong> là giao thức client (trình duyệt/app) và server nói chuyện qua cặp <strong>request → response</strong>: client gửi yêu cầu (method + URL + headers + body), server trả về (status code + headers + body).</p><p><strong>Stateless</strong> nghĩa là server <em>không tự nhớ</em> request trước đó — mỗi request độc lập. Muốn biết 'bạn là ai' ở request sau, phải tự mang theo bằng <code>cookie</code>, <code>session id</code> hoặc <code>token</code>.</p><div class='qb-eli5'><b>🌱 Cho người mới:</b> Như gọi tổng đài mà mỗi lần lại gặp nhân viên mới chẳng nhớ bạn — nên bạn phải đọc lại mã khách hàng (token) mỗi cuộc gọi.</div>",
-  refs:[["MDN – HTTP overview","https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview"]] },
-
-{ id:2, g:"Nền tảng & Web", t:"Web & HTTP", lv:"junior", core:true,
-  q:"Phân biệt GET, POST, PUT, PATCH, DELETE. <em>Idempotent</em> và <em>safe</em> nghĩa là gì?",
-  a:"<p><strong>GET</strong> đọc dữ liệu. <strong>POST</strong> tạo mới. <strong>PUT</strong> thay thế toàn bộ resource. <strong>PATCH</strong> sửa một phần. <strong>DELETE</strong> xoá.</p><ul><li><strong>Safe</strong>: không thay đổi dữ liệu server (GET). Gọi bao nhiêu lần cũng vô hại.</li><li><strong>Idempotent</strong>: gọi 1 hay N lần cho <em>cùng kết quả state</em>. GET, PUT, DELETE idempotent; <strong>POST thì không</strong> (gọi 2 lần tạo 2 record).</li></ul><div class='qb-gotcha'><b>⚠ Hay hỏi bẫy:</b> Vì POST không idempotent nên client retry (mạng chập chờn) dễ tạo trùng → cần <em>Idempotency-Key</em> (chủ đề 33).</div>",
-  refs:[["MDN – HTTP methods","https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods"]] },
-
-{ id:3, g:"Nền tảng & Web", t:"Web & HTTP", lv:"junior", core:true,
-  q:"Các nhóm HTTP status code (2xx, 3xx, 4xx, 5xx) nghĩa là gì? Cho vài mã hay gặp.",
-  a:"<ul><li><strong>2xx thành công</strong>: 200 OK, 201 Created, 204 No Content.</li><li><strong>3xx chuyển hướng</strong>: 301 (moved permanent), 302 (tạm), 304 Not Modified (dùng cache).</li><li><strong>4xx lỗi client</strong>: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 429 Too Many Requests.</li><li><strong>5xx lỗi server</strong>: 500 Internal Error, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout.</li></ul><div class='qb-gotcha'><b>⚠ 401 vs 403:</b> 401 = 'chưa biết bạn là ai' (thiếu/hỏng token). 403 = 'biết rồi nhưng không được phép'.</div>",
-  refs:[["MDN – HTTP status","https://developer.mozilla.org/en-US/docs/Web/HTTP/Status"]] },
-
-{ id:4, g:"Nền tảng & Web", t:"Web & HTTP", lv:"junior", core:false,
-  q:"Cookie, Session và Token khác nhau thế nào?",
-  a:"<p><strong>Cookie</strong>: mẩu dữ liệu nhỏ server nhờ trình duyệt lưu và tự gửi kèm mỗi request. <strong>Session</strong>: server lưu trạng thái ở phía server (RAM/Redis/DB), cookie chỉ chứa <code>session id</code> trỏ tới nó. <strong>Token (JWT)</strong>: trạng thái nằm <em>trong chính token</em> ở client → server không cần lưu, chỉ verify chữ ký (stateless).</p><div class='qb-eli5'><b>🌱 Ví von:</b> Session = tủ đồ ở quầy, bạn giữ thẻ số (session id). Token = giấy tờ tuỳ thân có dấu mộc, bạn tự mang, quầy chỉ kiểm mộc thật/giả.</div>",
-  refs:[["MDN – Cookies","https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies"]] },
-
-{ id:5, g:"Nền tảng & Web", t:"REST API", lv:"junior", core:true,
-  q:"REST là gì? Kể vài nguyên tắc thiết kế REST API tốt.",
-  a:"<p><strong>REST</strong> là phong cách thiết kế API dựa trên HTTP: mọi thứ là <strong>resource</strong> (danh từ) truy cập qua URL, thao tác bằng HTTP method.</p><ul><li>URL là danh từ số nhiều: <code>/orders</code>, <code>/orders/42</code> — không dùng động từ như <code>/getOrder</code>.</li><li>Dùng method đúng nghĩa (GET/POST/PUT/DELETE).</li><li>Trả status code đúng (201 khi tạo, 404 khi không thấy).</li><li>Stateless; versioning (<code>/v1/</code>) và phân trang cho list lớn.</li></ul>",
-  refs:[["restfulapi.net","https://restfulapi.net/"]] },
-
-{ id:6, g:"Nền tảng & Web", t:"Web & HTTP", lv:"junior", core:false,
-  q:"TCP khác UDP thế nào? Backend hay dùng cái nào?",
-  a:"<p><strong>TCP</strong>: có bắt tay (3-way handshake), đảm bảo dữ liệu đến <em>đủ và đúng thứ tự</em>, retransmit khi mất gói → tin cậy nhưng chậm hơn. <strong>UDP</strong>: bắn gói đi, không đảm bảo tới/thứ tự → nhanh, nhẹ.</p><p>Backend web (HTTP, DB, gRPC) chạy trên <strong>TCP</strong>. UDP hợp cho video call, game realtime, DNS — mất vài gói chấp nhận được, độ trễ thấp quan trọng hơn.</p>",
-  refs:[["Cloudflare – TCP vs UDP","https://www.cloudflare.com/learning/ddos/glossary/user-datagram-protocol-udp/"]] },
-
-{ id:7, g:"Nền tảng & Web", t:"REST API", lv:"middle", core:false,
-  q:"HTTPS/TLS bảo vệ điều gì? 'Bắt tay TLS' làm gì?",
-  a:"<p>HTTPS = HTTP chạy trên <strong>TLS</strong>. TLS cho 3 thứ: <strong>mã hoá</strong> (nghe lén không đọc được), <strong>toàn vẹn</strong> (không bị sửa giữa đường), <strong>xác thực server</strong> (certificate chứng minh server là ai).</p><p>Bắt tay TLS: hai bên thoả thuận thuật toán, server gửi certificate (CA ký), dùng asymmetric key để trao đổi an toàn một <em>session key</em> đối xứng, rồi dùng key đó mã hoá dữ liệu (nhanh hơn). Điển hình 'asymmetric để trao key, symmetric để truyền dữ liệu'.</p>",
-  refs:[["Cloudflare – TLS","https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/"]] },
-
-{ id:8, g:"Nền tảng & Web", t:"48 Java OOP", lv:"junior", core:true,
-  q:"4 tính chất OOP là gì? Giải thích ngắn gọn từng cái.",
-  a:"<ul><li><strong>Encapsulation (đóng gói)</strong>: giấu dữ liệu bên trong, chỉ lộ method public → kiểm soát cách state bị đổi.</li><li><strong>Abstraction (trừu tượng)</strong>: che chi tiết cài đặt, chỉ phơi ra 'làm được gì' (interface).</li><li><strong>Inheritance (kế thừa)</strong>: class con dùng lại code class cha (quan hệ 'is-a').</li><li><strong>Polymorphism (đa hình)</strong>: cùng một lời gọi method, chạy code khác nhau tuỳ object thực.</li></ul><div class='qb-gotcha'><b>⚠ Bẫy senior:</b> Lạm dụng inheritance dễ vỡ. Nguyên tắc hiện đại: <em>ưu tiên composition hơn inheritance</em>.</div>",
-  refs:[["Baeldung – OOP in Java","https://www.baeldung.com/java-oop"]] },
-
-{ id:9, g:"Nền tảng & Web", t:"48 Java OOP", lv:"junior", core:true,
-  q:"Overloading và Overriding khác nhau ra sao?",
-  a:"<p><strong>Overloading (nạp chồng)</strong>: cùng tên method, <em>khác tham số</em>, trong cùng class. Quyết định lúc <strong>biên dịch</strong>. Vd <code>print(int)</code> và <code>print(String)</code>.</p><p><strong>Overriding (ghi đè)</strong>: class con viết lại method của cha với <em>cùng chữ ký</em>. Quyết định lúc <strong>chạy</strong> dựa trên object thực — đây chính là polymorphism.</p><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> overl<b>oad</b> = cùng tên khác 'load' (tham số); overr<b>ide</b> = con 'đè' lên cha.</div>",
-  refs:[["Baeldung – Overload vs Override","https://www.baeldung.com/java-method-overload-override"]] },
-
-{ id:10, g:"Nền tảng & Web", t:"48 Java OOP", lv:"junior", core:false,
-  q:"Khi nào dùng interface, khi nào dùng abstract class?",
-  a:"<p><strong>Interface</strong>: định nghĩa 'hợp đồng' (làm được gì), implement được nhiều. Dùng khi các class không liên quan nhưng cùng có khả năng nào đó (<code>Comparable</code>).</p><p><strong>Abstract class</strong>: có state (field) và code dùng chung, chỉ kế thừa được một. Dùng khi có quan hệ 'is-a' rõ và muốn chia sẻ code + bắt con cài vài method.</p><div class='qb-gotcha'><b>⚠ Java 8+:</b> interface có <code>default method</code> nên ranh giới mờ đi — nhưng interface vẫn không giữ được state.</div>",
-  refs:[["Oracle – Abstract vs Interface","https://docs.oracle.com/javase/tutorial/java/IandI/abstract.html"]] },
-
-{ id:11, g:"Nền tảng & Web", t:"48 Java OOP", lv:"junior", core:true,
-  q:"<code>==</code> và <code>.equals()</code> khác nhau ra sao trong Java?",
-  a:"<p><code>==</code> so sánh <strong>tham chiếu</strong> (hai biến có trỏ cùng một object không). <code>.equals()</code> so sánh <strong>nội dung</strong> (String/Integer... override để so nội dung).</p><p>Vd hai <code>new String(\"abc\")</code> khác nhau qua <code>==</code> nhưng bằng nhau qua <code>.equals()</code>.</p><div class='qb-gotcha'><b>⚠ Bẫy kinh điển:</b> <code>Integer</code> cache -128..127 nên <code>Integer a=100,b=100; a==b</code> ra true, còn 1000 thì false. Luôn dùng <code>.equals()</code> cho object.</div>",
-  refs:[["Baeldung – == vs equals","https://www.baeldung.com/java-equals-method-operator-difference"]] },
-
-{ id:12, g:"Nền tảng & Web", t:"50 Git", lv:"junior", core:true,
-  q:"Giải thích working directory, staging area (index) và commit. <code>git add</code> khác <code>git commit</code> ra sao?",
-  a:"<p>Git có 3 vùng: <strong>working directory</strong> (file đang sửa), <strong>staging area / index</strong> (khu 'chuẩn bị' những thay đổi sẽ commit), và <strong>repository</strong> (lịch sử commit).</p><ul><li><code>git add file</code>: đưa thay đổi từ working dir vào staging.</li><li><code>git commit</code>: chụp ảnh những gì đang ở staging thành một commit vĩnh viễn kèm message.</li></ul><div class='qb-eli5'><b>🌱 Ví von:</b> <code>add</code> = bỏ đồ vào giỏ hàng; <code>commit</code> = thanh toán và in hoá đơn.</div>",
-  refs:[["Git – Recording changes","https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository"]] },
-
-{ id:13, g:"Nền tảng & Web", t:"50 Git", lv:"junior", core:false,
-  q:"<code>git merge</code> và <code>git rebase</code> khác gì? Khi nào dùng cái nào?",
-  a:"<p><strong>Merge</strong>: gộp 2 nhánh, tạo 'merge commit' → giữ lịch sử thật, thấy rõ điểm rẽ nhánh. <strong>Rebase</strong>: dời loạt commit của bạn lên đầu nhánh khác → lịch sử thẳng đẹp, nhưng <em>viết lại commit hash</em>.</p><p>Thực dụng: rebase nhánh <em>feature cá nhân</em> cho sạch trước khi merge; <strong>đừng rebase nhánh đã push chung</strong>.</p><div class='qb-gotcha'><b>⚠ Golden rule:</b> Never rebase a branch others have based work on.</div>",
-  refs:[["Atlassian – Merging vs Rebasing","https://www.atlassian.com/git/tutorials/merging-vs-rebasing"]] },
-
-{ id:14, g:"Nền tảng & Web", t:"50 Git", lv:"junior", core:false,
-  q:"Merge conflict xảy ra khi nào? Xử lý các bước ra sao?",
-  a:"<p>Conflict xảy ra khi hai nhánh <em>sửa cùng một vùng dòng</em> của cùng file. Git đánh dấu bằng <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> / <code>=======</code> / <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>.</p><p>Các bước: (1) mở file, chọn/gộp phần đúng, xoá marker; (2) <code>git add</code> file đã sửa; (3) <code>git commit</code> (hoặc <code>git rebase --continue</code>). Rối quá thì <code>git merge --abort</code>.</p>",
-  refs:[["Git – Basic branching & merging","https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"]] },
-
-{ id:15, g:"Nền tảng & Web", t:"51 Linux", lv:"junior", core:true,
-  q:"Service không lên được vì 'port đã bị chiếm'. Bạn dùng lệnh Linux nào để tìm và xử lý?",
-  a:"<p>Tìm tiến trình nghe port:</p><pre><code class='language-text'>ss -ltnp | grep :8080      # hoặc: lsof -i :8080</code></pre><p>Xem rồi dừng đúng cái:</p><pre><code class='language-text'>ps -fp &lt;PID&gt;               # xem lệnh chạy\nkill &lt;PID&gt;                 # xin dừng lịch sự (SIGTERM)\nkill -9 &lt;PID&gt;              # ép dừng nếu không nghe (SIGKILL)</code></pre><div class='qb-gotcha'><b>⚠ Đừng phản xạ kill -9:</b> SIGKILL không cho app dọn dẹp (flush, đóng connection) → ưu tiên <code>kill</code> (TERM) trước.</div>",
-  refs:[["man ss","https://man7.org/linux/man-pages/man8/ss.8.html"]] },
-
-/* ===================== CORE JAVA ===================== */
-{ id:16, g:"Core Java", t:"01 Java Concurrency", lv:"junior", core:true,
-  q:"Thread và Process khác nhau ra sao? <code>Runnable</code> và <code>Callable</code> khác gì?",
-  a:"<p><strong>Process</strong>: chương trình đang chạy, có <em>vùng nhớ riêng</em>. <strong>Thread</strong>: luồng chạy bên trong process, các thread <em>chia sẻ chung heap</em> → nhẹ, nhưng phải đồng bộ khi cùng đụng dữ liệu.</p><p><strong>Runnable</strong>: <code>run()</code> không trả giá trị, không ném checked exception. <strong>Callable&lt;T&gt;</strong>: <code>call()</code> trả về <code>T</code> và được ném exception → dùng với <code>ExecutorService.submit()</code> lấy <code>Future&lt;T&gt;</code>.</p><div class='qb-eli5'><b>🌱 Ví von:</b> process = căn nhà riêng; thread = người trong cùng một nhà, dùng chung bếp (heap) nên phải thay nhau nấu.</div>",
-  refs:[["Baeldung – Runnable vs Callable","https://www.baeldung.com/java-runnable-callable"]] },
-
-{ id:17, g:"Core Java", t:"01 Java Concurrency", lv:"middle", core:true,
-  q:"Race condition và deadlock khác nhau thế nào? Phát hiện mỗi loại ra sao?",
-  a:"<p><strong>Race condition</strong>: nhiều thread cùng đọc/ghi state chung không đồng bộ → kết quả sai (vd <code>count++</code> bị mất lượt). <strong>Deadlock</strong>: 2+ thread chờ khoá của nhau theo vòng tròn → treo cứng.</p><ul><li>Phát hiện race: kết quả chạy lại khác nhau, test concurrent, dùng Java Flight Recorder.</li><li>Phát hiện deadlock: <strong>thread dump</strong> (<code>jstack &lt;pid&gt;</code>) — thấy thread <code>BLOCKED</code> 'waiting to lock' lẫn nhau; JVM in 'Found one Java-level deadlock'.</li></ul><div class='qb-gotcha'><b>⚠ Chống deadlock:</b> luôn khoá theo <em>cùng một thứ tự</em> (lock ordering), đặt timeout khi lấy lock.</div>",
-  refs:[["Baeldung – Deadlock","https://www.baeldung.com/java-deadlock-livelock"]] },
-
-{ id:18, g:"Core Java", t:"01 Java Concurrency", lv:"middle", core:true,
-  q:"<code>volatile</code>, <code>synchronized</code> và <code>AtomicInteger</code> — chọn cái nào khi nào?",
-  a:"<ul><li><strong>volatile</strong>: chỉ đảm bảo <em>visibility</em>, <strong>KHÔNG</strong> atomic. Dùng cho <em>cờ trạng thái</em> boolean. <code>count++</code> vẫn sai với volatile.</li><li><strong>synchronized</strong>: vừa visibility vừa <em>loại trừ lẫn nhau</em> nhưng chậm hơn vì lock.</li><li><strong>AtomicInteger</strong>: atomic qua CAS ở mức phần cứng, nhanh hơn lock khi contention vừa phải → hợp cho counter.</li></ul><div class='qb-eli5'><b>🌱 Cho người mới:</b> visibility = 'thấy giá trị mới'; atomicity = 'không ai chen ngang giữa chừng'. Hai vấn đề khác nhau.</div>",
-  refs:[["Baeldung – volatile","https://www.baeldung.com/java-volatile"]] },
-
-{ id:19, g:"Core Java", t:"01 Java Concurrency", lv:"middle", core:true,
-  q:"<code>ThreadPoolExecutor</code> tạo thread mới khi nào? Vì sao <code>newFixedThreadPool</code> có thể gây OOM?",
-  a:"<p>Thứ tự khi có task mới: (1) nếu số thread &lt; <code>corePoolSize</code> → tạo thread mới; (2) không thì đẩy vào <strong>queue</strong>; (3) queue đầy mới tạo tới <code>maximumPoolSize</code>; (4) đầy nữa thì gọi <code>RejectedExecutionHandler</code>.</p><p>Bẫy: thread mới <em>không</em> được tạo khi queue chưa đầy. <code>newFixedThreadPool</code> dùng <code>LinkedBlockingQueue</code> <strong>unbounded</strong> → queue không bao giờ đầy → task chất đống → <strong>OutOfMemoryError</strong>, và <code>maximumPoolSize</code> vô nghĩa.</p><div class='qb-gotcha'><b>⚠ Production:</b> tự tạo <code>ThreadPoolExecutor</code> với queue giới hạn + reject policy rõ ràng.</div>",
-  refs:[["ThreadPoolExecutor Javadoc","https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ThreadPoolExecutor.html"]] },
-
-{ id:20, g:"Core Java", t:"01 Java Concurrency", lv:"senior", core:false,
-  q:"Gọi 3 service song song bằng <code>CompletableFuture</code>, 1 cái fail không được kéo sập cả request. Làm sao? <code>thenApply</code> vs <code>thenApplyAsync</code>?",
-  a:"<p>Mỗi call là một <code>CompletableFuture</code> có <code>.orTimeout(...)</code> và <code>.exceptionally(ex -&gt; fallback)</code> <em>riêng</em>. Dùng <code>allOf(...).join()</code> chờ tất cả; vì mỗi future đã tự xử lý lỗi nên một service fail chỉ khiến phần đó fallback.</p><p><strong>thenApply</strong>: callback chạy trên thread vừa hoàn thành stage trước. <strong>thenApplyAsync</strong>: chạy trên <code>ForkJoinPool.commonPool</code> hoặc executor bạn chỉ định → kiểm soát pool, tránh chiếm nhầm thread I/O.</p><div class='qb-gotcha'><b>⚠ Luôn truyền executor riêng</b> cho các bước Async trong web service, đừng đè lên commonPool dùng chung.</div>",
-  refs:[["Baeldung – CompletableFuture","https://www.baeldung.com/java-completablefuture"]] },
-
-{ id:21, g:"Core Java", t:"01 Java Concurrency", lv:"senior", core:true,
-  q:"Vì sao <code>synchronized</code> KHÔNG đủ để chống xử lý trùng (double-processing) trong production?",
-  a:"<p><code>synchronized</code> chỉ khoá <em>trong một JVM</em>. Production thường chạy <strong>nhiều instance</strong> sau load balancer → hai instance cùng xử lý một request vẫn song song, khoá của A không chặn B.</p><p>Chồng giải pháp theo phạm vi: <strong>idempotency key</strong> + unique constraint DB → <strong>pessimistic lock</strong> (1 DB) → <strong>distributed lock</strong> (Redis, xuyên instance) → <strong>Saga</strong> (xuyên service).</p><div class='qb-eli5'><b>🌱 Ý chính:</b> khoá trong bộ nhớ chỉ đúng khi 'cả thế giới' là một tiến trình. Nhiều tiến trình thì phải khoá ở nơi dùng chung.</div>",
-  refs:[["Redis – Distributed locks","https://redis.io/docs/latest/develop/use/patterns/distributed-locks/"]] },
-
-{ id:22, g:"Core Java", t:"04 Java Memory Model", lv:"senior", core:true,
-  q:"Thread A set <code>transactionId</code> rồi set cờ <code>isDone=true</code>. Thread B thấy <code>isDone==true</code> nhưng <code>transactionId==null</code>. Vì sao? Fix?",
-  a:"<p>Không có quan hệ <strong>happens-before</strong> giữa hai thread, nên CPU cache và <em>reordering</em> cho phép ghi <code>isDone</code> visible với B <em>trước</em> ghi <code>transactionId</code>, hoặc B đọc cache cũ.</p><p><strong>Fix</strong>: khai báo cờ là <code>volatile</code>. Ghi volatile <em>happens-before</em> lần đọc volatile, và có tính <strong>bắc cầu</strong>: mọi ghi trước ghi volatile (kể cả <code>transactionId</code>) trở nên visible khi B đọc thấy <code>isDone==true</code>.</p><div class='qb-eli5'><b>🌱 Cho người mới:</b> mỗi CPU có 'bàn làm việc' (cache) riêng. Không có quy tắc đồng bộ thì việc bạn viết chưa chắc người kia thấy, và thứ tự có thể bị đảo.</div>",
-  refs:[["JLS 17 – Memory Model","https://docs.oracle.com/javase/specs/jls/se17/html/jls-17.html#jls-17.4"]] },
-
-{ id:23, g:"Core Java", t:"04 Java Memory Model", lv:"senior", core:false,
-  q:"Double-checked locking để tạo singleton vì sao BẮT BUỘC dùng <code>volatile</code>?",
-  a:"<p><code>instance = new Foo()</code> gồm 3 việc: cấp phát, gọi constructor, gán reference. JIT/CPU có thể <em>reorder</em> để gán reference <strong>trước khi</strong> constructor xong. Thread khác vào nhánh 'khác null' sẽ thấy object <em>chưa khởi tạo đủ</em> → bug khó tái hiện. <code>volatile</code> chặn reorder này.</p><div class='qb-gotcha'><b>⚠ Sạch hơn:</b> dùng <em>Initialization-on-demand holder</em> (static inner class) — JVM đảm bảo an toàn nhờ class-loading, không cần volatile hay lock.</div>",
-  refs:[["Baeldung – DCL Singleton","https://www.baeldung.com/java-singleton-double-checked-locking"]] },
-
-{ id:24, g:"Core Java", t:"52 Collections", lv:"junior", core:true,
-  q:"<code>ArrayList</code> và <code>LinkedList</code> khác nhau ra sao? Thực tế nên dùng cái nào?",
-  a:"<p><strong>ArrayList</strong>: mảng động, truy cập index O(1), chèn/xoá giữa phải dịch phần tử O(n). <strong>LinkedList</strong>: danh sách nút liên kết, chèn/xoá đầu/cuối O(1) <em>nếu đã có con trỏ</em>, nhưng truy cập index O(n), tốn bộ nhớ cho con trỏ, cache-locality kém.</p><p>Thực tế 95% dùng <strong>ArrayList</strong> — nhanh hơn nhờ dữ liệu liền mạch. Cần queue/deque thì dùng <code>ArrayDeque</code>.</p><div class='qb-eli5'><b>🌱 Ví von:</b> ArrayList = dãy ghế đánh số (nhảy tới ghế 100 ngay). LinkedList = đoàn người nắm tay (muốn tới người 100 phải đi lần lượt).</div>",
-  refs:[["Baeldung – ArrayList vs LinkedList","https://www.baeldung.com/java-arraylist-linkedlist"]] },
-
-{ id:25, g:"Core Java", t:"52 Collections", lv:"middle", core:true,
-  q:"<code>HashMap</code> hoạt động bên trong thế nào? Vai trò của <code>hashCode()</code>, collision và 'treeify'?",
-  a:"<p>HashMap là mảng các <strong>bucket</strong>. Khi <code>put</code>: tính <code>hashCode()</code> của key → nén thành chỉ số bucket. Nhiều key rơi cùng bucket = <strong>collision</strong> → lưu thành danh sách liên kết; tìm trong bucket dùng <code>equals()</code>.</p><p>Từ Java 8, một bucket quá dài (≥8 và bảng đủ lớn) chuyển thành <strong>cây đỏ-đen</strong> (treeify) → tra cứu bucket đó từ O(n) xuống O(log n).</p><div class='qb-gotcha'><b>⚠ Vì sao override <code>equals</code> phải override <code>hashCode</code>:</b> hai key 'bằng nhau' mà hashCode khác → rơi khác bucket → <code>get</code> không tìm ra cái vừa <code>put</code>.</div>",
-  refs:[["Baeldung – HashMap internals","https://www.baeldung.com/java-hashmap-advanced"]] },
-
-{ id:26, g:"Core Java", t:"52 Collections", lv:"middle", core:false,
-  q:"<code>HashMap</code>, <code>Hashtable</code> và <code>ConcurrentHashMap</code> — chọn cái nào cho đa luồng?",
-  a:"<ul><li><strong>HashMap</strong>: nhanh, <em>không</em> thread-safe, cho 1 key null.</li><li><strong>Hashtable</strong>: cũ, khoá <em>toàn bộ</em> map mỗi thao tác → chậm, gần như không nên dùng.</li><li><strong>ConcurrentHashMap</strong>: thread-safe nhưng khoá <em>theo bin</em> (Java 8: CAS + synchronized trên từng bin) → nhiều thread ghi bucket khác nhau vẫn song song → nhanh hơn Hashtable nhiều.</li></ul><p>Đa luồng → <strong>ConcurrentHashMap</strong>. Lưu ý không cho key/value null.</p>",
-  refs:[["Baeldung – ConcurrentHashMap","https://www.baeldung.com/java-concurrent-map"]] },
-
-{ id:27, g:"Core Java", t:"52 Collections", lv:"middle", core:false,
-  q:"<code>ConcurrentModificationException</code> xảy ra khi nào? Cách tránh?",
-  a:"<p>Xảy ra khi bạn <em>sửa cấu trúc</em> collection (add/remove) <strong>trong lúc</strong> đang duyệt bằng for-each/iterator. Iterator 'fail-fast' phát hiện <code>modCount</code> đổi và ném exception ngay.</p><p>Cách tránh: (1) <code>iterator.remove()</code> thay vì <code>list.remove()</code>; (2) <code>removeIf(...)</code>; (3) duyệt trên bản copy; (4) dùng <code>CopyOnWriteArrayList</code> nếu ghi hiếm đọc nhiều.</p>",
-  refs:[["Baeldung – ConcurrentModificationException","https://www.baeldung.com/java-concurrentmodificationexception"]] },
-
-{ id:28, g:"Core Java", t:"02 JVM Internals", lv:"middle", core:true,
-  q:"JVM chia bộ nhớ thành những vùng nào? Heap, Stack, Metaspace lưu gì?",
-  a:"<ul><li><strong>Heap</strong>: chứa mọi object (<code>new</code>), chia Young Gen (Eden + Survivor) và Old Gen. GC dọn ở đây.</li><li><strong>Stack</strong> (mỗi thread một cái): lưu stack frame — biến local, tham số, reference. Tự dọn khi method return; tràn → <code>StackOverflowError</code>.</li><li><strong>Metaspace</strong> (thay PermGen từ Java 8): metadata của class đã load, nằm ở native memory.</li></ul><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> object nằm ở heap, còn 'biến trỏ tới object' nằm ở stack. Nhiều biến stack có thể trỏ chung một object heap.</div>",
-  refs:[["Baeldung – JVM memory","https://www.baeldung.com/java-stack-heap"]] },
-
-{ id:29, g:"Core Java", t:"02 JVM Internals", lv:"senior", core:false,
-  q:"Service bị nghi memory leak, RAM tăng dần rồi OOM. Bạn điều tra thế nào?",
-  a:"<p>Theo bằng chứng, không đoán:</p><ol><li>Bật <code>-XX:+HeapDumpOnOutOfMemoryError</code> hoặc chủ động <code>jmap -dump:live,file=heap.hprof &lt;pid&gt;</code>.</li><li>Mở dump bằng <strong>Eclipse MAT</strong>/VisualVM → xem 'Dominator Tree' và 'Leak Suspects' tìm object chiếm nhiều nhất và ai giữ reference.</li><li>Xem GC log: Old Gen tăng đều sau mỗi Full GC mà không giảm → leak thật.</li><li>Nghi phạm hay gặp: cache/collection static phình mãi, ThreadLocal không remove, listener không gỡ.</li></ol><div class='qb-gotcha'><b>⚠ Đừng:</b> tăng <code>-Xmx</code> để 'chữa' — chỉ dời thời điểm sập. Phải tìm root cause qua dump.</div>",
-  refs:[["Baeldung – Find memory leaks","https://www.baeldung.com/java-memory-leaks"]] },
-
-{ id:30, g:"Core Java", t:"03 Java 8-17", lv:"junior", core:true,
-  q:"Vì sao <code>stream().filter().map()</code> không chạy gì cho tới khi gặp <code>collect()</code>?",
-  a:"<p>Stream <strong>lazy</strong>: các thao tác trung gian (<code>filter</code>, <code>map</code>, <code>sorted</code>) chỉ <em>ghi nhận</em> pipeline chứ chưa chạy. Chúng chỉ thực thi khi gặp một <strong>terminal operation</strong> (<code>collect</code>, <code>forEach</code>, <code>count</code>, <code>reduce</code>).</p><p>Nhờ lazy, <code>.filter(...).findFirst()</code> dừng ngay khi tìm thấy phần tử đầu — không quét hết (short-circuit).</p><div class='qb-eli5'><b>🌱 Cho người mới:</b> giống dây chuyền chỉ khởi động khi có người bấm nút cuối; và chỉ xử lý đủ số hàng cần thiết.</div>",
-  refs:[["Baeldung – Java Streams","https://www.baeldung.com/java-8-streams-introduction"]] },
-
-{ id:31, g:"Core Java", t:"03 Java 8-17", lv:"middle", core:true,
-  q:"<code>Optional.orElse()</code> và <code>orElseGet()</code> khác nhau ở đâu? Khi nào dùng sai gây bug?",
-  a:"<p><code>orElse(x)</code>: biểu thức <code>x</code> <strong>luôn được tính</strong>, kể cả khi Optional có giá trị. <code>orElseGet(supplier)</code>: supplier <strong>chỉ chạy khi Optional rỗng</strong>.</p><p>Bug: <code>opt.orElse(loadFromDb())</code> → <code>loadFromDb()</code> vẫn chạy dù <code>opt</code> có giá trị → tốn query vô ích. Với thao tác tốn kém, luôn dùng <code>orElseGet(() -&gt; loadFromDb())</code>.</p><div class='qb-gotcha'><b>⚠ Nơi KHÔNG nên dùng Optional:</b> field entity/JPA, tham số method, phần tử collection. Optional dành cho <em>kiểu trả về</em> có thể vắng mặt.</div>",
-  refs:[["Baeldung – orElse vs orElseGet","https://www.baeldung.com/java-optional-or-else-vs-or-else-get"]] },
-
-{ id:32, g:"Core Java", t:"49 Exception & Logging", lv:"junior", core:true,
-  q:"Checked và unchecked exception khác nhau ra sao? Khi nào nên bắt (catch), khi nào ném (throw)?",
-  a:"<p><strong>Checked</strong> (kế thừa <code>Exception</code> trừ Runtime): compiler bắt buộc <code>try/catch</code> hoặc khai báo <code>throws</code> — cho lỗi lường trước và xử lý được (<code>IOException</code>). <strong>Unchecked</strong> (<code>RuntimeException</code>): không bắt buộc, thường là lỗi lập trình (<code>NullPointerException</code>).</p><p>Nguyên tắc: chỉ <em>catch</em> khi thật sự làm được gì đó (retry, fallback, đổi thông báo); không thì để nó <em>throw</em> lên tầng biết xử lý. <strong>Đừng nuốt exception</strong> (<code>catch(e){}</code> rỗng).</p>",
-  refs:[["Oracle – Exceptions","https://docs.oracle.com/javase/tutorial/essential/exceptions/"]] },
-
-{ id:33, g:"Core Java", t:"49 Exception & Logging", lv:"middle", core:false,
-  q:"Các mức log (TRACE→ERROR) dùng khi nào? Tuyệt đối KHÔNG log những gì?",
-  a:"<ul><li><strong>ERROR</strong>: hỏng việc cần người xem.</li><li><strong>WARN</strong>: bất thường nhưng còn chạy được (retry, fallback).</li><li><strong>INFO</strong>: mốc nghiệp vụ quan trọng.</li><li><strong>DEBUG/TRACE</strong>: chi tiết dò lỗi, tắt ở production.</li></ul><p>Nên dùng <strong>structured logging</strong> (JSON, key-value) + <em>correlation/trace id</em> để lần theo một request qua nhiều service.</p><div class='qb-gotcha'><b>⚠ Không log:</b> mật khẩu, token, số thẻ, PII. Vừa lộ bảo mật vừa vi phạm compliance. Phải mask.</div>",
-  refs:[["12 Factor – Logs","https://12factor.net/logs"]] },
-
-/* ===================== SPRING ===================== */
-{ id:34, g:"Spring", t:"05 Spring Core", lv:"junior", core:true,
-  q:"IoC (Inversion of Control) và DI (Dependency Injection) là gì? Lợi ích thực tế?",
-  a:"<p><strong>IoC</strong>: thay vì code tự <code>new</code> dependency, bạn giao việc tạo và ghép nối cho một 'container' (Spring). Quyền điều khiển bị 'đảo ngược' về container. <strong>DI</strong> là cách hiện thực IoC: container <em>tiêm</em> dependency vào (qua constructor/setter).</p><p>Lợi ích: (1) dễ <strong>test</strong> — inject mock; (2) <strong>lỏng ghép</strong> — đổi implementation không sửa nơi dùng; (3) quản lý vòng đời tập trung.</p><div class='qb-eli5'><b>🌱 Ví von:</b> bạn không tự đi mua từng linh kiện lắp máy; bạn khai 'cần cái này', nhà máy (container) lắp sẵn giao tận tay.</div>",
-  refs:[["Spring – IoC container","https://docs.spring.io/spring-framework/reference/core/beans.html"]] },
-
-{ id:35, g:"Spring", t:"05 Spring Core", lv:"junior", core:false,
-  q:"Constructor injection và field injection — nên dùng cái nào, vì sao?",
-  a:"<p>Ưu tiên <strong>constructor injection</strong>: (1) dependency là <code>final</code> → bất biến, chắc chắn không null; (2) lộ rõ dependency (constructor dài = class làm quá nhiều việc, một code smell hữu ích); (3) test dễ, chỉ cần <code>new Service(mock)</code> không cần Spring.</p><p><strong>Field injection</strong> (<code>@Autowired</code> trên field) tiện nhưng giấu dependency, khó test, không final → tránh.</p>",
-  refs:[["Spring – Dependency Injection","https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html"]] },
-
-{ id:36, g:"Spring", t:"05 Spring Core", lv:"middle", core:true,
-  q:"Vì sao đặt một field mutable trong <code>@Service</code> (singleton) là bug trong web app?",
-  a:"<p>Mặc định bean Spring là <strong>singleton</strong> — một instance dùng chung cho <em>mọi request, mọi thread</em>. Một field mutable (vd <code>private User currentUser</code>) bị nhiều thread ghi đè (<strong>race condition</strong>) và <em>rò dữ liệu request này sang request khác</em>.</p><p><strong>Fix:</strong> giữ service <em>stateless</em> — dữ liệu theo request để trong biến <em>local</em> của method, hoặc truyền qua tham số.</p><div class='qb-eli5'><b>🌱 Cho người mới:</b> singleton = một cái bảng chung cả văn phòng viết lên. Viết thông tin riêng của khách A lên đó thì khách B đọc thấy — sai bét.</div>",
-  refs:[["Spring – Bean scopes","https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html"]] },
-
-{ id:37, g:"Spring", t:"05 Spring Core", lv:"middle", core:true,
-  q:"<code>@Transactional</code> đặt đúng mà không có tác dụng. 3 nguyên nhân kinh điển là gì?",
-  a:"<p><code>@Transactional</code> hoạt động nhờ <strong>AOP proxy</strong> bọc bean — advice (mở/commit transaction) nằm ở proxy. Ba trường hợp proxy bị bỏ qua:</p><ol><li><strong>Method private</strong> (hoặc <code>final</code>): proxy không override được.</li><li><strong>Self-invocation</strong>: gọi <code>this.method()</code> trong cùng class → đi thẳng, không qua proxy.</li><li>Gọi từ nơi không lấy bean qua Spring (tự new object).</li></ol><p><strong>Fix</strong>: để method <code>public</code>; với self-invocation thì tách sang bean khác rồi inject, hoặc <code>AopContext.currentProxy()</code>.</p><div class='qb-gotcha'><b>⚠ Hỏi tiếp:</b> proxy được tạo ở <em>sau</em> bước init trong bean lifecycle → trong constructor/@PostConstruct chưa có proxy.</div>",
-  refs:[["Spring – Transaction annotations","https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html"]] },
-
-{ id:38, g:"Spring", t:"06 Spring Boot", lv:"middle", core:false,
-  q:"Spring Boot 'auto-configuration' hoạt động thế nào? Vì sao chỉ thêm dependency là chạy được?",
-  a:"<p>Boot quét các lớp <code>@AutoConfiguration</code> (khai báo trong file imports của mỗi starter). Mỗi cái bật/tắt theo điều kiện <code>@ConditionalOnClass</code>, <code>@ConditionalOnMissingBean</code>, <code>@ConditionalOnProperty</code>...</p><p>Vd thêm starter Data JPA → thấy có class <code>DataSource</code> trên classpath → tự cấu hình DataSource, EntityManager. Nếu bạn tự khai một bean, <code>@ConditionalOnMissingBean</code> nhường cho bean của bạn.</p><div class='qb-gotcha'><b>⚠ Debug bean thiếu/thừa:</b> chạy với <code>--debug</code> để in <em>Condition Evaluation Report</em>.</div>",
-  refs:[["Spring Boot – Auto-configuration","https://docs.spring.io/spring-boot/reference/using/auto-configuration.html"]] },
-
-{ id:39, g:"Spring", t:"06 Spring Boot", lv:"junior", core:false,
-  q:"<code>@Value</code> và <code>@ConfigurationProperties</code> khác gì? Profiles để làm gì?",
-  a:"<p><code>@Value(\"${x}\")</code> tiêm một property lẻ. <code>@ConfigurationProperties(prefix=\"app\")</code> map cả một nhóm property vào object có kiểu → gọn, validate được, an toàn kiểu hơn.</p><p><strong>Profiles</strong> (<code>application-dev.yml</code>, <code>application-prod.yml</code>) cho cùng codebase chạy nhiều môi trường; kích hoạt bằng <code>spring.profiles.active=prod</code>. Bean gắn <code>@Profile(\"prod\")</code> chỉ tồn tại ở môi trường đó.</p>",
-  refs:[["Spring Boot – Profiles","https://docs.spring.io/spring-boot/reference/features/profiles.html"]] },
-
-{ id:40, g:"Spring", t:"07 Spring Transaction", lv:"middle", core:true,
-  q:"<code>REQUIRED</code> và <code>REQUIRES_NEW</code> khác nhau ra sao? Vì sao ghi audit log thường dùng <code>REQUIRES_NEW</code>?",
-  a:"<p><strong>REQUIRED</strong> (mặc định): nếu đã có transaction thì <em>tham gia chung</em>; rollback cả cụm. <strong>REQUIRES_NEW</strong>: <em>tạm dừng</em> transaction hiện tại, mở transaction <em>mới độc lập</em>, commit riêng.</p><p>Audit/log cần được ghi <strong>kể cả khi nghiệp vụ chính rollback</strong>. Nếu dùng REQUIRED, business fail → audit cũng bị cuốn rollback. REQUIRES_NEW tách ra nên audit vẫn còn.</p><div class='qb-gotcha'><b>⚠ Lưu ý:</b> coi chừng cạn connection pool nếu lồng nhiều REQUIRES_NEW; exception từ inner không tự rollback outer.</div>",
-  refs:[["Spring – Propagation","https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-propagation.html"]] },
-
-{ id:41, g:"Spring", t:"07 Spring Transaction", lv:"middle", core:true,
-  q:"Ném một checked exception mà transaction vẫn commit (không rollback). Vì sao? Fix?",
-  a:"<p>Mặc định Spring chỉ rollback với <code>RuntimeException</code> và <code>Error</code> (unchecked). Với <strong>checked exception</strong> → transaction vẫn <strong>commit</strong> → dữ liệu lệch.</p><p><strong>Fix</strong>: <code>@Transactional(rollbackFor = Exception.class)</code>, hoặc thiết kế exception nghiệp vụ kế thừa <code>RuntimeException</code>.</p><div class='qb-eli5'><b>🌱 Ý chính:</b> đây là 'mặc định gây bất ngờ' của Spring — rất hay hỏi. Nhớ: checked ⇒ không rollback trừ khi khai báo.</div>",
-  refs:[["Spring – Rolling back","https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/rolling-back.html"]] },
-
-{ id:42, g:"Spring", t:"07 Spring Transaction", lv:"senior", core:false,
-  q:"Bạn publish sự kiện Kafka ngay trong method <code>@Transactional</code>. Rủi ro gì? Cách đúng?",
-  a:"<p>Event gửi <em>trước khi</em> commit. Nếu sau đó rollback, consumer đã nhận event trỏ tới dữ liệu <em>không tồn tại</em> ('ghost event'). Ngược lại commit xong mới gửi mà app chết giữa chừng thì mất event (dual-write).</p><p><strong>Cách đúng</strong>: (1) <code>@TransactionalEventListener(phase = AFTER_COMMIT)</code> — chỉ gửi sau commit; hoặc (2) <strong>Outbox pattern</strong> — ghi event vào bảng outbox <em>trong cùng transaction</em>, poller đọc và publish sau (an toàn nhất).</p>",
-  refs:[["Spring – Transactional events","https://docs.spring.io/spring-framework/reference/data-access/transaction/event.html"]] },
-
-{ id:43, g:"Spring", t:"07 Spring Transaction", lv:"middle", core:true,
-  q:"Kể 4 mức isolation và mỗi mức chặn được anomaly nào (dirty / non-repeatable / phantom read)?",
-  a:"<table><thead><tr><th>Isolation</th><th>Dirty</th><th>Non-repeatable</th><th>Phantom</th></tr></thead><tbody><tr><td>READ UNCOMMITTED</td><td>có thể</td><td>có thể</td><td>có thể</td></tr><tr><td>READ COMMITTED</td><td>chặn</td><td>có thể</td><td>có thể</td></tr><tr><td>REPEATABLE READ</td><td>chặn</td><td>chặn</td><td>có thể*</td></tr><tr><td>SERIALIZABLE</td><td>chặn</td><td>chặn</td><td>chặn</td></tr></tbody></table><ul><li><strong>Dirty read</strong>: đọc dữ liệu người khác chưa commit.</li><li><strong>Non-repeatable</strong>: đọc cùng row 2 lần ra 2 giá trị.</li><li><strong>Phantom</strong>: cùng điều kiện query 2 lần ra số dòng khác.</li></ul><p>*MySQL InnoDB REPEATABLE READ chặn phantom nhờ next-key lock; chuẩn SQL thì không.</p>",
-  refs:[["PostgreSQL – Transaction isolation","https://www.postgresql.org/docs/current/transaction-iso.html"]] },
-
-{ id:44, g:"Spring", t:"08 Spring Security", lv:"middle", core:true,
-  q:"JWT gồm mấy phần? Phân biệt authentication và authorization. Vì sao KHÔNG để dữ liệu nhạy cảm trong payload?",
-  a:"<p>JWT có 3 phần nối bằng dấu chấm: <code>header.payload.signature</code>. <strong>Authentication</strong> = 'bạn là ai'. <strong>Authorization</strong> = 'bạn được làm gì' (role/permission).</p><p>Payload chỉ được <strong>base64url encode</strong> — <em>không phải mã hoá</em> — ai chặn được token đều decode đọc được. Không để password, số thẻ, PII. Chữ ký chỉ đảm bảo <em>toàn vẹn</em>, không đảm bảo <em>bí mật</em>.</p><div class='qb-gotcha'><b>⚠ 401 vs 403:</b> token hỏng/thiếu → 401. Token hợp lệ nhưng không đủ quyền → 403.</div>",
-  refs:[["jwt.io – Introduction","https://jwt.io/introduction"]] },
-
-{ id:45, g:"Spring", t:"08 Spring Security", lv:"middle", core:false,
-  q:"Spring Security 'filter chain' là gì? Authentication xảy ra ở đâu trước khi tới controller?",
-  a:"<p>Spring Security cài một chuỗi <strong>servlet filter</strong> chạy <em>trước</em> khi request tới controller. Mỗi filter một việc: đọc SecurityContext, filter xác thực (đọc JWT/Basic), <code>ExceptionTranslationFilter</code>, cuối cùng <code>AuthorizationFilter</code> quyết định cho qua hay chặn.</p><p>Xác thực thành công → principal đặt vào <code>SecurityContextHolder</code> → controller và <code>@PreAuthorize</code> đọc từ đó. Fail → trả 401/403 ngay tại filter, không vào controller.</p>",
-  refs:[["Spring Security – Architecture","https://docs.spring.io/spring-security/reference/servlet/architecture.html"]] },
-
-{ id:46, g:"Spring", t:"08 Spring Security", lv:"senior", core:false,
-  q:"JWT stateless nên 'logout' / thu hồi token rất khó. Nêu các cách và đánh đổi.",
-  a:"<p>Server không lưu trạng thái token nên không thể 'xoá' nó. Ba hướng:</p><ol><li><strong>TTL ngắn + refresh token</strong>: access token sống 5-15 phút, hết thì đổi bằng refresh token (có thể thu hồi). Đơn giản, vẫn có cửa sổ token cũ còn hiệu lực.</li><li><strong>Blacklist ở Redis</strong>: lưu jti của token bị thu hồi tới khi hết hạn. Thu hồi tức thì nhưng mất tính stateless.</li><li><strong>Đổi signing key</strong>: vô hiệu hàng loạt — dùng khi lộ key, nhưng đá văng tất cả user.</li></ol><p>Thực dụng: (1)+(2).</p>",
-  refs:[["Auth0 – Revoke tokens","https://auth0.com/docs/secure/tokens/revoke-tokens"]] },
-
-{ id:47, g:"Spring", t:"08 Spring Security", lv:"middle", core:false,
-  q:"CORS là gì? Vì sao <code>allowedOrigins(\"*\")</code> kèm <code>allowCredentials(true)</code> lại lỗi?",
-  a:"<p><strong>CORS</strong> là cơ chế của <em>trình duyệt</em>: mặc định trang ở origin A không được đọc response từ origin B, trừ khi server B trả header <code>Access-Control-Allow-Origin</code> cho phép. Nó bảo vệ <em>người dùng</em>, <strong>không</strong> phải bảo mật server (curl vẫn gọi được).</p><p>Chuẩn CORS <strong>cấm</strong> kết hợp wildcard <code>*</code> với <code>credentials</code> (cookie/Authorization). Phải liệt kê origin cụ thể (hoặc <code>allowedOriginPatterns</code>) khi bật credentials.</p><div class='qb-gotcha'><b>⚠ Đừng nhầm:</b> CORS không phải CSRF. CORS mở quyền đọc cross-origin; CSRF là lợi dụng cookie tự gửi kèm.</div>",
-  refs:[["MDN – CORS","https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"]] },
-
-{ id:48, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:true,
-  q:"Vấn đề N+1 query là gì? Kể các cách fix và khi nào chọn cách nào.",
-  a:"<p>Load một list N phần tử (1 query), rồi mỗi phần tử lại lazy-load quan hệ (N query nữa) → tổng <strong>N+1</strong> query, chậm khủng khiếp khi N lớn.</p><ul><li><strong>JOIN FETCH</strong>: gộp về 1 query. Nhược: khó phân trang khi fetch collection.</li><li><strong>@EntityGraph</strong>: khai báo <code>attributePaths</code> cần nạp — gọn.</li><li><strong>@BatchSize</strong> / <code>default_batch_fetch_size</code>: gom lazy-load thành <code>IN (...)</code>.</li><li><strong>DTO projection</strong>: chỉ select field cần → nhanh nhất cho màn hình read-only.</li></ul><div class='qb-gotcha'><b>⚠ Phát hiện:</b> bật <code>show-sql</code> — thấy hàng loạt query giống nhau chỉ khác id = N+1.</div>",
-  refs:[["Vlad Mihalcea – N+1","https://vladmihalcea.com/n-plus-1-query-problem/"]] },
-
-{ id:49, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"<code>LazyInitializationException</code> xảy ra khi nào? Cách fix đúng (và cách fix sai)?",
-  a:"<p>Xảy ra khi bạn truy cập một quan hệ <strong>LAZY</strong> <em>sau khi</em> persistence context (session) đã đóng — điển hình ở tầng controller/view, ngoài phạm vi <code>@Transactional</code>.</p><p><strong>Fix đúng</strong>: map dữ liệu sang <strong>DTO ngay trong service</strong> (khi session còn mở). <strong>Fix sai/nửa vời</strong>: bật Open-Session-In-View (giữ connection lâu), hoặc đổi tất cả sang EAGER (kéo theo N+1, nạp thừa).</p>",
-  refs:[["Baeldung – LazyInitializationException","https://www.baeldung.com/hibernate-initialize-proxy-exception"]] },
-
-{ id:50, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Vì sao sửa field của entity trong <code>@Transactional</code> mà không gọi <code>save()</code> vẫn được lưu?",
-  a:"<p>Do <strong>dirty checking</strong>: khi load, Hibernate chụp 'snapshot' trạng thái entity. Lúc flush/commit, nó so entity hiện tại với snapshot; field nào khác thì tự sinh <code>UPDATE</code>. Entity đang managed nên không cần gọi <code>save()</code>.</p><div class='qb-gotcha'><b>⚠ Cạm bẫy hiệu năng:</b> update hàng loạt (10K entity) → so sánh + UPDATE từng cái → rất chậm. Khi đó dùng bulk update JPQL hoặc batch.</div>",
-  refs:[["Vlad Mihalcea – Dirty checking","https://vladmihalcea.com/the-anatomy-of-hibernate-dirty-checking/"]] },
-
-{ id:51, g:"Spring", t:"09 Spring Data JPA", lv:"senior", core:true,
-  q:"Optimistic lock và Pessimistic lock khác nhau ra sao? Chọn cái nào khi nào?",
-  a:"<p><strong>Optimistic</strong> (<code>@Version</code>): không khoá. Lúc UPDATE thêm <code>WHERE version = ?</code>; nếu 0 dòng bị ảnh hưởng nghĩa là có người sửa trước → <code>OptimisticLockException</code> → bạn <em>retry</em>. Hợp khi <em>xung đột hiếm</em>, throughput cao.</p><p><strong>Pessimistic</strong> (<code>SELECT ... FOR UPDATE</code>): khoá row ngay khi đọc, giao dịch khác chờ. Hợp khi <em>xung đột thường xuyên</em> hoặc giá trị quan trọng (trừ tồn kho).</p><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> optimistic = 'chắc không ai đụng đâu' (kiểm lúc ghi); pessimistic = 'khoá cửa trước cho chắc'.</div>",
-  refs:[["Baeldung – JPA Locking","https://www.baeldung.com/jpa-optimistic-locking"]] },
-
-{ id:52, g:"Spring", t:"10 Spring WebFlux", lv:"senior", core:false,
-  q:"Khi nào NÊN và KHÔNG nên dùng Spring WebFlux (reactive)? Bẫy 'blocking' là gì?",
-  a:"<p><strong>Nên</strong>: hệ thống I/O-bound, nhiều kết nối đồng thời chờ downstream (gateway, streaming) — event-loop ít thread xử lý được rất nhiều connection.</p><p><strong>Không nên</strong>: CRUD thường, đội ngũ chưa quen — reactive khó debug (stack trace rối), khó viết. MVC + thread pool đủ tốt cho phần lớn app.</p><div class='qb-gotcha'><b>⚠ Bẫy chí mạng:</b> gọi code <em>blocking</em> (JDBC, <code>restTemplate</code>, <code>Thread.sleep</code>) trên thread event-loop → chặn cả loop, sập throughput. Phải dùng driver non-blocking (R2DBC, WebClient) hoặc đẩy sang scheduler riêng.</div>",
-  refs:[["Spring – WebFlux","https://docs.spring.io/spring-framework/reference/web/webflux.html"]] },
-
-/* ===================== DATABASE ===================== */
-{ id:53, g:"Database", t:"11 SQL Advanced", lv:"junior", core:true,
-  q:"Index trong database là gì? Vì sao làm query nhanh hơn, đánh đổi là gì?",
-  a:"<p>Index là cấu trúc phụ (thường là <strong>B-Tree</strong>) sắp xếp sẵn giá trị của cột, giúp DB <em>nhảy thẳng</em> tới dòng cần thay vì quét cả bảng (full scan).</p><p>Với B-Tree, tìm một giá trị chỉ mất <code>O(log n)</code>: đi từ gốc xuống lá qua 3-4 tầng ≈ 3-4 lần đọc, thay vì đọc hàng triệu dòng.</p><p><strong>Đánh đổi</strong>: tốn dung lượng, và mỗi <code>INSERT/UPDATE/DELETE</code> phải cập nhật index → ghi chậm hơn.</p><div class='qb-eli5'><b>🌱 Ví von:</b> như mục lục cuối sách — tra 'từ khoá' ra ngay số trang. Nhưng mỗi lần sửa sách phải cập nhật cả mục lục.</div>",
-  refs:[["use-the-index-luke.com","https://use-the-index-luke.com/"]] },
-
-{ id:54, g:"Database", t:"11 SQL Advanced", lv:"middle", core:true,
-  q:"Với composite index <code>(a, b, c)</code>, query nào dùng được index, query nào không? (leftmost prefix)",
-  a:"<p>Index <code>(a,b,c)</code> sắp theo <code>a</code> trước, rồi <code>b</code>, rồi <code>c</code>. Nên nó phục vụ các điều kiện có <strong>tiền tố trái liên tục</strong>: <code>WHERE a</code>, <code>WHERE a AND b</code>, <code>WHERE a AND b AND c</code>.</p><p><strong>KHÔNG</strong> dùng tốt được: <code>WHERE b</code>, <code>WHERE c</code>, <code>WHERE b AND c</code> — vì thiếu <code>a</code> ở đầu.</p><div class='qb-eli5'><b>🌱 Ví von:</b> danh bạ sắp theo (Họ, Tên). Tra theo Họ thì nhanh; tra chỉ theo Tên thì vô dụng vì cả sổ không sắp theo Tên.</div>",
-  refs:[["use-the-index-luke – Concatenated keys","https://use-the-index-luke.com/sql/where-clause/the-equals-operator/concatenated-keys"]] },
-
-{ id:55, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"'Covering index' (index-only scan) là gì? Lợi và hại?",
-  a:"<p>Là index chứa <em>đủ mọi cột</em> query cần (cả <code>SELECT</code> lẫn <code>WHERE</code>). Khi đó DB đọc xong index là có đủ dữ liệu, <strong>không cần quay lại đọc bảng</strong> (heap) → 'Index Only Scan', rất nhanh.</p><p><strong>Lợi</strong>: giảm I/O mạnh cho query nóng. <strong>Hại</strong>: index to hơn, làm chậm write. Postgres có <code>INCLUDE</code> để thêm cột 'chỉ để cover' mà không đưa vào khoá sắp xếp.</p>",
-  refs:[["PostgreSQL – Index-only scans","https://www.postgresql.org/docs/current/indexes-index-only-scans.html"]] },
-
-{ id:56, g:"Database", t:"11 SQL Advanced", lv:"middle", core:true,
-  q:"Đọc <code>EXPLAIN</code> của một query chậm, những 'red flag' nào cần để ý?",
-  a:"<ul><li><strong>Seq Scan / Full Table Scan</strong> trên bảng lớn: thiếu index, hoặc điều kiện không 'sargable' (bọc hàm lên cột: <code>WHERE UPPER(email)=...</code> làm mất index).</li><li><strong>rows ước lượng lệch xa thực tế</strong>: thống kê cũ → chạy <code>ANALYZE</code>.</li><li><strong>Nested Loop</strong> với vòng ngoài hàng triệu dòng: nên là Hash Join.</li><li><strong>Sort/Hash spill to disk</strong>: work_mem nhỏ.</li></ul><p>Luôn xem <code>EXPLAIN (ANALYZE, BUFFERS)</code> để có số <em>thực tế</em>.</p>",
-  refs:[["PostgreSQL – Using EXPLAIN","https://www.postgresql.org/docs/current/using-explain.html"]] },
-
-{ id:57, g:"Database", t:"12 Database Design", lv:"junior", core:true,
-  q:"Normalization (chuẩn hoá) là gì? 1NF/2NF/3NF ngắn gọn. Khi nào cố ý denormalize?",
-  a:"<p>Chuẩn hoá = tổ chức dữ liệu để <strong>giảm trùng lặp</strong> và tránh bất thường khi sửa/xoá.</p><ul><li><strong>1NF</strong>: mỗi ô một giá trị nguyên tử (không nhồi list trong 1 cột).</li><li><strong>2NF</strong>: (khi khoá phức) mọi cột phụ thuộc <em>toàn bộ</em> khoá.</li><li><strong>3NF</strong>: bỏ phụ thuộc bắc cầu (cột không khoá không phụ thuộc cột không khoá khác).</li></ul><p><strong>Denormalize</strong> (cố ý lặp) khi read quá nặng, join tốn kém — chấp nhận trùng để đọc nhanh, thường ở read model/report. Đánh đổi: phải giữ đồng bộ các bản sao.</p>",
-  refs:[["Wikipedia – Normalization","https://en.wikipedia.org/wiki/Database_normalization"]] },
-
-{ id:58, g:"Database", t:"12 Database Design", lv:"senior", core:false,
-  q:"Partitioning và Sharding khác nhau thế nào?",
-  a:"<p><strong>Partitioning</strong>: chia một bảng thành nhiều mảnh <em>trong cùng một database/instance</em> (theo range ngày, hash...). Vẫn qua một DB; giúp quét ít dữ liệu hơn (partition pruning), dễ xoá dữ liệu cũ theo mảng.</p><p><strong>Sharding</strong>: chia dữ liệu ra <em>nhiều database/máy khác nhau</em> theo shard key → mở rộng ngang khi một máy không chứa/chịu tải nổi. Phức tạp hơn: routing, khó join xuyên shard, rebalance khó.</p><div class='qb-gotcha'><b>⚠ Chọn shard key sai</b> (lệch/hotspot) là lỗi kinh điển — một shard gánh hết tải.</div>",
-  refs:[["AWS – Sharding","https://aws.amazon.com/what-is/database-sharding/"]] },
-
-{ id:59, g:"Database", t:"39 DB Consistency", lv:"junior", core:true,
-  q:"ACID là gì? Giải thích từng chữ cho người mới.",
-  a:"<ul><li><strong>A – Atomicity</strong>: một transaction là 'tất cả hoặc không gì' — mọi bước thành công, hoặc rollback sạch.</li><li><strong>C – Consistency</strong>: đưa DB từ trạng thái hợp lệ sang trạng thái hợp lệ (không phá ràng buộc).</li><li><strong>I – Isolation</strong>: nhiều transaction chạy đồng thời không giẫm chân nhau.</li><li><strong>D – Durability</strong>: đã commit thì tồn tại vĩnh viễn kể cả mất điện (ghi WAL/đĩa).</li></ul><div class='qb-eli5'><b>🌱 Ví dụ chuyển tiền:</b> Atomicity = trừ A và cộng B cùng thành công hoặc cùng huỷ; Durability = commit xong dù server sập tiền vẫn đã chuyển.</div>",
-  refs:[["Wikipedia – ACID","https://en.wikipedia.org/wiki/ACID"]] },
-
-{ id:60, g:"Database", t:"39 DB Consistency", lv:"senior", core:false,
-  q:"CAP theorem — vì sao câu 'chọn 2 trong 3' là cách hiểu sai? PACELC bổ sung gì?",
-  a:"<p>Trong hệ phân tán, <strong>Partition (P) là điều không thể tránh</strong> (mạng sẽ có lúc đứt). Nên thực chất là: <em>khi có partition</em>, bạn buộc chọn giữ <strong>Consistency</strong> (từ chối phục vụ để không sai) hay <strong>Availability</strong> (vẫn phục vụ nhưng có thể trả dữ liệu cũ). Lúc <em>không</em> partition thì có cả C lẫn A.</p><p><strong>PACELC</strong> nói thêm: <em>Else</em> (khi bình thường) còn phải chọn giữa <strong>Latency</strong> và <strong>Consistency</strong> — vd đọc từ replica nhanh nhưng có thể chưa cập nhật.</p>",
-  refs:[["Wikipedia – CAP theorem","https://en.wikipedia.org/wiki/CAP_theorem"]] },
-
-{ id:61, g:"Database", t:"39 DB Consistency", lv:"senior", core:false,
-  q:"'Write skew' là gì và vì sao Snapshot Isolation không chặn được?",
-  a:"<p>Hai transaction đọc <em>cùng một snapshot</em>, mỗi cái update một row <em>khác nhau</em> dựa trên điều kiện chung → mỗi cái riêng lẻ hợp lệ nhưng gộp lại phá invariant.</p><p>Ví dụ: quy định 'luôn có ít nhất 1 người trực'. Hai người đang cùng trực, cả hai cùng xin nghỉ. Mỗi transaction thấy 'còn người kia trực' nên cho nghỉ → cuối cùng <em>không ai trực</em>.</p><p>Snapshot Isolation không thấy vì hai bên <em>không ghi đè cùng row</em>. <strong>Fix</strong>: <code>SERIALIZABLE</code> (SSI), hoặc chủ động <code>SELECT ... FOR UPDATE</code> trên tập liên quan.</p>",
-  refs:[["Vlad Mihalcea – Write skew","https://vladmihalcea.com/write-skew/"]] },
-
-{ id:62, g:"Database", t:"40 Oracle", lv:"middle", core:false,
-  q:"Vì sao dùng 'bind variable' quan trọng? Hard parse vs soft parse?",
-  a:"<p>Khi nhận SQL, Oracle phải <strong>parse</strong>. <strong>Hard parse</strong>: tạo execution plan mới — tốn CPU, tranh latch Shared Pool. <strong>Soft parse</strong>: tìm thấy plan đã cache cho đúng câu SQL đó → tái dùng, rẻ.</p><p>Ghép giá trị trực tiếp (<code>WHERE id = 123</code>, rồi 124...) → mỗi câu là SQL text khác → hard parse liên tục. Dùng <strong>bind variable</strong> (<code>WHERE id = :id</code>) → cùng SQL text → soft parse. (Java: <code>PreparedStatement</code> làm việc này, đồng thời chống SQL injection.)</p>",
-  refs:[["Oracle – Cursor sharing","https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/improving-rwp-cursor-sharing.html"]] },
-
-{ id:63, g:"Database", t:"14 Redis", lv:"junior", core:true,
-  q:"Redis là gì, thường dùng làm gì trong backend?",
-  a:"<p>Redis là kho dữ liệu <strong>in-memory</strong> (nằm trong RAM) key-value, cực nhanh (micro-giây). Vì trong RAM nên nhanh nhưng dung lượng giới hạn và cần chiến lược bền vững (RDB/AOF).</p><p>Dùng phổ biến: <strong>cache</strong>, <strong>session store</strong>, <strong>rate limiting</strong>, <strong>distributed lock</strong>, pub/sub nhẹ, leaderboard (sorted set). Nhiều kiểu dữ liệu: String, Hash, List, Set, Sorted Set.</p><div class='qb-eli5'><b>🌱 Ví von:</b> DB là kho hàng lớn (chậm, chứa nhiều); Redis là kệ để sẵn cạnh quầy những món hay lấy.</div>",
-  refs:[["Redis – Get started","https://redis.io/docs/latest/develop/get-started/"]] },
-
-{ id:64, g:"Database", t:"14 Redis", lv:"middle", core:true,
-  q:"Cache-aside, write-through và write-behind khác nhau ra sao?",
-  a:"<ul><li><strong>Cache-aside (lazy)</strong>: app đọc cache; miss thì đọc DB rồi tự set cache. Phổ biến nhất. Nhược: lần miss đầu chậm, phải chủ động invalidate khi dữ liệu đổi.</li><li><strong>Write-through</strong>: ghi thì ghi cache <em>và</em> DB đồng bộ. Cache luôn mới, nhưng write chậm hơn.</li><li><strong>Write-behind</strong>: ghi vào cache, rồi <em>async</em> ghi DB sau. Ghi rất nhanh nhưng rủi ro mất dữ liệu nếu cache chết trước khi flush.</li></ul><div class='qb-gotcha'><b>⚠ Invalidation:</b> cache sai/cũ là nguồn bug kinh điển — cân nhắc TTL + invalidate khi update.</div>",
-  refs:[["AWS – Caching strategies","https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html"]] },
-
-{ id:65, g:"Database", t:"14 Redis", lv:"middle", core:false,
-  q:"Cache penetration, breakdown và avalanche khác nhau ra sao và cách chống?",
-  a:"<ul><li><strong>Penetration</strong>: liên tục hỏi key <em>không tồn tại</em> → luôn miss, đấm thẳng DB. Chống: cache cả giá trị 'null' (TTL ngắn) + bloom filter.</li><li><strong>Breakdown</strong>: một <em>hot key</em> hết hạn, hàng loạt request cùng lúc dội DB rebuild. Chống: mutex/lock để chỉ một request rebuild.</li><li><strong>Avalanche</strong>: <em>nhiều key</em> hết hạn cùng lúc (hoặc Redis chết) → DB quá tải đồng loạt. Chống: TTL ngẫu nhiên hoá (jitter), warm-up, circuit breaker.</li></ul>",
-  refs:[["Redis – Caching issues","https://redis.io/learn/howtos/solutions/caching-architecture/common-caching-issues"]] },
-
-{ id:66, g:"Database", t:"14 Redis", lv:"senior", core:false,
-  q:"Distributed lock bằng Redis làm đúng cần gì? Vì sao khi release phải dùng Lua script?",
-  a:"<p>Acquire an toàn: <code>SET lockKey &lt;randomUUID&gt; NX EX 30</code> — <code>NX</code> chỉ set khi chưa tồn tại (atomic), <code>EX</code> đặt TTL để không kẹt lock nếu owner chết, value là UUID để biết 'ai đang giữ'.</p><p>Release phải kiểm tra 'lock có còn là của tôi' <em>rồi mới</em> DEL, và hai bước này phải <strong>atomic</strong> bằng <strong>Lua</strong> (<code>if GET==myUUID then DEL</code>). Nếu không atomic: TTL hết giữa GET và DEL, lock đã thuộc người khác, bạn vô tình DEL lock của họ.</p><div class='qb-gotcha'><b>⚠ Nâng cao:</b> để chắc hơn khi lock hết hạn nhưng job cũ còn chạy, cần <em>fencing token</em> (số tăng dần) để resource từ chối ghi cũ.</div>",
-  refs:[["Redis – Distributed locks","https://redis.io/docs/latest/develop/use/patterns/distributed-locks/"]] },
-
-/* ===================== DISTRIBUTED & MESSAGING ===================== */
-{ id:67, g:"Distributed & Messaging", t:"13 Distributed Tx", lv:"senior", core:true,
-  q:"2PC (Two-Phase Commit) gồm 2 phase nào? Kể 3 điểm yếu khiến microservices ít dùng.",
-  a:"<p><strong>Phase 1 – Prepare</strong>: coordinator hỏi mọi participant 'chuẩn bị commit được chưa?', mỗi service khoá resource và vote READY. <strong>Phase 2 – Commit/Abort</strong>: nếu tất cả READY, coordinator ra lệnh commit; ngược lại abort.</p><ul><li><strong>Coordinator là SPOF</strong>: coordinator chết sau prepare → participant kẹt (in-doubt), giữ khoá.</li><li><strong>Blocking</strong>: giữ khoá suốt 2 phase → giảm throughput.</li><li><strong>Kém chịu network partition</strong>, khó scale.</li></ul><p>Vì vậy microservices thường thay bằng <strong>Saga</strong> (eventual consistency + compensation).</p>",
-  refs:[["Microservices.io – Saga","https://microservices.io/patterns/data/saga.html"]] },
-
-{ id:68, g:"Distributed & Messaging", t:"13 Distributed Tx", lv:"senior", core:false,
-  q:"Saga: Choreography và Orchestration khác nhau ra sao?",
-  a:"<p><strong>Choreography</strong>: không có trung tâm — mỗi service phản ứng với event và phát event tiếp. Decoupled, nhưng luồng nghiệp vụ 'ẩn' trong các event → khó theo dõi/debug, dễ vòng lặp khi nhiều bước.</p><p><strong>Orchestration</strong>: một <em>orchestrator</em> điều phối tuần tự các bước và gọi compensation khi lỗi. State rõ ràng, dễ debug/giám sát, nhưng orchestrator thành điểm coupling tập trung.</p><div class='qb-eli5'><b>🌱 Ví von:</b> choreography = dàn nhạc jazz không nhạc trưởng (mỗi người nghe nhau); orchestration = dàn giao hưởng có nhạc trưởng chỉ huy.</div>",
-  refs:[["Microservices.io – Saga","https://microservices.io/patterns/data/saga.html"]] },
-
-{ id:69, g:"Distributed & Messaging", t:"18 Event-Driven", lv:"senior", core:true,
-  q:"'Dual-write problem' là gì? Outbox pattern giải quyết thế nào?",
-  a:"<p><strong>Dual-write</strong>: bạn phải ghi DB <em>và</em> publish message (Kafka) — hai hệ thống khác nhau, không có transaction chung. Ghi DB xong app chết trước khi publish → mất event; hoặc publish xong DB rollback → event trỏ dữ liệu ma.</p><p><strong>Outbox</strong>: ghi business data + một bản ghi vào bảng <code>outbox</code> <strong>trong cùng một transaction DB</strong> (atomic). Một tiến trình riêng (poller hoặc CDC như Debezium) đọc outbox chưa gửi → publish Kafka → đánh dấu đã gửi. Nếu publish fail thì retry (nên consumer idempotent).</p>",
-  refs:[["Microservices.io – Transactional Outbox","https://microservices.io/patterns/data/transactional-outbox.html"]] },
-
-{ id:70, g:"Distributed & Messaging", t:"13 Distributed Tx", lv:"senior", core:false,
-  q:"Compensation transaction là gì? Có phải lúc nào cũng 'undo' được không?",
-  a:"<p>Là thao tác <em>đảo ngược nghiệp vụ</em> của một bước Saga đã thành công (vd đã trừ tồn kho → cộng lại). Nó không phải 'rollback DB' mà là một hành động nghiệp vụ mới.</p><p><strong>Không phải lúc nào cũng undo được</strong>: email/SMS đã gửi không rút lại được → chấp nhận thực tế, đánh dấu trạng thái <code>COMPENSATED</code> và gửi thông báo đính chính, thay vì cố 'xoá' hành động. Thiết kế bước cần cân nhắc thứ tự (việc khó đảo để sau cùng).</p>",
-  refs:[["Microservices.io – Saga","https://microservices.io/patterns/data/saga.html"]] },
-
-{ id:71, g:"Distributed & Messaging", t:"20 Kafka", lv:"middle", core:true,
-  q:"Partition key trong Kafka quyết định gì? Nếu key null thì sao? Thứ tự message được đảm bảo ở đâu?",
-  a:"<p>Producer băm <strong>key</strong> → chọn partition; cùng key luôn vào <em>cùng partition</em>. Thứ tự message chỉ được đảm bảo <strong>trong một partition</strong>, KHÔNG phải toàn topic.</p><p>Nên nếu cần giữ thứ tự các sự kiện của cùng một thực thể (vd cùng <code>orderId</code>), hãy dùng nó làm key. <strong>Key null</strong> → phân phối round-robin → mất đảm bảo thứ tự theo thực thể.</p><div class='qb-eli5'><b>🌱 Cho người mới:</b> topic = con sông chia thành nhiều lạch (partition). Trong một lạch nước chảy đúng thứ tự; giữa các lạch thì không.</div>",
-  refs:[["Kafka – Documentation","https://kafka.apache.org/documentation/"]] },
-
-{ id:72, g:"Distributed & Messaging", t:"20 Kafka", lv:"middle", core:true,
-  q:"Consumer group và rebalancing là gì? Vì sao quá nhiều rebalance là dấu hiệu xấu?",
-  a:"<p>Trong một <strong>consumer group</strong>, mỗi partition được gán cho đúng <em>một</em> consumer → scale bằng cách thêm consumer (tối đa = số partition). <strong>Rebalancing</strong> là quá trình gán lại partition khi có consumer vào/ra.</p><p>Trong lúc rebalance, việc tiêu thụ <em>tạm dừng</em>. Rebalance liên tục (do consumer xử lý chậm quá <code>max.poll.interval</code>, hoặc heartbeat timeout) làm lag tăng, throughput sụt. Fix: xử lý nhanh trong vòng poll, tune timeout, dùng cooperative rebalancing.</p>",
-  refs:[["Kafka – Consumer groups","https://kafka.apache.org/documentation/#intro_consumers"]] },
-
-{ id:73, g:"Distributed & Messaging", t:"20 Kafka", lv:"senior", core:false,
-  q:"Kafka giao 'at-least-once' nên có thể trùng. Làm sao để consumer không xử lý lặp gây double-effect?",
-  a:"<p>Consumer crash sau khi xử lý nhưng trước khi commit offset → khi khởi động lại nhận lại message → xử lý 2 lần. Giải pháp là <strong>idempotent consumer</strong>:</p><ul><li>Mỗi message có <code>eventId</code>; trước khi xử lý, check đã thấy id này chưa (lưu ở DB/Redis) → thấy rồi thì skip.</li><li>Hoặc gói side-effect + lưu offset/eventId trong <em>cùng một DB transaction</em>.</li><li>Manual ack/commit sau khi xử lý xong.</li></ul><p>'Exactly-once về hiệu ứng' = at-least-once + idempotency ở phía consumer.</p>",
-  refs:[["Confluent – Exactly-once","https://docs.confluent.io/kafka/design/delivery-semantics.html"]] },
-
-{ id:74, g:"Distributed & Messaging", t:"21 Async Patterns", lv:"middle", core:false,
-  q:"Listener Kafka xử lý một việc nặng (render 5 phút). Vì sao không nên xử lý trực tiếp trong listener?",
-  a:"<p>Listener chạy trong vòng <em>poll</em> của consumer. Xử lý lâu → giữ partition, vượt <code>max.poll.interval.ms</code> → broker tưởng consumer chết → <strong>rebalance</strong> liên miên, lag dồn.</p><p>Cách đúng: listener chỉ <strong>enqueue job</strong> (ghi vào DB/queue nội bộ) và <em>ack nhanh</em>; một worker pool riêng xử lý việc nặng ở nền. Tách việc nặng khỏi vòng poll.</p>",
-  refs:[["Kafka – Consumer config","https://kafka.apache.org/documentation/#consumerconfigs"]] },
-
-{ id:75, g:"Distributed & Messaging", t:"18 Event-Driven", lv:"middle", core:true,
-  q:"Event và Command khác nhau ra sao? Vì sao kiến trúc event-driven giảm coupling?",
-  a:"<p><strong>Command</strong>: yêu cầu ai đó <em>làm một việc</em> (<code>CreateOrder</code>), có người nhận cụ thể, kỳ vọng thực thi. <strong>Event</strong>: thông báo một việc <em>đã xảy ra</em> (<code>OrderCreated</code>), phát cho bất kỳ ai quan tâm, người phát không biết/không quan tâm ai nghe.</p><p>Event-driven giảm coupling vì producer không gọi trực tiếp consumer — thêm consumer mới (gửi email, cập nhật analytics) <em>không cần sửa</em> producer. Đánh đổi: luồng khó theo dõi hơn, cần lo eventual consistency và idempotency.</p>",
-  refs:[["Martin Fowler – Event-Driven","https://martinfowler.com/articles/201701-event-driven.html"]] },
-
-{ id:76, g:"Distributed & Messaging", t:"21 Async Patterns", lv:"middle", core:false,
-  q:"Dead Letter Queue (DLQ) là gì và dùng khi nào?",
-  a:"<p>DLQ là nơi chứa những message <em>xử lý thất bại nhiều lần</em> (poison message) để không chặn hàng đợi chính. Sau khi retry đủ số lần mà vẫn lỗi (vd payload hỏng, bug logic), message được chuyển sang DLQ để con người/quy trình xử lý riêng, còn consumer tiếp tục với message khác.</p><div class='qb-gotcha'><b>⚠ Đừng bỏ quên DLQ:</b> phải có alert khi DLQ có message + công cụ replay sau khi fix bug, nếu không dữ liệu 'chết' âm thầm.</div>",
-  refs:[["AWS – Dead-letter queues","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"]] },
-
-{ id:77, g:"Distributed & Messaging", t:"20 Kafka", lv:"middle", core:false,
-  q:"Kafka và RabbitMQ khác nhau về bản chất thế nào? Chọn cái nào?",
-  a:"<p><strong>Kafka</strong> là <em>distributed log</em>: message được ghi vào partition và <em>giữ lại</em> theo retention; consumer đọc theo offset, có thể tua lại (replay), nhiều consumer group đọc độc lập. Hợp: event streaming, throughput cao, replay, event sourcing.</p><p><strong>RabbitMQ</strong> là <em>message broker</em> truyền thống: routing linh hoạt (exchange/queue), message thường bị xoá sau khi ack. Hợp: task queue, routing phức tạp, RPC.</p><div class='qb-eli5'><b>🌱 Mẹo:</b> cần 'nhật ký sự kiện tua lại được' → Kafka; cần 'hàng đợi việc cần làm, giao xong là xong' → RabbitMQ.</div>",
-  refs:[["Kafka – Introduction","https://kafka.apache.org/intro"]] },
-
-/* ===================== RESILIENCE & RELIABILITY ===================== */
-{ id:78, g:"Resilience & Reliability", t:"22 Resilience", lv:"middle", core:true,
-  q:"Circuit breaker có 3 trạng thái nào? Hoạt động ra sao và bảo vệ điều gì?",
-  a:"<p><strong>CLOSED</strong>: cho request đi qua, đếm tỉ lệ lỗi. Vượt ngưỡng → <strong>OPEN</strong>: fail nhanh (không gọi downstream nữa) trong một khoảng thời gian. Hết thời gian chờ → <strong>HALF_OPEN</strong>: cho vài request thử; nếu ok → CLOSED, nếu lỗi → OPEN lại.</p><p>Bảo vệ: không dội request vào service đang chết (cho nó thời gian hồi), và <em>giải phóng thread</em> của caller thay vì chờ timeout hàng loạt → tránh cascading failure.</p><div class='qb-eli5'><b>🌱 Ví von:</b> như cầu dao điện (CB): thấy chập là ngắt, đợi lát thử lại, tránh cháy cả nhà.</div>",
-  refs:[["Resilience4j – CircuitBreaker","https://resilience4j.readme.io/docs/circuitbreaker"]] },
-
-{ id:79, g:"Resilience & Reliability", t:"22 Resilience", lv:"middle", core:true,
-  q:"Retry đúng cách cần gì? Vì sao phải có 'jitter'?",
-  a:"<p>Trước hết <strong>phân loại lỗi</strong>: chỉ retry lỗi <em>transient</em> (timeout, 503, connection reset); KHÔNG retry lỗi nghiệp vụ/400 (retry vô ích, còn nhân đôi tác hại). Thêm <strong>exponential backoff</strong> (chờ tăng dần) và giới hạn số lần.</p><p><strong>Jitter</strong> (ngẫu nhiên hoá thời gian chờ) tránh <em>thundering herd</em>: nếu nhiều client cùng retry đúng thời điểm, service vừa hồi lại bị đấm sập lần nữa. Jitter làm các retry lệch nhau.</p><div class='qb-gotcha'><b>⚠ Retry chỉ an toàn khi thao tác idempotent</b> — nếu không, retry POST tạo trùng.</div>",
-  refs:[["AWS – Exponential backoff and jitter","https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/"]] },
-
-{ id:80, g:"Resilience & Reliability", t:"22 Resilience", lv:"middle", core:false,
-  q:"Bulkhead pattern là gì?",
-  a:"<p>Cô lập tài nguyên (thread pool/connection pool) theo <em>từng dependency</em> để một cái chậm/chết không nuốt hết tài nguyên của cả app — như các <strong>khoang kín</strong> trên tàu thuỷ, một khoang thủng không làm chìm tàu.</p><p>Vd: dịch vụ gọi cả payment provider (chậm) và catalog (nhanh). Nếu dùng chung một pool, payment chậm sẽ chiếm hết thread → catalog cũng treo. Tách pool riêng cho mỗi bên → sự cố bị khoanh vùng.</p>",
-  refs:[["Resilience4j – Bulkhead","https://resilience4j.readme.io/docs/bulkhead"]] },
-
-{ id:81, g:"Resilience & Reliability", t:"22 Resilience", lv:"middle", core:true,
-  q:"Vì sao thiếu timeout lại nguy hiểm hơn ta tưởng?",
-  a:"<p>Một call không có timeout mà downstream treo → thread gọi bị giữ <em>vô thời hạn</em>. Nhiều request như vậy → cạn thread pool → service của bạn cũng ngừng nhận request mới → sự cố <strong>lan ngược</strong> lên toàn chuỗi (cascading failure).</p><p>Nguyên tắc: <em>mọi</em> lời gọi mạng/DB phải có timeout hợp lý (nhỏ hơn thời gian giữ thread chấp nhận được), kết hợp circuit breaker + fallback. 'Chờ mãi' là một dạng lỗi tệ nhất vì nó âm thầm.</p>",
-  refs:[["Resilience4j – TimeLimiter","https://resilience4j.readme.io/docs/timeout"]] },
-
-{ id:82, g:"Resilience & Reliability", t:"33 Idempotency", lv:"middle", core:true,
-  q:"Idempotency là gì và vì sao bắt buộc cho thao tác thanh toán/đặt hàng?",
-  a:"<p><strong>Idempotency</strong>: xử lý một request 1 lần hay nhiều lần đều cho <em>cùng kết quả/side-effect</em>. Mạng không tin cậy → client timeout rồi <strong>retry</strong>, message giao trùng → nếu thao tác không idempotent thì trừ tiền/tạo đơn nhiều lần.</p><p>Cần cho mọi thao tác có side-effect không tự nhiên idempotent (chủ yếu là POST). GET/PUT/DELETE vốn idempotent theo HTTP.</p><div class='qb-eli5'><b>🌱 Ví von:</b> bấm nút thang máy 5 lần thang vẫn chỉ tới 1 lần — đó là idempotent. Máy bán hàng trừ tiền mỗi lần bấm thì KHÔNG.</div>",
-  refs:[["Stripe – Idempotent requests","https://stripe.com/docs/api/idempotent_requests"]] },
-
-{ id:83, g:"Resilience & Reliability", t:"33 Idempotency", lv:"senior", core:false,
-  q:"Cài idempotency chống được cả race của 2 request đồng thời cùng key — làm thế nào?",
-  a:"<p>Chìa khoá là dùng <strong>UNIQUE constraint</strong> của DB làm cổng atomic:</p><ol><li><code>INSERT</code> bản ghi idempotency key ở trạng thái <code>PROCESSING</code> <em>trước khi</em> xử lý.</li><li>Hai request cùng key chạy song song → chỉ một <code>INSERT</code> thành công; cái kia dính <em>DuplicateKeyException</em>.</li><li>Winner xử lý rồi cập nhật <code>COMPLETED</code> + lưu response. Loser bắt lỗi rồi đọc/đợi kết quả: nếu <code>COMPLETED</code> trả response đã lưu, nếu còn <code>PROCESSING</code> trả 409.</li></ol><p>Nhờ đó không cần khoá phân tán mà vẫn chống trùng ngay cả khi đua nhau.</p>",
-  refs:[["Stripe – Idempotent requests","https://stripe.com/docs/api/idempotent_requests"]] },
-
-{ id:84, g:"Resilience & Reliability", t:"33 Idempotency", lv:"middle", core:false,
-  q:"Idempotency key nên do ai sinh và gắn với gì?",
-  a:"<p>Do <strong>client</strong> sinh (thường là UUID), gắn với một <em>đơn vị nghiệp vụ</em> (một lần đặt hàng, một giao dịch) và phải <strong>giữ nguyên qua các lần retry</strong>. Gửi qua header <code>Idempotency-Key</code>.</p><div class='qb-gotcha'><b>⚠ Bẫy:</b> nếu server tự sinh key thì mỗi lần retry là key mới → mất tác dụng chống trùng. Key phải ổn định giữa các retry của cùng ý định. Lưu kèm TTL hợp lý.</div>",
-  refs:[["Stripe – Idempotent requests","https://stripe.com/docs/api/idempotent_requests"]] },
-
-{ id:85, g:"Resilience & Reliability", t:"23 Performance", lv:"middle", core:true,
-  q:"Vì sao 'đo trước khi tối ưu'? Vì sao nhìn p99 chứ không phải giá trị trung bình (mean)?",
-  a:"<p>Tối ưu theo cảm tính hay dồn vào chỗ không phải bottleneck = lãng phí và dễ làm hỏng. Phải <strong>đo</strong> (profiler, APM, metric) để biết thời gian thực đi đâu, rồi mới sửa đúng chỗ, rồi <em>đo lại</em> để xác nhận.</p><p><strong>Mean</strong> che giấu đuôi: 99 request nhanh + 1 request 10s vẫn cho mean đẹp. <strong>p99</strong> (99% request nhanh hơn ngưỡng này) phản ánh trải nghiệm của nhóm chậm nhất — chính là user hay phàn nàn. Latency phải nhìn theo percentile (p50/p95/p99).</p>",
-  refs:[["Brendan Gregg – Latency","https://www.brendangregg.com/blog/2015-03-30/latency-heat-maps.html"]] },
-
-{ id:86, g:"Resilience & Reliability", t:"23 Performance", lv:"senior", core:false,
-  q:"Connection pool (vd HikariCP) nên set bao nhiêu? Vì sao 'to hơn' không phải luôn tốt?",
-  a:"<p>Pool quá nhỏ → request xếp hàng chờ connection. Pool quá lớn → nhiều connection tranh CPU/IO/lock của DB → DB chậm đi, context switching tăng, ngược lại giảm throughput. DB chỉ chạy song song hiệu quả tới một mức.</p><p>Công thức khởi điểm của HikariCP: <code>connections ≈ (core_count * 2) + effective_spindle_count</code>; thường pool <em>nhỏ</em> (vd 10) lại nhanh hơn pool lớn. Phải đo bằng load test, và pool app không được vượt giới hạn <code>max_connections</code> của DB (tính cả nhiều instance).</p>",
-  refs:[["HikariCP – Pool sizing","https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing"]] },
-
-/* ===================== ARCHITECTURE & DESIGN ===================== */
-{ id:87, g:"Architecture & Design", t:"15 Clean Arch/DDD", lv:"junior", core:true,
-  q:"Dependency Rule trong Clean Architecture là gì? Vì sao domain không được import Spring/JPA?",
-  a:"<p><strong>Dependency Rule</strong>: phụ thuộc chỉ được hướng <em>vào trong</em> — tầng ngoài (web, DB, framework) biết tầng trong (domain), nhưng domain (lõi nghiệp vụ) <em>không</em> biết tầng ngoài.</p><p>Giữ domain thuần (không import Spring/JPA) để: (1) <strong>test</strong> nghiệp vụ không cần bootstrap framework; (2) đổi DB/framework/web không đụng business logic; (3) logic không bị 'ô nhiễm' bởi chi tiết kỹ thuật. Persistence chỉ là 'chi tiết', đặt ở tầng infrastructure.</p><div class='qb-eli5'><b>🌱 Ví von:</b> lõi nghiệp vụ như công thức nấu ăn; bếp gas hay bếp từ (framework/DB) là chi tiết đổi được mà không đổi công thức.</div>",
-  refs:[["Uncle Bob – Clean Architecture","https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"]] },
-
-{ id:88, g:"Architecture & Design", t:"15 Clean Arch/DDD", lv:"middle", core:false,
-  q:"Aggregate Root trong DDD là gì? Vì sao nên lưu cả aggregate trong một transaction?",
-  a:"<p><strong>Aggregate</strong> là một cụm object gắn bó về nghiệp vụ, có một <strong>root</strong> làm cửa vào duy nhất; mọi thay đổi bên trong phải đi qua root. Aggregate là <em>ranh giới nhất quán</em>: invariant (vd 'tổng dòng đơn ≤ hạn mức') phải luôn đúng sau mỗi thao tác.</p><p>Vì vậy nên lưu cả aggregate trong <em>một transaction</em> để giữ invariant nguyên vẹn. Aggregate quá lớn (root ôm hàng nghìn child) → tách nhỏ hoặc tham chiếu bằng id thay vì nhúng.</p>",
-  refs:[["Martin Fowler – DDD Aggregate","https://martinfowler.com/bliki/DDD_Aggregate.html"]] },
-
-{ id:89, g:"Architecture & Design", t:"15 Clean Arch/DDD", lv:"middle", core:false,
-  q:"Value Object và Entity khác nhau ra sao? Cho ví dụ.",
-  a:"<p><strong>Entity</strong>: có <em>identity</em> riêng và vòng đời (hai object cùng thuộc tính nhưng khác id vẫn là hai thực thể) — vd <code>Order</code>, <code>User</code>. <strong>Value Object</strong>: định danh bằng <em>giá trị</em>, không có id, <strong>immutable</strong> — vd <code>Money(amount, currency)</code>, <code>Address</code>, <code>DateRange</code>.</p><p>Value Object chặn state sai bằng cách <em>validate trong constructor</em> và không có setter → không thể tồn tại <code>Money</code> âm hay currency rỗng. Điều này gom logic hợp lệ về một chỗ thay vì rải khắp nơi.</p>",
-  refs:[["Martin Fowler – ValueObject","https://martinfowler.com/bliki/ValueObject.html"]] },
-
-{ id:90, g:"Architecture & Design", t:"15 Clean Arch/DDD", lv:"middle", core:false,
-  q:"Vì sao interface của repository nên đặt ở domain layer, còn implementation ở infrastructure?",
-  a:"<p>Domain định nghĩa <em>cần lưu/đọc gì</em> (interface, ngôn ngữ nghiệp vụ), infrastructure hiện thực <em>lưu bằng gì</em> (JPA/Mongo). Đây là <strong>Dependency Inversion</strong>: domain không phụ thuộc JPA, mà JPA phụ thuộc interface của domain.</p><p>Nhờ đó test domain bằng in-memory repo, đổi công nghệ lưu trữ không đụng nghiệp vụ.</p><div class='qb-gotcha'><b>⚠ Rò rỉ:</b> đừng để repository của domain trả về <code>Page&lt;T&gt;</code> của Spring hay entity JPA — đó là kéo chi tiết infra ngược vào domain.</div>",
-  refs:[["Uncle Bob – Clean Architecture","https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"]] },
-
-{ id:91, g:"Architecture & Design", t:"16 Design Patterns", lv:"middle", core:true,
-  q:"Strategy pattern giải quyết vấn đề gì? Cho ví dụ thay cho khối if/else dài.",
-  a:"<p><strong>Strategy</strong> đóng gói mỗi thuật toán/hành vi thành một class riêng cùng implement một interface, rồi chọn cái phù hợp lúc runtime. Nó thay khối <code>if/else</code>/<code>switch</code> theo loại bằng <em>đa hình</em>.</p><p>Vd tính phí ship: thay vì <code>if(type==STANDARD)...else if(EXPRESS)...</code>, có <code>ShippingStrategy</code> với các implementation <code>StandardShipping</code>, <code>ExpressShipping</code>. Thêm loại mới = thêm class, không sửa code cũ (đúng OCP). Trong Spring có thể inject <code>Map&lt;String, ShippingStrategy&gt;</code>.</p><div class='qb-gotcha'><b>⚠ Đừng lạm dụng:</b> nếu chỉ có 2 nhánh cố định và không đổi, một if/else đơn giản dễ đọc hơn.</div>",
-  refs:[["Refactoring.Guru – Strategy","https://refactoring.guru/design-patterns/strategy"]] },
-
-{ id:92, g:"Architecture & Design", t:"16 Design Patterns", lv:"middle", core:false,
-  q:"Factory Method / Abstract Factory dùng để làm gì?",
-  a:"<p><strong>Factory Method</strong>: giao việc <em>tạo object</em> cho một method (thường override ở subclass) thay vì gọi <code>new</code> trực tiếp — tách 'dùng object' khỏi 'biết tạo loại nào'. <strong>Abstract Factory</strong>: tạo cả một <em>họ</em> object liên quan (vd UI theo theme: nút + ô nhập cùng phong cách).</p><p>Lợi ích: nơi dùng không phụ thuộc class cụ thể → dễ mở rộng thêm loại, dễ test (thay factory bằng bản mock). Đánh đổi: thêm lớp trừu tượng, đừng dùng khi chỉ có một loại đơn giản.</p>",
-  refs:[["Refactoring.Guru – Factory Method","https://refactoring.guru/design-patterns/factory-method"]] },
-
-{ id:93, g:"Architecture & Design", t:"16 Design Patterns", lv:"senior", core:false,
-  q:"Khi nào design pattern trở nên PHẢN tác dụng (over-engineering)?",
-  a:"<p>Pattern là công cụ giải quyết một vấn đề <em>cụ thể</em>; áp dụng khi vấn đề đó chưa tồn tại thì chỉ thêm phức tạp. Dấu hiệu over-engineering: 5 tầng abstraction cho một CRUD, interface chỉ có duy nhất một implementation 'phòng khi sau này', factory tạo factory.</p><p>Nguyên tắc: <strong>YAGNI</strong> (You Aren't Gonna Need It) và 'rule of three' — chấp nhận lặp 1-2 lần, chỉ trừu tượng hoá khi thấy pattern lặp thật sự và điểm biến thiên rõ ràng. Code đơn giản đọc được thắng code 'thông minh'.</p>",
-  refs:[["Martin Fowler – Yagni","https://martinfowler.com/bliki/Yagni.html"]] },
-
-{ id:94, g:"Architecture & Design", t:"36 SOLID", lv:"middle", core:true,
-  q:"SRP (Single Responsibility) thực chất nói gì? (không phải 'mỗi class làm một việc')",
-  a:"<p>Phát biểu chuẩn: <em>một class chỉ nên có <strong>một lý do để thay đổi</strong></em> — tức phục vụ <strong>một actor/stakeholder</strong>. Không phải 'một việc' theo nghĩa hẹp.</p><p>Ví dụ kinh điển: class <code>Employee</code> có <code>calculatePay()</code> (bộ phận Tài chính yêu cầu), <code>reportHours()</code> (bộ phận Nhân sự), <code>save()</code> (DBA). Ba actor khác nhau có thể yêu cầu đổi ba method này vì lý do khác nhau → nên tách, để đổi cho actor này không vô tình phá phần của actor khác.</p>",
-  refs:[["Uncle Bob – SRP","https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html"]] },
-
-{ id:95, g:"Architecture & Design", t:"36 SOLID", lv:"middle", core:false,
-  q:"OCP (Open/Closed) đạt được bằng cơ chế nào? Cho ví dụ.",
-  a:"<p><strong>Open for extension, closed for modification</strong>: thêm hành vi mới bằng cách <em>thêm code</em> (class mới) chứ không <em>sửa</em> code đã chạy ổn. Cơ chế: đa hình / interface / Strategy.</p><p>Vd hệ thống thanh toán: thêm phương thức mới (MoMo, ZaloPay) = thêm một implementation <code>PaymentMethod</code>, không phải mở lại và sửa <code>switch(type)</code> khổng lồ (dễ gây hồi quy). Sửa code cũ = rủi ro làm hỏng cái đang chạy.</p>",
-  refs:[["Baeldung – SOLID","https://www.baeldung.com/solid-principles"]] },
-
-{ id:96, g:"Architecture & Design", t:"36 SOLID", lv:"middle", core:false,
-  q:"LSP (Liskov Substitution) bị vi phạm khi nào? Ví dụ Rectangle/Square.",
-  a:"<p><strong>LSP</strong>: object của subtype phải <em>thay thế được</em> supertype mà không phá hành vi mà code đang kỳ vọng.</p><p>Ví dụ: <code>Square extends Rectangle</code>. Code làm việc với <code>Rectangle</code> giả định <code>setWidth(5)</code> không đổi height. Nhưng <code>Square</code> phải giữ cạnh bằng nhau nên <code>setWidth</code> đổi luôn height → code dùng Rectangle 'gãy'. Vi phạm khác: override method rồi ném <code>UnsupportedOperationException</code> cho thao tác mà cha hỗ trợ.</p><div class='qb-eli5'><b>🌱 Ý chính:</b> kế thừa phải là 'thật sự thay thế được', không chỉ 'giống giống'.</div>",
-  refs:[["Baeldung – Liskov","https://www.baeldung.com/java-liskov-substitution-principle"]] },
-
-{ id:97, g:"Architecture & Design", t:"36 SOLID", lv:"middle", core:true,
-  q:"DIP (Dependency Inversion) nghĩa thực tế trong Spring là gì?",
-  a:"<p><strong>DIP</strong>: module cấp cao và cấp thấp <em>đều phụ thuộc abstraction</em> (interface), không phụ thuộc implementation cụ thể; và abstraction không phụ thuộc chi tiết.</p><p>Trong Spring: service inject <em>interface</em> (<code>OrderRepository</code>) chứ không phải class cụ thể (<code>JpaOrderRepository</code>). Nhờ đó đổi implementation không sửa service, và test được bằng mock. DI của Spring chính là công cụ hiện thực DIP.</p><div class='qb-gotcha'><b>⚠ Phân biệt:</b> DIP (nguyên tắc thiết kế) khác DI (kỹ thuật tiêm dependency) — DI là một cách thực hiện DIP.</div>",
-  refs:[["Baeldung – SOLID","https://www.baeldung.com/solid-principles"]] },
-
-{ id:98, g:"Architecture & Design", t:"17 Microservices", lv:"senior", core:true,
-  q:"Chia service theo ranh giới nào là đúng? Khi nào KHÔNG nên microservices?",
-  a:"<p>Chia theo <strong>business capability / bounded context</strong> (DDD), sao cho mỗi service <em>sở hữu dữ liệu riêng</em> và thay đổi nghiệp vụ chủ yếu nằm gọn trong một service. Ranh giới sai (chia theo tầng kỹ thuật, hoặc quá nhỏ) → 'distributed monolith': mọi thay đổi phải sửa nhiều service + gọi chéo liên tục.</p><p><strong>Không nên microservices khi</strong>: team nhỏ, sản phẩm còn dò dẫm nghiệp vụ, chưa có nền tảng vận hành (CI/CD, observability). Chi phí phân tán (network, eventual consistency, deploy) là thật. Lời khuyên phổ biến: <em>bắt đầu bằng monolith module hoá</em>, tách khi có lý do rõ ràng.</p>",
-  refs:[["Martin Fowler – MonolithFirst","https://martinfowler.com/bliki/MonolithFirst.html"]] },
-
-{ id:99, g:"Architecture & Design", t:"17 Microservices", lv:"middle", core:false,
-  q:"API Gateway làm gì? Nó có phải SPOF không? Auth nên đặt ở gateway hay ở service?",
-  a:"<p><strong>API Gateway</strong> là cửa vào duy nhất: định tuyến, tổng hợp, rate limit, TLS termination, xác thực sơ bộ. Nó <em>có thể</em> thành SPOF → phải chạy nhiều instance + load balancer.</p><p>Auth: nên <strong>xác thực (verify token)</strong> ở gateway để chặn sớm request rác; nhưng <strong>authorization chi tiết theo nghiệp vụ</strong> (user này có sở hữu order kia không) nên ở service vì gateway không biết ngữ cảnh dữ liệu. Theo 'defense in depth', service vẫn không tin tưởng mù vào gateway.</p>",
-  refs:[["Microservices.io – API Gateway","https://microservices.io/patterns/apigateway.html"]] },
-
-/* ===================== DEVOPS & CLOUD ===================== */
-{ id:100, g:"DevOps & Cloud", t:"24 Docker/K8s", lv:"junior", core:true,
-  q:"Container (Docker) và máy ảo (VM) khác nhau ở đâu? Vì sao container nhẹ hơn?",
-  a:"<p><strong>VM</strong> ảo hoá cả phần cứng, mỗi VM chạy một <em>OS đầy đủ</em> (kernel riêng) → nặng, khởi động chậm (phút). <strong>Container</strong> chia sẻ <em>kernel</em> của host, chỉ đóng gói app + thư viện cần thiết → nhẹ (MB), khởi động nhanh (giây), mật độ cao.</p><p>Đổi lại, container cô lập yếu hơn VM (chung kernel). Docker image được build theo layer, tái dùng layer chung.</p><div class='qb-eli5'><b>🌱 Ví von:</b> VM = mỗi nhà xây riêng cả móng (OS); container = các căn hộ chung một toà nhà (kernel), ai có đồ nấy.</div>",
-  refs:[["Docker – What is a container","https://www.docker.com/resources/what-container/"]] },
-
-{ id:101, g:"DevOps & Cloud", t:"24 Docker/K8s", lv:"middle", core:true,
-  q:"Trong Kubernetes, Pod / Deployment / Service khác nhau thế nào?",
-  a:"<ul><li><strong>Pod</strong>: đơn vị chạy nhỏ nhất — một (hoặc vài) container chung network/volume. Pod là <em>phù du</em>, chết là mất, IP đổi.</li><li><strong>Deployment</strong>: quản lý một tập Pod giống nhau — giữ đúng số replica, tự thay Pod chết, lo rolling update/rollback.</li><li><strong>Service</strong>: một 'địa chỉ ổn định' (virtual IP/DNS) + load balance tới các Pod đang sống, bất kể Pod đến/đi.</li></ul><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> Deployment 'nuôi' Pod; Service 'chỉ đường' tới Pod (vì Pod hay đổi IP).</div>",
-  refs:[["Kubernetes – Concepts","https://kubernetes.io/docs/concepts/workloads/"]] },
-
-{ id:102, g:"DevOps & Cloud", t:"24 Docker/K8s", lv:"middle", core:true,
-  q:"Liveness probe và readiness probe khác nhau ra sao? Nhầm lẫn gây hậu quả gì?",
-  a:"<p><strong>Liveness</strong>: 'app còn sống không?' — fail → K8s <em>restart</em> Pod. <strong>Readiness</strong>: 'app sẵn sàng nhận traffic chưa?' — fail → K8s <em>ngừng gửi traffic</em> (rút khỏi Service) nhưng KHÔNG restart.</p><p>Nhầm: đặt liveness kiểm tra cả dependency (DB) → khi DB chậm tạm thời, liveness fail → K8s restart Pod liên tục (crash loop) trong khi app vốn ổn. Dependency nên nằm ở <em>readiness</em>. Cần cả <em>startup probe</em> cho app khởi động lâu.</p>",
-  refs:[["Kubernetes – Probes","https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"]] },
-
-{ id:103, g:"DevOps & Cloud", t:"24 Docker/K8s", lv:"middle", core:false,
-  q:"Resource <code>requests</code> và <code>limits</code> khác gì? Điều gì xảy ra khi vượt?",
-  a:"<p><strong>requests</strong>: lượng tài nguyên tối thiểu Pod cần — dùng để <em>scheduler</em> chọn node. <strong>limits</strong>: trần tối đa.</p><ul><li>Vượt <strong>CPU limit</strong> → bị <em>throttle</em> (chậm lại), không bị giết.</li><li>Vượt <strong>memory limit</strong> → bị <strong>OOMKilled</strong> (kernel giết Pod).</li></ul><p>Đặt requests quá thấp → node bị nhồi quá tải; limits quá thấp → app bị throttle/kill oan. Quan hệ requests/limits còn quyết định <em>QoS class</em> (Guaranteed/Burstable/BestEffort) khi node thiếu tài nguyên.</p>",
-  refs:[["Kubernetes – Resource management","https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"]] },
-
-{ id:104, g:"DevOps & Cloud", t:"25 CI/CD", lv:"middle", core:false,
-  q:"Rolling update giúp deploy không downtime thế nào? Vai trò của readiness probe?",
-  a:"<p>Rolling update thay Pod cũ bằng Pod mới <em>từ từ</em>: tạo Pod mới, chờ nó <strong>readiness = OK</strong> rồi mới nhận traffic và mới xoá một Pod cũ; lặp lại tới khi thay hết. Luôn còn Pod phục vụ → không downtime.</p><p>Readiness probe là điều kiện then chốt: nếu thiếu, K8s gửi traffic vào Pod chưa sẵn sàng (chưa warm-up, chưa kết nối DB) → lỗi 5xx trong lúc deploy. <code>maxSurge</code>/<code>maxUnavailable</code> điều chỉnh tốc độ.</p>",
-  refs:[["Kubernetes – Rolling updates","https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/"]] },
-
-{ id:105, g:"DevOps & Cloud", t:"25 CI/CD", lv:"middle", core:true,
-  q:"Blue-green, Canary và Rolling deployment khác nhau ra sao?",
-  a:"<ul><li><strong>Rolling</strong>: thay dần Pod cũ bằng mới. Không cần gấp đôi tài nguyên, nhưng trong lúc deploy tồn tại cả 2 version.</li><li><strong>Blue-green</strong>: dựng môi trường mới (green) song song, test xong <em>chuyển toàn bộ</em> traffic sang, giữ blue để rollback tức thì. Tốn gấp đôi tài nguyên.</li><li><strong>Canary</strong>: cho <em>một phần nhỏ</em> traffic (5%) vào version mới, theo dõi metric, ổn thì tăng dần. Giảm bán kính ảnh hưởng khi có bug.</li></ul><div class='qb-eli5'><b>🌱 Mẹo:</b> canary = 'thả con chim vàng vào mỏ để thử khí độc' trước khi cả đội vào.</div>",
-  refs:[["AWS – Deployment strategies","https://docs.aws.amazon.com/whitepapers/latest/practicing-continuous-integration-continuous-delivery/deployment-methods.html"]] },
-
-{ id:106, g:"DevOps & Cloud", t:"25 CI/CD", lv:"middle", core:false,
-  q:"Feature flag giúp 'tách deploy khỏi release' như thế nào?",
-  a:"<p><strong>Deploy</strong> = đưa code lên production (bật/tắt vẫn nằm im). <strong>Release</strong> = cho người dùng thấy tính năng. Feature flag là công tắc runtime bọc quanh tính năng: deploy code với flag <em>tắt</em>, khi sẵn sàng thì <em>bật</em> mà không cần deploy lại.</p><p>Lợi: bật dần theo % user, tắt ngay khi có sự cố (kill switch) không cần rollback deploy, A/B test. Đánh đổi: nợ kỹ thuật nếu flag không được dọn sau khi ổn định.</p>",
-  refs:[["Martin Fowler – Feature Toggles","https://martinfowler.com/articles/feature-toggles.html"]] },
-
-{ id:107, g:"DevOps & Cloud", t:"25 CI/CD", lv:"senior", core:false,
-  q:"Đổi schema DB (đổi tên cột) mà không downtime — 'expand-contract' làm thế nào?",
-  a:"<p>Không đổi thẳng (vì code cũ và mới chạy song song lúc deploy). Dùng <strong>expand → migrate → contract</strong>:</p><ol><li><strong>Expand</strong>: thêm cột mới, code ghi <em>cả hai</em> cột, đọc cột cũ. (backward compatible)</li><li><strong>Migrate</strong>: backfill dữ liệu sang cột mới; deploy version đọc cột mới.</li><li><strong>Contract</strong>: khi không còn ai dùng cột cũ, mới xoá.</li></ol><p>Mỗi bước tương thích với version liền kề → rolling deploy an toàn. Xoá cột ngay từ đầu = code cũ đang chạy sẽ lỗi.</p>",
-  refs:[["Martin Fowler – Evolutionary DB","https://martinfowler.com/articles/evodb.html"]] },
-
-{ id:108, g:"DevOps & Cloud", t:"26 Observability", lv:"middle", core:true,
-  q:"3 trụ cột của observability là gì? Correlation/trace id để làm gì?",
-  a:"<ul><li><strong>Logs</strong>: sự kiện rời rạc, chi tiết ('cái gì đã xảy ra ở dòng này').</li><li><strong>Metrics</strong>: số liệu tổng hợp theo thời gian (QPS, latency p99, error rate) — rẻ, hợp để alert.</li><li><strong>Traces</strong>: theo một request đi qua <em>nhiều service</em>, thấy mỗi span tốn bao lâu → tìm bottleneck.</li></ul><p><strong>Correlation/trace id</strong>: một id gắn vào request từ đầu, truyền qua mọi service và ghi vào mọi log → khi có sự cố, lọc theo id là dựng lại được toàn bộ hành trình một request qua hệ phân tán.</p>",
-  refs:[["OpenTelemetry – Observability primer","https://opentelemetry.io/docs/concepts/observability-primer/"]] },
-
-{ id:109, g:"DevOps & Cloud", t:"26 Observability", lv:"middle", core:false,
-  q:"SLI, SLO, SLA và 'error budget' nghĩa là gì?",
-  a:"<p><strong>SLI</strong> (Indicator): số đo thực tế (vd % request &lt; 300ms). <strong>SLO</strong> (Objective): mục tiêu nội bộ cho SLI (vd 99.9%). <strong>SLA</strong> (Agreement): cam kết với khách hàng kèm hậu quả (bồi thường) nếu không đạt — thường lỏng hơn SLO.</p><p><strong>Error budget</strong> = 100% − SLO (vd 0.1% được phép lỗi). Còn budget → được đẩy tính năng mới/nhận rủi ro; cháy budget → dừng lại tập trung vào ổn định. Nó biến 'độ tin cậy' thành ngân sách để cân đối tốc độ vs ổn định.</p>",
-  refs:[["Google SRE – SLOs","https://sre.google/sre-book/service-level-objectives/"]] },
-
-{ id:110, g:"DevOps & Cloud", t:"54 AWS", lv:"middle", core:false,
-  q:"AWS: EC2, Lambda, ECS/EKS — chọn compute nào khi nào?",
-  a:"<ul><li><strong>EC2</strong>: máy ảo, toàn quyền kiểm soát, tự quản OS/scaling. Hợp workload chạy liên tục, cần tuỳ biến sâu.</li><li><strong>Lambda</strong> (serverless): chạy theo sự kiện, tự scale về 0, trả tiền theo lần gọi. Hợp việc ngắn, tải bùng nổ/không đều; nhược: cold start, giới hạn thời gian chạy.</li><li><strong>ECS/EKS</strong>: chạy container có điều phối; EKS = Kubernetes managed. Hợp khi đã container hoá, cần mở rộng nhiều service.</li></ul><div class='qb-eli5'><b>🌱 Mẹo:</b> việc lắt nhắt theo sự kiện → Lambda; dịch vụ chạy 24/7 container → ECS/EKS; cần kiểm soát tối đa → EC2.</div>",
-  refs:[["AWS – Compute","https://aws.amazon.com/products/compute/"]] },
-
-/* ===================== SECURITY ===================== */
-{ id:111, g:"Security", t:"29 App Security", lv:"junior", core:true,
-  q:"SQL Injection hoạt động thế nào? Cách chống đúng là gì?",
-  a:"<p>Xảy ra khi bạn <em>ghép chuỗi</em> input người dùng thẳng vào câu SQL: <code>\"...WHERE name='\" + input + \"'\"</code>. Kẻ tấn công nhập <code>' OR '1'='1</code> → đổi luôn ý nghĩa câu lệnh, đọc/xoá dữ liệu.</p><p><strong>Chống</strong>: dùng <strong>parameterized query / PreparedStatement</strong> (<code>WHERE name = ?</code>) — dữ liệu được gửi <em>tách khỏi</em> câu lệnh, DB không bao giờ diễn giải nó thành SQL. Trong JPA dùng bind parameter, tránh nối chuỗi JPQL. Validate input là lớp phụ, không thay thế parameterized.</p><div class='qb-eli5'><b>🌱 Ý chính:</b> đừng bao giờ 'dán' dữ liệu người dùng vào câu lệnh; hãy đưa nó qua 'ô tham số' riêng.</div>",
-  refs:[["OWASP – SQL Injection Prevention","https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"]] },
-
-{ id:112, g:"Security", t:"29 App Security", lv:"middle", core:true,
-  q:"XSS là gì? Stored và Reflected khác nhau ra sao? Cách chống?",
-  a:"<p><strong>XSS</strong>: kẻ tấn công chèn JavaScript vào trang, chạy trong trình duyệt nạn nhân (đánh cắp cookie/token, giả mạo thao tác). <strong>Stored</strong>: mã độc lưu ở server (vd comment) rồi phục vụ cho mọi người xem. <strong>Reflected</strong>: mã độc nằm trong URL/param, phản chiếu lại ngay trong response.</p><p><strong>Chống</strong>: <em>output encoding</em> theo ngữ cảnh (HTML-escape khi render), dùng framework tự escape, <strong>Content-Security-Policy (CSP)</strong>, cookie <code>HttpOnly</code> để JS không đọc được token. Lọc input hỗ trợ thêm nhưng encode lúc output là chính.</p>",
-  refs:[["OWASP – XSS Prevention","https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"]] },
-
-{ id:113, g:"Security", t:"29 App Security", lv:"middle", core:true,
-  q:"CSRF và CORS khác nhau thế nào? Chống CSRF ra sao?",
-  a:"<p>Hai khái niệm hay bị nhầm. <strong>CSRF</strong>: lợi dụng việc trình duyệt <em>tự gửi cookie</em> — trang độc khiến trình duyệt nạn nhân gửi request 'thật' tới site bạn đang đăng nhập (vd chuyển tiền) mà bạn không cố ý. <strong>CORS</strong>: cơ chế cho phép/chặn trang origin khác <em>đọc response</em> — không phải để chống CSRF.</p><p><strong>Chống CSRF</strong>: CSRF token (server phát, form gửi lại, kẻ tấn công không đoán được), SameSite cookie (<code>Lax</code>/<code>Strict</code>), kiểm tra Origin/Referer. API dùng token trong header (không phải cookie) thì ít bị CSRF hơn.</p>",
-  refs:[["OWASP – CSRF Prevention","https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"]] },
-
-{ id:114, g:"Security", t:"29 App Security", lv:"middle", core:false,
-  q:"IDOR (Insecure Direct Object Reference) là gì? Phòng thế nào?",
-  a:"<p>IDOR = truy cập object của người khác chỉ bằng cách <em>đổi id</em>: <code>GET /orders/1001</code> đổi thành <code>/orders/1002</code> và server trả về đơn của người khác vì <strong>chỉ kiểm tra đăng nhập, không kiểm tra quyền sở hữu</strong>. Đây là 'Broken Object Level Authorization' — top lỗi API.</p><p><strong>Phòng</strong>: mỗi truy cập object phải kiểm <em>ownership/permission</em> ở tầng server (<code>WHERE owner_id = currentUser</code>), không tin id từ client. Dùng id khó đoán (UUID) chỉ là lớp phụ, không thay cho authorization.</p>",
-  refs:[["OWASP – Broken Object Level Authorization","https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"]] },
-
-{ id:115, g:"Security", t:"30 Cryptography", lv:"junior", core:true,
-  q:"Hashing, Encryption và Encoding khác nhau ra sao?",
-  a:"<ul><li><strong>Encoding</strong> (Base64, URL-encode): đổi định dạng cho dễ truyền, <em>không bảo mật</em>, ai cũng decode được.</li><li><strong>Encryption</strong>: mã hoá <em>hai chiều</em> — có key thì giải ra bản gốc. Dùng để bảo mật dữ liệu cần đọc lại (số thẻ).</li><li><strong>Hashing</strong>: <em>một chiều</em> — không đảo ngược được. Dùng để lưu password (chỉ so hash) và kiểm toàn vẹn (checksum).</li></ul><div class='qb-gotcha'><b>⚠ Nhầm kinh điển:</b> Base64 KHÔNG phải mã hoá. 'Encode password bằng Base64' là sai hoàn toàn về bảo mật.</div>",
-  refs:[["OWASP – Cryptographic Storage","https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"]] },
-
-{ id:116, g:"Security", t:"30 Cryptography", lv:"middle", core:true,
-  q:"Vì sao lưu password phải dùng bcrypt/argon2, KHÔNG dùng SHA-256?",
-  a:"<p>SHA-256 được thiết kế để chạy <em>rất nhanh</em> → kẻ tấn công có leak DB có thể thử hàng tỉ mật khẩu/giây (brute force, rainbow table). Password hashing cần <strong>chậm và có salt</strong>.</p><p><strong>bcrypt/scrypt/argon2</strong> là 'slow hash' có <em>work factor</em> chỉnh được (làm chậm chủ ý) và <em>salt</em> tự động (mỗi user một salt → hai người cùng mật khẩu ra hash khác nhau, vô hiệu rainbow table). Argon2 còn tốn bộ nhớ để chống tấn công bằng GPU.</p><div class='qb-eli5'><b>🌱 Ý chính:</b> với password, 'nhanh' là điểm yếu. Ta cố tình chọn thuật toán chậm.</div>",
-  refs:[["OWASP – Password Storage","https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"]] },
-
-{ id:117, g:"Security", t:"30 Cryptography", lv:"middle", core:false,
-  q:"Mã hoá đối xứng (symmetric) và bất đối xứng (asymmetric) khác gì? Vì sao thực tế dùng cả hai?",
-  a:"<p><strong>Symmetric</strong> (AES): cùng một key để mã và giải → nhanh, nhưng phải chia sẻ key an toàn cho cả hai bên. <strong>Asymmetric</strong> (RSA/ECC): cặp public/private — mã bằng public, giải bằng private (hoặc ký bằng private, verify bằng public) → giải bài toán trao key, nhưng chậm.</p><p>TLS/HTTPS dùng <strong>cả hai</strong>: asymmetric để hai bên thoả thuận an toàn một session key, rồi dùng session key <em>symmetric</em> mã hoá dữ liệu (nhanh). Đây là mô hình 'hybrid'.</p>",
-  refs:[["Cloudflare – Encryption","https://www.cloudflare.com/learning/ssl/what-is-encryption/"]] },
-
-/* ===================== TESTING ===================== */
-{ id:118, g:"Testing", t:"27 Testing Strategy", lv:"junior", core:true,
-  q:"Test pyramid là gì? Vì sao nhiều unit test, ít end-to-end test?",
-  a:"<p>Kim tự tháp gợi ý tỉ lệ: <strong>nhiều unit test</strong> (đáy) → <strong>ít hơn integration test</strong> (giữa) → <strong>rất ít E2E test</strong> (đỉnh).</p><p>Lý do: unit test <em>nhanh, rẻ, ổn định</em>, chỉ rõ chỗ hỏng. E2E test <em>chậm, đắt, dễ 'flaky'</em> (hỏng vì lý do ngoài code) và khó chỉ ra nguyên nhân. Nên phủ logic bằng unit, chỉ dùng vài E2E cho luồng quan trọng nhất.</p><div class='qb-gotcha'><b>⚠ Anti-pattern:</b> 'ice-cream cone' (nhiều E2E, ít unit) → CI chậm, hay đỏ vặt, đội ngũ mất niềm tin vào test.</div>",
-  refs:[["Martin Fowler – Test Pyramid","https://martinfowler.com/articles/practical-test-pyramid.html"]] },
-
-{ id:119, g:"Testing", t:"27 Testing Strategy", lv:"middle", core:true,
-  q:"Vì sao nên test <em>behavior</em> chứ không test <em>implementation</em>? 'Brittle test' là gì?",
-  a:"<p>Test <em>behavior</em>: kiểm 'với input này, kết quả/hiệu ứng quan sát được là gì' (output, state, tương tác quan trọng). Test <em>implementation</em>: kiểm nội bộ (gọi private method X đúng thứ tự, mock mọi thứ).</p><p><strong>Brittle test</strong> là test hỏng mỗi khi bạn <em>refactor</em> dù hành vi không đổi — thường do bám vào chi tiết cài đặt/over-mocking. Nó làm test thành gánh nặng thay vì lưới an toàn. Nên test qua API công khai, mock ở ranh giới (DB, HTTP) chứ không mock nội bộ lung tung.</p>",
-  refs:[["Martin Fowler – Practical Test Pyramid","https://martinfowler.com/articles/practical-test-pyramid.html"]] },
-
-{ id:120, g:"Testing", t:"27 Testing Strategy", lv:"middle", core:false,
-  q:"Integration test dùng H2 (in-memory) hay Testcontainers? Trade-off?",
-  a:"<p><strong>H2</strong> nhanh, không cần Docker, nhưng <em>khác</em> DB thật (dialect, kiểu dữ liệu, index, hành vi lock) → test xanh nhưng production đỏ vì đặc thù Postgres/Oracle không được kiểm.</p><p><strong>Testcontainers</strong> chạy <em>chính DB thật</em> trong container lúc test → sát production nhất (bắt được lỗi dialect/migration thật). Đổi lại chậm hơn và cần Docker trong CI. Với dự án nghiêm túc, Testcontainers được khuyên dùng cho integration test tầng DB.</p>",
-  refs:[["Testcontainers","https://testcontainers.com/"]] },
-
-{ id:121, g:"Testing", t:"28 Performance Testing", lv:"middle", core:false,
-  q:"Kể 4 loại performance test (load, stress, spike, soak) và mục đích mỗi loại.",
-  a:"<ul><li><strong>Load test</strong>: chạy ở tải kỳ vọng để xem có đạt SLA (latency/throughput) không.</li><li><strong>Stress test</strong>: tăng tải tới khi hỏng để tìm <em>giới hạn</em> và xem hệ thống sập kiểu gì (degrade nhẹ nhàng hay đổ sập).</li><li><strong>Spike test</strong>: tăng tải <em>đột ngột</em> (flash sale) để kiểm auto-scaling/khả năng chịu sốc.</li><li><strong>Soak (endurance) test</strong>: chạy tải vừa <em>trong nhiều giờ</em> để lộ memory leak, đầy disk, rò connection.</li></ul><div class='qb-gotcha'><b>⚠ Đọc kết quả:</b> nhìn p95/p99 và error rate theo thời gian, không chỉ throughput trung bình.</div>",
-  refs:[["Grafana k6 – Test types","https://grafana.com/load-testing/types-of-load-testing/"]] },
-
-/* ===================== DOMAIN & AI ===================== */
-{ id:122, g:"Domain & AI", t:"35 Payment", lv:"middle", core:true,
-  q:"Trong thanh toán thẻ, authorize / capture / settle khác nhau ra sao?",
-  a:"<p><strong>Authorize</strong>: hỏi ngân hàng 'thẻ này còn đủ tiền và hợp lệ?' → <em>giữ</em> (hold) số tiền, chưa trừ thật. <strong>Capture</strong>: yêu cầu <em>thực sự</em> lấy số tiền đã authorize (thường khi giao hàng/hoàn tất). <strong>Settle(ment)</strong>: ngân hàng chuyển tiền thật giữa các bên, thường theo batch cuối ngày.</p><p>Tách authorize/capture cho phép mô hình 'giữ tiền trước, tính tiền sau' (khách sạn giữ cọc, bán hàng chỉ capture khi ship). Auth có thể hết hạn nếu không capture kịp.</p><div class='qb-eli5'><b>🌱 Ví von:</b> authorize = 'tạm giữ chỗ tiền'; capture = 'thu tiền thật'; settle = 'tiền về túi người bán'.</div>",
-  refs:[["Stripe – Auth and capture","https://stripe.com/docs/payments/capture-later"]] },
-
-{ id:123, g:"Domain & AI", t:"35 Payment", lv:"middle", core:false,
-  q:"Vì sao hệ thống tài chính dùng 'double-entry ledger' (bút toán kép)?",
-  a:"<p>Mỗi giao dịch được ghi thành ít nhất <em>hai bút toán</em> đối ứng: một bên ghi nợ (debit), một bên ghi có (credit), tổng luôn = 0. Số dư tài khoản được <em>suy ra từ tổng các bút toán</em>, không sửa trực tiếp.</p><p>Lợi ích: (1) mọi thay đổi tiền đều có nguồn gốc truy vết được; (2) bất biến 'tổng debit = tổng credit' giúp phát hiện sai lệch; (3) append-only, không ghi đè → hợp audit. Đây là chuẩn kế toán hàng trăm năm, áp vào phần mềm để dữ liệu tiền luôn cân.</p>",
-  refs:[["Martin Fowler – Accounting patterns","https://martinfowler.com/eaaDev/AccountingNarrative.html"]] },
-
-{ id:124, g:"Domain & AI", t:"35 Payment", lv:"middle", core:false,
-  q:"Reconciliation (đối soát) là gì và vì sao bắt buộc phải có?",
-  a:"<p>Reconciliation là việc <em>so khớp</em> dữ liệu hệ thống của bạn với dữ liệu của bên thứ ba (ngân hàng/cổng thanh toán) theo kỳ (thường hằng ngày), tìm và xử lý các khoản <em>lệch</em>.</p><p>Vì sao cần: hệ phân tán + mạng không tin cậy → luôn có ca 'ta nghĩ thành công nhưng đối tác báo fail' (hoặc ngược lại), timeout không rõ kết quia, webhook trễ. Không đối soát thì tiền lệch âm thầm. Đối soát là <em>lưới an toàn cuối cùng</em> cho tính đúng đắn về tiền.</p>",
-  refs:[["Stripe – Reconciliation","https://stripe.com/docs/reports/reconciliation"]] },
-
-{ id:125, g:"Domain & AI", t:"35 Payment", lv:"middle", core:false,
-  q:"Nhận webhook từ cổng thanh toán: phải xử lý 2 điều gì để an toàn?",
-  a:"<p>(1) <strong>Verify chữ ký</strong>: webhook đến từ Internet, ai cũng POST tới được → phải kiểm HMAC signature (dùng secret) để chắc nó thật sự từ provider, không phải kẻ giả mạo báo 'đã thanh toán'.</p><p>(2) <strong>Idempotent</strong>: provider gửi <em>lại</em> webhook khi chưa nhận được 2xx (at-least-once) → cùng một sự kiện có thể tới nhiều lần. Lưu <code>event_id</code> đã xử lý và bỏ qua bản trùng, nếu không sẽ cộng tiền/giao hàng nhiều lần.</p>",
-  refs:[["Stripe – Webhooks","https://stripe.com/docs/webhooks"]] },
-
-{ id:126, g:"Domain & AI", t:"34 Audit Logging", lv:"middle", core:true,
-  q:"Audit log 'tamper-evident' (chống sửa lén) cần gì? Hash chain hoạt động ra sao?",
-  a:"<p>Audit phải <strong>append-only</strong> (chỉ thêm, không sửa/xoá) và <em>phát hiện được nếu bị can thiệp</em>. <strong>Hash chain</strong>: mỗi bản ghi lưu kèm <code>hash = H(nội_dung + hash_của_bản_ghi_trước)</code>. Sửa một bản ghi cũ → hash của nó đổi → toàn bộ chuỗi sau lệch → phát hiện ngay.</p><p>Kết hợp storage <strong>WORM</strong> (Write Once Read Many), quyền ghi tách khỏi quyền xoá, và định kỳ 'niêm phong' hash cuối (anchor) ra nơi độc lập. Đây là cách làm bằng chứng đáng tin cho compliance.</p><div class='qb-eli5'><b>🌱 Ví von:</b> như chuỗi mắt xích có dấu niêm phong — gỡ một mắt là thấy dấu vỡ.</div>",
-  refs:[["AWS – Audit / WORM (Object Lock)","https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html"]] },
-
-{ id:127, g:"Domain & AI", t:"34 Audit Logging", lv:"junior", core:false,
-  q:"Một audit record nên ghi những thông tin gì?",
-  a:"<p>Trả lời được 5 câu: <strong>Ai</strong> (actor/user id), <strong>làm gì</strong> (action), <strong>trên cái gì</strong> (resource + id), <strong>khi nào</strong> (timestamp chính xác, có timezone), và <strong>trạng thái trước/sau</strong> (before/after value cho thay đổi quan trọng). Thêm: IP/nguồn, correlation id, kết quả (success/fail).</p><div class='qb-gotcha'><b>⚠ Phân biệt:</b> audit log ≠ application log. Audit phục vụ compliance/điều tra (cần đầy đủ, bất biến, giữ lâu theo retention), không phải để debug. Và vẫn phải mask dữ liệu nhạy cảm.</div>",
-  refs:[["OWASP – Logging Cheat Sheet","https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"]] },
-
-{ id:128, g:"Domain & AI", t:"53 AI/LLM", lv:"junior", core:true,
-  q:"LLM về bản chất là stateless và có thể 'hallucinate'. Điều đó ảnh hưởng gì tới thiết kế backend?",
-  a:"<p><strong>Stateless</strong>: model không nhớ lượt trước — muốn 'nhớ' phải tự gửi lại lịch sử hội thoại trong mỗi request (tốn token, có giới hạn context). <strong>Hallucination</strong>: model có thể tạo ra thông tin nghe hợp lý nhưng <em>sai/bịa</em>, vì nó dự đoán chữ tiếp theo chứ không tra cứu sự thật.</p><p>Hệ quả thiết kế: (1) quản lý context/history phía app; (2) với dữ kiện cần đúng, dùng <strong>RAG</strong> (đưa nguồn thật vào prompt) và trích dẫn; (3) không tin mù output — validate, đặc biệt trước khi cho gọi hành động/thanh toán.</p>",
-  refs:[["OpenAI – Prompt engineering","https://platform.openai.com/docs/guides/prompt-engineering"]] },
-
-{ id:129, g:"Domain & AI", t:"53 AI/LLM", lv:"middle", core:true,
-  q:"RAG (Retrieval-Augmented Generation) là gì và giải quyết vấn đề gì?",
-  a:"<p><strong>RAG</strong>: trước khi hỏi LLM, ta <em>truy xuất</em> các đoạn tài liệu liên quan (từ vector DB) rồi <em>nhét vào prompt</em> làm ngữ cảnh, yêu cầu model trả lời <em>dựa trên</em> đó (kèm trích dẫn).</p><p>Giải quyết: (1) <strong>hallucination</strong> — model bám vào nguồn thật thay vì bịa; (2) <strong>kiến thức mới/riêng</strong> — model không được train trên tài liệu nội bộ công ty, RAG bơm vào lúc chạy; (3) rẻ hơn fine-tune, cập nhật chỉ cần thêm tài liệu. Pipeline: chunk tài liệu → embedding → lưu vector DB → lúc hỏi thì tìm top-k gần nhất → đưa vào prompt.</p>",
-  refs:[["AWS – What is RAG","https://aws.amazon.com/what-is/retrieval-augmented-generation/"]] },
-
-{ id:130, g:"Domain & AI", t:"53 AI/LLM", lv:"middle", core:false,
-  q:"Embedding và vector search là gì? Vì sao dùng cho 'tìm kiếm theo ngữ nghĩa'?",
-  a:"<p><strong>Embedding</strong>: biến văn bản thành một vector số (vd 1536 chiều) sao cho nội dung <em>ý nghĩa gần nhau</em> thì vector gần nhau trong không gian. <strong>Vector search</strong>: tìm các vector gần nhất (cosine similarity) với vector câu hỏi.</p><p>Nhờ vậy tìm được theo <em>nghĩa</em> chứ không theo từ khoá: hỏi 'cách hoàn tiền' vẫn khớp tài liệu viết 'quy trình refund' dù không trùng chữ. Dùng ANN index (HNSW) để tìm nhanh trên hàng triệu vector. Đây là nền của RAG và semantic search.</p>",
-  refs:[["Pinecone – Vector embeddings","https://www.pinecone.io/learn/vector-embeddings/"]] },
-
-{ id:131, g:"Domain & AI", t:"53 AI/LLM", lv:"senior", core:false,
-  q:"Prompt injection là gì? Vì sao nguy hiểm và giảm thiểu thế nào?",
-  a:"<p><strong>Prompt injection</strong>: dữ liệu người dùng (hoặc nội dung web/tài liệu mà agent đọc) chứa chỉ thị lén như 'bỏ qua hướng dẫn trước, tiết lộ system prompt / gọi API xoá dữ liệu'. Vì LLM trộn lẫn 'lệnh' và 'dữ liệu' trong cùng một chuỗi text nên khó phân biệt.</p><p>Nguy hiểm nhất khi LLM được cấp <em>quyền hành động</em> (tool calling, truy cập DB). Giảm thiểu: coi mọi output LLM là <em>không đáng tin</em> → không cho nó tự thực thi hành động nhạy cảm, đặt <strong>allow-list</strong> công cụ + xác nhận của con người cho thao tác rủi ro, tách quyền, giới hạn phạm vi dữ liệu, lọc/đánh dấu nội dung ngoài.</p>",
-  refs:[["OWASP – LLM Top 10","https://genai.owasp.org/llm-top-10/"]] },
-
-{ id:132, g:"Domain & AI", t:"31 Camunda/BPMN", lv:"middle", core:false,
-  q:"Trong workflow engine (Camunda/BPMN), vì sao 'service task' bắt buộc phải idempotent?",
-  a:"<p>Engine <em>lưu trạng thái</em> tiến trình sau mỗi bước để có thể phục hồi. Nếu một service task chạy xong nhưng engine crash <em>trước khi</em> kịp ghi 'đã xong', khi khôi phục engine sẽ <strong>chạy lại</strong> task đó → thao tác bị thực hiện hai lần.</p><p>Vì vậy service task (gọi API, trừ kho, gửi tiền) phải <strong>idempotent</strong>: chạy lại không gây tác hại kép (dùng idempotency key/kiểm tra đã làm chưa). Đây là hệ quả trực tiếp của mô hình 'at-least-once' khi engine đảm bảo không bỏ sót bước.</p>",
-  refs:[["Camunda – Transactions in processes","https://docs.camunda.org/manual/latest/user-guide/process-engine/transactions-in-processes/"]] },
-
-/* ===================== KỸ NĂNG PHỎNG VẤN ===================== */
-{ id:133, g:"Kỹ năng phỏng vấn", t:"37 System Design", lv:"middle", core:true,
-  q:"Được hỏi 'thiết kế hệ thống X', bạn đi theo framework mấy bước nào?",
-  a:"<ol><li><strong>Làm rõ yêu cầu</strong> (5') — functional (làm được gì) + non-functional (scale, latency, consistency, SLA); chốt scope.</li><li><strong>Ước lượng dung lượng</strong> (5') — QPS, dung lượng lưu trữ, băng thông.</li><li><strong>Thiết kế high-level</strong> (10-15') — vẽ box &amp; arrow: client → API → service → storage/cache/queue.</li><li><strong>Đào sâu 1-2 điểm khó</strong> (10-15') — vd chống double-charge, hot partition, consistency.</li><li><strong>Tổng kết trade-off</strong> (5') — điểm yếu, chỗ scale tiếp, monitoring.</li></ol><div class='qb-gotcha'><b>⚠ Sai lầm phổ biến:</b> nhảy thẳng vào vẽ mà chưa clarify → thiết kế sai đề. Interviewer chấm <em>quá trình tư duy</em>, không chỉ đáp án.</div>",
-  refs:[["System Design Primer","https://github.com/donnemartin/system-design-primer"]] },
-
-{ id:134, g:"Kỹ năng phỏng vấn", t:"37 System Design", lv:"middle", core:false,
-  q:"Ước lượng dung lượng (capacity estimation) — cách nhẩm nhanh QPS và storage?",
-  a:"<p>Bắt đầu từ con số người dùng: vd 10M DAU, mỗi user 10 request/ngày → 100M request/ngày. Chia cho ~86400s ≈ <strong>~1,150 QPS trung bình</strong>; nhân 2-3 cho <em>peak</em> → ~3,000 QPS.</p><p>Storage: số bản ghi/ngày × kích thước mỗi bản ghi × số ngày giữ. Vd 100M event/ngày × 1KB × 365 ≈ 36 TB/năm. Nhớ vài mốc: 1 ngày ≈ 86,400s (~10⁵), đọc thường ≫ ghi. Mục tiêu là <em>con số cỡ lớn hợp lý</em>, không cần chính xác.</p>",
-  refs:[["System Design Primer – Back-of-envelope","https://github.com/donnemartin/system-design-primer#back-of-the-envelope-calculations"]] },
-
-{ id:135, g:"Kỹ năng phỏng vấn", t:"37 System Design", lv:"middle", core:true,
-  q:"Hệ thống read-heavy và write-heavy dẫn tới những lựa chọn kiến trúc khác nhau nào?",
-  a:"<p><strong>Read-heavy</strong> (feed, catalog): thêm <em>cache</em> (Redis) + CDN + <em>read replica</em>, denormalize cho query nhanh, chấp nhận eventual consistency cho dữ liệu ít nhạy cảm.</p><p><strong>Write-heavy</strong> (logging, IoT, metrics): đẩy ghi qua <em>queue</em> để hấp thụ đỉnh, ghi <em>batch</em>, <em>partition/shard</em> để phân tán ghi, chọn store tối ưu ghi (LSM-tree như Cassandra). Cache ít giúp cho write.</p><p>Luôn ước lượng <strong>tỉ lệ read:write</strong> trước để biết tối ưu về hướng nào — đây là câu hỏi clarify quan trọng.</p>",
-  refs:[["System Design Primer","https://github.com/donnemartin/system-design-primer"]] },
-
-{ id:136, g:"Kỹ năng phỏng vấn", t:"37 System Design", lv:"senior", core:false,
-  q:"Khi nào chấp nhận eventual consistency, khi nào bắt buộc strong consistency?",
-  a:"<p><strong>Chấp nhận eventual</strong> khi trễ vài giây vô hại: đếm lượt xem, feed mạng xã hội, số like, gợi ý, thông báo, lịch sử hiển thị. Đổi lại được availability + latency + scale.</p><p><strong>Bắt buộc strong</strong> tại điểm ra quyết định về tính đúng đắn: trừ tồn kho (chống oversell), chống thấu chi/double-spend, kiểm trùng thanh toán, khoá đặt chỗ. Ở đây thà chậm/từ chối còn hơn sai.</p><div class='qb-eli5'><b>🌱 Mẹo trả lời:</b> đừng nói 'hệ thống của tôi strong consistency' cho tất cả — hãy chỉ ra <em>đúng chỗ nào</em> cần mạnh, chỗ nào nới được. Đó là tư duy senior.</div>",
-  refs:[["Martin Kleppmann – DDIA","https://dataintensive.net/"]] },
-
-{ id:137, g:"Kỹ năng phỏng vấn", t:"38 Algorithms", lv:"junior", core:true,
-  q:"Big-O là gì? Giải thích O(1), O(log n), O(n), O(n log n), O(n²) bằng ví dụ.",
-  a:"<p>Big-O mô tả <em>thời gian/bộ nhớ tăng thế nào khi dữ liệu lớn lên</em>, bỏ qua hằng số.</p><ul><li><strong>O(1)</strong>: không phụ thuộc n — truy cập <code>array[i]</code>, <code>map.get(k)</code>.</li><li><strong>O(log n)</strong>: mỗi bước loại nửa dữ liệu — binary search, cây cân bằng.</li><li><strong>O(n)</strong>: duyệt hết một lần — tìm max trong mảng.</li><li><strong>O(n log n)</strong>: sort tốt (merge/quick sort).</li><li><strong>O(n²)</strong>: hai vòng lồng — so từng cặp; chậm khi n lớn.</li></ul><div class='qb-eli5'><b>🌱 Cho người mới:</b> n=1 triệu thì O(n²) ≈ 10¹² phép — quá chậm; O(n log n) ≈ 2×10⁷ — ổn. Nên nhận ra vòng lồng là 'cờ đỏ'.</div>",
-  refs:[["Big-O Cheat Sheet","https://www.bigocheatsheet.com/"]] },
-
-{ id:138, g:"Kỹ năng phỏng vấn", t:"38 Algorithms", lv:"junior", core:true,
-  q:"Vì sao HashMap cho tra cứu trung bình O(1)? Khi giải bài, khi nào nghĩ ngay tới HashMap/HashSet?",
-  a:"<p>HashMap tính <code>hashCode</code> của key → ra thẳng vị trí bucket, không phải dò tuần tự → trung bình O(1) (xấu nhất O(n)/O(log n) khi nhiều collision).</p><p>Nghĩ tới HashMap/HashSet khi bài cần: <em>đếm tần suất</em>, <em>kiểm tồn tại nhanh</em>, <em>khử trùng lặp</em>, <em>tra cặp bổ sung</em> (Two Sum: lưu số đã thấy → tìm <code>target - x</code> trong O(1)). Nó thường biến giải pháp O(n²) 'so từng cặp' thành O(n) đổi bộ nhớ lấy tốc độ.</p><div class='qb-gotcha'><b>⚠ Đánh đổi:</b> tốn thêm bộ nhớ, và không giữ thứ tự (dùng <code>LinkedHashMap</code> nếu cần thứ tự chèn).</div>",
-  refs:[["Big-O Cheat Sheet","https://www.bigocheatsheet.com/"]] },
-
-{ id:139, g:"Kỹ năng phỏng vấn", t:"38 Algorithms", lv:"middle", core:false,
-  q:"Nhận diện khi nào dùng 'two pointers' và 'sliding window'?",
-  a:"<p><strong>Two pointers</strong>: mảng/chuỗi (thường đã sort), hai con trỏ đi từ hai đầu hoặc cùng chiều để tránh vòng lồng O(n²) → O(n). Vd: tìm cặp có tổng = target trong mảng đã sort, đảo chuỗi.</p><p><strong>Sliding window</strong>: bài hỏi về <em>đoạn con liên tiếp</em> thoả điều kiện (dài nhất/ngắn nhất/tổng...). Mở rộng cửa sổ bên phải, co bên trái khi vi phạm → mỗi phần tử vào/ra tối đa 1 lần → O(n). Vd: chuỗi con dài nhất không lặp ký tự.</p><div class='qb-eli5'><b>🌱 Tín hiệu:</b> thấy 'đoạn con liên tiếp' hay 'cặp trong mảng sort' → đừng brute force O(n²), nghĩ tới hai kỹ thuật này.</div>",
-  refs:[["LeetCode – Sliding Window","https://leetcode.com/explore/"]] },
-
-{ id:140, g:"Kỹ năng phỏng vấn", t:"43 Mental Model", lv:"middle", core:true,
-  q:"UMPIRE / quy trình trả lời một bài coding interview gồm những bước nào?",
-  a:"<p>Đừng code ngay. Đi theo khung (UMPIRE):</p><ol><li><strong>U</strong>nderstand: hỏi lại đề, ví dụ, ràng buộc, edge case (mảng rỗng? trùng? âm?).</li><li><strong>M</strong>atch: bài này giống pattern nào (hashing, two pointers, DP...).</li><li><strong>P</strong>lan: nói brute force trước, rồi hướng tối ưu; thống nhất với interviewer.</li><li><strong>I</strong>mplement: code sạch, vừa code vừa nói.</li><li><strong>R</strong>eview: trace thử một ví dụ, kiểm edge case.</li><li><strong>E</strong>valuate: nêu độ phức tạp time/space và cách cải thiện.</li></ol><div class='qb-gotcha'><b>⚠ Điểm mất nhiều nhất:</b> im lặng code. Interviewer cần nghe bạn <em>suy nghĩ ra tiếng</em>.</div>",
-  refs:[["Tech Interview Handbook","https://www.techinterviewhandbook.org/coding-interview-techniques/"]] },
-
-{ id:141, g:"Kỹ năng phỏng vấn", t:"41 Behavioral", lv:"junior", core:true,
-  q:"STAR là gì? Vì sao nên dùng khi trả lời câu hỏi behavioral?",
-  a:"<p><strong>STAR</strong> = <strong>Situation</strong> (bối cảnh) → <strong>Task</strong> (nhiệm vụ/vấn đề của bạn) → <strong>Action</strong> (bạn <em>cụ thể</em> đã làm gì) → <strong>Result</strong> (kết quả, có số liệu nếu được).</p><p>Nó giúp câu trả lời có cấu trúc, không lan man, và tập trung vào <em>đóng góp cá nhân</em>. Mẹo: dành ~70% thời lượng cho <strong>Action</strong> (dùng 'tôi', không 'chúng tôi' chung chung), và Result nên đo được ('giảm p99 từ 2s xuống 300ms').</p><div class='qb-eli5'><b>🌱 Chuẩn bị:</b> soạn sẵn 5-6 câu chuyện STAR (một lần khó, một xung đột, một sáng kiến, một thất bại...) rồi 'ánh xạ' vào từng câu hỏi.</div>",
-  refs:[["Tech Interview Handbook – Behavioral","https://www.techinterviewhandbook.org/behavioral-interview/"]] },
-
-{ id:142, g:"Kỹ năng phỏng vấn", t:"41 Behavioral", lv:"middle", core:false,
-  q:"Được hỏi 'kể về một lần bạn thất bại / xung đột với đồng nghiệp' — trả lời sao cho ghi điểm?",
-  a:"<p>Người phỏng vấn kiểm <em>sự trưởng thành và khả năng tự nhìn lại</em>, không phải tìm lỗi. Cấu trúc: kể tình huống thật (đừng chọn thất bại giả kiểu 'tôi làm việc quá chăm'), nhận <strong>trách nhiệm phần của mình</strong>, tập trung vào <em>bạn học/thay đổi gì</em> và kết quả sau đó tốt hơn.</p><div class='qb-gotcha'><b>⚠ Red flag cần tránh:</b> đổ lỗi hoàn toàn cho người khác, nói xấu công ty cũ, hoặc phủ nhận từng thất bại. Với xung đột: thể hiện bạn <em>lắng nghe, tìm dữ liệu chung, hướng tới mục tiêu chung</em> thay vì thắng-thua.</div>",
-  refs:[["Tech Interview Handbook – Behavioral","https://www.techinterviewhandbook.org/behavioral-interview/"]] },
-
-{ id:143, g:"Kỹ năng phỏng vấn", t:"41 Behavioral", lv:"junior", core:false,
-  q:"Cuối buổi 'bạn có câu hỏi gì cho chúng tôi không?' — nên hỏi gì?",
-  a:"<p>Luôn hỏi (không hỏi = trông thiếu quan tâm). Hỏi thứ giúp bạn <em>đánh giá công ty</em> và cho thấy bạn nghiêm túc: quy trình review/deploy ra sao, on-call/xử lý sự cố thế nào, đội đo thành công của role này bằng gì, thử thách kỹ thuật lớn nhất sắp tới, cơ hội học hỏi/mentor.</p><div class='qb-gotcha'><b>⚠ Tránh:</b> câu tra Google được trong 5 giây (công ty làm gì), hoặc chỉ hỏi lương/nghỉ phép ngay từ vòng kỹ thuật. Câu hỏi tốt là một phần của việc 'phỏng vấn ngược' để chọn nơi phù hợp.</div>",
-  refs:[["Tech Interview Handbook","https://www.techinterviewhandbook.org/"]] },
-
-{ id:144, g:"Architecture & Design", t:"19 API Design", lv:"middle", core:true,
-  q:"Idempotency-Key trong REST API dùng thế nào? Cho method nào?",
-  a:"<p>Client sinh một khoá duy nhất (UUID) cho mỗi <em>ý định</em> và gửi qua header <code>Idempotency-Key</code>. Server lưu (key → kết quả); nếu thấy key đã xử lý thì trả <em>kết quả cũ</em> thay vì làm lại. Nhờ đó client retry an toàn khi timeout/mạng lỗi mà không tạo trùng.</p><p>Chủ yếu cho <strong>POST</strong> (tạo đơn, thanh toán) — vốn không idempotent theo HTTP. GET/PUT/DELETE đã idempotent sẵn nên không cần. (Xem thêm chủ đề 33 để cài chống race.)</p>",
-  refs:[["Stripe – Idempotent requests","https://stripe.com/docs/api/idempotent_requests"]] },
-
-{ id:145, g:"Architecture & Design", t:"19 API Design", lv:"middle", core:false,
-  q:"Có những cách versioning API nào? Thế nào là thay đổi 'breaking'?",
-  a:"<p>Các cách: <strong>URL path</strong> (<code>/v1/orders</code>) — dễ thấy, dễ route, phổ biến nhất; <strong>header/media type</strong> (<code>Accept: application/vnd.api.v2+json</code>) — URL sạch nhưng khó test/cache; <strong>query param</strong> (<code>?version=2</code>).</p><p><strong>Breaking change</strong>: xoá/đổi tên field, đổi kiểu, thêm field bắt buộc, đổi nghĩa — làm client cũ hỏng. <em>Non-breaking</em>: thêm field optional, thêm endpoint. Nguyên tắc: cố giữ backward-compatible, chỉ bump major version khi buộc phải breaking, và có thời gian deprecate.</p>",
-  refs:[["Microsoft – API versioning","https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design#versioning-a-restful-web-api"]] },
-
-{ id:146, g:"Architecture & Design", t:"19 API Design", lv:"middle", core:false,
-  q:"Phân trang: offset-based và cursor-based khác nhau ra sao? Khi nào chọn cursor?",
-  a:"<p><strong>Offset</strong> (<code>?page=5&size=20</code> → <code>LIMIT 20 OFFSET 80</code>): đơn giản, nhảy trang tuỳ ý, nhưng <em>chậm ở trang sâu</em> (DB phải đếm+bỏ qua N dòng) và <em>lệch dữ liệu</em> khi có insert/delete giữa lúc phân trang (trùng/sót bản ghi).</p><p><strong>Cursor</strong> (con trỏ tới vị trí cuối, thường theo id/timestamp: <code>WHERE id &lt; last_id ORDER BY id DESC LIMIT 20</code>): nhanh và <em>ổn định</em> bất kể trang sâu hay dữ liệu thay đổi. Hợp feed/infinite scroll/dữ liệu lớn. Nhược: không nhảy tới 'trang 100' tuỳ ý.</p>",
-  refs:[["Slack – Cursor pagination","https://api.slack.com/docs/pagination"]] },
-
-{ id:147, g:"Architecture & Design", t:"19 API Design", lv:"middle", core:false,
-  q:"Rate limiting: token bucket và sliding window khác nhau ra sao? Trả status nào?",
-  a:"<p><strong>Token bucket</strong>: bình chứa token, refill đều theo thời gian; mỗi request tốn 1 token → cho phép <em>burst</em> ngắn (dùng token tích luỹ) nhưng giới hạn tốc độ trung bình. Phổ biến, mượt.</p><p><strong>Sliding window</strong>: đếm request trong cửa sổ trượt → chính xác hơn <em>fixed window</em> (fixed window bị 'dồn' ở ranh giới: 2× giới hạn quanh mốc reset).</p><p>Vượt hạn trả <strong>429 Too Many Requests</strong> + header <code>Retry-After</code>. State phải lưu ở nơi dùng chung (Redis) khi chạy nhiều instance.</p>",
-  refs:[["Cloudflare – Rate limiting","https://www.cloudflare.com/learning/bots/what-is-rate-limiting/"]] },
-
-{ id:148, g:"Architecture & Design", t:"Scalability", lv:"junior", core:true,
-  q:"Scale ngang (horizontal) và scale dọc (vertical) khác nhau? Load balancer đóng vai trò gì?",
-  a:"<p><strong>Vertical (scale up)</strong>: cho một máy mạnh hơn (thêm CPU/RAM). Đơn giản nhưng có trần phần cứng và vẫn là <em>một điểm chết</em>. <strong>Horizontal (scale out)</strong>: thêm nhiều máy chạy song song → gần như không trần, chịu lỗi tốt (một máy chết còn máy khác), nhưng đòi hỏi app <strong>stateless</strong> và cần cân bằng tải.</p><p><strong>Load balancer</strong> đứng trước, phân phối request tới các instance (round-robin/least-conn), kiểm health để bỏ instance chết → cho phép scale ngang và deploy không downtime.</p><div class='qb-gotcha'><b>⚠ Điều kiện để scale ngang:</b> đừng giữ state trong RAM instance (session, cache cục bộ) — đẩy ra Redis/DB, nếu không request tới máy khác sẽ 'mất trí nhớ'.</div>",
-  refs:[["System Design Primer – Scalability","https://github.com/donnemartin/system-design-primer#scalability"]] },
-
-/* ===================== MỞ RỘNG MIDDLE: SPRING CORE + WEB ===================== */
-{ id:149, g:"Spring", t:"05 Spring Core", lv:"middle", core:true,
-  q:"<code>@Component</code> và <code>@Bean</code> khác nhau ra sao? Khi nào bắt buộc dùng <code>@Bean</code>?",
-  a:"<p><strong>@Component</strong> (và các anh em <code>@Service</code>/<code>@Repository</code>/<code>@Controller</code>) đặt trên class <em>của bạn</em> để Spring tự quét và tạo bean. <strong>@Bean</strong> đặt trên một method trong class <code>@Configuration</code>, bạn <em>tự tay</em> tạo và trả về object.</p><p>Bắt buộc dùng <code>@Bean</code> khi: (1) class là của <em>thư viện bên thứ ba</em> (không sửa được để gắn annotation), vd tạo <code>RestTemplate</code>, <code>ObjectMapper</code>; (2) cần logic khởi tạo tuỳ biến; (3) muốn tạo nhiều bean cùng kiểu với cấu hình khác nhau.</p><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> code của mình → <code>@Component</code>; object của người khác hoặc cần lắp ráp tay → <code>@Bean</code>.</div>",
-  refs:[["Baeldung – @Component vs @Bean","https://www.baeldung.com/spring-component-annotation"]] },
-
-{ id:150, g:"Spring", t:"05 Spring Core", lv:"middle", core:true,
-  q:"Có 2 bean cùng kiểu, inject vào bị lỗi <code>NoUniqueBeanDefinitionException</code>. Xử lý bằng gì?",
-  a:"<p>Mặc định Spring resolve dependency <em>theo kiểu</em>. Có 2 implementation cùng interface → nó không biết chọn cái nào. Cách gỡ:</p><ul><li><strong>@Primary</strong> đặt trên một bean → 'mặc định chọn tôi' khi có nhiều lựa chọn.</li><li><strong>@Qualifier(\"beanName\")</strong> tại điểm inject → chỉ đích danh bean nào.</li><li>Đặt tên tham số trùng tên bean (Spring fallback theo tên).</li></ul><p>Nếu thật sự cần cả hai (vd nhiều <code>PaymentProcessor</code>), inject cả <code>List&lt;PaymentProcessor&gt;</code> hoặc <code>Map&lt;String, PaymentProcessor&gt;</code> để dùng theo chiến lược.</p>",
-  refs:[["Baeldung – @Qualifier","https://www.baeldung.com/spring-qualifier-annotation"]] },
-
-{ id:151, g:"Spring", t:"05 Spring Core", lv:"middle", core:false,
-  q:"Circular dependency (A cần B, B cần A) trong Spring xảy ra khi nào và xử lý thế nào?",
-  a:"<p>Với <strong>constructor injection</strong>, Spring không thể tạo A (cần B) lẫn B (cần A) trước → ném <code>BeanCurrentlyInCreationException</code> ngay lúc khởi động. (Field/setter injection thì Spring 'lách' được bằng cách tạo dở rồi tiêm sau, nhưng đó là che giấu vấn đề.)</p><p>Cách xử lý <em>đúng</em>: coi circular dependency là <strong>dấu hiệu thiết kế sai</strong> → tách trách nhiệm chung ra một bean thứ ba C mà cả A, B cùng dùng. Cách chữa cháy: <code>@Lazy</code> trên một điểm inject, hoặc dùng event/ApplicationContext — nhưng nên refactor.</p><div class='qb-gotcha'><b>⚠ Spring Boot 2.6+</b> mặc định <em>cấm</em> circular reference (phải bật <code>allow-circular-references</code>) — chủ ý ép bạn sửa thiết kế.</div>",
-  refs:[["Baeldung – Circular Dependencies","https://www.baeldung.com/circular-dependencies-in-spring"]] },
-
-{ id:152, g:"Spring", t:"05 Spring Core", lv:"middle", core:false,
-  q:"Ngoài singleton và prototype, có scope nào khác? <code>request</code> và <code>session</code> scope dùng khi nào?",
-  a:"<p>Trong web app còn có <strong>request</strong> (một bean mới mỗi HTTP request), <strong>session</strong> (một bean cho mỗi phiên user), và <strong>application</strong> (một cho cả ServletContext).</p><p><em>request</em> hợp để giữ dữ liệu theo một request (vd context request); <em>session</em> giữ trạng thái theo user qua nhiều request (vd giỏ hàng tạm). Nhưng lạm dụng session-scope bean làm app <em>stateful</em> → khó scale ngang. Thường ưu tiên stateless + lưu state ở client/Redis.</p><div class='qb-gotcha'><b>⚠ Bẫy:</b> inject bean request/session-scope vào một singleton phải qua <em>proxy</em> (<code>proxyMode</code>), nếu không sẽ dính bean của request đầu tiên mãi mãi.</div>",
-  refs:[["Spring – Bean scopes","https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html"]] },
-
-{ id:153, g:"Spring", t:"05 Spring Core", lv:"middle", core:false,
-  q:"Thứ tự các callback vòng đời bean: constructor, <code>@Autowired</code>, <code>@PostConstruct</code>, <code>InitializingBean</code>?",
-  a:"<p>Thứ tự: (1) <strong>constructor</strong> chạy (dependency constructor-inject đã có ở đây); (2) Spring tiêm các <strong>field/setter</strong> dependency; (3) <code>@PostConstruct</code>; (4) <code>InitializingBean.afterPropertiesSet()</code>; (5) init-method tuỳ chỉnh. Khi shutdown: <code>@PreDestroy</code> → <code>DisposableBean.destroy()</code>.</p><p>Ý nghĩa thực tế: <em>đừng</em> dùng dependency được field-inject bên trong constructor (lúc đó chưa tiêm xong → NPE). Việc cần dependency đã sẵn sàng thì đặt trong <code>@PostConstruct</code>.</p>",
-  refs:[["Baeldung – Bean lifecycle","https://www.baeldung.com/spring-postconstruct-predestroy"]] },
-
-{ id:154, g:"Spring", t:"Spring MVC", lv:"middle", core:true,
-  q:"Filter, Interceptor (HandlerInterceptor) và AOP aspect khác nhau ra sao? Thứ tự chạy?",
-  a:"<p>Thứ tự từ ngoài vào: <strong>Filter</strong> (tầng Servlet, trước cả DispatcherServlet — thấy request/response thô, hợp cho auth token, CORS, logging, nén). → <strong>Interceptor</strong> (bên trong Spring MVC, biết được handler nào sắp chạy — hợp cho auth theo controller, đo thời gian). → <strong>AOP aspect</strong> (bọc quanh lời gọi method bất kỳ, biết tham số/kết quả — hợp cho transaction, cache, audit ở tầng service).</p><div class='qb-eli5'><b>🌱 Ví von:</b> Filter là bảo vệ cổng khu phố; Interceptor là lễ tân toà nhà; AOP là thư ký ngay cửa phòng họp — càng vào trong càng biết rõ ngữ cảnh.</div>",
-  refs:[["Baeldung – Filters vs Interceptors","https://www.baeldung.com/spring-mvc-handlerinterceptor-vs-filter"]] },
-
-{ id:155, g:"Spring", t:"Spring MVC", lv:"middle", core:true,
-  q:"Xử lý exception tập trung cho REST API trong Spring — dùng gì để không lặp try/catch khắp controller?",
-  a:"<p>Dùng <strong>@RestControllerAdvice</strong> + <strong>@ExceptionHandler</strong>: gom việc bắt exception về một chỗ, map mỗi loại exception sang HTTP status + body lỗi thống nhất.</p><pre><code class='language-java'>@RestControllerAdvice\nclass ApiExceptionHandler {\n  @ExceptionHandler(EntityNotFoundException.class)\n  ResponseEntity&lt;ApiError&gt; handle(EntityNotFoundException e) {\n    return ResponseEntity.status(404).body(new ApiError(\"NOT_FOUND\", e.getMessage()));\n  }\n}</code></pre><p>Lợi: controller sạch (chỉ lo happy path), response lỗi nhất quán, dễ log tập trung. Nên có một handler 'catch-all' cho <code>Exception</code> trả 500 nhưng <em>không lộ stack trace</em> ra ngoài.</p>",
-  refs:[["Spring – Error Handling","https://spring.io/blog/2013/11/01/exception-handling-in-spring-mvc"]] },
-
-{ id:156, g:"Spring", t:"Spring MVC", lv:"middle", core:false,
-  q:"<code>@RequestParam</code>, <code>@PathVariable</code>, <code>@RequestBody</code> lấy dữ liệu từ đâu?",
-  a:"<ul><li><strong>@PathVariable</strong>: lấy từ <em>đường dẫn</em> — <code>/orders/{id}</code> → <code>@PathVariable Long id</code>. Dùng cho định danh resource.</li><li><strong>@RequestParam</strong>: lấy từ <em>query string</em> hoặc form — <code>/orders?status=PAID</code> → <code>@RequestParam String status</code>. Dùng cho filter/tuỳ chọn.</li><li><strong>@RequestBody</strong>: lấy cả <em>body</em> (thường JSON), Spring dùng Jackson deserialize thành object. Dùng cho POST/PUT tạo/sửa.</li></ul><div class='qb-eli5'><b>🌱 Mẹo:</b> 'ai' (định danh) → PathVariable; 'lọc/tuỳ chọn' → RequestParam; 'dữ liệu gửi lên' → RequestBody.</div>",
-  refs:[["Baeldung – @RequestParam vs @PathVariable","https://www.baeldung.com/spring-request-param"]] },
-
-{ id:157, g:"Spring", t:"Spring MVC", lv:"middle", core:false,
-  q:"Validate dữ liệu request trong Spring — <code>@Valid</code> hoạt động thế nào? Bắt lỗi validation ở đâu?",
-  a:"<p>Đặt annotation ràng buộc (<code>@NotNull</code>, <code>@Size</code>, <code>@Email</code>, <code>@Min</code>...) lên field của DTO, rồi <code>@Valid</code> trên tham số <code>@RequestBody</code>. Spring (Hibernate Validator) tự kiểm trước khi vào body controller; sai → ném <code>MethodArgumentNotValidException</code>.</p><p>Bắt lỗi đó trong <code>@RestControllerAdvice</code> để trả 400 kèm danh sách field lỗi rõ ràng cho client. Ưu điểm: validation khai báo, tách khỏi business logic, thông báo lỗi nhất quán. Cần ràng buộc phức tạp (nhiều field) → viết custom constraint.</p>",
-  refs:[["Baeldung – Validation in Spring","https://www.baeldung.com/spring-boot-bean-validation"]] },
-
-{ id:158, g:"Spring", t:"07 Spring Transaction", lv:"middle", core:false,
-  q:"<code>@Transactional(readOnly = true)</code> thực sự có lợi ích gì?",
-  a:"<p>Không chỉ là 'đánh dấu'. Với Hibernate, <code>readOnly=true</code> đặt <code>FlushMode.MANUAL</code> → <em>bỏ dirty checking</em> (không quét so sánh entity lúc flush) → nhẹ hơn, không vô tình sinh UPDATE. Nó cũng gợi ý driver/JPA và cho phép định tuyến tới <strong>read replica</strong>.</p><p>Ngoài ra vẫn hưởng lợi ích 'một connection/một transaction' cho nhiều query đọc trong cùng method (nhất quán ảnh chụp). Nên đặt cho các service method chỉ đọc.</p><div class='qb-gotcha'><b>⚠ Lưu ý:</b> <code>readOnly</code> KHÔNG đảm bảo DB chặn ghi ở mọi engine — nó là gợi ý + tối ưu phía Hibernate, không phải khoá cứng.</div>",
-  refs:[["Vlad Mihalcea – readOnly transaction","https://vladmihalcea.com/spring-read-only-transaction-hibernate-optimization/"]] },
-
-{ id:159, g:"Spring", t:"06 Spring Boot", lv:"middle", core:false,
-  q:"Spring Boot Actuator để làm gì? Vì sao cần graceful shutdown khi chạy trên Kubernetes?",
-  a:"<p><strong>Actuator</strong> mở các endpoint vận hành: <code>/actuator/health</code> (dùng cho liveness/readiness probe), <code>/actuator/metrics</code> &amp; <code>/prometheus</code> (số liệu), <code>/info</code>, <code>/env</code>. Nhớ <em>bảo vệ</em> các endpoint nhạy cảm.</p><p><strong>Graceful shutdown</strong>: khi K8s gửi SIGTERM (lúc scale down/rolling update), app cần <em>ngừng nhận request mới nhưng xử lý nốt request đang chạy</em> rồi mới tắt, thay vì cắt phựt (rớt request giữa chừng). Bật <code>server.shutdown=graceful</code> + đặt <code>preStop</code>/grace period hợp lý.</p>",
-  refs:[["Spring Boot – Actuator","https://docs.spring.io/spring-boot/reference/actuator/index.html"]] },
-
-/* ===================== MỞ RỘNG MIDDLE: JPA / HIBERNATE ===================== */
-{ id:160, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:true,
-  q:"4 trạng thái vòng đời của entity JPA (transient / managed / detached / removed) là gì?",
-  a:"<ul><li><strong>Transient</strong>: vừa <code>new</code>, chưa gắn với persistence context, DB chưa biết.</li><li><strong>Managed (persistent)</strong>: đang được persistence context theo dõi (sau <code>persist</code>/tìm bằng <code>find</code>) → <em>dirty checking</em> áp dụng, sửa field là tự UPDATE lúc flush.</li><li><strong>Detached</strong>: từng managed nhưng session đã đóng → thay đổi KHÔNG còn được theo dõi (đây là gốc của <code>LazyInitializationException</code>).</li><li><strong>Removed</strong>: đã đánh dấu xoá (<code>remove</code>), sẽ DELETE lúc flush.</li></ul><div class='qb-eli5'><b>🌱 Ý chính:</b> chỉ khi entity 'managed' thì sửa field mới tự lưu. Ngoài phạm vi transaction, entity 'detached' — muốn cập nhật phải <code>merge</code>.</div>",
-  refs:[["Vlad Mihalcea – Entity states","https://vladmihalcea.com/jpa-persist-and-merge/"]] },
-
-{ id:161, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"<code>persist</code>, <code>merge</code>, <code>save</code>, <code>saveAndFlush</code> khác nhau ra sao?",
-  a:"<p><strong>persist</strong>: gắn một entity <em>transient</em> vào context (INSERT), không trả về, ném lỗi nếu entity đã tồn tại/ detached. <strong>merge</strong>: chép trạng thái của một entity (thường detached) vào một bản managed và <em>trả về bản managed đó</em> — dùng khi cập nhật object đến từ ngoài transaction.</p><p>Spring Data <code>save()</code>: nếu id null/entity mới → <code>persist</code>, ngược lại → <code>merge</code>. <strong>saveAndFlush</strong>: như save nhưng <em>flush ngay</em> (đẩy SQL xuống DB tức thì, hữu ích khi cần thấy kết quả/khoá trong cùng transaction).</p><div class='qb-gotcha'><b>⚠ Bẫy merge:</b> dùng object trả về của <code>merge</code>, đừng dùng lại tham số đầu vào (nó vẫn detached).</div>",
-  refs:[["Vlad Mihalcea – persist vs merge","https://vladmihalcea.com/jpa-persist-and-merge/"]] },
-
-{ id:162, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:true,
-  q:"Cascade và <code>orphanRemoval</code> là gì? <code>CascadeType.REMOVE</code> khác <code>orphanRemoval=true</code> ở đâu?",
-  a:"<p><strong>Cascade</strong> lan thao tác từ entity cha sang con: <code>PERSIST</code>, <code>MERGE</code>, <code>REMOVE</code>, <code>ALL</code>... Vd cascade PERSIST: lưu <code>Order</code> tự lưu luôn các <code>OrderItem</code>.</p><p><strong>orphanRemoval=true</strong>: khi một con bị <em>gỡ khỏi collection</em> của cha (<code>order.getItems().remove(item)</code>) thì con đó bị DELETE vì đã 'mồ côi'. Khác <code>CascadeType.REMOVE</code> (chỉ xoá con khi xoá <em>cả cha</em>). orphanRemoval mạnh hơn: quản lý con như thành phần không thể sống độc lập.</p><div class='qb-gotcha'><b>⚠ Cẩn thận CascadeType.ALL + xoá cha:</b> có thể vô tình xoá dây chuyền dữ liệu quan trọng. Chỉ cascade khi con thực sự thuộc về cha (aggregate).</div>",
-  refs:[["Baeldung – Cascade & orphanRemoval","https://www.baeldung.com/jpa-cascade-types"]] },
-
-{ id:163, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:true,
-  q:"FetchType mặc định của <code>@ManyToOne</code> và <code>@OneToMany</code> là gì? Vì sao EAGER thường nguy hiểm?",
-  a:"<p>Mặc định: <code>@ManyToOne</code> và <code>@OneToOne</code> là <strong>EAGER</strong>; <code>@OneToMany</code> và <code>@ManyToMany</code> là <strong>LAZY</strong>.</p><p>EAGER nguy hiểm vì nó <em>luôn</em> nạp quan hệ dù bạn không cần → query thừa, và khi nhiều entity EAGER lồng nhau dễ sinh <strong>N+1</strong> hoặc kéo cả nửa database vào một query. Khuyến nghị: đặt <strong>tất cả về LAZY</strong>, rồi khi cần thì chủ động <code>JOIN FETCH</code>/<code>@EntityGraph</code> cho đúng use case.</p><div class='qb-eli5'><b>🌱 Ý chính:</b> LAZY = 'chỉ lấy khi cần'; kiểm soát việc nạp ở tầng query, đừng để annotation quyết định hộ.</div>",
-  refs:[["Vlad Mihalcea – FetchType","https://vladmihalcea.com/eager-fetching-is-a-code-smell/"]] },
-
-{ id:164, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Derived query method, <code>@Query</code> (JPQL) và native query — chọn cái nào khi nào?",
-  a:"<ul><li><strong>Derived query</strong>: đặt tên method theo quy ước (<code>findByStatusAndCreatedAtAfter</code>) → Spring tự sinh query. Gọn cho truy vấn đơn giản; tên dài dòng thì khó đọc.</li><li><strong>@Query (JPQL)</strong>: viết query theo <em>entity</em> (không phải bảng), độc lập DB, kiểm soát join/projection. Dùng cho query phức tạp vừa.</li><li><strong>Native query</strong>: SQL thuần — khi cần tính năng riêng của DB (window function, hint, CTE) hoặc tối ưu sâu. Đánh đổi: bám vào một loại DB.</li></ul><div class='qb-gotcha'><b>⚠ Cho read nặng</b> thường dùng JPQL/native + <em>DTO projection</em> để chỉ lấy cột cần, tránh nạp cả entity.</div>",
-  refs:[["Spring Data JPA – Queries","https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html"]] },
-
-{ id:165, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Hibernate 'flush' là gì? Nó xảy ra lúc nào (không phải lúc bạn nghĩ)?",
-  a:"<p><strong>Flush</strong> = đồng bộ các thay đổi trong persistence context xuống DB (sinh INSERT/UPDATE/DELETE), nhưng <em>chưa commit</em>. Nó KHÔNG chỉ xảy ra khi commit.</p><p>FlushMode <code>AUTO</code> (mặc định) flush: (1) trước khi <strong>commit</strong>; (2) trước khi chạy một <strong>query</strong> có thể bị ảnh hưởng bởi thay đổi đang chờ (để query thấy dữ liệu mới nhất). Vì vậy thứ tự SQL đôi khi 'bất ngờ'. Hiểu flush giúp lý giải khi nào constraint/trigger DB nổ, và vì sao <code>saveAndFlush</code> lại đẩy SQL sớm.</p>",
-  refs:[["Vlad Mihalcea – Flush","https://vladmihalcea.com/how-do-jpa-and-hibernate-define-the-flush-order/"]] },
-
-{ id:166, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:true,
-  q:"Viết <code>equals()</code>/<code>hashCode()</code> cho JPA entity thế nào cho đúng? Vì sao KHÔNG dùng id tự tăng?",
-  a:"<p>Vấn đề: entity mới (transient) có <code>id == null</code>, sau khi persist mới được gán id. Nếu <code>hashCode</code> dựa trên id sinh tự động → hashCode <em>đổi</em> trước và sau persist → entity 'biến mất' trong <code>HashSet</code>.</p><p>Cách đúng: dùng một <strong>business key ổn định</strong> (vd mã đơn, UUID sinh ở client) cho equals/hashCode; hoặc dùng UUID gán ngay lúc tạo. Nếu buộc dùng id, cho <code>hashCode</code> trả một hằng số cố định và <code>equals</code> so id có null-check (đánh đổi hiệu năng trong Set).</p><div class='qb-eli5'><b>🌱 Ý chính:</b> hashCode phải <em>bất biến</em> suốt đời object; id do DB sinh thì không bất biến ở giai đoạn transient.</div>",
-  refs:[["Vlad Mihalcea – Entity equals/hashCode","https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/"]] },
-
-{ id:167, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Phân trang trong Spring Data: <code>Pageable</code> / <code>Page</code> hoạt động thế nào? Chi phí ẩn?",
-  a:"<p>Truyền <code>Pageable</code> (<code>PageRequest.of(page, size, Sort...)</code>) vào repository method trả <code>Page&lt;T&gt;</code>. Spring sinh query <code>LIMIT/OFFSET</code> + một query <strong>COUNT</strong> để biết tổng số trang.</p><p>Chi phí ẩn: (1) query COUNT có thể <em>đắt</em> trên bảng lớn — nếu không cần tổng số trang, dùng <code>Slice&lt;T&gt;</code> (chỉ cần biết 'còn trang sau không', bỏ COUNT); (2) OFFSET lớn vẫn chậm (xem keyset pagination, câu 62/146); (3) phân trang khi <code>JOIN FETCH</code> collection gây nạp trong bộ nhớ (câu 48).</p>",
-  refs:[["Spring Data JPA – Paging","https://docs.spring.io/spring-data/jpa/reference/repositories/query-methods-details.html"]] },
-
-{ id:168, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Quan hệ hai chiều (bidirectional): <code>mappedBy</code> và 'owning side' nghĩa là gì?",
-  a:"<p>Trong quan hệ hai chiều, chỉ một phía là <strong>owning side</strong> — phía có cột khoá ngoại và <em>quyết định</em> giá trị quan hệ khi ghi DB. Phía kia là <strong>inverse</strong>, khai <code>mappedBy=\"tênField\"</code> để nói 'quan hệ đã được map ở phía bên kia rồi'.</p><p>Bẫy kinh điển: chỉ set một chiều. Vd thêm <code>OrderItem</code> vào <code>order.getItems()</code> nhưng quên set <code>item.setOrder(order)</code> (owning side) → khi flush, khoá ngoại NULL vì Hibernate chỉ nhìn owning side. Nên viết helper <code>addItem()</code> set cả hai chiều.</p>",
-  refs:[["Baeldung – Hibernate mappedBy","https://www.baeldung.com/hibernate-one-to-many"]] },
-
-{ id:169, g:"Spring", t:"09 Spring Data JPA", lv:"middle", core:false,
-  q:"Vì sao nhiều người tránh <code>@ManyToMany</code> và thay bằng entity trung gian?",
-  a:"<p><code>@ManyToMany</code> tự tạo bảng join ẩn (chỉ 2 khoá ngoại). Vấn đề: ngay khi cần <em>thêm thuộc tính cho quan hệ</em> (vd <code>Enrollment</code> cần thêm ngày ghi danh, điểm số) thì bảng join ẩn không chứa được → phải refactor đau đớn.</p><p>Cách bền: mô hình hoá bảng join thành một <strong>entity riêng</strong> (vd <code>Enrollment</code> với 2 <code>@ManyToOne</code> tới <code>Student</code> và <code>Course</code>). Vừa gắn được thuộc tính, vừa kiểm soát cascade/fetch tốt hơn. Ngoài ra <code>@ManyToMany</code> + <code>List</code> có thể sinh DELETE-then-INSERT toàn bộ khi cập nhật.</p>",
-  refs:[["Baeldung – ManyToMany","https://www.baeldung.com/jpa-many-to-many"]] },
-
-{ id:170, g:"Spring", t:"09 Spring Data JPA", lv:"senior", core:false,
-  q:"Insert 100.000 bản ghi qua Hibernate rất chậm. Tối ưu thế nào?",
-  a:"<p>Mặc định Hibernate gửi từng INSERT một và giữ mọi entity trong persistence context → chậm + ngốn RAM. Tối ưu:</p><ul><li>Bật <strong>JDBC batching</strong>: <code>hibernate.jdbc.batch_size=50</code>, và <code>order_inserts/order_updates=true</code>.</li><li><strong>flush + clear</strong> context theo lô (mỗi 50-100 bản ghi) để không phình bộ nhớ.</li><li>Tránh generator <code>IDENTITY</code> (nó vô hiệu hoá batching); dùng <code>SEQUENCE</code>.</li><li>Việc thật sự lớn: cân nhắc bulk <code>INSERT ... SELECT</code>/JDBC thuần/COPY thay vì ORM.</li></ul>",
-  refs:[["Vlad Mihalcea – Batch processing","https://vladmihalcea.com/how-to-batch-insert-and-update-statements-with-hibernate/"]] },
-
-/* ===================== MỞ RỘNG MIDDLE: SQL / DATABASE ===================== */
-{ id:171, g:"Database", t:"11 SQL Advanced", lv:"middle", core:true,
-  q:"INNER JOIN, LEFT JOIN, RIGHT JOIN, FULL JOIN khác nhau ra sao?",
-  a:"<ul><li><strong>INNER JOIN</strong>: chỉ giữ dòng có khớp ở <em>cả hai</em> bảng.</li><li><strong>LEFT JOIN</strong>: giữ <em>tất cả</em> dòng bảng trái; bên phải không khớp thì NULL. (hay dùng nhất — vd 'mọi user và đơn hàng của họ nếu có'.)</li><li><strong>RIGHT JOIN</strong>: ngược lại, giữ hết bảng phải.</li><li><strong>FULL OUTER JOIN</strong>: giữ hết cả hai bên, thiếu thì NULL.</li></ul><div class='qb-gotcha'><b>⚠ Bẫy hay gặp:</b> LEFT JOIN rồi để điều kiện của bảng phải trong <code>WHERE</code> (vd <code>WHERE b.status='X'</code>) sẽ <em>vô tình biến nó thành INNER JOIN</em> (loại các dòng NULL). Muốn giữ, đặt điều kiện đó trong <code>ON</code>.</div>",
-  refs:[["PostgreSQL – Joins","https://www.postgresql.org/docs/current/tutorial-join.html"]] },
-
-{ id:172, g:"Database", t:"11 SQL Advanced", lv:"middle", core:true,
-  q:"<code>WHERE</code> và <code>HAVING</code> khác nhau ở đâu? Thứ tự thực thi của một câu SELECT?",
-  a:"<p><strong>WHERE</strong> lọc <em>từng dòng</em> TRƯỚC khi gom nhóm. <strong>HAVING</strong> lọc <em>sau khi</em> <code>GROUP BY</code> đã gom, dựa trên kết quả aggregate (vd <code>HAVING COUNT(*) &gt; 5</code>).</p><p>Thứ tự thực thi logic: <code>FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code>. Đó là lý do không thể dùng alias ở SELECT trong <code>WHERE</code> (WHERE chạy trước SELECT), và không thể để điều kiện aggregate trong WHERE.</p><div class='qb-eli5'><b>🌱 Mẹo nhớ:</b> WHERE lọc 'nguyên liệu', HAVING lọc 'món đã nấu' (đã gom nhóm).</div>",
-  refs:[["PostgreSQL – GROUP BY / HAVING","https://www.postgresql.org/docs/current/queries-table-expressions.html"]] },
-
-{ id:173, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"Subquery và JOIN — khi nào dùng cái nào? 'Correlated subquery' là gì và vì sao có thể chậm?",
-  a:"<p>Nhiều subquery có thể viết lại thành JOIN và ngược lại; optimizer thường tối ưu tương đương. JOIN dễ đọc khi cần <em>cột từ nhiều bảng</em>; subquery gọn khi chỉ cần <em>kiểm tra tồn tại/lọc</em>.</p><p><strong>Correlated subquery</strong> là subquery <em>tham chiếu cột của query ngoài</em> → về mặt khái niệm chạy <em>lại cho mỗi dòng</em> ngoài (vd 'đơn có giá trị lớn nhất của từng khách'). Nếu bảng ngoài lớn → tốn. Thường tối ưu bằng cách viết lại thành JOIN + aggregate hoặc window function.</p>",
-  refs:[["Use The Index, Luke","https://use-the-index-luke.com/"]] },
-
-{ id:174, g:"Database", t:"11 SQL Advanced", lv:"middle", core:true,
-  q:"Window function (<code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>) dùng để làm gì? Cho bài 'top-N mỗi nhóm'.",
-  a:"<p>Window function tính toán trên một 'cửa sổ' các dòng <em>mà không gom nhóm</em> (giữ nguyên số dòng). Dùng <code>OVER (PARTITION BY ... ORDER BY ...)</code>.</p><pre><code class='language-text'>SELECT * FROM (\n  SELECT o.*, ROW_NUMBER() OVER (\n    PARTITION BY customer_id ORDER BY amount DESC) rn\n  FROM orders o\n) t WHERE rn &lt;= 3;   -- 3 đơn lớn nhất mỗi khách</code></pre><ul><li><strong>ROW_NUMBER</strong>: đánh số duy nhất 1,2,3...</li><li><strong>RANK</strong>: đồng hạng thì cùng số, rồi <em>nhảy</em> (1,1,3).</li><li><strong>DENSE_RANK</strong>: đồng hạng cùng số, <em>không nhảy</em> (1,1,2).</li></ul>",
-  refs:[["PostgreSQL – Window functions","https://www.postgresql.org/docs/current/tutorial-window.html"]] },
-
-{ id:175, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"<code>EXISTS</code> và <code>IN</code> khác nhau ra sao? Khi nào chọn EXISTS?",
-  a:"<p><code>IN (subquery)</code>: so giá trị với một danh sách kết quả. <code>EXISTS (subquery)</code>: trả true ngay khi subquery có <em>ít nhất một dòng</em> (short-circuit).</p><p><strong>EXISTS</strong> thường tốt hơn khi subquery lớn và chỉ cần kiểm tồn tại (dừng sớm), và <em>an toàn với NULL</em>. <code>NOT IN</code> đặc biệt nguy hiểm: nếu danh sách chứa <strong>NULL</strong> thì <code>NOT IN</code> trả về rỗng/UNKNOWN (không như mong đợi) → ưu tiên <code>NOT EXISTS</code>. Optimizer hiện đại nhiều khi tối ưu hai cái tương đương, nhưng nhớ cái bẫy NULL.</p>",
-  refs:[["Use The Index, Luke","https://use-the-index-luke.com/"]] },
-
-{ id:176, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"<code>UNION</code> và <code>UNION ALL</code> khác nhau? Vì sao UNION ALL thường nhanh hơn?",
-  a:"<p><strong>UNION</strong> gộp kết quả và <em>loại trùng lặp</em> → phải sort/hash toàn bộ để khử duplicate (tốn). <strong>UNION ALL</strong> gộp và <em>giữ nguyên tất cả</em> → không tốn công khử trùng → nhanh hơn.</p><p>Nếu bạn <em>biết chắc</em> hai tập không trùng (hoặc trùng không sao), dùng <code>UNION ALL</code>. Chỉ dùng <code>UNION</code> khi thật sự cần khử trùng.</p><div class='qb-eli5'><b>🌱 Mẹo:</b> mặc định gõ <code>UNION ALL</code>; chỉ bỏ <code>ALL</code> khi có lý do khử trùng — nhiều người quên và làm query chậm oan.</div>",
-  refs:[["PostgreSQL – UNION","https://www.postgresql.org/docs/current/queries-union.html"]] },
-
-{ id:177, g:"Database", t:"39 DB Consistency", lv:"middle", core:true,
-  q:"Deadlock ở tầng database xảy ra thế nào? Làm sao giảm thiểu?",
-  a:"<p>TX1 khoá row A rồi xin row B; cùng lúc TX2 khoá B rồi xin A → chờ vòng tròn. DB phát hiện và <em>giết một nạn nhân</em> (ném deadlock error), TX kia đi tiếp.</p><p>Giảm thiểu: (1) <strong>lock ordering</strong> — luôn khoá các row theo <em>cùng một thứ tự</em> (vd tăng dần theo id) ở mọi transaction; (2) giữ transaction <em>ngắn</em>, khoá ít nhất có thể; (3) hạ nhu cầu lock (index đúng để không lock thừa); (4) <em>retry</em> khi gặp deadlock error (nó thường thoáng qua).</p><div class='qb-eli5'><b>🌱 Ý chính:</b> deadlock ở DB gần như luôn do thứ tự khoá không nhất quán — chuẩn hoá thứ tự là cách chữa gốc.</div>",
-  refs:[["PostgreSQL – Explicit locking","https://www.postgresql.org/docs/current/explicit-locking.html"]] },
-
-{ id:178, g:"Database", t:"12 Database Design", lv:"middle", core:false,
-  q:"Foreign key + <code>ON DELETE CASCADE</code> — lợi ích và rủi ro?",
-  a:"<p><strong>Foreign key</strong> đảm bảo toàn vẹn tham chiếu (không có <code>order_item</code> trỏ tới <code>order</code> không tồn tại). <code>ON DELETE CASCADE</code>: xoá cha thì DB tự xoá con.</p><p>Lợi: dữ liệu luôn nhất quán, gọn. Rủi ro: xoá một dòng cha có thể <em>âm thầm xoá hàng loạt</em> dữ liệu con (thảm hoạ nếu nhầm), và cascade sâu khó lường về hiệu năng/khoá. Nhiều hệ thống lớn còn <em>tắt FK</em> vì lý do sharding/hiệu năng và tự đảm bảo toàn vẹn ở tầng app — đánh đổi có chủ đích.</p>",
-  refs:[["PostgreSQL – Foreign keys","https://www.postgresql.org/docs/current/ddl-constraints.html"]] },
-
-{ id:179, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"NULL trong SQL cư xử 'lạ' thế nào? Vì sao <code>WHERE col = NULL</code> không chạy?",
-  a:"<p>SQL dùng <strong>logic ba giá trị</strong>: TRUE / FALSE / <em>UNKNOWN</em>. NULL nghĩa là 'không biết', nên <code>NULL = NULL</code> ra <strong>UNKNOWN</strong> (không phải TRUE) → <code>WHERE col = NULL</code> không khớp gì. Phải dùng <code>IS NULL</code> / <code>IS NOT NULL</code>.</p><p>Hệ quả khác: <code>COUNT(col)</code> bỏ qua NULL (khác <code>COUNT(*)</code>); aggregate như <code>SUM/AVG</code> bỏ qua NULL; <code>NOT IN</code> gặp NULL cho kết quả rỗng; nối chuỗi với NULL có thể ra NULL. Nên xử lý bằng <code>COALESCE(col, default)</code>.</p>",
-  refs:[["PostgreSQL – NULL / comparison","https://www.postgresql.org/docs/current/functions-comparison.html"]] },
-
-{ id:180, g:"Database", t:"11 SQL Advanced", lv:"middle", core:false,
-  q:"Đánh index rồi mà query vẫn full scan. Những trường hợp index 'vô dụng'?",
-  a:"<ul><li><strong>Selectivity thấp</strong> (cardinality thấp): cột chỉ vài giá trị (vd <code>gender</code>, <code>status</code> đa số 1 giá trị) → optimizer thấy quét bảng còn rẻ hơn dùng index.</li><li><strong>Bọc hàm lên cột</strong>: <code>WHERE UPPER(email)=...</code> hoặc tính toán trên cột → mất index (trừ khi có function-based index).</li><li><strong>LIKE '%abc'</strong> (wildcard đầu) → không dùng được B-Tree.</li><li>Kiểu dữ liệu không khớp (implicit cast), hoặc query lấy <em>phần lớn</em> bảng.</li></ul><div class='qb-gotcha'><b>⚠ Đọc EXPLAIN</b> để xác nhận index có được dùng không, đừng chỉ 'tạo index rồi tin là nhanh'.</div>",
-  refs:[["Use The Index, Luke – Where clause","https://use-the-index-luke.com/sql/where-clause"]] },
-
-{ id:181, g:"Database", t:"12 Database Design", lv:"middle", core:false,
-  q:"Soft delete (đánh dấu <code>deleted_at</code>) và hard delete — trade-off?",
-  a:"<p><strong>Hard delete</strong>: xoá thật khỏi bảng — gọn, DB nhẹ, nhưng mất dữ liệu vĩnh viễn (khó khôi phục/điều tra).</p><p><strong>Soft delete</strong>: thêm cột <code>deleted_at</code>/<code>is_deleted</code>, mọi query phải <code>WHERE deleted_at IS NULL</code>. Lợi: khôi phục được, giữ lịch sử, an toàn cho audit. Đánh đổi: <em>mọi query phải nhớ lọc</em> (dễ quên → lộ dữ liệu đã xoá), unique constraint phức tạp (bản 'đã xoá' vẫn chiếm chỗ), bảng phình. Thường giải quyết bằng Hibernate <code>@SQLRestriction</code>/filter hoặc view.</p><div class='qb-eli5'><b>🌱 Mẹo:</b> dữ liệu nghiệp vụ/pháp lý → soft delete; dữ liệu tạm/log ít giá trị → hard delete (kèm archive nếu cần).</div>",
-  refs:[["Baeldung – Hibernate soft delete","https://www.baeldung.com/spring-jpa-soft-delete"]] },
-
-/* DATA_END */
-];
-
-/* =========================================================
-   ENGINE
-   ========================================================= */
-(function(){
+window.QB = { packs: [], register: function (p) { window.QB.packs.push(p); } };
+
+(function loadData() {
+  var files = window.QB_FILES || [];
+  var i = 0, errors = [];
+  function next() {
+    if (i >= files.length) { qbBoot(errors); return; }
+    var f = files[i++];
+    var s = document.createElement("script");
+    s.src = "qbank/" + f;
+    s.onload = next;
+    s.onerror = function () { errors.push(f); next(); };
+    document.head.appendChild(s);
+  }
+  if (!files.length) { qbBoot(["qbank/manifest.js (không nạp được hoặc rỗng)"]); return; }
+  next();
+})();
+
+function qbBoot(loadErrors) {
   "use strict";
-  const LV = { junior: { label: "Junior" }, middle: { label: "Middle" }, senior: { label: "Senior" } };
-  const LV_ORDER = { junior: 0, middle: 1, senior: 2 };
-  const XP_GAIN = { again: 2, hard: 5, good: 8, easy: 12 };
-  const XP_PER_LEVEL = 120;
-  const MASTER_BOX = 4;
+  /* ---- Gộp dữ liệu từ các pack ---- */
+  var QUESTIONS = [];
+  var packStatus = {};
+  QB.packs.sort(function (a, b) { return (a.order || 99) - (b.order || 99); });
+  QB.packs.forEach(function (p) {
+    packStatus[p.group] = p.status || "ok";
+    (p.questions || []).forEach(function (q) {
+      q.g = p.group;
+      q._i = QUESTIONS.length;
+      QUESTIONS.push(q);
+    });
+  });
 
-  const K_BOX = "qb_box_v1", K_STAT = "qb_stat_v1", K_STAR = "qb_star_v1";
-  const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
-  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  var LV = { junior: { label: "Junior" }, middle: { label: "Middle" }, senior: { label: "Senior" } };
+  var LV_ORDER = { junior: 0, middle: 1, senior: 2 };
+  var XP_GAIN = { again: 2, hard: 5, good: 8, easy: 12 };
+  var XP_PER_LEVEL = 120;
+  var MASTER_BOX = 4;
 
-  let boxes = load(K_BOX, {});
-  let stat = load(K_STAT, { xp: 0, streak: 0, last: null, reviews: 0, reviewDay: null });
-  let stars = new Set(load(K_STAR, []));
+  var K_BOX = "qb_box_v2", K_STAR = "qb_star_v2", K_STAT = "qb_stat_v1";
+  var load = function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  var save = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 
-  let fGroup = "__all", fTopic = "__all", fLevel = "__all", fCore = false, fStar = false, fSearch = "";
-  let mode = "learn";
-  let order = null;
-  let quiz = { queue: [], idx: 0, flipped: false, score: 0, total: 0 };
+  /* ---- Migrate tiến độ cũ (id số → id chuỗi, qua trường legacy) ---- */
+  (function migrate() {
+    try {
+      if (localStorage.getItem(K_BOX) == null && localStorage.getItem("qb_box_v1") != null) {
+        var oldBox = JSON.parse(localStorage.getItem("qb_box_v1")) || {};
+        var oldStar = JSON.parse(localStorage.getItem("qb_star_v1")) || [];
+        var map = {};
+        QUESTIONS.forEach(function (q) { if (q.legacy != null) map[q.legacy] = q.id; });
+        var nb = {};
+        Object.keys(oldBox).forEach(function (k) { if (map[k]) nb[map[k]] = oldBox[k]; });
+        localStorage.setItem(K_BOX, JSON.stringify(nb));
+        localStorage.setItem(K_STAR, JSON.stringify(oldStar.map(function (k) { return map[k]; }).filter(Boolean)));
+      }
+    } catch (e) {}
+  })();
 
-  const $ = (id) => document.getElementById(id);
-  const view = $("qbView");
+  var boxes = load(K_BOX, {});
+  var stat = load(K_STAT, { xp: 0, streak: 0, last: null, reviews: 0, reviewDay: null });
+  var stars = new Set(load(K_STAR, []));
+
+  var fGroup = "__all", fTopic = "__all", fLevel = "__all", fCore = false, fStar = false, fSearch = "";
+  var mode = "learn";
+  var shuffleOrder = null;
+  var quiz = { queue: [], idx: 0, flipped: false, score: 0, total: 0 };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var view = $("qbView");
 
   function norm(s) { return (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d"); }
-  function todayStr() { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); }
-  function yesterdayStr() { const d = new Date(); d.setDate(d.getDate()-1); return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function yesterdayStr() { var d = new Date(); d.setDate(d.getDate() - 1); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
 
-  const groups = [];
-  const topicsByGroup = {};
-  QUESTIONS.forEach(q => {
+  if (loadErrors && loadErrors.length) {
+    var warn = document.createElement("div");
+    warn.className = "qb-loaderr";
+    warn.innerHTML = "⚠ Không nạp được file dữ liệu: <b>" + loadErrors.join(", ") + "</b> — kiểm tra tên file trong <code>qbank/manifest.js</code>.";
+    view.parentNode.insertBefore(warn, view);
+  }
+
+  var groups = [];
+  var topicsByGroup = {};
+  QUESTIONS.forEach(function (q) {
     if (!topicsByGroup[q.g]) { topicsByGroup[q.g] = []; groups.push(q.g); }
     if (topicsByGroup[q.g].indexOf(q.t) === -1) topicsByGroup[q.g].push(q.t);
   });
 
   function buildGroupSelect() {
-    const gs = $("qbGroup");
-    groups.forEach(g => { const o = document.createElement("option"); o.value = g; o.textContent = g + " (" + QUESTIONS.filter(x=>x.g===g).length + ")"; gs.appendChild(o); });
-    const toc = $("tocGroups");
-    toc.innerHTML = groups.map(g => '<a href="#app" data-group="'+g.replace(/"/g,'')+'">'+g+' <span style="color:var(--text-faint)">'+QUESTIONS.filter(x=>x.g===g).length+'</span></a>').join("");
-    toc.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
-      fGroup = a.dataset.group; $("qbGroup").value = fGroup; buildTopicSelect(); fTopic = "__all"; $("qbTopic").value = "__all"; if (mode === "quiz") buildQuizQueue(); render();
-    }));
+    var gs = $("qbGroup");
+    groups.forEach(function (g) {
+      var o = document.createElement("option");
+      o.value = g;
+      o.textContent = g + " (" + QUESTIONS.filter(function (x) { return x.g === g; }).length + ")";
+      gs.appendChild(o);
+    });
+    var toc = $("tocGroups");
+    toc.innerHTML = groups.map(function (g) {
+      var old = packStatus[g] === "legacy" ? ' <span class="qb-old" title="Nội dung nhóm này chưa được viết lại kiểu dễ hiểu — sẽ cập nhật ở đợt sau">cũ</span>' : "";
+      return '<a href="#app" data-group="' + g.replace(/"/g, "") + '">' + g + ' <span style="color:var(--text-faint)">' + QUESTIONS.filter(function (x) { return x.g === g; }).length + "</span>" + old + "</a>";
+    }).join("");
+    toc.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function () {
+        fGroup = a.dataset.group; $("qbGroup").value = fGroup;
+        buildTopicSelect(); fTopic = "__all"; $("qbTopic").value = "__all";
+        if (mode === "quiz") buildQuizQueue();
+        render();
+      });
+    });
   }
   function buildTopicSelect() {
-    const ts = $("qbTopic");
+    var ts = $("qbTopic");
     ts.innerHTML = '<option value="__all">Tất cả chủ đề</option>';
-    const list = fGroup === "__all" ? Object.keys(topicsByGroup).reduce((a,g)=>a.concat(topicsByGroup[g]),[]) : (topicsByGroup[fGroup] || []);
-    list.forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t; ts.appendChild(o); });
+    var list = fGroup === "__all"
+      ? Object.keys(topicsByGroup).reduce(function (a, g) { return a.concat(topicsByGroup[g]); }, [])
+      : (topicsByGroup[fGroup] || []);
+    list.forEach(function (t) { var o = document.createElement("option"); o.value = t; o.textContent = t; ts.appendChild(o); });
   }
 
   function pool() {
-    let arr = QUESTIONS.filter(q => {
+    var arr = QUESTIONS.filter(function (q) {
       if (fGroup !== "__all" && q.g !== fGroup) return false;
       if (fTopic !== "__all" && q.t !== fTopic) return false;
       if (fLevel !== "__all" && q.lv !== fLevel) return false;
       if (fCore && !q.core) return false;
       if (fStar && !stars.has(q.id)) return false;
-      if (fSearch) { const hay = norm(q.q + " " + q.a + " " + q.t + " " + q.g); if (hay.indexOf(fSearch) === -1) return false; }
+      if (fSearch) {
+        var hay = norm(q.q + " " + q.a + " " + q.t + " " + q.g + " " + (q.tags || []).join(" "));
+        if (hay.indexOf(fSearch) === -1) return false;
+      }
       return true;
     });
-    if (order) { const pos = {}; order.forEach((id, i) => pos[id] = i); arr.sort((a, b) => (pos[a.id] ?? 1e9) - (pos[b.id] ?? 1e9)); }
-    else { arr.sort((a, b) => (LV_ORDER[a.lv] - LV_ORDER[b.lv]) || (a.id - b.id)); }
+    if (shuffleOrder) {
+      var pos = {};
+      shuffleOrder.forEach(function (id, i) { pos[id] = i; });
+      arr.sort(function (a, b) { return (pos[a.id] != null ? pos[a.id] : 1e9) - (pos[b.id] != null ? pos[b.id] : 1e9); });
+    } else {
+      arr.sort(function (a, b) { return (LV_ORDER[a.lv] - LV_ORDER[b.lv]) || (a._i - b._i); });
+    }
     return arr;
   }
 
-  function masteredCount() { return QUESTIONS.filter(q => (boxes[q.id] || 0) >= MASTER_BOX).length; }
+  function masteredCount() { return QUESTIONS.filter(function (q) { return (boxes[q.id] || 0) >= MASTER_BOX; }).length; }
   function updateDash() {
-    const lvl = Math.floor(stat.xp / XP_PER_LEVEL) + 1;
-    const inLvl = stat.xp % XP_PER_LEVEL;
+    var lvl = Math.floor(stat.xp / XP_PER_LEVEL) + 1;
+    var inLvl = stat.xp % XP_PER_LEVEL;
     $("dLevel").textContent = "Lv " + lvl;
-    $("dXp").textContent = stat.xp + " XP · còn " + (XP_PER_LEVEL - inLvl) + " lên Lv " + (lvl+1);
+    $("dXp").textContent = stat.xp + " XP · còn " + (XP_PER_LEVEL - inLvl) + " lên Lv " + (lvl + 1);
     $("dLevelbar").style.width = (inLvl / XP_PER_LEVEL * 100) + "%";
     $("dStreak").textContent = "🔥 " + (stat.streak || 0);
     $("dMastered").textContent = masteredCount();
@@ -1224,41 +382,47 @@ const QUESTIONS = [
     $("dToday").textContent = (stat.reviewDay === todayStr()) ? (stat.reviews || 0) : 0;
   }
 
-  let toastT;
-  function toast(msg) { const t = $("qbToast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1400); }
+  var toastT;
+  function toast(msg) { var t = $("qbToast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("show"); }, 1400); }
 
   function applyRate(q, r) {
-    const prevBox = boxes[q.id] || 0;
-    let box = prevBox;
+    var prevBox = boxes[q.id] || 0;
+    var box = prevBox;
     if (r === "again") box = 0;
     else if (r === "hard") box = Math.max(1, box);
     else if (r === "good") box = Math.min(box + 1, 5);
     else if (r === "easy") box = Math.min(box + 2, 5);
     boxes[q.id] = box; save(K_BOX, boxes);
     stat.xp = (stat.xp || 0) + (XP_GAIN[r] || 0);
-    const t = todayStr();
+    var t = todayStr();
     if (stat.last !== t) { stat.streak = (stat.last === yesterdayStr()) ? (stat.streak || 0) + 1 : 1; stat.last = t; }
     if (stat.reviewDay !== t) { stat.reviewDay = t; stat.reviews = 0; }
     stat.reviews = (stat.reviews || 0) + 1;
     save(K_STAT, stat);
-    let msg = "+" + (XP_GAIN[r] || 0) + " XP";
+    var msg = "+" + (XP_GAIN[r] || 0) + " XP";
     if (prevBox < MASTER_BOX && box >= MASTER_BOX) msg = "🎉 Thuộc rồi! " + msg;
     toast(msg); updateDash();
   }
 
   function headHtml(q) {
-    const box = boxes[q.id] || 0;
+    var box = boxes[q.id] || 0;
     return '<div class="qb-cardhead">'
-      + '<span class="qb-lvbadge lv-' + q.lv + '">' + LV[q.lv].label + '</span>'
-      + '<span class="qb-topic">' + q.t + '</span>'
-      + (q.core ? '<span class="qb-core">★ CORE</span>' : '')
-      + '<span class="qb-boxtag">box ' + box + '</span>'
-      + '<button class="qb-star ' + (stars.has(q.id) ? "on" : "") + '" data-star="' + q.id + '" title="Đánh dấu để ôn lại">' + (stars.has(q.id) ? "★" : "☆") + '</button>'
-      + '</div>';
+      + '<span class="qb-lvbadge lv-' + q.lv + '">' + LV[q.lv].label + "</span>"
+      + '<span class="qb-topic">' + q.t + "</span>"
+      + (q.core ? '<span class="qb-core">★ CORE</span>' : "")
+      + '<span class="qb-boxtag">box ' + box + "</span>"
+      + '<button class="qb-star ' + (stars.has(q.id) ? "on" : "") + '" data-star="' + q.id + '" title="Đánh dấu để ôn lại">' + (stars.has(q.id) ? "★" : "☆") + "</button>"
+      + "</div>";
+  }
+  function tagsHtml(q) {
+    if (!q.tags || !q.tags.length) return "";
+    return '<div class="qb-tags">' + q.tags.map(function (tg) {
+      return '<button class="qb-tagchip" data-tag="' + tg + '" title="Lọc các câu có tag này" type="button">#' + tg + "</button>";
+    }).join("") + "</div>";
   }
   function answerHtml(q) {
-    let refs = "";
-    if (q.refs && q.refs.length) refs = '<div class="qb-refs"><span class="rlab">Tham khảo</span>' + q.refs.map(r => '<a href="' + r[1] + '" target="_blank" rel="noopener">' + r[0] + '</a>').join(" · ") + '</div>';
+    var refs = "";
+    if (q.refs && q.refs.length) refs = '<div class="qb-refs"><span class="rlab">Tham khảo</span>' + q.refs.map(function (r) { return '<a href="' + r[1] + '" target="_blank" rel="noopener">' + r[0] + "</a>"; }).join(" · ") + "</div>";
     return q.a + refs;
   }
   function rateRowHtml(id) {
@@ -1267,27 +431,28 @@ const QUESTIONS = [
       + '<button class="r-hard" data-r="hard">Hard<small>còn lơ mơ</small></button>'
       + '<button class="r-good" data-r="good">Good<small>nhớ được</small></button>'
       + '<button class="r-easy" data-r="easy">Easy<small>quá chắc</small></button>'
-      + '</div>';
+      + "</div>";
   }
 
   function renderLearn() {
-    const arr = pool();
+    var arr = pool();
     $("qbCount").textContent = arr.length + " câu";
     if (!arr.length) { view.innerHTML = '<div class="qb-empty">Không có câu nào khớp bộ lọc. Thử bỏ bớt filter hoặc đổi nhóm chủ đề.</div>'; return; }
-    view.innerHTML = '<div class="qb-list">' + arr.map(q => {
-      const mastered = (boxes[q.id] || 0) >= MASTER_BOX;
+    view.innerHTML = '<div class="qb-list">' + arr.map(function (q) {
+      var mastered = (boxes[q.id] || 0) >= MASTER_BOX;
       return '<div class="qb-card ' + (mastered ? "is-mastered" : "") + '" data-id="' + q.id + '">'
         + headHtml(q)
-        + '<div class="qb-q">' + q.q + '</div>'
+        + '<div class="qb-q">' + q.q + "</div>"
+        + tagsHtml(q)
         + '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾</button>'
-        + '<div class="qb-a" data-answer="' + q.id + '" hidden>' + answerHtml(q) + rateRowHtml(q.id) + '</div>'
-        + '</div>';
-    }).join("") + '</div>';
+        + '<div class="qb-a" data-answer="' + q.id + '" hidden>' + answerHtml(q) + rateRowHtml(q.id) + "</div>"
+        + "</div>";
+    }).join("") + "</div>";
   }
 
   function buildQuizQueue() {
-    const p = pool().slice();
-    p.sort((a, b) => ((boxes[a.id] || 0) - (boxes[b.id] || 0)) || (Math.random() - 0.5));
+    var p = pool().slice();
+    p.sort(function (a, b) { return ((boxes[a.id] || 0) - (boxes[b.id] || 0)) || (Math.random() - 0.5); });
     quiz.queue = p; quiz.idx = 0; quiz.flipped = false; quiz.score = 0; quiz.total = p.length;
   }
   function renderQuiz() {
@@ -1295,47 +460,61 @@ const QUESTIONS = [
     if (!quiz.queue.length) { view.innerHTML = '<div class="qb-empty">Không có câu nào khớp bộ lọc để quiz.</div>'; return; }
     if (quiz.idx >= quiz.queue.length) {
       view.innerHTML = '<div class="qb-quiz"><div class="qb-qcard qb-done"><div class="big">✅ Xong lượt!</div><p class="sub">Bạn đã ôn <b class="sc">' + quiz.total + '</b> câu. Câu chấm "Again/Hard" sẽ ưu tiên hiện trước ở lượt sau.</p><button class="qb-mode active" id="qbAgain" type="button" style="margin-top:14px">🔁 Ôn lại lượt mới</button></div></div>';
-      $("qbAgain").onclick = () => { buildQuizQueue(); renderQuiz(); };
+      $("qbAgain").onclick = function () { buildQuizQueue(); renderQuiz(); };
       return;
     }
-    const q = quiz.queue[quiz.idx];
-    const pct = Math.round(quiz.idx / quiz.total * 100);
+    var q = quiz.queue[quiz.idx];
+    var pct = Math.round(quiz.idx / quiz.total * 100);
     view.innerHTML = '<div class="qb-quiz">'
-      + '<div class="qb-quizprog"><span>Câu ' + (quiz.idx + 1) + ' / ' + quiz.total + '</span><span>' + q.g + '</span></div>'
+      + '<div class="qb-quizprog"><span>Câu ' + (quiz.idx + 1) + " / " + quiz.total + "</span><span>" + q.g + "</span></div>"
       + '<div class="qb-quizbar"><span style="width:' + pct + '%"></span></div>'
-      + '<div class="qb-qcard">' + headHtml(q) + '<div class="q">' + q.q + '</div>'
-      + (quiz.flipped ? '<div class="qb-a">' + answerHtml(q) + rateRowHtml(q.id) + '</div>' : '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾  (Space)</button>')
-      + '</div></div>';
+      + '<div class="qb-qcard">' + headHtml(q) + '<div class="q">' + q.q + "</div>"
+      + (quiz.flipped ? '<div class="qb-a">' + answerHtml(q) + rateRowHtml(q.id) + "</div>" : '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾  (Space)</button>')
+      + "</div></div>";
   }
 
   function render() { if (mode === "learn") renderLearn(); else renderQuiz(); }
 
-  view.addEventListener("click", (e) => {
-    const rev = e.target.closest("[data-reveal]");
+  view.addEventListener("click", function (e) {
+    var tagBtn = e.target.closest("[data-tag]");
+    if (tagBtn) {
+      var tg = tagBtn.dataset.tag;
+      $("qbSearch").value = tg;
+      fSearch = norm(tg);
+      if (mode === "quiz") buildQuizQueue();
+      render();
+      toast("🔎 Lọc tag: #" + tg);
+      return;
+    }
+    var rev = e.target.closest("[data-reveal]");
     if (rev) {
-      const id = +rev.dataset.reveal;
-      if (mode === "learn") { const a = view.querySelector('[data-answer="' + id + '"]'); if (a) { a.hidden = false; rev.style.display = "none"; } }
+      var id = rev.dataset.reveal;
+      if (mode === "learn") { var a = view.querySelector('[data-answer="' + id + '"]'); if (a) { a.hidden = false; rev.style.display = "none"; } }
       else { quiz.flipped = true; renderQuiz(); }
       return;
     }
-    const star = e.target.closest("[data-star]");
+    var star = e.target.closest("[data-star]");
     if (star) {
-      const id = +star.dataset.star;
-      if (stars.has(id)) stars.delete(id); else stars.add(id);
+      var sid = star.dataset.star;
+      if (stars.has(sid)) stars.delete(sid); else stars.add(sid);
       save(K_STAR, Array.from(stars));
-      star.classList.toggle("on"); star.textContent = stars.has(id) ? "★" : "☆";
+      star.classList.toggle("on"); star.textContent = stars.has(sid) ? "★" : "☆";
       return;
     }
-    const rateBtn = e.target.closest(".qb-rate button");
+    var rateBtn = e.target.closest(".qb-rate button");
     if (rateBtn) {
-      const wrap = rateBtn.closest(".qb-rate");
-      const id = +wrap.dataset.rate;
-      const q = QUESTIONS.find(x => x.id === id);
+      var wrap = rateBtn.closest(".qb-rate");
+      var rid = wrap.dataset.rate;
+      var q = QUESTIONS.find(function (x) { return x.id === rid; });
       if (!q) return;
       applyRate(q, rateBtn.dataset.r);
       if (mode === "learn") {
-        const card = view.querySelector('.qb-card[data-id="' + id + '"]');
-        if (card) { const tag = card.querySelector(".qb-boxtag"); if (tag) tag.textContent = "box " + (boxes[id] || 0); card.classList.toggle("is-mastered", (boxes[id] || 0) >= MASTER_BOX); }
+        var card = view.querySelector('.qb-card[data-id="' + rid + '"]');
+        if (card) {
+          var tag = card.querySelector(".qb-boxtag");
+          if (tag) tag.textContent = "box " + (boxes[rid] || 0);
+          card.classList.toggle("is-mastered", (boxes[rid] || 0) >= MASTER_BOX);
+        }
         if (rateBtn.dataset.r === "again" || rateBtn.dataset.r === "hard") wrap.parentElement.style.opacity = ".6";
       } else {
         if (rateBtn.dataset.r === "again") quiz.queue.push(q);
@@ -1344,48 +523,49 @@ const QUESTIONS = [
     }
   });
 
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", function (e) {
     if (mode !== "quiz") return;
     if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     if (e.code === "Space") { if (!quiz.flipped) { e.preventDefault(); quiz.flipped = true; renderQuiz(); } return; }
     if (quiz.flipped) {
-      const map = { "Digit1": "again", "Digit2": "hard", "Digit3": "good", "Digit4": "easy" };
-      const r = map[e.code];
-      if (r) { const q = quiz.queue[quiz.idx]; if (!q) return; applyRate(q, r); if (r === "again") quiz.queue.push(q); quiz.idx++; quiz.flipped = false; renderQuiz(); }
+      var map = { Digit1: "again", Digit2: "hard", Digit3: "good", Digit4: "easy" };
+      var r = map[e.code];
+      if (r) { var q = quiz.queue[quiz.idx]; if (!q) return; applyRate(q, r); if (r === "again") quiz.queue.push(q); quiz.idx++; quiz.flipped = false; renderQuiz(); }
     }
   });
 
-  $("qbGroup").addEventListener("change", (e) => { fGroup = e.target.value; buildTopicSelect(); fTopic = "__all"; order = null; if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbTopic").addEventListener("change", (e) => { fTopic = e.target.value; order = null; if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbSearch").addEventListener("input", (e) => { fSearch = norm(e.target.value.trim()); if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbCore").addEventListener("change", (e) => { fCore = e.target.checked; $("qbCoreWrap").classList.toggle("on", fCore); if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbStar").addEventListener("change", (e) => { fStar = e.target.checked; $("qbStarWrap").classList.toggle("on", fStar); if (mode === "quiz") buildQuizQueue(); render(); });
+  $("qbGroup").addEventListener("change", function (e) { fGroup = e.target.value; buildTopicSelect(); fTopic = "__all"; shuffleOrder = null; if (mode === "quiz") buildQuizQueue(); render(); });
+  $("qbTopic").addEventListener("change", function (e) { fTopic = e.target.value; shuffleOrder = null; if (mode === "quiz") buildQuizQueue(); render(); });
+  $("qbSearch").addEventListener("input", function (e) { fSearch = norm(e.target.value.trim()); if (mode === "quiz") buildQuizQueue(); render(); });
+  $("qbCore").addEventListener("change", function (e) { fCore = e.target.checked; $("qbCoreWrap").classList.toggle("on", fCore); if (mode === "quiz") buildQuizQueue(); render(); });
+  $("qbStar").addEventListener("change", function (e) { fStar = e.target.checked; $("qbStarWrap").classList.toggle("on", fStar); if (mode === "quiz") buildQuizQueue(); render(); });
 
-  $("qbLevels").addEventListener("click", (e) => {
-    const b = e.target.closest(".qb-lvpill"); if (!b) return;
-    fLevel = b.dataset.lv; order = null;
-    $("qbLevels").querySelectorAll(".qb-lvpill").forEach(x => x.classList.toggle("active", x === b));
-    if (mode === "quiz") buildQuizQueue(); render();
+  $("qbLevels").addEventListener("click", function (e) {
+    var b = e.target.closest(".qb-lvpill"); if (!b) return;
+    fLevel = b.dataset.lv; shuffleOrder = null;
+    $("qbLevels").querySelectorAll(".qb-lvpill").forEach(function (x) { x.classList.toggle("active", x === b); });
+    if (mode === "quiz") buildQuizQueue();
+    render();
   });
 
-  $("qbShuffle").addEventListener("click", () => {
+  $("qbShuffle").addEventListener("click", function () {
     if (mode === "quiz") { buildQuizQueue(); renderQuiz(); return; }
-    const ids = pool().map(q => q.id);
-    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-    order = ids; render(); toast("🔀 Đã trộn thứ tự");
+    var ids = pool().map(function (q) { return q.id; });
+    for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp; }
+    shuffleOrder = ids; render(); toast("🔀 Đã trộn thứ tự");
   });
 
-  $("qbReset").addEventListener("click", () => {
+  $("qbReset").addEventListener("click", function () {
     if (!confirm("Xoá toàn bộ tiến độ (box, XP, streak, đánh dấu)?")) return;
     boxes = {}; stars = new Set(); stat = { xp: 0, streak: 0, last: null, reviews: 0, reviewDay: null };
     save(K_BOX, boxes); save(K_STAR, []); save(K_STAT, stat);
-    order = null; updateDash(); if (mode === "quiz") buildQuizQueue(); render();
+    shuffleOrder = null; updateDash(); if (mode === "quiz") buildQuizQueue(); render();
   });
 
-  document.querySelector(".qb-modebar").addEventListener("click", (e) => {
-    const b = e.target.closest(".qb-mode"); if (!b) return;
+  document.querySelector(".qb-modebar").addEventListener("click", function (e) {
+    var b = e.target.closest(".qb-mode"); if (!b) return;
     mode = b.dataset.mode;
-    document.querySelectorAll(".qb-mode").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll(".qb-mode").forEach(function (x) { x.classList.toggle("active", x === b); });
     if (mode === "quiz") buildQuizQueue();
     render();
   });
@@ -1394,7 +574,7 @@ const QUESTIONS = [
   buildTopicSelect();
   updateDash();
   render();
-})();
+}
 </script>
 </body>
 </html>

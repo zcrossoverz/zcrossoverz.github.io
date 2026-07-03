@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#64 — Incident Lab: Trực chiến sự cố production | Backend Engineering Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .il-wrap { max-width: 920px; margin: 0 auto; padding: 0 4px 80px; }
+  .il-grid { display: grid; gap: 12px; }
+  .il-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); cursor: pointer; transition: border-color .14s; }
+  .il-card:hover { border-color: var(--accent); }
+  .il-card h3 { margin: 6px 0 6px; font-size: 1.05rem; }
+  .il-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-muted); }
+  .il-sev { font-size: 10px; font-weight: 800; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; color: #fff; }
+  .il-sev.p1 { background: #dc2626; } .il-sev.p2 { background: #d97706; }
+  .il-done { font-size: 11px; font-weight: 700; color: var(--success); }
+  .il-alert { border: 1px solid #dc2626; border-left: 6px solid #dc2626; border-radius: var(--radius); background: var(--warning-soft); padding: 14px 16px; margin: 14px 0; font-size: .95rem; line-height: 1.65; }
+  .il-alert .al-head { font-family: var(--font-mono); font-weight: 700; color: #dc2626; font-size: 13px; margin-bottom: 6px; }
+  .il-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+  .il-tab { appearance: none; border: 1px solid var(--border); border-bottom: none; background: var(--bg); color: var(--text-muted); font: inherit; font-size: 12.5px; font-weight: 700; padding: 7px 13px; border-radius: 8px 8px 0 0; cursor: pointer; }
+  .il-tab.on { background: var(--bg-elev); color: var(--accent); border-color: var(--accent); }
+  .il-art { border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) var(--radius); background: var(--bg-elev); padding: 12px 14px; }
+  .il-art pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: .78rem; line-height: 1.55; margin: 8px 0; white-space: pre; }
+  .il-art .hl { color: #dc2626; font-weight: 700; }
+  .il-art .dim2 { opacity: .55; }
+  .il-q { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 18px 20px; margin-top: 16px; box-shadow: var(--shadow-sm); }
+  .il-q .step { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .il-q h3 { margin: 6px 0 4px; font-size: 1.02rem; line-height: 1.5; }
+  .il-opts { display: grid; gap: 9px; margin-top: 12px; }
+  .il-opt { text-align: left; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .93rem; line-height: 1.5; padding: 11px 13px; border-radius: var(--radius); cursor: pointer; }
+  .il-opt:hover { border-color: var(--accent); }
+  .il-opt:disabled { cursor: default; }
+  .il-opt.s2 { border-color: var(--success); background: var(--success-soft); }
+  .il-opt.s1 { border-color: var(--warning); background: var(--warning-soft); }
+  .il-opt.s0 { border-color: var(--danger); background: var(--warning-soft); }
+  .il-opt .fb { display: block; margin-top: 8px; font-size: .87rem; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+  .il-next { margin-top: 14px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 700; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; }
+  .il-next:hover { background: var(--accent); color: #fff; }
+  .il-score { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+  .il-debrief { border-left: 4px solid var(--success); }
+  .il-prove { border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 16px 18px; margin-top: 14px; background: var(--bg-elev); }
+  .il-prove pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; overflow-x: auto; font-family: var(--font-mono); font-size: .8rem; line-height: 1.5; }
+  .il-back { display: inline-block; margin-bottom: 12px; font-size: 13.5px; font-weight: 700; color: var(--accent); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">#64 Incident Lab</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Điều hướng</div>
+  <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
+    <a href="63-diagnostic.html">Diagnostic</a>
+    <a href="65-design-lab.html">Design Lab</a>
+    <a href="62-interview-question-bank.html">Question Bank</a>
+    <a href="index.html">Danh mục bài học</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content il-wrap">
+
+<section class="hero">
+  <span class="meta-tag">Incident Lab · On-call Simulation</span>
+  <h1>Trực chiến sự cố production</h1>
+  <p class="lead">Bạn là on-call engineer. Mỗi sự cố cho bạn <strong>bằng chứng thật</strong> — log, metric, thread dump, execution plan — và chấm cách bạn <strong>điều tra</strong>, không chỉ đáp án cuối. Sai ở đây rẻ hơn sai lúc 2 giờ sáng thật rất nhiều.</p>
+</section>
+
+<div class="study-banner">
+  <div class="sb-head">🧭 Cách chơi cho ra kỹ năng thật</div>
+  <ol class="sb-rules">
+    <li><strong>Đọc artifacts trước khi chọn gì</strong> — mở từng tab bằng chứng như mở Grafana/kibana thật.</li>
+    <li><strong>Tự viết ra giả thuyết</strong> (một dòng) trước khi xem lựa chọn — chống ảo giác "nhìn phát biết ngay".</li>
+    <li>Điểm đến từ <strong>chất lượng từng bước điều tra</strong>: đi tắt đoán mò sẽ lộ.</li>
+    <li>Cuối bài có mục <strong>"Chứng minh đã hiểu"</strong> — lab tái hiện sự cố trên máy bạn. Làm nó thì kiến thức mới là của bạn.</li>
+  </ol>
+</div>
+
+<div id="ilView"></div>
+
+<footer>
+  <span>#64 · dữ liệu: <code>incidents/data/*.js</code> · kết quả lưu vào hồ sơ học</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
+<script src="incidents/manifest.js"></script>
+<script>
+window.INCIDENTS = { list: [], register: function (x) { window.INCIDENTS.list.push(x); } };
+(function load() {
+  var files = window.INC_FILES || [], i = 0, errs = [];
+  function next() {
+    if (i >= files.length) { ilBoot(errs); return; }
+    var s = document.createElement("script");
+    s.src = "incidents/" + files[i++];
+    s.onload = next; s.onerror = function () { errs.push(s.src); next(); };
+    document.head.appendChild(s);
+  }
+  next();
+})();
+
+function ilBoot(errs) {
+  "use strict";
+  var view = document.getElementById("ilView");
+  var ALL = INCIDENTS.list;
+  if (errs.length) view.insertAdjacentHTML("beforebegin", '<div class="callout warn">Không nạp được: ' + errs.join(", ") + "</div>");
+
+  function maxScore(inc) {
+    var m = 0;
+    (inc.steps || []).forEach(function (s) { m += Math.max.apply(null, s.opts.map(function (o) { return o.s || 0; })); });
+    m += 3; // root cause
+    m += Math.max.apply(null, inc.fix.opts.map(function (o) { return o.s || 0; }));
+    return m;
+  }
+
+  function listView() {
+    location.hash = "";
+    var done = BEP.incGet();
+    view.innerHTML = '<div class="il-grid">' + ALL.map(function (inc) {
+      var d = done[inc.id];
+      return '<div class="il-card" data-id="' + inc.id + '">'
+        + '<div class="il-meta"><span class="il-sev ' + inc.sev.toLowerCase() + '">' + inc.sev + "</span><span>" + inc.domain + "</span><span>⏱ " + inc.time + "</span>"
+        + (d ? '<span class="il-done">✔ đã xử lý · điểm ' + d.score + "/" + d.max + "</span>" : "")
+        + "</div><h3>" + inc.title + "</h3>"
+        + '<div style="font-size:13px;color:var(--text-muted)">' + inc.teaser + "</div></div>";
+    }).join("") + "</div>";
+    view.querySelectorAll(".il-card").forEach(function (c) {
+      c.addEventListener("click", function () { openInc(c.dataset.id); });
+    });
+  }
+
+  function openInc(id) {
+    var inc = null;
+    ALL.forEach(function (x) { if (x.id === id) inc = x; });
+    if (!inc) { listView(); return; }
+    location.hash = id;
+    var run = { score: 0, max: maxScore(inc), phase: 0 }; // phases: steps..., cause, fix, debrief
+    var phases = (inc.steps || []).map(function (s) { return { kind: "step", data: s }; });
+    phases.push({ kind: "cause", data: inc.cause });
+    phases.push({ kind: "fix", data: inc.fix });
+
+    function artifactsHtml() {
+      return '<div class="il-tabs">' + inc.artifacts.map(function (a, i) {
+          return '<button class="il-tab' + (i === 0 ? " on" : "") + '" data-a="' + i + '">' + a.label + "</button>";
+        }).join("") + "</div>"
+        + inc.artifacts.map(function (a, i) {
+          return '<div class="il-art" data-art="' + i + '"' + (i ? " hidden" : "") + ">" + a.body + "</div>";
+        }).join("");
+    }
+
+    function header() {
+      return '<span class="il-back" id="ilBack">← Danh sách sự cố</span>'
+        + '<div class="il-meta"><span class="il-sev ' + inc.sev.toLowerCase() + '">' + inc.sev + "</span><span>" + inc.domain + '</span><span class="il-score" id="ilScore">Điểm điều tra: ' + run.score + "/" + run.max + "</span></div>"
+        + "<h2 style='margin:8px 0 4px'>" + inc.title + "</h2>"
+        + '<div class="il-alert"><div class="al-head">🔔 ALERT</div>' + inc.alert + "</div>"
+        + artifactsHtml();
+    }
+
+    function bindCommon() {
+      document.getElementById("ilBack").onclick = listView;
+      view.querySelectorAll(".il-tab").forEach(function (t) {
+        t.addEventListener("click", function () {
+          view.querySelectorAll(".il-tab").forEach(function (x) { x.classList.toggle("on", x === t); });
+          view.querySelectorAll(".il-art").forEach(function (x) { x.hidden = x.dataset.art !== t.dataset.a; });
+        });
+      });
+    }
+
+    function renderPhase() {
+      var ph = phases[run.phase];
+      if (!ph) { renderDebrief(); return; }
+      var isCause = ph.kind === "cause";
+      var label = ph.kind === "step" ? "Bước điều tra " + (run.phase + 1) + "/" + inc.steps.length
+                : isCause ? "Chốt nguyên nhân gốc" : "Chọn cách sửa & trade-off";
+      var opts = ph.data.opts.map(function (o, i) { return { o: o, i: i }; });
+      for (var i = opts.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = opts[i]; opts[i] = opts[j]; opts[j] = t; }
+      view.innerHTML = header()
+        + '<div class="il-q"><span class="step">' + label + "</span><h3>" + ph.data.q + "</h3>"
+        + '<div class="il-opts">' + opts.map(function (w) { return '<button class="il-opt" data-i="' + w.i + '">' + w.o.t + "</button>"; }).join("") + "</div>"
+        + '<div id="ilNextWrap"></div></div>';
+      bindCommon();
+      view.querySelector(".il-opts").addEventListener("click", function (e) {
+        var b = e.target.closest(".il-opt"); if (!b || b.disabled) return;
+        var picked = +b.dataset.i;
+        var gain = 0;
+        view.querySelectorAll(".il-opt").forEach(function (x) {
+          x.disabled = true;
+          var o = ph.data.opts[+x.dataset.i];
+          var cls, fb = o.why || "";
+          if (isCause) { cls = o.ok ? "s2" : "s0"; if (+x.dataset.i === picked && o.ok) gain = 3; }
+          else { cls = "s" + (o.s || 0); if (+x.dataset.i === picked) gain = o.s || 0; }
+          if (+x.dataset.i === picked || (isCause && o.ok) || (!isCause && (o.s || 0) === 2)) {
+            x.classList.add(cls);
+            if (fb) x.insertAdjacentHTML("beforeend", '<span class="fb">' + (+x.dataset.i === picked ? "" : "<b>Lựa chọn tốt nhất:</b> ") + fb + "</span>");
+          }
+        });
+        run.score += gain;
+        document.getElementById("ilScore").textContent = "Điểm điều tra: " + run.score + "/" + run.max;
+        document.getElementById("ilNextWrap").innerHTML = '<button class="il-next" id="ilNext">' + (run.phase + 1 < phases.length ? "Bước tiếp →" : "Xem debrief →") + "</button>";
+        document.getElementById("ilNext").onclick = function () { run.phase++; renderPhase(); };
+      });
+    }
+
+    function renderDebrief() {
+      BEP.incSave(inc.id, run.score, run.max);
+      var pct = Math.round(run.score / run.max * 100);
+      var verdict = pct >= 85 ? "🏆 Điều tra chuẩn on-call" : pct >= 60 ? "👍 Ra được vấn đề, còn vài bước đi vòng" : "🩹 Sống sót — đọc kỹ debrief và làm lại sau vài ngày";
+      view.innerHTML = header()
+        + '<div class="il-q il-debrief"><span class="step">Debrief · ' + run.score + "/" + run.max + " điểm · " + verdict + "</span>"
+        + inc.debrief
+        + (inc.refs && inc.refs.length ? '<div class="qb-refs" style="margin-top:10px"><span class="rlab">Đọc thêm</span>' + inc.refs.map(function (r) { return '<a href="' + r[1] + '" target="_blank" rel="noopener">' + r[0] + "</a>"; }).join(" · ") + "</div>" : "")
+        + "</div>"
+        + '<div class="il-prove"><b>🧪 Chứng minh đã hiểu — tái hiện trên máy bạn:</b>' + inc.prove + "</div>"
+        + '<button class="il-next" id="ilAgain" style="margin-top:14px">↺ Làm lại sự cố</button> '
+        + '<button class="il-next" id="ilList" style="margin-top:14px">Danh sách sự cố</button>';
+      bindCommon();
+      document.getElementById("ilAgain").onclick = function () { openInc(inc.id); };
+      document.getElementById("ilList").onclick = listView;
+      window.scrollTo(0, 0);
+    }
+
+    renderPhase();
+    window.scrollTo(0, 0);
+  }
+
+  var h = (location.hash || "").replace("#", "");
+  if (h && ALL.some(function (x) { return x.id === h; })) openInc(h); else listView();
+}
+</script>
+</body>
+</html>

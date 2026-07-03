@@ -1,0 +1,91 @@
+/* INCIDENTS — Cache & Resilience. Schema: xem i1. */
+
+INCIDENTS.register({
+  id: "inc-cache-stampede", sev: "P1", domain: "Cache / Redis", skills: ["cache-failures", "cache-patterns"], time: "15–20 phút",
+  title: "Flash sale 20:00 — 20:05 database CPU 96%",
+  teaser: "Cache hit rate rơi tự do đúng một khoảnh khắc. Hàng nghìn request cùng hỏi một sản phẩm. Redis vẫn sống. Vậy ai giết DB?",
+  alert: "<b>[Grafana]</b> 20:05:12 — <code>product-db</code> CPU 96%, connection bão hoà. Trang sản phẩm flash-sale (id 777) timeout hàng loạt. Redis: healthy, memory ổn. Flash sale mở lúc 20:00, cache sản phẩm được warm lúc <b>19:05</b> với TTL mặc định <b>3600s</b>.",
+  artifacts: [
+    { label: "📈 Timeline metrics", body: "<pre>19:05  warm cache product:777 (TTL 3600s)\n20:00  mở sale — traffic ×40, cache hit rate 99.2%  → DB im ắng\n<span class='hl'>20:05:05  key product:777 HẾT HẠN (19:05 + 3600s)</span>\n20:05:06  cache hit rate: 99% → <span class='hl'>31%</span>\n20:05:06  DB QPS: 40 → <span class='hl'>8.400</span>   (toàn bộ là 1 câu SELECT giống nhau)\n20:05:40  DB CPU 96% · connection pool các service cạn theo\n20:09     một số instance tự set lại được cache → hồi phục dần</pre>" },
+    { label: "🔍 Redis MONITOR (trích 1 giây)", body: "<pre>20:05:06.001 \"GET\" \"product:777\"      → nil\n20:05:06.002 \"GET\" \"product:777\"      → nil\n20:05:06.002 \"GET\" \"product:777\"      → nil\n   ... <span class='hl'>(2.816 lần GET miss trong 1 giây — cùng MỘT key)</span>\n20:05:09.847 \"SETEX\" \"product:777\" 3600 \"{...}\"   ← ai đó set lại sau khi query xong\n20:05:09.850 \"GET\" \"product:777\"      → hit trở lại</pre><p style='font-size:12.5px;color:var(--text-muted)'>Khe hở 06.001 → 09.847 (~3.8s): mọi GET đều miss và đổ xuống DB.</p>" },
+    { label: "📄 Code đọc cache", body: "<pre>public Product getProduct(long id) {\n    String key = \"product:\" + id;\n    Product p = redis.get(key);\n    if (p == null) {                        // miss →\n        <span class='hl'>p = db.findProduct(id);             // MỌI request miss đều tự query DB\n        redis.setex(key, 3600, p);</span>          // rồi ai cũng set lại\n    }\n    return p;\n}</pre>" }
+  ],
+  steps: [
+    { q: "Ghép timeline: hit rate sập đúng 20:05:05 = 19:05 + TTL 3600s. Đây là hiện tượng gì?",
+      opts: [
+        { t: "Cache stampede/dogpile trên hot key: key nóng nhất hết hạn giữa cao điểm → hàng nghìn request cùng miss trong khe vài giây và CÙNG tự đi query DB một câu giống nhau", s: 2, why: "Chìa khoá là đối chiếu THỜI GIAN: giờ chết của key = giờ warm + TTL, khớp từng giây với cú rơi hit rate. Cache-aside ngây thơ cho phép mọi kẻ miss cùng 'đi chợ hộ' — 8.400 người mua cùng một món." },
+        { t: "Redis quá tải nên trả nil sai", s: 0, why: "Redis metrics khoẻ, và MONITOR cho thấy nó trả nil ĐÚNG (key thật sự hết hạn), rồi vẫn nhận SETEX bình thường. Đổ cho công cụ đang vận hành đúng spec là hướng điều tra lạc." },
+        { t: "Traffic flash sale quá lớn, DB không gánh nổi là tất yếu", s: 1, why: "Traffic là bối cảnh thật — nhưng 20:00–20:05 hệ gánh ×40 traffic NGON LÀNH nhờ hit 99%. DB chỉ gục khi lớp khiên biến mất 3.8 giây. Kết luận 'tất yếu' bỏ sót chi tiết quan trọng nhất của timeline." },
+        { t: "Ai đó xoá nhầm key trên production lúc 20:05", s: 0, why: "Giả thuyết con người luôn đáng ghi nhận — nhưng 19:05 + 3600s = 20:05:05 khớp tới giây là chữ ký của TTL, không phải của bàn tay. Chọn cách giải thích không cần thêm nhân vật bí ẩn (Occam)." }
+      ] },
+    { q: "Vì sao hệ 'tự hồi phục' lúc 20:09 mà không ai làm gì?",
+      opts: [
+        { t: "Một trong các request miss cuối cùng cũng query xong và SETEX lại key → mọi request sau hit trở lại; hệ tự lành sau khi đã trả giá 4 phút tê liệt", s: 2, why: "Hiểu cơ chế tự lành giúp phân biệt stampede (sập nhọn rồi tự hồi khi key được set lại) với sập do quá tải thuần (không tự hồi khi traffic còn đó). Dạng đường cong sự cố cũng là bằng chứng." },
+        { t: "DB tự tăng tốc sau khi cache warm lại các query plan", s: 0, why: "Plan cache của DB không tạo khác biệt 96% CPU → bình thường trong một phút. Chuỗi nhân quả thật nằm ở tầng cache app: key được set lại → mưa request xuống DB tạnh." },
+        { t: "Kubernetes tự restart các pod bị lỗi", s: 0, why: "Timeline không có restart nào; và restart pod còn làm TỆ hơn (mất connection, cold start). Đừng gán công trạng cho cơ chế không xuất hiện trong bằng chứng." },
+        { t: "Circuit breaker của service đã mở và chặn bớt tải", s: 1, why: "NẾU có breaker thì đúng là nó sẽ can thiệp kiểu này — nhưng code hiện tại không có breaker nào (artifact 3), và hit rate hồi phục ĐỒNG THỜI với SETEX lúc 20:05:09+retry. Giả thuyết hợp lý nhưng không khớp hồ sơ hệ thống này." }
+      ] }
+  ],
+  cause: { q: "Nguyên nhân gốc?",
+    opts: [
+      { t: "Hot key hết hạn giữa cao điểm + cache-aside không có chống dogpile (không single-flight, không jitter, không logical expiry) → nghìn request cùng miss cùng đấm DB một câu", ok: true, why: "Ba lỗ hổng cộng hưởng: TTL cứng đúng 1h kể từ lúc warm (giờ chết đoán được), key nóng nhất hệ thống, và code miss-thì-tự-query không giới hạn số người 'đi chợ'. Thiếu một trong ba đã không thành sự cố." },
+      { t: "TTL 3600s quá ngắn — để 24h là không sao", ok: false, why: "TTL dài chỉ DỜI giờ chết sang lúc khác (và làm dữ liệu ôi lâu hơn nếu giá đổi). Hot key rồi cũng phải hết hạn/bị đổi — vấn đề là CÁCH hệ xử lý khoảnh khắc miss, không phải né khoảnh khắc đó mãi mãi." },
+      { t: "Nên cache ở local memory (Caffeine) thay vì Redis thì đã không sao", ok: false, why: "Local cache mỗi instance vẫn hết hạn và mỗi instance vẫn tự query khi miss — stampede thu nhỏ theo số instance chứ không biến mất; thêm bài toán invalidate N bản sao. Đổi CHỖ đựng không sửa được LOGIC miss." },
+      { t: "DB thiếu index cho câu SELECT sản phẩm", ok: false, why: "Câu SELECT theo primary key chạy 3ms — 8.400 câu/giây × 3ms mới là thứ giết DB. Khi tổng tải là vấn đề, tối ưu từng câu chỉ nâng trần chịu đựng lên chút — kiến trúc chống dồn tải mới là lời giải." }
+    ] },
+  fix: { q: "Bộ sửa đúng cho hot key?",
+    opts: [
+      { t: "Single-flight: chỉ MỘT request được đi nạp (mutex theo key / Caffeine loader), số còn lại chờ hoặc dùng bản cũ; kèm TTL + jitter ngẫu nhiên và logical expiry (refresh nền trước khi chết) cho các key nóng", s: 2, why: "Đánh đúng cả ba lỗ hổng: dogpile bị chặn còn 1 query, giờ chết hết đoán được (jitter), và key nóng lý tưởng là 'không bao giờ chết công khai' (làm mới nền). Đây là bộ chuẩn ngành cho hot key." },
+      { t: "Warm lại cache bằng cron mỗi 30 phút cho mọi sản phẩm flash sale", s: 1, why: "Giảm rủi ro thật (key được làm mới trước khi chết) — chấp nhận được như lớp bổ trợ. Nhưng cron chết/trễ một nhịp là sự cố quay lại, và warm 'mọi sản phẩm' không scale. Thiếu chốt chặn tại điểm miss — vẫn hở sườn." },
+      { t: "Bỏ TTL cho key flash sale (cache vĩnh viễn)", s: 0, why: "Hết stampede... đến khi giá/tồn kho đổi mà cache không chịu chết — sự cố 'bán sai giá' còn đắt hơn sập 4 phút. Không TTL đồng nghĩa đặt cược 100% vào invalidation chủ động chạy hoàn hảo mãi mãi." },
+      { t: "Chặn bớt traffic bằng rate limit 500 QPS cho trang sản phẩm", s: 0, why: "Bạn vừa đề xuất từ chối ~95% khách đúng lúc chiến dịch marketing thành công nhất năm. Rate limit là lưới an toàn TẦNG DƯỚI (bảo vệ DB khỏi chết hẳn), không phải cách xử lý một cache miss." }
+    ] },
+  debrief: "<p><b>Chuỗi nhân quả:</b> warm 19:05 TTL 3600 → key nóng nhất chết đúng 20:05:05 giữa đỉnh sale → 8.400 request/giây cùng miss → cùng query DB một câu → DB bão hoà kéo pool các service cạn theo → một request sống sót SETEX lại → tự hồi phục sau ~4 phút.</p><p><b>Ba bài học mang đi:</b> (1) Cache-aside ngây thơ có lỗ hổng bẩm sinh tại khoảnh khắc miss của hot key — <em>single-flight</em> là miếng vá đúng chỗ. (2) <em>TTL + jitter</em> cho mọi warm hàng loạt — giờ chết đoán được là giờ hẹn của sự cố. (3) Đọc sự cố bằng <em>đối chiếu timeline</em>: giờ warm + TTL = giờ sập, khớp tới giây là án tại hồ sơ.</p>",
+  prove: "<p>Tái hiện thu nhỏ (~15 phút, cần Redis local):</p><pre># 1. Set key TTL ngắn:  redis-cli SETEX product:777 10 '{\"gia\":100}'\n# 2. Viet script ban 200 luot/giay doc key (k6/JMeter/vong lap curl):\n#    - if miss → query gia lap (sleep 300ms) → SETEX lai\n# 3. Quan sat log khi key het han giay thu 10:\n#    → hang chuc dong \"DB QUERY!\" trong cung ~300ms  ← dogpile\n# 4. Sua code: bao doan nap bang khoa (synchronized theo key / Redis SET NX)\n#    → chay lai: dung MOT dong \"DB QUERY!\" moi lan het han</pre><p><b>Cách xác minh:</b> đếm số lần 'query DB' quanh thời điểm hết hạn: trước sửa = số request đồng thời; sau sửa = 1. Chính con số này là khác biệt giữa 20:05 yên bình và 20:05 cháy máy.</p>",
+  refs: [["Cloudflare – cache stampede", "https://en.wikipedia.org/wiki/Cache_stampede"], ["Caffeine – refreshAfterWrite", "https://github.com/ben-manes/caffeine/wiki/Refresh"]]
+});
+
+INCIDENTS.register({
+  id: "inc-retry-storm", sev: "P1", domain: "Resilience", skills: ["resil-patterns", "resil-design"], time: "20 phút",
+  title: "Đối tác nghẹt 30 giây — hệ của bạn tự đấm mình 25 phút",
+  teaser: "Payment provider chỉ chập chờn nửa phút. Nhưng traffic outbound của bạn tăng gấp 5 và mọi thứ sập theo dây chuyền. Thủ phạm ở trong nhà.",
+  alert: "<b>[Statuspage đối tác]</b> 14:00:10–14:00:40 — PayProvider báo 'elevated error rate' (30 giây). <b>[Nội bộ]</b> 14:00–14:25 — <code>payment-service</code> chết ngạt, kéo theo <code>order-service</code> và <code>checkout</code> timeout toàn tuyến, dù đối tác đã khoẻ lại từ 14:01.",
+  artifacts: [
+    { label: "📈 Traffic outbound → PayProvider", body: "<pre>13:59  ▂▂▂  1.2k req/phút   (bình thường)\n14:00  ▄▄▄  đối tác lỗi 30s → app bắt đầu retry\n14:01  ███  <span class='hl'>6.1k req/phút</span>  (đối tác ĐÃ khoẻ — nhưng tải ×5 là do retry dồn)\n14:05  ███  6.4k req/phút  → đối tác rate-limit chúng ta (429)\n14:08  ███  429 cũng bị RETRY tiếp → giữ nguyên bão\n14:25  ▂▂▂  hàng đợi retry cạn dần → tự hồi phục</pre>" },
+    { label: "📜 Log payment-service", body: "<pre>14:00:41 WARN  PayClient - attempt=1 failed (503), retrying <span class='hl'>immediately</span>\n14:00:41 WARN  PayClient - attempt=2 failed (503), retrying immediately\n14:00:41 WARN  PayClient - attempt=3 failed (timeout 10s)... \n14:00:51 WARN  PayClient - attempt=4 failed, retrying\n14:00:51 ERROR PayClient - attempt=5 failed, giving up\n14:05:02 WARN  PayClient - attempt=1 failed (<span class='hl'>429 Too Many Requests</span>), retrying immediately   ← retry cả 429!\n...\nThread pool 'payment-executor': queue=<span class='hl'>4.812</span> (max 5000), active=200/200</pre>" },
+    { label: "📄 Config retry hiện tại", body: "<pre>@Retryable(\n    retryFor = <span class='hl'>Exception.class</span>,        // MỌI lỗi đều retry — kể cả 4xx\n    maxAttempts = <span class='hl'>5</span>,\n    backoff = @Backoff(delay = <span class='hl'>0</span>))       // không chờ giữa các lần\npublic PayResult charge(PayRequest req) { ... }\n// Không có circuit breaker. Timeout đối tác: 10s.</pre>" }
+  ],
+  steps: [
+    { q: "Nghịch lý trung tâm: đối tác chỉ lỗi 30 giây (14:00:10–40) nhưng hệ của bạn sập tới 14:25. Đọc metrics, giải thích đúng nhất?",
+      opts: [
+        { t: "Retry ×5 tức thì nhân tải outbound lên ~5 lần ĐÚNG lúc đối tác yếu; đối tác hồi phục thì gặp bão retry nên rate-limit ta (429); 429 lại bị retry tiếp → hệ tự duy trì cơn bão của chính mình ~25 phút", s: 2, why: "Đây là retry storm/amplification giáo khoa: mỗi request gốc đẻ 5 request, hàng đợi giữ 'nợ retry' xả dần, và retry-cả-429 biến cơ chế tự vệ của đối tác thành vòng lặp. Sự cố 30s của người ta + config của mình = sự cố 25 phút của mình." },
+        { t: "Đối tác báo cáo sai — thực tế họ lỗi 25 phút", s: 0, why: "Metrics CỦA CHÍNH BẠN cho thấy từ 14:01 phần lớn lỗi là 429 (rate limit — nghĩa là họ SỐNG và đang tự vệ), không phải 503. Nghi ngờ statuspage là quyền của bạn, nhưng bằng chứng nội bộ đã đủ kết luận." },
+        { t: "Thread pool 200 của payment quá nhỏ cho giờ cao điểm", s: 0, why: "13:59 hệ chạy êm với đúng pool đó. Queue 4.812 là HẬU QUẢ của việc mỗi request sống lâu gấp nhiều lần (5 attempt × timeout) — sửa kích thước pool là nâng đê trong khi máy bơm lũ của mình đang chạy." },
+        { t: "Kubernetes autoscale không kịp phản ứng", s: 1, why: "Autoscale nhanh hơn cũng chỉ thêm instance CÙNG config retry — tức thêm máy bơm cho cơn bão outbound (đối tác càng 429). Quan sát hạ tầng hợp lệ, nhưng bài này scale không cứu mà còn hại." }
+      ] },
+    { q: "Chi tiết nào trong config là 'tội nặng' nhất về mặt thiết kế?",
+      opts: [
+        { t: "retryFor = Exception.class — retry vô điều kiện MỌI lỗi, kể cả 429/4xx là những lỗi mà retry ngay chắc chắn vô ích hoặc phản tác dụng", s: 2, why: "Phân loại lỗi là linh hồn của retry: 503/timeout = tạm, đáng thử lại (có chờ); 429 = 'lùi lại giùm' — phải tôn trọng Retry-After; 400/401 = sai thì mãi sai. Retry mù mọi Exception biến chính sách kiên trì thành vũ khí tự hại." },
+        { t: "delay = 0 — retry tức thì không backoff", s: 1, why: "Cũng là tội lớn (dồn 5 phát đấm trong &lt;1 giây vào kẻ đang gục), nhưng có backoff mà vẫn retry-mọi-lỗi thì bão chỉ chậm hơn chứ không tắt. Tội gốc là KHÔNG PHÂN LOẠI; backoff là tình tiết tăng nặng." },
+        { t: "maxAttempts = 5 — quá nhiều, 3 là chuẩn", s: 0, why: "5 hay 3 chỉ là hệ số của cùng cơn bão (×5 thành ×3). Không có con số attempts 'chuẩn' tách rời khỏi backoff + phân loại + budget — chấm sửa mỗi con số là hiểu retry theo kiểu học thuộc." },
+        { t: "Timeout 10s quá dài cho một payment call", s: 1, why: "Có lý (10s giam thread lâu, góp phần queue phình) và đáng chỉnh theo p99 của đối tác — nhưng nó không tạo ra vòng lặp tự duy trì. Đây là yếu tố cộng hưởng, không phải ngòi nổ." }
+      ] }
+  ],
+  cause: { q: "Nguyên nhân gốc của 25 phút sập?",
+    opts: [
+      { t: "Chính sách retry không phân loại lỗi + không backoff + không giới hạn tổng (budget/breaker) → khuếch đại sự cố 30s của đối tác thành vòng lặp tự duy trì: bão retry → 429 → retry 429 → bão tiếp", ok: true, why: "Lỗi của đối tác là TRIGGER; kiến trúc phản ứng của mình là NGUYÊN NHÂN kéo dài. Phân biệt hai thứ này là tư duy resilience cốt lõi: bạn không kiểm soát được dependency, bạn kiểm soát được cách mình phản ứng." },
+      { t: "PayProvider vi phạm SLA — làm việc lại hợp đồng với họ", ok: false, why: "30 giây degrade nằm trong đời sống bình thường của MỌI dependency (SLA 99.9% vẫn cho phép ~43 phút lỗi/tháng). Thiết kế phải sống được với điều đó. Đàm phán SLA không vá được config retry tự sát." },
+      { t: "Thiếu cache cho payment call", ok: false, why: "Thanh toán là thao tác GHI có side effect — không cache được theo định nghĩa. Đề xuất này cho thấy nhầm lẫn giữa chiến lược cho đường đọc và đường ghi." },
+      { t: "Message queue giữa order và payment bị thiếu", ok: false, why: "Queue giúp hấp thụ đỉnh tải (và là hướng kiến trúc dài hạn tốt cho payment async) nhưng KHÔNG tự sửa retry storm — consumer đọc queue mà retry kiểu này thì bão chỉ chuyển địa điểm. Đúng thuốc phải trị đúng tầng: chính sách retry." }
+    ] },
+  fix: { q: "Bộ phòng thủ đúng?",
+    opts: [
+      { t: "Retry có kỷ luật: chỉ lỗi tạm (503, timeout, IOException), exponential backoff + jitter, tôn trọng Retry-After của 429, tổng attempts ít; cộng circuit breaker (cắt sớm khi error rate cao, half-open thăm dò) và bulkhead pool riêng cho đối tác", s: 2, why: "Ba tầng khớp nhau: retry-đúng-loại xử lý lỗi lẻ tẻ, breaker chặn khuếch đại khi dependency bệnh thật, bulkhead giữ thiệt hại trong một khoang. Đây là bộ tiêu chuẩn Resilience4j/Envoy mà mọi hệ gọi-ra-ngoài nên có." },
+      { t: "Bỏ hẳn retry — lỗi thì trả luôn cho user", s: 1, why: "Chặn được bão (tốt hơn hiện trạng!) nhưng giờ mỗi cú nháy mạng 200ms thành lỗi user thấy — đổ lỗi vặt lên UX để tránh cấu hình đúng. Retry không có tội, retry VÔ KỶ LUẬT mới có tội." },
+      { t: "Retry giữ nguyên nhưng thêm sleep 1 giây cố định giữa các lần", s: 1, why: "Fixed delay đỡ hơn delay=0, nhưng nghìn client cùng sleep 1s là cùng thức dậy ĐỒNG LOẠT đấm tiếp (thundering herd đồng bộ) — vì thế mới cần JITTER. Và vẫn chưa phân loại lỗi, chưa có breaker: bão nhỏ hơn, vẫn là bão." },
+      { t: "Tăng rate limit phía mình cho phép gọi đối tác nhiều hơn", s: 0, why: "Đọc ngược tình huống: 429 là ĐỐI TÁC chặn mình vì mình gọi quá nhiều — 'tăng rate limit phía mình' vừa vô nghĩa vừa cho thấy chưa xác định được ai đang giới hạn ai. Chi tiết nhỏ, nhưng interviewer chấm rất nặng lỗi đọc sai chiều này." }
+    ] },
+  debrief: "<p><b>Chuỗi nhân quả:</b> đối tác nghẹt 30s → retry ×5 tức thì nhân tải outbound ×5 → đối tác hồi phục nhưng gặp bão nên 429 → 429 bị retry tiếp → hàng đợi nợ retry xả trong 25 phút → thread pool nghẹt lan sang order/checkout (cascading) → tự hết khi nợ cạn.</p><p><b>Ba bài học mang đi:</b> (1) Retry là <em>bộ khuếch đại tải</em> — mặc định của nó phải là kỷ luật: phân loại lỗi + backoff + jitter + budget. (2) <em>Circuit breaker</em> tồn tại để hệ của bạn biết 'ngừng đấm người ốm' — không có nó, mọi client đồng loạt là một đội DDoS tự nguyện. (3) Đọc sự cố dependency luôn hỏi: <em>phần nào do họ, phần nào do cách mình phản ứng?</em> — phần hai mới là thứ bạn sửa được.</p>",
+  prove: "<p>Mô phỏng bằng hai chương trình nhỏ (~20 phút):</p><pre># Server gia lap (wiremock hoac 20 dong Java): binh thuong tra 200 sau 50ms;\n# bam mot phim → tra 503 trong 30 giay; QPS vao > 300 → tra 429.\n\n# Client A (config loi):  retry 5 lan, delay 0, retry moi loi\n# Client B (config dung): retry 3 lan, backoff 200ms×2^n + jitter, chi retry 503/timeout,\n#                          breaker: mo khi 50% loi trong 10s\n\n# Chay 100 luong voi moi client, kich hoat 30s loi, ghi lai:\n#  - tong request toi server theo phut\n#  - thoi diem he thong tro lai binh thuong</pre><p><b>Cách xác minh:</b> Client A cho đồ thị tải ×5 kéo dài nhiều phút sau khi server đã khoẻ + dính 429; Client B: tải chỉ nhích nhẹ, breaker mở ~30s, hồi phục gần như ngay khi server khoẻ. Nhìn hai đường cong cạnh nhau một lần là nhớ cả đời.</p>",
+  refs: [["AWS – timeouts, retries and backoff with jitter", "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"], ["Resilience4j", "https://resilience4j.readme.io/"]]
+});

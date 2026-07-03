@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#63 — Diagnostic: Đo trình độ &amp; tìm lỗ hổng | Backend Engineering Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .dg-wrap { max-width: 860px; margin: 0 auto; padding: 0 4px 80px; }
+  .dg-chip { appearance: none; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: all .12s; }
+  .dg-chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .dg-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .dg-start { border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-weight: 700; font-size: 15px; padding: 12px 26px; border-radius: var(--radius); cursor: pointer; }
+  .dg-start:hover { filter: brightness(1.08); }
+  .dg-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 24px; box-shadow: var(--shadow-md); }
+  .dg-prog { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+  .dg-bar { height: 8px; border-radius: 999px; background: var(--bg-elev); border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+  .dg-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); transition: width .3s; }
+  .dg-head { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .dg-badge { font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; color: #fff; }
+  .dg-q { font-size: 1.1rem; font-weight: 600; line-height: 1.55; }
+  .dg-q pre, .dg-card pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: .85rem; line-height: 1.55; margin: 12px 0; }
+  .dg-opts { display: grid; gap: 10px; margin-top: 16px; }
+  .dg-opt { text-align: left; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .95rem; line-height: 1.5; padding: 12px 14px; border-radius: var(--radius); cursor: pointer; transition: all .12s; }
+  .dg-opt:hover { border-color: var(--accent); }
+  .dg-opt.sel-ok { border-color: var(--success); background: var(--success-soft); }
+  .dg-opt.sel-bad { border-color: var(--danger); background: var(--warning-soft); }
+  .dg-opt.reveal-ok { border-color: var(--success); }
+  .dg-opt:disabled { cursor: default; opacity: .92; }
+  .dg-fb { margin-top: 14px; border-radius: var(--radius); padding: 12px 14px; font-size: .93rem; line-height: 1.6; }
+  .dg-fb.ok { background: var(--success-soft); border-left: 3px solid var(--success); }
+  .dg-fb.bad { background: var(--warning-soft); border-left: 3px solid var(--warning); }
+  .dg-next { margin-top: 14px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 700; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; }
+  .dg-next:hover { background: var(--accent); color: #fff; }
+  .dg-dombar { display: grid; grid-template-columns: 170px 1fr 64px; gap: 10px; align-items: center; margin: 7px 0; font-size: 13.5px; }
+  .dg-dombar .tr { height: 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+  .dg-dombar .tr > span { display: block; height: 100%; }
+  .dg-mis { border: 1px solid var(--border); border-left: 4px solid var(--warning); border-radius: var(--radius); background: var(--bg-elev); padding: 12px 14px; margin: 10px 0; font-size: .92rem; line-height: 1.6; }
+  .dg-mis .links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .dg-mis .links a { font-size: 12.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 12px; text-decoration: none; }
+  .dg-verdict { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; margin: 14px 0; }
+  h2.dg { margin-top: 34px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">#63 Diagnostic</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Điều hướng</div>
+  <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
+    <a href="62-interview-question-bank.html">Question Bank</a>
+    <a href="64-incident-lab.html">Incident Lab</a>
+    <a href="65-design-lab.html">Design Lab</a>
+    <a href="index.html">Danh mục bài học</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content dg-wrap">
+
+<section class="hero">
+  <span class="meta-tag">Diagnostic · Placement &amp; Gap Finder</span>
+  <h1>Đo trình độ &amp; tìm lỗ hổng kiến thức</h1>
+  <p class="lead">Không hỏi định nghĩa. Mỗi câu là một tình huống buộc bạn <strong>dự đoán hành vi</strong>, <strong>phân tích nguyên nhân</strong> hoặc <strong>chọn trade-off</strong> — đúng kiểu tư duy công việc đòi hỏi. Mỗi đáp án sai không chỉ là "sai": nó chỉ ra <strong>bạn đang hiểu nhầm điều gì</strong> và nên học lại chỗ nào.</p>
+</section>
+
+<div id="dgView"></div>
+
+<footer>
+  <span>#63 · dữ liệu: <code>diagnostic/data/*.js</code> · kết quả lưu vào hồ sơ học (localStorage)</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
+<script src="learnmap/skillmap.js"></script>
+<script src="diagnostic/manifest.js"></script>
+<script>
+window.DIAG = { packs: [], register: function (p) { window.DIAG.packs.push(p); } };
+(function load() {
+  var files = window.DIAG_FILES || [], i = 0, errs = [];
+  function next() {
+    if (i >= files.length) { dgBoot(errs); return; }
+    var s = document.createElement("script");
+    s.src = "diagnostic/" + files[i++];
+    s.onload = next; s.onerror = function () { errs.push(s.src); next(); };
+    document.head.appendChild(s);
+  }
+  next();
+})();
+
+function dgBoot(errs) {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var view = $("dgView");
+  var ITEMS = [];
+  DIAG.packs.forEach(function (p) { (p.items || []).forEach(function (it) { ITEMS.push(it); }); });
+  var DOMAINS = {}; SKILLMAP.domains.forEach(function (d) { DOMAINS[d.id] = d; });
+  var DIMS = { predict: "Dự đoán", analyze: "Phân tích", decide: "Trade-off", design: "Thiết kế" };
+  var LVW = { junior: 1, middle: 2, senior: 3 };
+  var LVCOL = { junior: "var(--success)", middle: "var(--warning)", senior: "var(--purple)" };
+
+  if (errs.length) view.insertAdjacentHTML("beforebegin", '<div class="callout warn">Không nạp được: ' + errs.join(", ") + "</div>");
+
+  var run = null; // {queue, idx, answers:{itemId:{pick, ok}}}
+
+  function esc(s) { return (s || "").replace(/"/g, "&quot;"); }
+
+  function intro() {
+    var doms = [];
+    ITEMS.forEach(function (it) { if (doms.indexOf(it.d) === -1) doms.push(it.d); });
+    var prev = BEP.diagGet();
+    view.innerHTML =
+      '<div class="dg-card">'
+      + '<h2 style="margin-top:0">Bắt đầu một lượt đo</h2>'
+      + '<p>Chọn phạm vi (mặc định: tất cả — khoảng ' + ITEMS.length + ' câu, 25–40 phút). Trả lời <em>thật</em>, đừng tra cứu — đo sai thì lộ trình gợi ý cũng sai. Sai ở đây là <strong>thông tin quý</strong>, không phải điểm kém.</p>'
+      + '<div class="dg-chips" id="dgDoms">' + doms.map(function (d) {
+          var n = ITEMS.filter(function (x) { return x.d === d; }).length;
+          return '<button class="dg-chip on" data-d="' + d + '">' + (DOMAINS[d] ? DOMAINS[d].icon + " " + DOMAINS[d].t : d) + " (" + n + ")</button>";
+        }).join("") + "</div>"
+      + '<button class="dg-start" id="dgStart">🚀 Bắt đầu</button>'
+      + (prev ? '<p style="margin-top:14px;font-size:13.5px;color:var(--text-muted)">Lần đo gần nhất: <b>' + prev.ts + "</b> — " + prev.pct + "% (" + prev.total + " câu). Đo lại sẽ cập nhật hồ sơ.</p>" : "")
+      + "</div>";
+    $("dgDoms").addEventListener("click", function (e) {
+      var b = e.target.closest(".dg-chip"); if (b) b.classList.toggle("on");
+    });
+    $("dgStart").onclick = function () {
+      var on = Array.prototype.map.call(document.querySelectorAll("#dgDoms .dg-chip.on"), function (b) { return b.dataset.d; });
+      var queue = ITEMS.filter(function (it) { return on.indexOf(it.d) !== -1; });
+      if (!queue.length) return;
+      // xáo trong từng domain nhưng giữ domain liền khối để đỡ nhảy ngữ cảnh
+      queue.sort(function (a, b) { return a.d === b.d ? (LVW[a.lv] - LVW[b.lv] || Math.random() - .5) : (DOMAINS[a.d].order - DOMAINS[b.d].order); });
+      run = { queue: queue, idx: 0, answers: {} };
+      question();
+    };
+  }
+
+  function question() {
+    var it = run.queue[run.idx];
+    if (!it) { results(); return; }
+    var pct = Math.round(run.idx / run.queue.length * 100);
+    var opts = it.opts.map(function (o, i) { return { o: o, i: i }; });
+    for (var i = opts.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = opts[i]; opts[i] = opts[j]; opts[j] = t; }
+    view.innerHTML =
+      '<div class="dg-prog"><span>Câu ' + (run.idx + 1) + " / " + run.queue.length + "</span><span>" + (DOMAINS[it.d] ? DOMAINS[it.d].t : it.d) + "</span></div>"
+      + '<div class="dg-bar"><span style="width:' + pct + '%"></span></div>'
+      + '<div class="dg-card">'
+      + '<div class="dg-head">'
+      + '<span class="dg-badge" style="background:' + LVCOL[it.lv] + '">' + it.lv + "</span>"
+      + '<span class="dg-badge" style="background:var(--info)">' + (DIMS[it.dim] || it.dim) + "</span>"
+      + "</div>"
+      + '<div class="dg-q">' + it.q + "</div>"
+      + (it.code ? '<pre><code class="language-java">' + it.code + "</code></pre>" : "")
+      + '<div class="dg-opts">' + opts.map(function (w) {
+          return '<button class="dg-opt" data-i="' + w.i + '">' + w.o.t + "</button>";
+        }).join("") + "</div>"
+      + '<div id="dgFb"></div>'
+      + "</div>";
+    view.querySelector(".dg-opts").addEventListener("click", function (e) {
+      var b = e.target.closest(".dg-opt"); if (!b || run.answers[it.id]) return;
+      var pick = +b.dataset.i;
+      var ok = !!it.opts[pick].ok;
+      run.answers[it.id] = { pick: pick, ok: ok };
+      view.querySelectorAll(".dg-opt").forEach(function (x) {
+        x.disabled = true;
+        var oi = +x.dataset.i;
+        if (oi === pick) x.classList.add(ok ? "sel-ok" : "sel-bad");
+        if (it.opts[oi].ok && !ok) x.classList.add("reveal-ok");
+      });
+      var fb = ok
+        ? '<div class="dg-fb ok"><b>✅ Chuẩn.</b> ' + (it.why || "") + "</div>"
+        : '<div class="dg-fb bad"><b>❌ Chưa đúng.</b> ' + (it.opts[pick].why ? "<b>Bạn đang nhầm chỗ này:</b> " + it.opts[pick].why + "<br>" : "") + "<b>Bản chất:</b> " + (it.why || "") + "</div>";
+      $("dgFb").innerHTML = fb + '<button class="dg-next" id="dgNext">Câu tiếp →</button>';
+      $("dgNext").onclick = function () { run.idx++; question(); };
+      $("dgNext").focus();
+    });
+  }
+
+  function results() {
+    var byDomain = {}, byDim = {}, byNode = {}, wrongs = [];
+    var earned = 0, totalW = 0, okCount = 0;
+    run.queue.forEach(function (it) {
+      var a = run.answers[it.id] || { ok: false };
+      var w = LVW[it.lv] || 1;
+      totalW += w; if (a.ok) { earned += w; okCount++; }
+      (byDomain[it.d] = byDomain[it.d] || { ok: 0, total: 0, wOk: 0, wTotal: 0, jrMiss: 0 });
+      byDomain[it.d].total++; byDomain[it.d].wTotal += w;
+      if (a.ok) { byDomain[it.d].ok++; byDomain[it.d].wOk += w; }
+      else if (it.lv === "junior") byDomain[it.d].jrMiss++;
+      (byDim[it.dim] = byDim[it.dim] || { ok: 0, total: 0 }); byDim[it.dim].total++; if (a.ok) byDim[it.dim].ok++;
+      if (it.node) { (byNode[it.node] = byNode[it.node] || { ok: 0, total: 0 }); byNode[it.node].total++; if (a.ok) byNode[it.node].ok++; }
+      if (!a.ok) wrongs.push({ it: it, pick: a.pick });
+    });
+    var pct = totalW ? Math.round(earned / totalW * 100) : 0;
+
+    function verdict(r) {
+      var p = r.wTotal ? r.wOk / r.wTotal : 0;
+      if (r.jrMiss > 0 && p < 0.75) return { t: "Hổng nền tảng — học lại từ node junior", c: "var(--danger)", p: p };
+      if (p < 0.4) return { t: "Yếu — cần học lại có hệ thống", c: "var(--danger)", p: p };
+      if (p < 0.7) return { t: "Nền junior ổn, chưa chắc middle", c: "var(--warning)", p: p };
+      if (p < 0.85) return { t: "Chạm middle — luyện thêm case khó", c: "var(--info)", p: p };
+      return { t: "Vững — sẵn sàng độ sâu senior", c: "var(--success)", p: p };
+    }
+
+    var domRows = Object.keys(byDomain).sort(function (a, b) { return DOMAINS[a].order - DOMAINS[b].order; }).map(function (d) {
+      var v = verdict(byDomain[d]);
+      return '<div class="dg-dombar"><span>' + DOMAINS[d].icon + " " + DOMAINS[d].t + '</span><span class="tr"><span style="width:' + Math.round(v.p * 100) + "%;background:" + v.c + '"></span></span><span style="color:' + v.c + ';font-weight:700">' + Math.round(v.p * 100) + "%</span></div>"
+        + '<div style="font-size:12px;color:var(--text-muted);margin:-3px 0 8px">' + v.t + (byDomain[d].jrMiss ? " · sai " + byDomain[d].jrMiss + " câu mức junior ⚠" : "") + "</div>";
+    }).join("");
+
+    var dimRows = Object.keys(DIMS).filter(function (k) { return byDim[k]; }).map(function (k) {
+      var r = byDim[k], p = Math.round(r.ok / r.total * 100);
+      return '<div class="dg-dombar"><span>' + DIMS[k] + '</span><span class="tr"><span style="width:' + p + '%;background:var(--accent)"></span></span><span style="font-weight:700">' + r.ok + "/" + r.total + "</span></div>";
+    }).join("");
+
+    var misCards = wrongs.map(function (w) {
+      var it = w.it, opt = it.opts[w.pick] || {};
+      var links = [];
+      if (it.fix) {
+        if (it.fix.lesson) links.push('<a href="' + it.fix.lesson + '">📖 Đọc lại bài</a>');
+        if (it.fix.qb) links.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(it.fix.qb) + '">🔁 Ôn qbank: #' + it.fix.qb + "</a>");
+        if (it.fix.inc) links.push('<a href="64-incident-lab.html#' + it.fix.inc + '">🔥 Làm sự cố liên quan</a>');
+      }
+      return '<div class="dg-mis"><b>' + (DOMAINS[it.d] ? DOMAINS[it.d].t : it.d) + " · " + it.lv + ":</b> "
+        + (opt.why ? opt.why : "Chưa nắm: " + it.q.replace(/<[^>]+>/g, "").slice(0, 140) + "…")
+        + '<div class="links">' + links.join("") + "</div></div>";
+    }).join("");
+
+    var result = { pct: pct, total: run.queue.length, ok: okCount, byDomain: byDomain, byDim: byDim, byNode: byNode,
+      wrong: wrongs.map(function (w) { return w.it.id; }) };
+    BEP.diagSave(result);
+
+    view.innerHTML =
+      '<div class="dg-card"><h2 style="margin-top:0">Kết quả: ' + pct + "% (theo trọng số độ khó) — " + okCount + "/" + run.queue.length + ' câu</h2>'
+      + '<p style="font-size:13.5px;color:var(--text-muted)">Đã lưu vào hồ sơ. <a href="learn.html"><b>Mở Learning Hub</b></a> để xem lộ trình được cập nhật theo kết quả này.</p>'
+      + '<h3>Theo mảng kiến thức</h3>' + domRows
+      + '<h3 style="margin-top:22px">Theo chiều năng lực</h3>' + dimRows + "</div>"
+      + (wrongs.length ? '<h2 class="dg">🔎 Chẩn đoán lỗ hổng (' + wrongs.length + ")</h2>" + misCards
+                       : '<div class="dg-verdict">Không sai câu nào trong phạm vi đã chọn — thử lại với phạm vi rộng hơn, hoặc chuyển sang <a href="64-incident-lab.html">Incident Lab</a> để kiểm năng lực debug.</div>')
+      + '<button class="dg-start" style="margin-top:18px" onclick="location.reload()">↺ Đo lượt khác</button>';
+    window.scrollTo(0, 0);
+  }
+
+  intro();
+}
+</script>
+</body>
+</html>

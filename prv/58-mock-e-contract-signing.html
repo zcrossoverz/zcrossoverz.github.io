@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#58 — Mock: E-Contract Signing | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Nhóm P — Mock Interview &amp; Rehearsal
+    <span class="sep">/</span>
+    <strong>#58 Mock: E-Contract Signing</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách dùng mock này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#prompt">1. Đề bài (PROMPT)</a>
+    <a href="#self">2. Tự làm trước</a>
+    <a href="#s1">3. S1 — Clarify</a>
+    <a href="#s2">4. S2 — Capacity</a>
+    <a href="#hld">5. Service — HLD</a>
+    <a href="#storage">6. Storage + State machine</a>
+    <a href="#dd-integrity">7. Deep dive: Integrity (mật mã)</a>
+    <a href="#dd-ltv">8. Deep dive: Long-Term Validity</a>
+    <a href="#dd-audit">9. Deep dive: Audit tamper-evident</a>
+    <a href="#dd-flow">10. Deep dive: Workflow ký tuần tự</a>
+    <a href="#edge">11. Edge Cases</a>
+    <a href="#anti">12. Anti-patterns</a>
+    <a href="#build">13. Build Exercises</a>
+    <a href="#followup">14. Interviewer Follow-ups</a>
+    <a href="#rubric">15. Tự chấm</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">★ CORE mock · System Design · Sát CV của bạn</span>
+  <h1>#58 — Mock Interview: E-Contract Signing Platform</h1>
+  <p class="lead">Mock 45 phút thiết kế nền tảng ký hợp đồng điện tử (DocuSign cho thị trường VN, compliant Nghị định 130/2018). Đây là domain <strong>trùng với CV thật của bạn</strong> (Paperless / Verify Esign / eContract) — nên nó vừa luyện system design vừa tiếp đạn cho story behavioral. Trọng tâm senior: integrity bằng <em>mật mã</em> chứ không phải app, long-term validity, và quản lý khoá.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">P — Mock &amp; Rehearsal</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">45 phút (bấm giờ)</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#32, #31, #30, #34, #13, #15</div></div>
+    <div class="meta-item"><div class="k">Level target</div><div class="v">Senior / L5</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách dùng mock này</div>
+  <div class="sb-rules">
+    <p>Đọc PROMPT → che phần dưới → tự nói theo 4S, bấm giờ → mở model đối chiếu → tự chấm. Đặc biệt: mock này chạm đúng kinh nghiệm thật của bạn, nên với mỗi deep dive hãy tự hỏi "mình từng gặp cái này ở Paperless/eContract chưa?" — đó là cầu nối sang story behavioral.</p>
+    <ol>
+      <li>Bật giờ 45 phút, che model.</li>
+      <li>Mỗi ⏸ Pause &amp; Predict phải dừng, trả lời trước.</li>
+      <li>Mỗi 🔬 Thử Phá Vỡ phải nghĩ trước khi mở details.</li>
+      <li>Chấm rubric cuối, lặp lại sau 3 ngày.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — học theo độ ưu tiên</h2>
+<div class="roadmap">
+  <div class="roadmap-head">1 giờ → 4 mục CORE. Nửa ngày → thêm SUPP. Trước vòng thật → full + follow-ups + nối story CV.</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span> Integrity bằng mật mã (hash + chữ ký) — CORE: linh hồn của bài</div>
+    <div class="roadmap-item core"><span class="step">2</span> Quản lý khoá (key không rời thiết bị/HSM) — CORE: trả lời sai là loại</div>
+    <div class="roadmap-item core"><span class="step">3</span> Multi-sign incremental save — CORE: chính là bug bạn từng fix</div>
+    <div class="roadmap-item core"><span class="step">4</span> Audit log tamper-evident — CORE: bằng chứng trước toà</div>
+    <div class="roadmap-item supp"><span class="step">5</span> Long-Term Validity (LTV) — SUPP: câu khó ăn điểm</div>
+    <div class="roadmap-item supp"><span class="step">6</span> Workflow ký tuần tự (Camunda) — SUPP: orchestration</div>
+    <div class="roadmap-item adv"><span class="step">7</span> Row-level authorization 4 chiều — ADV: nối thẳng story eContract</div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Tổng quan &amp; vì sao bài này khác payment</h2>
+<p>Khác với payment (correctness của <em>tiền</em>), e-contract xoay quanh correctness của <em>bằng chứng pháp lý</em>: một file đã ký phải <strong>không thể sửa</strong>, và mọi hành động phải <strong>chứng minh được trước toà</strong>. Điểm mid hay nhầm là nghĩ "integrity do database/app đảm bảo". Senior hiểu integrity đến từ <strong>mật mã</strong>: bất kỳ thay đổi nào sau khi ký đều làm hash không khớp.</p>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử ra đời của chữ ký số &amp; PAdES</div>
+  <div class="hist-timeline">
+    <strong>1976-1978</strong> — Diffie-Hellman đề xuất public-key crypto; RSA hiện thực hoá chữ ký số: ký bằng private key, verify bằng public key.<br><br>
+    <strong>1999-2008</strong> — EU Directive rồi PDF chuẩn hoá chữ ký nhúng (PKCS#7/CAdES). Vấn đề: chữ ký rời rạc, khó verify lâu dài.<br><br>
+    <strong>2009+</strong> — <em>PAdES</em> (PDF Advanced Electronic Signatures, ETSI) ra đời: nhúng chữ ký + timestamp + bằng chứng thu hồi <em>vào trong</em> PDF, hỗ trợ Long-Term Validity.<br><br>
+    <strong>VN — NĐ 130/2018, TT 16/2019</strong> — khung pháp lý cho chữ ký số &amp; dịch vụ tin cậy; yêu cầu log, retention, kiểm tra CA/OCSP.<br><br>
+    <strong>Insight</strong>: chữ ký số được thiết kế để <strong>người ký không chối được (non-repudiation)</strong> và <strong>chứng minh được sau nhiều năm</strong>. Mọi quyết định kiến trúc phải phục vụ 2 mục tiêu này.
+  </div>
+</div>
+</section>
+
+<section id="prompt">
+<h2>1. Đề bài — PROMPT <span class="k-tag core">CORE</span></h2>
+<div class="callout quote">
+  <div class="ctitle">📖 Interviewer</div>
+  <p>"Thiết kế nền tảng ký hợp đồng điện tử cho doanh nghiệp (kiểu DocuSign cho thị trường VN, compliant Nghị định 130/2018). Người gửi upload PDF hợp đồng, chỉ định nhiều người ký theo thứ tự, mỗi người ký bằng chữ ký số (USB token / HSM / VNeID). Hệ thống phải đảm bảo hợp đồng đã ký không thể bị sửa, và mỗi hành động đều có bằng chứng dùng được trước toà."</p>
+</div>
+</section>
+
+<section id="self">
+<h2>2. ⏸ Tự làm trước (10 phút) <span class="k-tag core">CORE</span></h2>
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+  <div class="pause-q">Trả lời trước khi mở model:</div>
+  <ol style="margin:8px 0 0 22px">
+    <li>5 câu clarify đầu tiên? (gợi ý: ký client-side hay server-side HSM, có cần LTV không, scale)</li>
+    <li>Đây là read-heavy hay write-heavy? Phần nào nặng tài nguyên nhất?</li>
+    <li>Một hợp đồng đi qua state nào khi có nhiều người ký tuần tự?</li>
+    <li>Làm sao chứng minh "PDF này đúng là bản đã ký, chưa bị sửa 1 byte"?</li>
+    <li>Lưu private key của user ở đâu? (bẫy — trả lời sai là loại)</li>
+    <li>5 năm sau cert của người ký đã hết hạn, làm sao vẫn verify được?</li>
+  </ol>
+  <div class="pause-hint">Câu 4 và 5 là 2 câu phân loại senior. Trả lời được cả hai không nhìn = rất tốt.</div>
+</div>
+</section>
+
+<section id="s1">
+<h2>3. S1 — Scenario / Clarify (5 phút) <span class="k-tag core">CORE</span></h2>
+<h3>Functional</h3>
+<ul>
+  <li>Upload PDF, tạo "envelope" (1 hợp đồng + danh sách signer + thứ tự ký).</li>
+  <li>Signing order: tuần tự (A xong mới tới B) hoặc song song.</li>
+  <li>Ký số chuẩn PAdES — nhúng chữ ký vào PDF.</li>
+  <li>Verify bất cứ lúc nào; sinh certificate of completion; thông báo từng bước.</li>
+</ul>
+<h3>Non-functional (phân loại)</h3>
+<ul>
+  <li><strong>Integrity tuyệt đối</strong>: sửa 1 byte → verify fail.</li>
+  <li><strong>Non-repudiation</strong>: người ký không chối được.</li>
+  <li><strong>Compliance 130/2018 + TT16</strong>: long-term validity, timestamp từ TSA.</li>
+  <li><strong>Bảo mật khoá</strong>: private key KHÔNG rời thiết bị người ký / HSM.</li>
+  <li>Lưu trữ 10 năm, tamper-evident.</li>
+</ul>
+<div class="callout tip">
+  <div class="ctitle">💡 Câu clarify đắt giá</div>
+  <p>"Ký phía client (USB token trên máy user) hay server-side HSM?" · "Cần long-term validity — verify được sau 10 năm khi cert đã hết hạn — không?" · "Quy mô: bao nhiêu envelope/ngày, file lớn cỡ nào?"</p>
+</div>
+</section>
+
+<section id="s2">
+<h2>4. S2 — Capacity (3 phút) <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<div class="code-label">Ước lượng</div>
+<pre><code class="language-text">Giả định: 200K envelope/ngày, trung bình 3 signer → 600K lượt ký/ngày.
+Write QPS (ký) = 600,000 / 86,400 ≈ 7/s, peak ~30/s  → QPS rất thấp.
+Read (xem/verify/tải) gấp ~20x → ~600 QPS.  → READ-HEAVY.
+
+File: 200K * 1MB ≈ 200GB/ngày PDF. Giữ 10 năm → cực lớn
+   → object storage (S3/MinIO), KHÔNG để PDF trong DB.</code></pre>
+<div class="callout why">
+  <div class="ctitle">🎯 Kết luận</div>
+  <p>Bottleneck <strong>không phải QPS</strong> mà là: (1) lưu trữ file lớn lâu dài, (2) thao tác crypto/PDF tốn CPU, (3) integrity &amp; compliance. Nhận ra điều này để không phí thời gian bàn sharding vô nghĩa.</p>
+</div>
+</section>
+
+<section id="hld">
+<h2>5. S2 — Service / High-Level Design (10 phút) <span class="k-tag core">CORE</span></h2>
+<div class="code-label">Whiteboard</div>
+<pre><code class="language-text">                 ┌──────────────┐
+  User (web) ───▶│ API Gateway   │ (authN, authZ row-level theo org)
+                 └──────┬────────┘
+        ┌───────────────┼───────────────────────┐
+        ▼               ▼                         ▼
+ ┌─────────────┐ ┌──────────────┐        ┌────────────────┐
+ │ Envelope Svc │ │ Signing Svc   │        │ Verification Svc│
+ │ (workflow)   │ │ (PAdES embed) │        │ (validate chain)│
+ └──────┬───────┘ └──────┬───────┘        └───────┬────────┘
+        │                │                         │
+   ┌────▼─────┐    ┌─────▼──────┐           ┌──────▼──────┐
+   │ Metadata  │    │  HSM / KMS  │           │ Truststore   │
+   │ DB(Postgres)│  │  + TSA       │           │ (CA roots,   │
+   │ envelopes, │    │ (timestamp) │           │  CRL/OCSP)   │
+   │ signers,   │    └────────────┘           └─────────────┘
+   │ audit_log  │
+   └────┬───────┘
+        │ (PDF bytes KHÔNG để trong DB)
+   ┌────▼──────────┐     ┌──────────────────┐
+   │ Object Storage │     │ Workflow Engine   │  (Camunda — thứ tự ký,
+   │ (S3, versioned,│     │ signing order,    │   nhắc hạn, timeout)
+   │  WORM/lock)    │     │ reminder, expiry) │
+   └───────────────┘     └──────────────────┘</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Hai mô hình ký — phải nêu trade-off (đây là chỗ ăn điểm)</div>
+  <p><strong>Client-side (USB token / VNeID):</strong> private key không bao giờ rời thiết bị → an toàn nhất, đúng tinh thần non-repudiation; nhưng phức tạp (cần applet/agent client). <strong>Server-side HSM:</strong> key giữ trong HSM, server ký thay → tiện nhưng phải chứng minh kiểm soát truy cập chặt (chỗ compliance hay vặn).</p>
+  <p><strong>Chọn hash-signing:</strong> server tính hash của PDF, gửi <em>hash</em> cho client/HSM ký, nhận chữ ký về để nhúng. Private key không rời nơi an toàn, file không phải upload đi upload lại.</p>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Lưu private key của user trong DB (mã hoá) cho tiện ký"</div>
+  <div class="mc-wrong">"Mình mã hoá private key rồi lưu DB, khi cần thì giải mã ra ký. Vẫn an toàn mà."</div>
+  <div class="mc-right">Sai về cả bảo mật lẫn pháp lý. Khi private key từng tồn tại ở phía server, bạn <em>không còn chứng minh được</em> chỉ người ký mới ký được → phá vỡ non-repudiation, và là điểm fail compliance. Đúng: key sống trong USB token / smartcard / HSM của người ký; server chỉ gửi hash để ký và nhận chữ ký về. Cơ chế non-repudiation dựa trên việc <strong>chỉ chủ sở hữu kiểm soát private key</strong> — lưu nó ở server là tự phá nền tảng đó.</div>
+</div>
+</section>
+
+<section id="storage">
+<h2>6. S3 — Storage + State Machine (8 phút) <span class="k-tag core">CORE</span></h2>
+<div class="code-label">Data model (metadata trong DB, PDF trong object storage)</div>
+<pre><code class="language-text">envelopes
+  id, owner_org_id, title, status, signing_type(SEQUENTIAL/PARALLEL),
+  current_step, file_key (trỏ S3), file_hash, created_at, expires_at, version
+
+signers
+  id, envelope_id, order_index, email, status(PENDING/SIGNED/DECLINED),
+  signed_at, signature_ref, cert_subject, signing_method
+
+audit_log   (append-only, tamper-evident)
+  id, envelope_id, actor, action, ip, user_agent, timestamp,
+  prev_hash, record_hash    -- record_hash = H(prev_hash || data)
+
+signatures   (metadata PAdES, KHÔNG lưu key)
+  id, signer_id, algorithm, tsa_token, ocsp_response, embedded_at</code></pre>
+
+<div class="code-label">State machine — nhiều người ký tuần tự</div>
+<pre><code class="language-text">DRAFT ─▶ SENT ─▶ IN_PROGRESS ──(signer i ký)──▶ IN_PROGRESS ... ─▶ COMPLETED
+   │        │            │
+   │        └─▶ EXPIRED  └─▶ DECLINED (1 người từ chối → cả envelope dừng)
+   └─▶ VOIDED (owner huỷ)</code></pre>
+<div class="callout tip">
+  <div class="ctitle">💡 Vì sao PDF không để trong DB?</div>
+  <p>File 1MB × hàng trăm triệu bản giữ 10 năm → DB phình, backup/restore khốn khổ, không tận dụng được WORM/lifecycle rẻ của object storage. DB chỉ giữ metadata + hash; PDF ở S3 versioned + object-lock (WORM), truy cập bằng pre-signed URL ngắn hạn.</p>
+</div>
+</section>
+
+<section id="dd-integrity">
+<h2>7. Deep dive — Integrity: chứng minh "chưa sửa 1 byte" <span class="k-tag core">CORE</span></h2>
+<p>Đây là linh hồn của bài. Phải nói rõ integrity đến từ <strong>mật mã</strong>, không phải app.</p>
+<ul>
+  <li>Khi ký, tạo chữ ký số PAdES nhúng vào PDF: chữ ký phủ lên <em>hash của toàn bộ nội dung</em> tại thời điểm ký.</li>
+  <li>Người ký thứ 2 ký đè bằng <strong>incremental save</strong> (chỉ thêm bytes, không sửa bytes cũ) → chữ ký người 1 vẫn valid.</li>
+  <li>Verify: tính lại hash, so với hash trong chữ ký; check cert chain tới CA tin cậy; check revocation (OCSP/CRL) <em>tại thời điểm ký</em>; check timestamp TSA. (6 tiêu chí: #32.)</li>
+</ul>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Câu chốt</div>
+  <p>"Integrity không phải do DB hay app đảm bảo — mà do <strong>mật mã</strong>: bất kỳ thay đổi nào sau khi ký đều làm hash không khớp → verify fail. App chỉ lưu trữ và trình bày bằng chứng."</p>
+</div>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">❌ Full save sau khi ký (làm hỏng chữ ký trước)</div>
+    <pre><code class="language-java">// nhúng chữ ký người 2 / cập nhật metadata
+PDDocument doc = PDDocument.load(file);
+doc.addSignature(sig2);
+// full save: GHI ĐÈ toàn bộ bytes
+doc.save(out);   // → bytes của chữ ký người 1 bị viết lại
+// verify người 1 = INVALID</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">✅ Incremental save (giữ nguyên chữ ký trước)</div>
+    <pre><code class="language-java">PDDocument doc = PDDocument.load(file);
+doc.addSignature(sig2);
+// chỉ APPEND bytes mới vào cuối file
+doc.saveIncremental(out);   // bytes cũ nguyên vẹn
+// chữ ký người 1 vẫn VALID
+// QUY TẮC: KHÔNG bao giờ full-save sau khi đã ký</code></pre>
+  </div>
+</div>
+<div class="callout success">
+  <div class="ctitle">✅ Đây chính là story production bug của bạn</div>
+  <p>Bug "~5% ký xong verify lại invalid" ở Paperless = full-save khi auto-index update metadata sau ký. Mock này và story behavioral #3 (#41) củng cố lẫn nhau — kể được bằng chính kiến thức ở đây sẽ rất thuyết phục.</p>
+</div>
+</section>
+
+<section id="dd-ltv">
+<h2>8. Deep dive — Long-Term Validity (LTV) <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p><strong>Vấn đề:</strong> 5 năm sau, certificate của người ký đã hết hạn / CA đã ngừng hoạt động. Làm sao vẫn verify được?</p>
+<div class="callout why">
+  <div class="ctitle">🎯 Giải pháp: đóng băng bằng chứng tại thời điểm ký</div>
+  <p>Ngay lúc ký, <strong>embed luôn</strong> vào PDF (PAdES-LTV / DSS): (1) <em>timestamp từ TSA</em> chứng minh ký <em>trước khi</em> cert hết hạn; (2) <em>OCSP response</em> + <em>CRL</em> tại thời điểm ký; (3) toàn bộ cert chain. Verify sau này dùng bằng chứng đã đóng băng, <strong>không phụ thuộc CA còn sống</strong>.</p>
+</div>
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Cert hết hạn thì chữ ký cũ cũng vô hiệu"</div>
+  <div class="mc-wrong">"Certificate hết hạn 2024, nên hợp đồng ký 2023 giờ không còn giá trị verify."</div>
+  <div class="mc-right">Sai. Cái cần chứng minh là "ký <em>khi</em> cert còn hạn và chưa bị thu hồi", không phải "cert còn hạn vào lúc verify". Timestamp TSA cố định thời điểm ký; OCSP/CRL đóng băng trạng thái thu hồi lúc đó. Nhờ vậy chữ ký vẫn valid vĩnh viễn dù cert đã hết hạn — đó chính là mục đích của LTV.</div>
+</div>
+</section>
+
+<section id="dd-audit">
+<h2>9. Deep dive — Audit trail tamper-evident <span class="k-tag core">CORE</span></h2>
+<p>Audit log ở đây không phải để debug mà để làm <strong>bằng chứng pháp lý</strong>. 3 nguyên tắc:</p>
+<ul>
+  <li><strong>Append-only</strong>: chỉ INSERT; app user không có quyền UPDATE/DELETE.</li>
+  <li><strong>Tamper-evident</strong>: mỗi record chứa hash của record trước (<code>record_hash = H(prev_hash || data)</code>). Sửa 1 bản giữa chuỗi → hash các bản sau không khớp → lộ.</li>
+  <li><strong>Retention 10 năm</strong>: archive partition cũ sang storage rẻ nhưng vẫn query được.</li>
+</ul>
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — một admin DB muốn xoá dấu vết</div>
+  <p style="font-size:0.93rem;margin:8px 0">Một người có quyền DBA muốn xoá/sửa một bản ghi audit để che giấu hành vi. Hash chain chống được tới đâu, và còn lỗ hổng gì?</p>
+  <details>
+    <summary>Click xem phân tích</summary>
+    <div class="bi-answer">
+      <ol>
+        <li><strong>Sửa 1 bản ghi giữa chuỗi</strong>: <code>record_hash</code> của nó đổi → tất cả bản sau không khớp prev_hash → phát hiện ngay khi verify chuỗi.</li>
+        <li><strong>Lỗ hổng: tính lại toàn bộ chuỗi sau điểm sửa</strong>: nếu attacker có thể recompute mọi hash về sau, chuỗi vẫn "liền". → Chống bằng <em>neo ngoài</em>: định kỳ ký <code>record_hash</code> mới nhất bằng khoá TSA/HSM, hoặc gửi sang WORM/dịch vụ bên ngoài (notarization). Attacker không recompute được phần đã neo.</li>
+        <li><strong>Xoá nguyên đuôi chuỗi</strong>: phát hiện bằng sequence number liên tục + đối chiếu với neo ngoài gần nhất.</li>
+      </ol>
+      <p><strong>Insight</strong>: hash chain chống <em>sửa lén</em>, nhưng để chống cả người có toàn quyền cần <strong>neo ra ngoài tầm kiểm soát của họ</strong> (external timestamp/WORM). Đây là tư duy "ai là kẻ tấn công" rất senior.</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="dd-flow">
+<h2>10. Deep dive — Workflow ký tuần tự + reminder/expiry <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p>Dùng workflow engine (Camunda BPMN, #31) orchestrate: gửi cho signer i → chờ → timer nhắc sau 24h → timeout 7 ngày → expire. Tách workflow ra engine giúp đổi quy trình (thêm bước duyệt, ký song song) mà không sửa core code.</p>
+<div class="callout tip">
+  <div class="ctitle">💡 Vì sao không tự code state bằng cron + if/else?</div>
+  <p>Quy trình ký thực tế hay đổi (thêm người duyệt, rẽ nhánh theo loại hợp đồng, SLA nhắc khác nhau). Nhúng vào if/else sẽ phình và khó test. BPMN engine cho phép biểu diễn bằng sơ đồ, có timer/boundary event sẵn, và lưu trạng thái bền vững để khôi phục sau crash.</p>
+</div>
+</section>
+
+<section id="edge">
+<h2>11. 🎯 Edge Cases — Production Reality <span class="k-tag advanced">ADVANCED</span></h2>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases</div>
+  <p class="ec-intro">Chuẩn bị sẵn cho follow-up:</p>
+  <ul class="ec-list">
+    <li><strong>Race: 2 người ký song song cùng lúc</strong> — nếu cho song song, mỗi chữ ký là incremental layer độc lập; nếu tuần tự, khoá envelope (optimistic version) để chặn ký sai thứ tự.</li>
+    <li><strong>OCSP responder của CA down lúc ký</strong> — fallback CRL đã cache; nếu cả hai không có → chặn ký (không ký mù), hoặc dùng "soft-fail" theo policy compliance đã thống nhất.</li>
+    <li><strong>File PDF rất lớn (50MB) / nhiều chữ ký</strong> — thao tác crypto là CPU-bound → đẩy ra worker async, trả "đang xử lý" + webhook; cache OCSP để khỏi gọi lại.</li>
+    <li><strong>Clock skew khi đóng timestamp</strong> — dùng timestamp của TSA (nguồn tin cậy bên ngoài), không tin clock server.</li>
+    <li><strong>Người ký từ chối ở bước 2/3</strong> — envelope chuyển DECLINED, chữ ký bước 1 vẫn giữ nguyên giá trị lịch sử (audit), không bị xoá.</li>
+    <li><strong>Re-upload / sửa file sau khi đã có người ký</strong> — cấm tuyệt đối; muốn đổi phải void envelope cũ, tạo envelope mới.</li>
+    <li><strong>Row-level access</strong> — manager chi nhánh chỉ thấy hợp đồng chi nhánh mình (4 chiều: role, org, function, process-state).</li>
+    <li><strong>Khôi phục sau crash giữa lúc nhúng chữ ký</strong> — thao tác ký phải idempotent theo signer_id + version; chưa commit metadata thì coi như chưa ký, cho ký lại an toàn.</li>
+    <li><strong>Bảo mật pre-signed URL</strong> — URL tải file phải ngắn hạn + gắn quyền; rò rỉ URL không được lộ vĩnh viễn cả kho.</li>
+  </ul>
+</div>
+</section>
+
+<section id="anti">
+<h2>12. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+<div class="callout danger">
+  <div class="ctitle">🔥 Anti-pattern 1 — Full-save sau khi ký (severity: high, hỏng bằng chứng)</div>
+  <p><strong>Symptom:</strong> một tỉ lệ document verify ra invalid dù không ai cố ý sửa; reproduce được bằng "ký → cập nhật metadata → verify fail". <strong>Fix:</strong> luôn incremental save, không bao giờ chạm bytes cũ sau ký.</p>
+</div>
+<div class="callout danger">
+  <div class="ctitle">🔥 Anti-pattern 2 — Lưu private key của user ở server (severity: critical, phá non-repudiation)</div>
+  <p><strong>Symptom:</strong> fail audit compliance; về lý không chứng minh được chỉ user ký. <strong>Fix:</strong> hash-signing, key ở token/HSM.</p>
+</div>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Anti-pattern 3 — Không embed LTV lúc ký</div>
+  <p><strong>Symptom:</strong> vài năm sau verify fail vì CA/OCSP không còn; tranh chấp pháp lý không chứng minh được. <strong>Fix:</strong> embed timestamp TSA + OCSP/CRL + chain ngay khi ký.</p>
+</div>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Anti-pattern 4 — Audit log cho phép UPDATE/DELETE</div>
+  <p><strong>Symptom:</strong> audit mất giá trị pháp lý; không phát hiện được sửa lén. <strong>Fix:</strong> append-only + hash chain + neo ngoài.</p>
+</div>
+</section>
+
+<section id="build">
+<h2>13. 🔨 Build Exercises <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Sign &amp; verify một PDF (Intermediate)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: service dùng PDFBox + BouncyCastle: ký 1 PDF bằng cert tự tạo, verify lại; chứng minh sửa 1 byte làm verify fail. Push GitHub.</div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Ký bằng <code>saveIncremental</code>; thêm endpoint verify trả pass/fail + lý do.</li>
+    <li>Test: ký → flip 1 byte trong file → verify phải FAIL.</li>
+    <li>Test: ký người 1 → ký người 2 (incremental) → verify cả 2 vẫn PASS.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: 3 test trên xanh; demo được full-save làm hỏng chữ ký trước (để hiểu vì sao cấm).</div>
+</div>
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Tamper-evident audit log (Advanced)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: module audit append-only với hash chain; tool verify phát hiện bản ghi bị sửa.</div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li><code>record_hash = SHA256(prev_hash || canonical(data))</code>, sequence number liên tục.</li>
+    <li>Verifier quét toàn chuỗi, chỉ ra index đầu tiên bị gãy.</li>
+    <li>Bonus: định kỳ "neo" hash mới nhất (ký bằng khoá riêng) để chống recompute.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: sửa 1 record giữa chuỗi → verifier báo đúng vị trí; thêm record mới hợp lệ → verifier vẫn pass.</div>
+</div>
+</section>
+
+<section id="followup">
+<h2>14. Interviewer Follow-ups <span class="k-tag core">CORE</span></h2>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+  <div class="q">Q: "Người ký thứ 2 ký xong, chữ ký người 1 bị invalid. Vì sao?"</div>
+  <div class="a">"Gần như chắc do full-save thay vì incremental save khi nhúng chữ ký 2 → bytes cũ bị viết lại → hash của chữ ký 1 không còn khớp. Fix: luôn incremental save, không chỉnh metadata sau ký."</div>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Tầng 2 — Deep dive</span><span class="tier-title">Senior gate</span></div>
+  <div class="q">Q: "Lưu private key của user ở DB được không?"</div>
+  <div class="a">"Tuyệt đối không. Key không rời USB token/HSM/thiết bị. Server chỉ gửi hash để ký và nhận chữ ký về. Lưu key = phá non-repudiation và vi phạm compliance."</div>
+  <div class="q">Q: "Cert của người ký hết hạn 3 năm sau khi ký. Hợp đồng còn valid không?"</div>
+  <div class="a">"Có, nếu đã embed LTV: timestamp TSA chứng minh ký khi cert còn hạn + OCSP/CRL đóng băng tại thời điểm ký. Verify dựa trên bằng chứng đã lưu, không cần CA còn sống."</div>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Staff signal</span></div>
+  <div class="q">Q: "Làm sao chống một admin sửa audit log để che giấu?"</div>
+  <div class="a">"Append-only + hash chain (tamper-evident) + tách quyền (app không có DELETE) + WORM storage. Để chống cả người có toàn quyền, neo định kỳ hash mới nhất ra ngoài (external timestamp/notarization) — họ không recompute được phần đã neo."</div>
+  <div class="q">Q: "Row-level authorization: manager chi nhánh chỉ thấy hợp đồng chi nhánh mình."</div>
+  <div class="a">"Filter theo 4 chiều (role, org-structure, function, process-state), inject WHERE clause query-time + double-check sau load + audit mỗi access-denial. Tôi từng làm đúng pattern này ở eContract."</div>
+</div>
+</section>
+
+<section id="rubric">
+<h2>15. Tự chấm (rubric) <span class="k-tag core">CORE</span></h2>
+<div class="callout success">
+  <div class="ctitle">✅ Checklist</div>
+  <ul style="margin:6px 0 0 18px">
+    <li>Clarify: hỏi client vs server key, LTV, scale (≥3 câu).</li>
+    <li>Nhận ra read-heavy + lưu trữ-nặng; bottleneck là storage/crypto/compliance.</li>
+    <li>PDF để object storage, không để DB.</li>
+    <li>Integrity = mật mã, giải thích được hash/chữ ký.</li>
+    <li>Incremental save cho multi-sign (và vì sao full-save hỏng).</li>
+    <li>LTV (timestamp TSA + OCSP/CRL embed) cho verify lâu dài.</li>
+    <li>Private key không rời thiết bị/HSM (hash-signing).</li>
+    <li>Audit log tamper-evident (append-only + hash chain + neo ngoài).</li>
+    <li>Mỗi quyết định kèm trade-off.</li>
+  </ul>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Level</th><th>Biểu hiện</th></tr></thead>
+  <tbody>
+    <tr><td><strong>L4 / Mid</strong></td><td>Vẽ box + happy path 1 người ký + nhúng chữ ký cơ bản.</td></tr>
+    <tr><td><strong>L5 / Senior</strong></td><td>Chủ động nói integrity bằng mật mã, LTV, key custody, multi-sign incremental save, audit tamper-evident, compliance 130/2018 — trước khi bị hỏi; liên hệ kinh nghiệm thật.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>Closing — Feynman Check</h2>
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior trong 5 phút: vì sao 'sửa 1 byte là verify fail', và vì sao private key không bao giờ được rời thiết bị người ký?"</div>
+  <div class="fy-rule">Không xem file, nói ra to. Bí ở "hash phủ lên nội dung" → quay lại mục 7.</div>
+</div>
+<div class="feynman">
+  <div class="fy-head">🎓 Calibration Check — 5 câu</div>
+  <div class="fy-prompt">1) Integrity đến từ đâu? · 2) Incremental vs full save khác gì với multi-sign? · 3) LTV giải quyết vấn đề gì và bằng cách nào? · 4) Hash chain chống được gì, còn lỗ hổng gì? · 5) Hash-signing hoạt động ra sao?</div>
+  <div class="fy-rule">Bí 1 câu = chưa sẵn sàng.</div>
+</div>
+<div class="verify-source">
+  <div class="vs-head">📚 Verify Against Source</div>
+  <p>Cross-check:</p>
+  <ul>
+    <li><a href="https://www.etsi.org/deliver/etsi_en/319100_319199/31914201/">ETSI — PAdES (EN 319 142)</a></li>
+    <li><a href="https://datatracker.ietf.org/doc/html/rfc5280">RFC 5280 — X.509 certificate &amp; CRL</a> · <a href="https://datatracker.ietf.org/doc/html/rfc6960">RFC 6960 — OCSP</a></li>
+    <li><a href="https://pdfbox.apache.org/">Apache PDFBox</a> · <a href="https://www.bouncycastle.org/documentation.html">BouncyCastle docs</a></li>
+    <li>File nội bộ: <strong>#32</strong> (digital signature e-contract), <strong>#30</strong> (cryptography), <strong>#34</strong> (audit logging), <strong>#31</strong> (Camunda).</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #58 Mock: E-Contract Signing · Nhóm P — Mock &amp; Rehearsal</div>
+<div>Tiếp theo: <a href="59-behavioral-rehearsal-drill.html">#59 — Behavioral Rehearsal Drill</a></div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#61 — Cheat Sheets CORE | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .cs-wrap{max-width:1180px;margin:0 auto;padding:20px 16px 70px}
+  .cs-head h1{font-size:1.5rem;margin:0 0 4px}
+  .cs-head p{color:var(--muted,#777);font-size:.92rem;margin:0 0 14px;max-width:760px}
+  .cs-nav{position:sticky;top:0;z-index:5;background:var(--bg,#faf9f7);padding:10px 0;border-bottom:1px solid var(--border,#e6e3dd);display:flex;flex-wrap:wrap;gap:6px}
+  .cs-nav a{font-size:.78rem;padding:4px 9px;border-radius:8px;border:1px solid var(--border,#ddd);text-decoration:none;color:inherit;white-space:nowrap}
+  .cs-nav a:hover{border-color:var(--accent,#6b5bd2);color:var(--accent,#6b5bd2)}
+  .cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:18px}
+  .cs{border:1px solid var(--border,#e0ded8);border-radius:14px;background:var(--surface,#fff);padding:16px 18px;box-shadow:0 3px 14px rgba(0,0,0,.04);scroll-margin-top:64px}
+  .cs h3{margin:0 0 2px;font-size:1.04rem}
+  .cs .essence{font-size:.82rem;color:var(--accent,#6b5bd2);font-weight:600;margin:0 0 10px}
+  .cs ul{margin:0 0 10px;padding-left:18px}
+  .cs li{font-size:.9rem;line-height:1.5;margin-bottom:4px}
+  .cs .recall{border-top:1px dashed var(--border,#e0ded8);padding-top:9px;margin-top:6px}
+  .cs .recall .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted,#999);font-weight:600}
+  .cs .recall ol{margin:5px 0 0;padding-left:18px}
+  .cs .recall li{font-size:.84rem;color:var(--text,#333)}
+  .theme-toggle{margin-left:auto}
+  a.back{font-size:.85rem;color:var(--accent,#6b5bd2);text-decoration:none}
+  .legend{font-size:.82rem;color:var(--muted,#777);margin:10px 0 0}
+  @media print{.cs-nav,.theme-toggle,a.back{display:none}.cs{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="cs-wrap">
+  <a class="back" href="index.html">&larr; Trang chủ</a>
+  <div class="cs-head" style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+    <div>
+      <h1>📋 Cheat Sheets — CORE (1 màn hình / topic)</h1>
+      <p>Bản nén để "vào nhanh" và ôn cấp tốc trước phỏng vấn. Mỗi thẻ: <b>essence</b> (1 câu cốt lõi) + must-know + <b>Recall 5</b> (tự kiểm tra: trả lời được hết không nhìn = đạt). Drill sâu hơn ở <a href="60-flashcards-quiz.html">#60 Flashcards</a>; lý thuyết đầy đủ ở từng file topic.</p>
+    </div>
+    <button class="theme-toggle" id="themeBtn" style="font:inherit;padding:8px 12px;border-radius:10px;border:1px solid var(--border,#ddd);background:var(--surface,#fff);cursor:pointer">🌙</button>
+  </div>
+
+  <nav class="cs-nav" id="csnav"></nav>
+  <p class="legend">💡 Mẹo: Ctrl/Cmd+P để in ra PDF bỏ túi. Click chip để nhảy tới topic.</p>
+
+  <div class="cs-grid">
+
+    <div class="cs" id="t01">
+      <h3>#01 Java Concurrency</h3>
+      <p class="essence">Visibility + atomicity + đừng tin synchronized trên multi-instance.</p>
+      <ul>
+        <li><b>Thread pool:</b> core đầy → queue → queue đầy → tới max → reject. <code>newFixedThreadPool</code> = queue unbounded → OOM.</li>
+        <li><b>volatile</b> = visibility; <b>synchronized</b> = visibility + mutual exclusion; <b>Atomic</b> = CAS, nhanh khi ít tranh chấp.</li>
+        <li>Chống double-pay: idempotency key + DB lock → distributed lock → Saga.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Race vs deadlock + cách phát hiện?</li>
+        <li>Khi nào pool tạo thread mới?</li>
+        <li>volatile/synchronized/Atomic chọn khi nào?</li>
+        <li>thenApply vs thenApplyAsync?</li>
+        <li>Vì sao synchronized không đủ multi-instance?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t03">
+      <h3>#03 Java 8–17</h3>
+      <p class="essence">Stream lazy; Optional đúng chỗ; Record/Sealed cho model.</p>
+      <ul>
+        <li>Stream chỉ chạy ở terminal op → <code>limit</code> sau <code>filter</code> tiết kiệm.</li>
+        <li><code>orElse</code> luôn tính; <code>orElseGet</code> chỉ khi rỗng. Không Optional cho param/field/collection.</li>
+        <li>Record cho DTO/VO (không cho JPA entity). Sealed + switch = exhaustive.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Lazy evaluation nghĩa là gì?</li>
+        <li>orElse vs orElseGet sai khi nào?</li>
+        <li>3 nơi không dùng Optional?</li>
+        <li>Vì sao Record không hợp JPA?</li>
+        <li>parallelStream rủi ro gì?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t04">
+      <h3>#04 Java Memory Model</h3>
+      <p class="essence">happens-before quyết định cái gì visible; volatile chặn reorder.</p>
+      <ul>
+        <li>Không hb → reorder + cache → thấy cờ true nhưng data null.</li>
+        <li>Rules: program order, monitor, volatile, thread start/join + bắc cầu.</li>
+        <li>DCL phải volatile (reorder khởi tạo). volatile KHÔNG làm count++ atomic.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Vì sao đọc được flag=true mà data=null?</li>
+        <li>4 happens-before rules?</li>
+        <li>DCL vì sao cần volatile?</li>
+        <li>volatile có làm count++ an toàn?</li>
+        <li>4 cách safe publication?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t05">
+      <h3>#05 Spring Core</h3>
+      <p class="essence">AOP proxy = nguồn gốc mọi "vì sao không chạy".</p>
+      <ul>
+        <li>Singleton + mutable field = race + rò dữ liệu → stateless.</li>
+        <li>@Transactional/@Cacheable chết với: private, final, self-invocation.</li>
+        <li>Proxy tạo SAU init → self-call bỏ qua advice. Fix: tách bean / self-inject.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Vì sao mutable field singleton là bug?</li>
+        <li>@Transactional private vì sao không chạy?</li>
+        <li>Self-invocation phá proxy — fix?</li>
+        <li>Proxy tạo ở bước nào lifecycle?</li>
+        <li>Prototype trong singleton — fix?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t07">
+      <h3>#07 Spring Transaction</h3>
+      <p class="essence">Isolation + propagation + rollback rule; event AFTER_COMMIT.</p>
+      <ul>
+        <li>Chuyển tiền: REPEATABLE_READ + <code>SELECT FOR UPDATE</code> (chống lost update).</li>
+        <li>Audit = REQUIRES_NEW (commit độc lập). Checked exception KHÔNG rollback mặc định → <code>rollbackFor</code>.</li>
+        <li>Publish Kafka trong TX = data ma → <code>@TransactionalEventListener(AFTER_COMMIT)</code>/Outbox.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Vì sao cần FOR UPDATE, không chỉ RR?</li>
+        <li>REQUIRED vs REQUIRES_NEW (audit)?</li>
+        <li>Vì sao checked exception không rollback?</li>
+        <li>Publish event trong TX nguy hiểm gì?</li>
+        <li>Vì sao @Transactional không xuyên service?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t08">
+      <h3>#08 Spring Security</h3>
+      <p class="essence">JWT chỉ encode + signature; CORS là cơ chế browser.</p>
+      <ul>
+        <li>JWT payload đọc được → không để secret/PII. Logout: TTL ngắn / blacklist Redis / đổi key.</li>
+        <li><code>'*'</code> + credentials = CORS cấm. RSA &gt; HMAC cho microservices (chỉ auth giữ private key).</li>
+        <li>@PreAuthorize (trước) vs @PostAuthorize (theo returnObject).</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>3 phần JWT, vì sao không để secret?</li>
+        <li>3 cách logout + trade-off?</li>
+        <li>Vì sao '*' + credentials fail?</li>
+        <li>RSA vs HMAC cho JWT?</li>
+        <li>@Pre vs @PostAuthorize?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t09">
+      <h3>#09 Spring Data JPA</h3>
+      <p class="essence">N+1, cache 2 lớp, dirty checking, lock.</p>
+      <ul>
+        <li>N+1 fix: JOIN FETCH / @EntityGraph / @BatchSize / DTO projection.</li>
+        <li>L1 luôn bật (session); L2 tùy chọn, dễ stale → chỉ reference data.</li>
+        <li>Dirty checking → không cần save(). JOIN FETCH + paging = in-memory OOM → 2 query.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>N+1 là gì, 4 cách fix?</li>
+        <li>L1 vs L2 cache?</li>
+        <li>Vì sao không cần save()?</li>
+        <li>Optimistic vs pessimistic chọn khi nào?</li>
+        <li>JOIN FETCH + pagination cảnh báo gì?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t11">
+      <h3>#11 SQL Advanced</h3>
+      <p class="essence">B-Tree O(log n); leftmost prefix; covering index; đọc EXPLAIN.</p>
+      <ul>
+        <li>Index (a,b,c) phục vụ a / a,b / a,b,c — phải có tiền tố trái.</li>
+        <li>Covering index → Index Only Scan (đổi storage + chậm write).</li>
+        <li>Red flag EXPLAIN: Seq Scan bảng lớn, rows lệch (stale stats), nested loop triệu row.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>B-Tree vì sao O(log n) thực tế?</li>
+        <li>Leftmost prefix phục vụ WHERE nào?</li>
+        <li>Covering index lợi/hại?</li>
+        <li>3 red flag EXPLAIN?</li>
+        <li>Sắp cột composite index theo gì?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t13">
+      <h3>#13 Distributed Transaction</h3>
+      <p class="essence">2PC blocking; Saga + Outbox + idempotency + compensation.</p>
+      <ul>
+        <li>2PC: SPOF + blocking + partition → ít dùng. Saga: local TX + compensation.</li>
+        <li>Outbox: ghi data + event cùng TX → poller publish (chống dual-write).</li>
+        <li>Exactly-once = at-least-once + idempotent consumer (lưu eventId).</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>2PC 2 phase + 3 điểm yếu?</li>
+        <li>Choreography vs orchestration?</li>
+        <li>Outbox giải dual-write thế nào?</li>
+        <li>Compensation có luôn undo được?</li>
+        <li>Exactly-once consumer làm sao?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t14">
+      <h3>#14 Redis</h3>
+      <p class="essence">Data structure đúng việc; cache patterns; lock đúng (Lua).</p>
+      <ul>
+        <li>String/Hash/List/Set/SortedSet. Cache-aside / write-through / write-behind.</li>
+        <li>Penetration (null+bloom) / breakdown (mutex) / avalanche (TTL ngẫu nhiên).</li>
+        <li>Lock: SET NX EX + UUID owner; release bằng Lua (GET==mine then DEL). Redlock = majority + fencing.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>5 data structure + use case?</li>
+        <li>Cache-aside/through/behind?</li>
+        <li>Penetration/breakdown/avalanche fix?</li>
+        <li>Lock đúng cần gì, vì sao Lua?</li>
+        <li>Redlock vì sao majority + fencing token?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t39">
+      <h3>#39 Database Consistency</h3>
+      <p class="essence">CAP→PACELC; MVCC; anomalies; write skew.</p>
+      <ul>
+        <li>P bắt buộc → chọn C/A khi partition; banking = PC/EC.</li>
+        <li>PG MVCC cần VACUUM; Oracle UNDO → ORA-01555.</li>
+        <li>Write skew: SI không chặn → SERIALIZABLE/SSI hoặc FOR UPDATE.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Vì sao "2 trong 3" sai?</li>
+        <li>Vì sao banking PC/EC?</li>
+        <li>Write skew + vì sao SI không chặn?</li>
+        <li>MVCC PG vs Oracle, vì sao VACUUM?</li>
+        <li>Vì sao FOR UPDATE + lock ordering?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t40">
+      <h3>#40 Oracle</h3>
+      <p class="essence">Bind variable; UNDO/SCN; SKIP LOCKED; keyset paging.</p>
+      <ul>
+        <li>Bind variable → soft parse, tái dùng plan (tránh nhồi Shared Pool).</li>
+        <li><code>FOR UPDATE SKIP LOCKED</code> = hàng đợi nhiều worker.</li>
+        <li>Tune: plan → wait events → AWR → root cause → fix → verify. Keyset thay OFFSET.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Hard vs soft parse, vì sao bind?</li>
+        <li>SKIP LOCKED dùng cho gì?</li>
+        <li>Quy trình tune query chậm?</li>
+        <li>Vì sao keyset thay OFFSET?</li>
+        <li>UNDO/SCN reconstruct read consistency?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t15">
+      <h3>#15 Clean Arch / DDD</h3>
+      <p class="essence">Dependency hướng vào trong; aggregate giữ invariant.</p>
+      <ul>
+        <li>Domain không import framework/JPA → test được, đổi infra không đụng logic.</li>
+        <li>Aggregate root lưu atomically; VO immutable + validate (Money không âm).</li>
+        <li>Repository interface ở domain; không trả Page/entity JPA ra domain.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Dependency rule + vì sao domain sạch?</li>
+        <li>Aggregate vì sao lưu atomically?</li>
+        <li>Value object vs entity?</li>
+        <li>Bounded context để làm gì?</li>
+        <li>Vì sao repo interface ở domain?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t17">
+      <h3>#17 Microservices</h3>
+      <p class="essence">Discovery, gateway, sidecar, CQRS.</p>
+      <ul>
+        <li>Registry + heartbeat; restart đổi IP → đăng ký lại.</li>
+        <li>Gateway: authN sớm + LB nhiều instance; authZ nghiệp vụ ở service.</li>
+        <li>Sidecar: cross-cutting (mTLS/retry/telemetry), đổi latency + vận hành.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Service discovery khi đổi IP?</li>
+        <li>Gateway SPOF? auth ở đâu?</li>
+        <li>Sidecar lợi/hại?</li>
+        <li>CQRS khi nào, rủi ro?</li>
+        <li>Saga orchestration vs choreography?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t19">
+      <h3>#19 API Design</h3>
+      <p class="essence">Idempotency-key; versioning; cursor paging; rate limit.</p>
+      <ul>
+        <li>POST cần Idempotency-Key (client sinh) chống tạo trùng khi retry.</li>
+        <li>Backward compatible: thêm field optional; cursor paging cho data lớn.</li>
+        <li>Rate limit: token bucket / sliding window, state ở Redis, trả 429.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Idempotency-key cho method nào?</li>
+        <li>Cách versioning + đánh đổi?</li>
+        <li>Cursor vs offset paging?</li>
+        <li>Thuật toán rate limit?</li>
+        <li>Nguyên tắc tránh breaking change?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t20">
+      <h3>#20 Kafka</h3>
+      <p class="essence">Partition key = ordering; consumer group = scale; idempotent.</p>
+      <ul>
+        <li>Cùng key → cùng partition → giữ thứ tự. Key null → mất thứ tự.</li>
+        <li>1 partition ↔ 1 consumer/group; thêm consumer = scale, rebalance tạm dừng.</li>
+        <li>At-least-once → consumer idempotent; việc nặng → enqueue + ack nhanh.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Partition key quyết định gì?</li>
+        <li>Consumer group + rebalancing?</li>
+        <li>Chống xử lý trùng khi crash?</li>
+        <li>Tránh block consumer việc nặng?</li>
+        <li>Thứ tự đảm bảo ở phạm vi nào?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t22">
+      <h3>#22 Resilience</h3>
+      <p class="essence">Circuit breaker, retry+jitter, bulkhead, timeout.</p>
+      <ul>
+        <li>CB: CLOSED→OPEN (fail nhanh)→HALF_OPEN→... bảo vệ downstream chết.</li>
+        <li>Retry: chỉ transient + exponential backoff + jitter (chống thundering herd).</li>
+        <li>Bulkhead cô lập pool; thiếu timeout → cạn thread → cascade.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>3 trạng thái circuit breaker?</li>
+        <li>Retry đúng cần gì, vì sao jitter?</li>
+        <li>Bulkhead là gì?</li>
+        <li>Vì sao timeout quan trọng?</li>
+        <li>Lỗi nào KHÔNG nên retry?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t33">
+      <h3>#33 Idempotency</h3>
+      <p class="essence">INSERT-trước + unique constraint = cổng atomic.</p>
+      <ul>
+        <li>Bắt buộc cho payment (mạng retry, message trùng).</li>
+        <li>INSERT key PROCESSING trước → winner xử lý, loser đọc kết quả (COMPLETED cache / PROCESSING 409).</li>
+        <li>Phân biệt FAILED transient (retry) vs business (non-retry). Key do client sinh.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>Idempotency là gì, vì sao bắt buộc?</li>
+        <li>Chống race 2 request cùng key?</li>
+        <li>Retryable vs non-retryable?</li>
+        <li>Key do ai sinh, gắn với gì?</li>
+        <li>3 lớp idempotency trong payment?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t36">
+      <h3>#36 SOLID</h3>
+      <p class="essence">SRP = 1 lý do đổi; OCP qua polymorphism; LSP; DIP.</p>
+      <ul>
+        <li>SRP: 1 actor/nguồn thay đổi (không phải "1 việc").</li>
+        <li>OCP: thêm class thay vì sửa if/else. LSP: subtype thay thế được.</li>
+        <li>DIP: phụ thuộc interface → Spring DI inject interface, mock test được.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>SRP thực chất nói gì?</li>
+        <li>OCP đạt bằng cơ chế nào?</li>
+        <li>LSP vi phạm khi nào?</li>
+        <li>DIP nghĩa thực tế trong Spring?</li>
+        <li>ISP khác SRP ở đâu?</li>
+      </ol></div>
+    </div>
+
+    <div class="cs" id="t37">
+      <h3>#37 System Design</h3>
+      <p class="essence">5 bước; think out loud; chọn consistency theo điểm quyết định.</p>
+      <ul>
+        <li>Clarify → Estimate → HLD → Deep dive → Trade-offs (~5/5/10/15/5').</li>
+        <li>Read-heavy → cache/CDN/replica; write-heavy → queue/batch/shard.</li>
+        <li>Eventual OK cho lịch sử/feed; strong cho double-spend/check trùng.</li>
+      </ul>
+      <div class="recall"><span class="lbl">Recall 5</span><ol>
+        <li>5 bước framework?</li>
+        <li>Vì sao clarify + think out loud?</li>
+        <li>Read vs write-heavy dẫn tới gì?</li>
+        <li>Khi nào eventual vs strong?</li>
+        <li>Capacity estimate gồm gì?</li>
+      </ol></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // build nav from cards
+  const cards=[...document.querySelectorAll('.cs')];
+  document.getElementById('csnav').innerHTML=cards.map(c=>{
+    const t=c.querySelector('h3').textContent; return '<a href="#'+c.id+'">'+t+'</a>';
+  }).join('');
+  // theme
+  const tb=document.getElementById('themeBtn');
+  tb.onclick=()=>{const h=document.documentElement;const n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);tb.textContent=n==='dark'?'☀️':'🌙';try{localStorage.setItem('theme',n);}catch(e){}};
+  (function(){try{const s=localStorage.getItem('theme');if(s){document.documentElement.setAttribute('data-theme',s);tb.textContent=s==='dark'?'☀️':'🌙';}}catch(e){}})();
+</script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Hub | Backend Engineering Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .hub-wrap { max-width: 1020px; margin: 0 auto; padding: 0 4px 80px; }
+  .hub-cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .hub-cols { grid-template-columns: 1fr; } }
+  .hub-box { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+  .hub-box h2 { margin: 0 0 4px; font-size: 1.08rem; }
+  .hub-box .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .next-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; background: var(--bg); }
+  .next-card .why { font-size: 12.5px; color: var(--text-muted); margin: 4px 0 8px; }
+  .next-card .acts { display: flex; flex-wrap: wrap; gap: 7px; }
+  .next-card .acts a { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 11px; text-decoration: none; }
+  .next-card.weak { border-left-color: var(--danger); }
+  .next-card.untouched { border-left-color: var(--border-strong); }
+  .dbar { display: grid; grid-template-columns: 150px 1fr 78px; gap: 10px; align-items: center; margin: 7px 0; font-size: 13px; }
+  .dbar .tr { height: 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+  .dbar .tr > span { display: block; height: 100%; background: var(--accent); }
+  .dbar .pc { font-weight: 700; text-align: right; white-space: nowrap; }
+  .decay-item { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 7px 0; border-bottom: 1px dashed var(--border); }
+  .mod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .mod-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 14px 16px; text-decoration: none; color: var(--text); transition: border-color .14s; display: block; }
+  .mod-card:hover { border-color: var(--accent); }
+  .mod-card .ic { font-size: 1.4rem; }
+  .mod-card b { display: block; margin: 4px 0 2px; }
+  .mod-card .st { font-size: 12px; color: var(--text-muted); }
+  .sm-dom { margin: 14px 0 4px; font-weight: 700; font-size: 14px; cursor: pointer; user-select: none; }
+  .sm-node { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0 5px 14px; border-left: 2px solid var(--border); margin-left: 6px; flex-wrap: wrap; }
+  .sm-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .sm-node .lv { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-faint); }
+  .sm-node .links a { font-size: 11.5px; margin-right: 7px; color: var(--accent); text-decoration: none; }
+  .sm-node .pre { font-size: 11px; color: var(--text-faint); width: 100%; padding-left: 18px; }
+  .hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 14px; }
+  .hstat { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 12px 14px; }
+  .hstat .v { font-size: 1.4rem; font-weight: 700; }
+  .hstat .l { font-size: 11.5px; color: var(--text-muted); }
+  .legend { font-size: 11.5px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">Learning Hub</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Modules</div>
+  <nav class="toc">
+    <a href="index.html">📚 Danh mục bài học</a>
+    <a href="62-interview-question-bank.html">🃏 Question Bank</a>
+    <a href="63-diagnostic.html">🎯 Diagnostic</a>
+    <a href="64-incident-lab.html">🔥 Incident Lab</a>
+    <a href="65-design-lab.html">📐 Design Lab</a>
+  </nav>
+  <div class="toc-title">Trang này</div>
+  <nav class="toc">
+    <a href="#next">Làm gì tiếp theo</a>
+    <a href="#state">Bạn đang ở đâu</a>
+    <a href="#map">Bản đồ kiến thức</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content hub-wrap">
+
+<section class="hero">
+  <span class="meta-tag">Learning Hub · Backend Engineering</span>
+  <h1>Trạm điều khiển việc học của bạn</h1>
+  <p class="lead" id="hubVerdict">Đang tổng hợp hồ sơ học…</p>
+  <div class="hero-stats" id="hubStats"></div>
+</section>
+
+<div class="hub-cols">
+  <div>
+    <div class="hub-box" id="next">
+      <h2>🧭 Làm gì tiếp theo</h2>
+      <div class="sub">Gợi ý từ bản đồ kiến thức + mọi bằng chứng học tập (qbank, diagnostic, incident). Node chỉ được gợi ý khi phần nền của nó đã ổn.</div>
+      <div id="hubNext"></div>
+    </div>
+    <div class="hub-box">
+      <h2>📉 Đang bị quên (ôn ngay cho rẻ)</h2>
+      <div class="sub">Câu đã từng ôn nhưng quá hạn chu kỳ Leitner — để lâu sẽ phải học lại từ đầu.</div>
+      <div id="hubDecay"></div>
+    </div>
+  </div>
+  <div>
+    <div class="hub-box" id="state">
+      <h2>📊 Mastery theo mảng</h2>
+      <div class="sub">Gộp từ Leitner box (qbank) + diagnostic + incident. Chưa có dữ liệu = chưa đo, không phải kém.</div>
+      <div id="hubDomains"></div>
+    </div>
+    <div class="hub-box">
+      <h2>🕸 7 chiều năng lực</h2>
+      <div class="sub">Nhớ & giải thích từ qbank · dự đoán/phân tích/trade-off/thiết kế từ diagnostic · debug từ incident.</div>
+      <div id="hubRadar"></div>
+    </div>
+  </div>
+</div>
+
+<div class="hub-box">
+  <h2>🧩 Các module</h2>
+  <div class="mod-grid" id="hubMods"></div>
+</div>
+
+<div class="hub-box" id="map">
+  <h2>🗺 Bản đồ kiến thức (prerequisite rõ ràng)</h2>
+  <div class="legend">
+    <span><span class="sm-dot" style="background:var(--success)"></span> vững (≥75%)</span>
+    <span><span class="sm-dot" style="background:var(--info)"></span> đang học (45–75%)</span>
+    <span><span class="sm-dot" style="background:var(--danger)"></span> yếu (&lt;45%)</span>
+    <span><span class="sm-dot" style="background:var(--border-strong)"></span> chưa có dữ liệu</span>
+    <span>⏳ = nội dung sẽ bổ sung</span>
+  </div>
+  <div class="sub">Bấm tên domain để mở/đóng. Mỗi node: bài học · lọc qbank đúng tag · sự cố liên quan.</div>
+  <div id="hubMap"></div>
+</div>
+
+<div class="hub-box">
+  <h2>💾 Hồ sơ học</h2>
+  <div class="sub">Tiến độ nằm trong localStorage của trình duyệt này. Xuất file để backup hoặc chuyển máy.</div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap">
+    <button id="btnExport" style="font:inherit;font-weight:700;font-size:13.5px;color:#fff;background:var(--accent);border:none;padding:9px 16px;border-radius:999px;cursor:pointer">⬇ Xuất hồ sơ (JSON)</button>
+    <button id="btnImport" style="font:inherit;font-weight:700;font-size:13.5px;color:var(--accent);background:var(--bg);border:1px solid var(--accent);padding:9px 16px;border-radius:999px;cursor:pointer">⬆ Nhập hồ sơ</button>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <span id="ioMsg" style="font-size:12.5px;color:var(--text-muted);align-self:center"></span>
+  </div>
+</div>
+
+<footer>
+  <span>Learning Hub · dữ liệu bản đồ: <code>learnmap/skillmap.js</code> · kiến trúc hệ thống: <code>SYSTEM.md</code></span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
+<script src="learnmap/skillmap.js"></script>
+<script src="qbank/manifest.js"></script>
+<script>
+/* Hub nạp cả dữ liệu qbank để tính mastery theo tag */
+window.QB = { packs: [], register: function (p) { window.QB.packs.push(p); } };
+(function load() {
+  var files = window.QB_FILES || [], i = 0;
+  function next() {
+    if (i >= files.length) { hubBoot(); return; }
+    var s = document.createElement("script");
+    s.src = "qbank/" + files[i++];
+    s.onload = next; s.onerror = next;
+    document.head.appendChild(s);
+  }
+  next();
+})();
+
+function hubBoot() {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var SM = window.SKILLMAP;
+  var qidx = BEP.buildQIndex(QB.packs);
+  var boxes = BEP.qbBoxes(), last = BEP.qbLast(), stat = BEP.qbStat();
+  var diag = BEP.diagGet(), incMap = BEP.incGet(), dsgMap = BEP.dsgGet();
+  var DOMS = {}; SM.domains.forEach(function (d) { DOMS[d.id] = d; });
+  var NODE = {}; SM.nodes.forEach(function (n) { NODE[n.id] = n; });
+
+  /* ---- evidence cho từng node ---- */
+  var EV = {}, ST = {};
+  SM.nodes.forEach(function (n) {
+    EV[n.id] = BEP.nodeEvidence(n, qidx, boxes, diag, incMap);
+    ST[n.id] = BEP.nodeState(EV[n.id]);
+  });
+  var stateCol = { solid: "var(--success)", progress: "var(--info)", weak: "var(--danger)", untouched: "var(--border-strong)" };
+
+  /* ---- hero ---- */
+  var ratedCount = Object.keys(boxes).length;
+  var mastered = Object.keys(boxes).filter(function (k) { return boxes[k] >= 4; }).length;
+  var incDone = Object.keys(incMap).length;
+  var totalQ = 0; QB.packs.forEach(function (p) { totalQ += p.questions.length; });
+  var solidN = SM.nodes.filter(function (n) { return ST[n.id] === "solid"; }).length;
+  var weakN = SM.nodes.filter(function (n) { return ST[n.id] === "weak"; }).length;
+
+  var verdict;
+  if (!diag && ratedCount < 20) verdict = "Chưa đủ dữ liệu để định vị bạn. Bước một: làm <a href='63-diagnostic.html'><b>Diagnostic</b></a> (~30 phút) — mọi gợi ý lộ trình sẽ mọc từ kết quả đó.";
+  else {
+    var pct = diag ? diag.pct : null;
+    verdict = (diag ? "Diagnostic gần nhất: <b>" + pct + "%</b> (" + diag.ts + "). " : "")
+      + "Bản đồ: <b>" + solidN + "</b> node vững, <b>" + weakN + "</b> node yếu cần quay lại. "
+      + (weakN ? "Ưu tiên các thẻ đỏ bên dưới trước khi học cái mới." : "Nền sạch — tiến tiếp theo lộ trình bên dưới.");
+  }
+  $("hubVerdict").innerHTML = verdict;
+  $("hubStats").innerHTML =
+    '<div class="hstat"><div class="v">' + mastered + "/" + totalQ + '</div><div class="l">câu đã thuộc (box ≥ 4)</div></div>'
+    + '<div class="hstat"><div class="v">🔥 ' + (stat.streak || 0) + '</div><div class="l">ngày học liên tiếp</div></div>'
+    + '<div class="hstat"><div class="v">' + (diag ? diag.pct + "%" : "—") + '</div><div class="l">diagnostic gần nhất</div></div>'
+    + '<div class="hstat"><div class="v">' + incDone + "/12" + '</div><div class="l">sự cố đã xử lý</div></div>';
+
+  /* ---- path engine: làm gì tiếp theo ---- */
+  function prereqReady(n) {
+    return (n.pre || []).every(function (p) { return ST[p] === "solid" || ST[p] === "progress"; });
+  }
+  function nodeActions(n) {
+    var a = [];
+    if (n.lesson) a.push('<a href="' + n.lesson + '">📖 Bài học</a>');
+    if (n.tags && n.tags.length) a.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">🃏 Ôn qbank</a>');
+    (n.inc || []).forEach(function (i) { a.push('<a href="64-incident-lab.html#' + i + '">🔥 Sự cố</a>'); });
+    return a.join("");
+  }
+  var recs = [];
+  var dueAll = BEP.decayingQuestions(boxes, last, 0);
+  var freshCount = 0;
+  QB.packs.forEach(function (p) { p.questions.forEach(function (q) { if (boxes[q.id] == null && q.core && q.lv !== "senior") freshCount++; }); });
+  if (dueAll.length || freshCount) {
+    recs.push({ html: '<div class="next-card" style="border-left-color:var(--purple)"><b>📅 Phiên học hôm nay (~20 phút)</b><div class="why">'
+      + dueAll.length + ' câu đến hạn ôn lại + câu mới từ phần CORE chưa học — trộn sẵn thành một lượt quiz, bấm là chạy.</div>'
+      + '<div class="acts"><a href="62-interview-question-bank.html?session=today"><b>Bắt đầu phiên →</b></a></div></div>' });
+  }
+  if (!diag) recs.push({ special: true, html: '<div class="next-card"><b>🎯 Làm bài Diagnostic đầu tiên</b><div class="why">Chưa đo thì mọi lộ trình chỉ là đoán. 44 câu tình huống, ~30 phút, ra thẳng bản đồ lỗ hổng.</div><div class="acts"><a href="63-diagnostic.html">Bắt đầu đo →</a></div></div>' });
+  var lvOrder = { junior: 0, middle: 1, senior: 2 };
+  var cands = SM.nodes.filter(function (n) { return !n.planned && ST[n.id] !== "solid" && prereqReady(n); });
+  cands.sort(function (a, b) {
+    var wa = (ST[a.id] === "weak" ? 0 : ST[a.id] === "progress" ? 1 : 2);
+    var wb = (ST[b.id] === "weak" ? 0 : ST[b.id] === "progress" ? 1 : 2);
+    return wa - wb || lvOrder[a.lv] - lvOrder[b.lv] || DOMS[a.d].order - DOMS[b.d].order;
+  });
+  cands.slice(0, 5).forEach(function (n) {
+    var ev = EV[n.id], st = ST[n.id];
+    var why = st === "weak" ? "Bằng chứng cho thấy đang yếu (" + Math.round(ev.mastery * 100) + "%) — học lại trước khi nó kéo các node phía sau."
+      : st === "progress" ? "Đang học dở (" + Math.round(ev.mastery * 100) + "%) — kết thúc hẳn node này trước khi mở node mới."
+      : "Nền phía trước đã ổn — đây là node " + n.lv + " tiếp theo theo bản đồ.";
+    if (ev.qbIds.length) why += " · " + (ev.qbRated || 0) + "/" + ev.qbIds.length + " câu qbank đã ôn.";
+    recs.push({ html: '<div class="next-card ' + st + '"><b>' + DOMS[n.d].icon + " " + n.t + '</b> <span class="lv" style="font-size:10px;font-weight:800;color:var(--text-faint);text-transform:uppercase">' + n.lv + '</span><div class="why">' + why + '</div><div class="acts">' + nodeActions(n) + "</div></div>" });
+  });
+  $("hubNext").innerHTML = recs.map(function (r) { return r.html; }).join("") || "<p>Không còn gợi ý — bản đồ đã xanh. Thêm nội dung mới vào skillmap!</p>";
+
+  /* ---- decay ---- */
+  var dec = BEP.decayingQuestions(boxes, last, 8);
+  var QBYID = {}; QB.packs.forEach(function (p) { p.questions.forEach(function (q) { QBYID[q.id] = q; }); });
+  $("hubDecay").innerHTML = dec.length ? dec.map(function (d) {
+    var q = QBYID[d.id];
+    var txt = q ? q.q.replace(/<[^>]+>/g, "").slice(0, 64) : d.id;
+    return '<div class="decay-item"><span>' + txt + '…</span><a style="white-space:nowrap;font-weight:700;color:var(--accent)" href="62-interview-question-bank.html?q=' + encodeURIComponent(q && q.tags && q.tags[0] || d.id) + '">ôn (' + d.days + ' ngày) →</a></div>';
+  }).join("") : '<p style="font-size:13px;color:var(--text-muted)">Chưa có câu nào quá hạn — hoặc bạn chưa ôn câu nào. Chu kỳ tính từ lần chấm gần nhất của mỗi câu.</p>';
+
+  /* ---- domain mastery ---- */
+  $("hubDomains").innerHTML = SM.domains.map(function (d) {
+    var ns = SM.nodes.filter(function (n) { return n.d === d.id && !n.planned; });
+    if (!ns.length) return "";
+    var withEv = ns.filter(function (n) { return EV[n.id].mastery != null; });
+    var avg = withEv.length ? withEv.reduce(function (s, n) { return s + EV[n.id].mastery; }, 0) / withEv.length : null;
+    var pc = avg == null ? "—" : Math.round(avg * 100) + "%";
+    var w = avg == null ? 0 : Math.round(avg * 100);
+    return '<div class="dbar"><span>' + d.icon + " " + d.t + '</span><span class="tr"><span style="width:' + w + '%"></span></span><span class="pc">' + pc + (withEv.length < ns.length ? ' <span style="color:var(--text-faint);font-weight:400">(' + withEv.length + "/" + ns.length + ")</span>" : "") + "</span></div>";
+  }).join("");
+
+  /* ---- radar 7 chiều ---- */
+  var dims = BEP.dimensions(diag, incMap, boxes, dsgMap);
+  var keys = Object.keys(dims);
+  var cx = 150, cy = 130, R = 92;
+  function pt(i, r) { var a = -Math.PI / 2 + i * 2 * Math.PI / keys.length; return (cx + r * Math.cos(a)).toFixed(1) + "," + (cy + r * Math.sin(a)).toFixed(1); }
+  var grid = [0.33, 0.66, 1].map(function (f) {
+    return '<polygon points="' + keys.map(function (_, i) { return pt(i, R * f); }).join(" ") + '" fill="none" stroke="var(--border)" stroke-width="1"/>';
+  }).join("");
+  var poly = keys.map(function (k, i) { return pt(i, R * Math.max(0.03, Math.min(1, dims[k].v == null ? 0 : dims[k].v))); }).join(" ");
+  var labels = keys.map(function (k, i) {
+    var a = -Math.PI / 2 + i * 2 * Math.PI / keys.length;
+    var lx = cx + (R + 24) * Math.cos(a), ly = cy + (R + 20) * Math.sin(a);
+    var v = dims[k].v;
+    return '<text x="' + lx + '" y="' + ly + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="' + (v == null ? "var(--text-faint)" : "var(--text)") + '">' + dims[k].label + (v == null ? " ?" : " " + Math.round(v * 100) + "%") + "</text>";
+  }).join("");
+  $("hubRadar").innerHTML = '<svg viewBox="0 0 300 265" style="width:100%;max-width:340px;display:block;margin:0 auto">' + grid
+    + '<polygon points="' + poly + '" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>' + labels + "</svg>"
+    + '<div style="font-size:11.5px;color:var(--text-muted);text-align:center">"?" = chưa có bằng chứng cho chiều này — làm diagnostic/incident để đo.</div>';
+
+  /* ---- modules ---- */
+  $("hubMods").innerHTML =
+    '<a class="mod-card" href="index.html"><span class="ic">📚</span><b>Bài học chuyên sâu</b><span class="st">58 chuyên đề — đọc theo gợi ý lộ trình</span></a>'
+    + '<a class="mod-card" href="62-interview-question-bank.html"><span class="ic">🃏</span><b>Question Bank</b><span class="st">' + totalQ + " câu · " + mastered + " đã thuộc · " + ratedCount + ' đã ôn</span></a>'
+    + '<a class="mod-card" href="63-diagnostic.html"><span class="ic">🎯</span><b>Diagnostic</b><span class="st">' + (diag ? "Gần nhất: " + diag.pct + "% (" + diag.ts + ")" : "Chưa đo lần nào — bắt đầu ở đây") + "</span></a>"
+    + '<a class="mod-card" href="64-incident-lab.html"><span class="ic">🔥</span><b>Incident Lab</b><span class="st">' + incDone + " sự cố đã xử lý</span></a>"
+    + '<a class="mod-card" href="65-design-lab.html"><span class="ic">📐</span><b>Design Lab</b><span class="st">' + Object.keys(dsgMap).length + ' bài thiết kế đã làm — nuôi chiều "Thiết kế được"</span></a>';
+
+  /* ---- skillmap explorer ---- */
+  var lessons = BEP.lessons();
+  $("hubMap").innerHTML = SM.domains.map(function (d) {
+    var ns = SM.nodes.filter(function (n) { return n.d === d.id; });
+    if (!ns.length) return "";
+    var rows = ns.map(function (n) {
+      var st = ST[n.id], ev = EV[n.id];
+      var links = [];
+      if (n.lesson) links.push('<a href="' + n.lesson + '">📖 bài học' + (lessons[n.lesson] ? " ✓" : "") + "</a>");
+      if (n.tags && n.tags.length) links.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">🃏 ' + (ev.qbIds.length || "") + " câu</a>");
+      (n.inc || []).forEach(function (i) { links.push('<a href="64-incident-lab.html#' + i + '">🔥 ' + (incMap[i] ? "✓" : "sự cố") + "</a>"); });
+      var pre = (n.pre || []).map(function (p) { return NODE[p] ? NODE[p].t : p; }).join(" · ");
+      return '<div class="sm-node"><span class="sm-dot" style="background:' + stateCol[st] + '" title="' + st + (ev.mastery != null ? " " + Math.round(ev.mastery * 100) + "%" : "") + '"></span>'
+        + "<span>" + n.t + (n.planned ? " ⏳" : "") + "</span><span class='lv'>" + n.lv + "</span>"
+        + '<span class="links">' + links.join("") + "</span>"
+        + (n.vnote ? '<span class="pre">🏷 phiên bản: ' + n.vnote + "</span>" : "")
+        + (pre ? '<span class="pre">cần trước: ' + pre + "</span>" : "")
+        + "</div>";
+    }).join("");
+    return '<div class="sm-dom" data-d="' + d.id + '">' + d.icon + " " + d.t + ' <span style="color:var(--text-faint);font-weight:400">(' + ns.length + ')</span></div><div class="sm-body" data-b="' + d.id + '" hidden>' + rows + "</div>";
+  }).join("");
+  document.querySelectorAll(".sm-dom").forEach(function (h) {
+    h.addEventListener("click", function () {
+      var b = document.querySelector('.sm-body[data-b="' + h.dataset.d + '"]');
+      if (b) b.hidden = !b.hidden;
+    });
+  });
+
+  /* ---- export / import hồ sơ ---- */
+  $("btnExport").onclick = function () {
+    var data = JSON.stringify(BEP.exportAll(), null, 1);
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+    a.download = "backend-lab-profile-" + BEP.today() + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    $("ioMsg").textContent = "Đã xuất hồ sơ.";
+  };
+  $("btnImport").onclick = function () { $("fileImport").click(); };
+  $("fileImport").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var n = BEP.importAll(JSON.parse(r.result));
+        $("ioMsg").textContent = "Đã nhập " + n + " mục — đang tải lại...";
+        setTimeout(function () { location.reload(); }, 700);
+      } catch (err) { $("ioMsg").textContent = "Lỗi: " + err.message; }
+    };
+    r.readAsText(f);
+  });
+}
+</script>
+</body>
+</html>

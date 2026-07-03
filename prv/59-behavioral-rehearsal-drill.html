@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#59 — Behavioral Rehearsal Drill | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Nhóm P — Mock Interview &amp; Rehearsal
+    <span class="sep">/</span>
+    <strong>#59 Behavioral Rehearsal Drill</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách drill</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#model">STAR mental model</a>
+    <a href="#map">Bản đồ câu hỏi → story</a>
+    <a href="#s1">Story 1 — Verify Esign</a>
+    <a href="#s2">Story 2 — Authorization</a>
+    <a href="#s3">Story 3 — Production bug</a>
+    <a href="#s4">Story 4 — Disagreement</a>
+    <a href="#s5">Story 5 — Failure</a>
+    <a href="#s6">Story 6 — Deadline</a>
+    <a href="#s7">Story 7 — Compliance</a>
+    <a href="#s89">Story 8 &amp; 9 — Templates</a>
+    <a href="#reverse">Câu hỏi ngược</a>
+    <a href="#anti">Anti-patterns (red flags)</a>
+    <a href="#build">Drill Exercises</a>
+    <a href="#schedule">Lịch luyện 5 ngày</a>
+    <a href="#feynman-end">Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">★ CORE · Behavioral · Active Recall</span>
+  <h1>#59 — Behavioral Rehearsal Drill (90 giây/story)</h1>
+  <p class="lead">9 story STAR dựa trên CV thật của bạn, nén thành flashcard 90 giây để <strong>luyện nói</strong> bằng active recall. Script được giấu trong nút "xem đáp án" — bạn phải tự kể trước, rồi mới mở đối chiếu. 50% buổi phỏng vấn senior là behavioral; technical giỏi mà kể chuyện vấp vẫn rớt.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">P — Mock &amp; Rehearsal</div></div>
+    <div class="meta-item"><div class="k">Nguồn story</div><div class="v">#41 (CV thật)</div></div>
+    <div class="meta-item"><div class="k">Tỷ lệ vàng</div><div class="v">S 15% · T 10% · A 60% · R 15%</div></div>
+    <div class="meta-item"><div class="k">Mục tiêu</div><div class="v">≤ 2 phút/story, rút story trong 5s</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách drill — KHÔNG đọc script trước</div>
+  <div class="sb-rules">
+    <p>Quy trình mỗi story (lặp 3 lần):</p>
+    <ol>
+      <li>Đọc <strong>PROMPT</strong> (câu hỏi) + <strong>BEATS</strong> (4-5 mốc neo trí nhớ).</li>
+      <li>Bấm giờ, <strong>tự kể thành tiếng</strong> 90 giây — đừng mở script.</li>
+      <li>Mở "👁 Xem script đối chiếu" — không cần đúng từng chữ, chỉ cần trúng beats + có ≥1 số + có result.</li>
+      <li>Điền các <code>[placeholder]</code> bằng số thật của bạn (1 lần, viết đè vào file gốc <code>behavioral-rehearsal-90s.md</code>).</li>
+      <li>Dùng "mình/em" ở phần Action, không "team mình".</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — ưu tiên story nào trước</h2>
+<div class="roadmap">
+  <div class="roadmap-head">Hầu hết vòng phỏng vấn sẽ hỏi 5-6 câu. Học chắc 5 story CORE trước; 8 &amp; 9 là template ngắn.</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span> Story 1 (own end-to-end) — CORE: gần như chắc bị hỏi</div>
+    <div class="roadmap-item core"><span class="step">2</span> Story 3 (production bug) — CORE: rất hay hỏi, có drama</div>
+    <div class="roadmap-item core"><span class="step">3</span> Story 4 (disagreement) — CORE: test backbone</div>
+    <div class="roadmap-item core"><span class="step">4</span> Story 5 (failure) — CORE: bẫy "chưa từng fail"</div>
+    <div class="roadmap-item core"><span class="step">5</span> Story 7 (compliance) — CORE: banking signal</div>
+    <div class="roadmap-item supp"><span class="step">6</span> Story 2 (technical depth) &amp; Story 6 (deadline) — SUPP</div>
+    <div class="roadmap-item supp"><span class="step">7</span> Story 8 &amp; 9 + câu hỏi ngược — SUPP: template ngắn</div>
+  </div>
+</div>
+</section>
+
+<section id="model">
+<h2>STAR mental model — vì sao cần &amp; cách hiểu sai phổ biến <span class="k-tag core">CORE</span></h2>
+<p>STAR = Situation → Task → Action → Result. Tỷ lệ vàng là <strong>Action chiếm ~60%</strong> vì interviewer đánh giá <em>bạn</em> làm gì, không phải hoàn cảnh.</p>
+
+<div class="history-block">
+  <div class="hist-head">📜 Vì sao behavioral interview tồn tại</div>
+  <div class="hist-timeline">
+    <strong>Thập niên 1970s</strong> — nghiên cứu tuyển dụng cho thấy "câu hỏi giả định" (bạn <em>sẽ</em> làm gì) dự đoán kém vì ai cũng nói lý thuyết đẹp.<br><br>
+    <strong>Behavioral interviewing</strong> — chuyển sang "bạn <em>đã</em> làm gì" vì hành vi quá khứ dự đoán hành vi tương lai tốt hơn nhiều.<br><br>
+    <strong>Banking/fintech</strong> — hỏi behavioral nhiều hơn vì compliance, risk, dual control là thứ không học được qua code, chỉ lộ qua cách bạn từng hành xử.<br><br>
+    <strong>Insight</strong>: kể chuyện ở thì <em>quá khứ</em>, cụ thể, có số liệu = bằng chứng. Nói "em sẽ..." = mất điểm.
+  </div>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Mình technical giỏi, behavioral improvise được"</div>
+  <div class="mc-wrong">"Lên phòng nghe câu hỏi rồi nghĩ ra story, mình nói trôi mà."</div>
+  <div class="mc-right">Dưới áp lực, não rút không kịp: bạn sẽ "ơ... để em nghĩ..." 30 giây, kể lan man, quên result. Story phải được <strong>nén sẵn + nói ra tiếng ≥3 lần</strong> để thành phản xạ. Active recall (tự kể trước khi xem) hiệu quả hơn đọc lại nhiều lần — đó là lý do script ở đây bị giấu.</div>
+</div>
+</section>
+
+<section id="map">
+<h2>Bản đồ câu hỏi → story (học thuộc bảng này trước) <span class="k-tag core">CORE</span></h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Interviewer hỏi gì</th><th>Dùng story</th></tr></thead>
+  <tbody>
+    <tr><td>Dự án khó/tự hào nhất; own end-to-end</td><td><strong>#1 Verify Esign</strong></td></tr>
+    <tr><td>Technical challenge; thiết kế phức tạp</td><td><strong>#2 eContract authorization</strong></td></tr>
+    <tr><td>Bug production; debug dưới áp lực</td><td><strong>#3 Paperless signature invalid</strong></td></tr>
+    <tr><td>Bất đồng với sếp/teammate; pushback</td><td><strong>#4 XSTU streaming</strong></td></tr>
+    <tr><td>Thất bại; điều làm khác</td><td><strong>#5 Sacombank bad index</strong></td></tr>
+    <tr><td>Deadline gấp; prioritization</td><td><strong>#6 VNeID 3 tuần</strong></td></tr>
+    <tr><td>Compliance/risk/audit</td><td><strong>#7 Audit log design</strong></td></tr>
+    <tr><td>Why leave</td><td><strong>#8 template</strong></td></tr>
+    <tr><td>3 năm tới</td><td><strong>#9 template</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Nhắc</div>
+  <p>Các <code>[placeholder]</code> số liệu là chỗ bạn <strong>phải verify với thực tế</strong> trước khi luyện — không được "sáng tác" số. Sai số mà bị đào sâu = mất uy tín.</p>
+</div>
+</section>
+
+<!-- STORY 1 -->
+<section id="s1">
+<h2>Story 1 — "Dự án khó/tự hào nhất" <span class="k-tag core">CORE</span></h2>
+<p><em>Target competency: Ownership + Technical depth + Compliance</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS — neo trí nhớ (kể trước, đừng mở script)</div>
+  <div class="pause-q">Verify Esign · NĐ130 → lead end-to-end, chưa làm crypto, team 3 junior, 10 tuần → 3 phase: research (RFC 5280/6960) → modular validator (Chain of Responsibility, BouncyCastle + PDFBox) → integration + truststore → deliver đúng hạn, pass audit lần đầu, lên tech lead.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu (sau khi đã tự kể 90s)</summary>
+  <div class="bi-answer">
+    <p>"Quý 2/2025, ở UNIT Corp, team mình maintain Paperless — ký số doanh nghiệp cho [số] khách hàng. Khách yêu cầu thêm module Verify Esign, kiểm tra tính hợp lệ chữ ký số, compliant Nghị định 130. <em>(S)</em></p>
+    <p>PM giao mình lead end-to-end. Thử thách: mình chưa làm crypto sâu, 3 đồng đội là junior mới, deadline 10 tuần. <em>(T)</em></p>
+    <p>Mình chia 3 phase. Phase 1, research: đọc NĐ130, TT16, RFC 5280 cho X.509 và RFC 6960 cho OCSP, chốt 6 tiêu chí bắt buộc — CA trust, hiệu lực cert tại thời điểm ký và verify, thu hồi OCSP/CRL, chain trust, chặn MD5/SHA-1, key usage. Mình vẽ ERD và sequence diagram, review với tech lead trước khi code. Phase 2, implement: BouncyCastle + PDFBox, mỗi tiêu chí là một Validator riêng ghép bằng Chain of Responsibility; cẩn thận nhất ở xử lý thời gian. Mình tự test 20+ loại cert: valid, hết hạn, bị thu hồi, self-signed. Phase 3: truststore admin + lịch sử verify cho audit. <em>(A)</em></p>
+    <p>Kết quả: deliver đúng 10 tuần, pass compliance audit lần đầu không phải rework, chạy production cho [số] khách. Mình được assign tech lead module eContract sau đó. <em>(R)</em>"</p>
+    <p><strong>Follow-up thủ sẵn:</strong> làm lại sẽ automate test với CA thật sớm hơn · junior học Chain of Responsibility + TDD qua pair-programming.</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 2 -->
+<section id="s2">
+<h2>Story 2 — "Technical challenge khó nhất" <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p><em>Target: Technical depth + Systematic thinking</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">eContract row-level authorization, 4 chiều quyền (role, org-structure, function, process-state) → pluggable DataAccessFilter, inject WHERE query-time + double-check sau load → cân nhắc Postgres RLS nhưng reject (khó debug, khách Oracle) → 80+ test, audit access-denial → zero data leak, copy sang 2 module.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Làm module eContract, yêu cầu phân quyền dữ liệu ở mức dòng theo 4 yếu tố: vai trò, vị trí trong cơ cấu tổ chức, function permission, và cấu hình theo workflow. Ví dụ manager chi nhánh Hà Nội chỉ thấy hợp đồng chi nhánh mình, trong đó chỉ thấy hợp đồng mình tạo hoặc review. <em>(S/T)</em></p>
+    <p>Mình tiếp cận 3 hướng. Một, phân tích access pattern thật với PM và [số] khách, rút ra đúng 4 chiều quyền lực. Hai, thiết kế filter pluggable: một interface DataAccessFilter, mỗi chiều một implementation, ghép bằng AND/OR, cấu hình theo tenant. Ba, enforce ở 2 lớp: query-time inject WHERE clause qua Criteria API, và sau khi load thì double-check qua policy evaluator. Mình có cân nhắc row-level security của Postgres nhưng loại, vì khó debug, policy phân tán giữa app và DB, và khách chạy Oracle nên không nhất quán. Mình viết 80+ test phủ ma trận quyền, log mỗi lần từ chối truy cập. <em>(A)</em></p>
+    <p>Kết quả: go-live [số] khách, 6 tháng zero data leak, [số] lần truy cập trái phép bị chặn và audit log giúp compliance điều tra. Pattern này được copy sang 2 module khác. <em>(R)</em>"</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 3 -->
+<section id="s3">
+<h2>Story 3 — "Bug production khó debug" <span class="k-tag core">CORE</span></h2>
+<p><em>Target: Debugging + Calm under pressure</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">Paperless deploy mới → ~5% ký xong verify "invalid", không repro staging → hash content ≠ signed hash (content đổi sau ký) → nghi PDFBox full-save khi auto-index update metadata sau ký → repro local đúng → fix: không update metadata sau ký + incremental save → test 1000 doc, hotfix trong SLA 48h, zero recurrence, thêm integration test CI.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Sau khi deploy version mới của Paperless, một khách ngân hàng lớn báo: ký xong, đôi khi verify lại bị invalid — chỉ ~5% giao dịch, không repro được ở dev/staging. Mình đang on-call, mỗi giao dịch hàng trăm triệu, phải fix trong 48h trước khi họ rollback. <em>(S/T)</em></p>
+    <p>Giờ 1-3: gom 10 doc lỗi so với doc thành công, cấu trúc y hệt. Giờ 3-8: mình hash lại content bytes, phát hiện signed hash không khớp content hash — bằng chứng mật mã rằng content bị đổi <em>sau</em> khi ký. Giờ 8-14: mình nghi incremental save của PDFBox; repro local: upload → ký → đổi metadata filename → verify fail. Trúng. Root cause: version mới có feature auto-index nội dung để search, trigger update metadata sau ký, nhưng code mới dùng full save thay vì incremental save → viết đè bytes cũ → hỏng chữ ký. Fix: tách flow, không bao giờ update metadata sau ký; nếu cần thì incremental save. <em>(A)</em></p>
+    <p>Test 1000 doc đã ký, all pass, deploy hotfix trong SLA, monitor 72h zero recurrence. Mình viết postmortem và thêm integration test ký + auto-metadata + verify vào CI. <em>(R)</em>"</p>
+    <p><strong>Follow-up:</strong> stress thì sao → việc đầu tiên khi bug nặng là communicate status cho khách, họ biết mình đang xử lý nên không hoảng, rồi mới focus debug.</p>
+  </div>
+</details>
+<div class="callout success">
+  <div class="ctitle">✅ Liên kết với mock #58</div>
+  <p>Story này dùng đúng kiến thức ở mock E-Contract (incremental vs full save). Technical mock và behavioral story củng cố nhau = cực thuyết phục.</p>
+</div>
+</section>
+
+<!-- STORY 4 -->
+<section id="s4">
+<h2>Story 4 — "Bất đồng với sếp/teammate" <span class="k-tag core">CORE</span></h2>
+<p><em>Target: Backbone + Influence + "bring data not opinion"</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">XSTU ingest leads CSV, design cũ load cả file vào memory → mình đề xuất streaming, PM không đồng ý (đang build 60%) → không cãi online, về viết prototype Jackson streaming, đo: cũ 800MB cho file 300MB vs mới ~50MB, nhanh hơn 20% → present data + đề xuất split task → PM đồng ý → zero OOM 6 tháng, PM consult mình trước khi chốt design.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Làm module XSTU lead management cho Unobank, ingest leads từ CSV. Design cũ validate ở app layer sau khi load cả file vào memory. Mình review và đề xuất streaming — parse từng dòng, validate, đẩy thẳng xuống DB. PM ban đầu không đồng ý vì design cũ đơn giản và team đã build 60%. <em>(S/T)</em></p>
+    <p>Mình không tranh luận tay đôi. File CSV có thể vài trăm MB, load hết vào memory là risk OOM và UX kém. Nên tối đó mình về viết prototype streaming bằng Jackson streaming API, đo thực tế: design cũ dùng 800MB cho file 300MB, design mới chỉ ~50MB, và nhanh hơn 20% nhờ overlap I/O với validation. Sáng hôm sau mình present PM kèm số liệu và prototype chạy thật. Mình thừa nhận nó phức tạp hơn, nhưng đề xuất split: mình nhận phần streaming, team làm tiếp phần khác. PM đồng ý. <em>(A)</em></p>
+    <p>Kết quả: deliver đúng deadline, memory production ổn định ~100MB cho file lớn nhất, zero OOM trong 6 tháng. Sau đó PM thường hỏi ý mình trước khi chốt design module mới. <em>(R)</em></p>
+    <p>Bài học: khi disagree, mang data chứ không mang ý kiến. PM không sai — họ có context tiến độ; mình phải chứng minh bằng việc làm. <em>(Lesson)</em>"</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 5 -->
+<section id="s5">
+<h2>Story 5 — "Thất bại / điều làm khác" <span class="k-tag core">CORE</span></h2>
+<p><em>Target: Self-awareness + Learning</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">Mới vào 2023, E-Portal Sacombank, optimize query Oracle 3s → add 2 index, chỉ test query đó, push prod → đổi statistics, optimizer chọn plan khác cho 1 report query → chậm 2s lên 30s → AWR, nested loop sai, force SQL baseline → postmortem, 3 bài học → giờ luôn có checklist trước khi add index.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Đầu khi mới vào UNIT năm 2023, mình làm E-Portal cho Sacombank, được giao optimize một query Oracle chạy 3 giây. Mình thấy thiếu index trên 2 cột trong WHERE, add vào, test ở dev OK, push production. <em>(S/T)</em></p>
+    <p>Sai lầm: mình chỉ test đúng query mình optimize, không test các query khác trên cùng table. Index mới làm đổi statistics, Oracle optimizer chọn plan khác cho một report query — chậm từ 2 giây lên 30 giây. Khách phản ánh, mình được assign investigate cùng tech lead. Mình đọc AWR report, phát hiện report query dùng index mới sai mục đích — nested loop thay vì hash join. Mình phân tích stats và force plan ổn định bằng SQL baseline. Mình viết postmortem nhận sai. <em>(A)</em></p>
+    <p>Issue fix trong 4 giờ sau khi escalate. Bài học: thêm index là đổi performance của CẢ table; phải test với data volume giống production và tất cả query quan trọng; phải có rollback plan trước khi deploy DDL. Từ đó mỗi lần đề xuất index mình tự build checklist. <em>(R)</em></p>
+    <p>Mình trân trọng bài học này — không phải vì hết thất bại, mà vì hiểu được 'tối ưu chỗ này có thể làm tệ chỗ khác' ở hệ thống thật. <em>(Reflection)</em>"</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 6 -->
+<section id="s6">
+<h2>Story 6 — "Deadline gấp" <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p><em>Target: Prioritization + "làm ít hơn, không phải nhanh hơn"</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">Cuối 2024, Paperless cần eSign VNeID trong 3 tuần (bình thường 6-8) → 3 việc song song tuần 1: scope meeting (chỉ cần redirect-ký-quay lại, bỏ batch/preview), xin sandbox VNeID trong 2 ngày (call thẳng), code trên mock trước → tuần 2 happy path chia rõ → tuần 3 edge cases + runbook, UAT sớm 3 ngày → deploy đúng 3 tuần, zero P0.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Cuối 2024, team Paperless nhận request gấp: tích hợp ký bằng VNeID — định danh điện tử của Bộ Công An — trong 3 tuần, bình thường phải 6-8 tuần. Mình được giao flow chính: auth với VNeID, xử lý callback, lấy document đã ký. <em>(S/T)</em></p>
+    <p>Tuần 1 mình làm 3 việc song song. Một, gọi meeting scope với PM tách must-have khỏi nice-to-have — hoá ra khách chỉ cần đơn giản: bấm 'ký bằng VNeID', redirect, quay lại, xong; không cần batch signing hay preview. Hai, xin sandbox VNeID sớm — thường mất 1-2 tuần, mình call thẳng technical contact giải thích urgency, lấy được trong 2 ngày. Ba, code trên mock trước rồi swap sang API thật. Tuần 2: mình và một bạn làm happy path, phân công rõ, daily sync 15 phút. Tuần 3: test edge case timeout/reject/invalid session, viết runbook ops, push UAT sớm 3 ngày. <em>(A)</em></p>
+    <p>Deploy đúng 3 tuần, zero P0 trong 2 tuần đầu. Khách ký hợp đồng lớn hơn sau đó. <em>(R)</em></p>
+    <p>Bài học: deadline gấp thì lever mạnh nhất là 'làm ít hơn' chứ không phải 'làm nhanh hơn' — clarify scope thật sớm. <em>(Lesson)</em>"</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 7 -->
+<section id="s7">
+<h2>Story 7 — "Compliance/audit issue" (banking) <span class="k-tag core">CORE</span></h2>
+<p><em>Target: Risk awareness + Compliance-first</em></p>
+<div class="pause-block">
+  <div class="pause-head">⏸ BEATS</div>
+  <div class="pause-q">Verify Esign phải log mọi verification (NĐ130) → audit log 3 nguyên tắc: immutable (chỉ INSERT), tamper-evident (hash chain), retention 10 năm (archive partition) → push back feature "admin delete record sai" → thay bằng correction record, không xoá bản cũ → compliance approve, pass audit zero finding.</div>
+</div>
+<details>
+  <summary>👁 Xem script đối chiếu</summary>
+  <div class="bi-answer">
+    <p>"Module Verify Esign phải compliant NĐ130 và TT16: log mỗi lần verify với đủ metadata để audit. Mình design audit log component. <em>(S/T)</em></p>
+    <p>Mình design theo 3 nguyên tắc. Một, immutable: audit log chỉ cho INSERT; app user chỉ có quyền INSERT, xoá phải DBA kèm ticket. Hai, tamper-evident: mỗi bản ghi chứa hash của bản ghi trước tạo thành chuỗi — sửa một bản giữa chuỗi thì hash các bản sau không khớp, lộ ngay. Ba, retention: luật yêu cầu 10 năm, mình design archive partition. Quan trọng: mình push back feature PM đề xuất 'cho admin xoá record sai sót' — vì audit log xoá được là mất giá trị, vi phạm compliance. Thay vào đó mình đề xuất 'correction record' chỉ rõ bản cũ sai chỗ nào, nhưng bản cũ không bị xoá. <em>(A)</em></p>
+    <p>Compliance team approve, pass audit lần đầu zero finding, trở thành selling point khi khách lo về compliance. <em>(R)</em></p>
+    <p>Với mình, audit trail không phải để engineer debug, mà để chứng minh integrity trước regulator và toà án. <em>(Context)</em>"</p>
+  </div>
+</details>
+</section>
+
+<!-- STORY 8 & 9 -->
+<section id="s89">
+<h2>Story 8 &amp; 9 — Templates <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Story 8</span><span class="tier-title">"Why leave?"</span></div>
+  <div class="a"><strong>BEATS:</strong> Biết ơn 3 năm UNIT (banking thật, compliance mindset) → tìm 3 thứ: technical depth (apply vào bài toán lớn hơn — microservices scale, messaging, observability thật), scope impact (own system chứ không chỉ module), growth path (mentor senior, culture review nghiêm túc) → KHÔNG nói xấu công ty cũ, đang hand-over kỹ.<br><br><strong>Cấm:</strong> lương · sếp/đồng nghiệp khó chịu · "công ty cũ tệ" · "em chán".</div>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Story 9</span><span class="tier-title">"3 năm tới?"</span></div>
+  <div class="a"><strong>BEATS:</strong> Năm 1: consolidate senior — own system chính, mentor 1-2 junior, góp architecture decision, deep-dive 1-2 domain team cần. Năm 2-3: staff/tech lead — influence ngoài team, drive engineering excellence (test coverage, design review), vẫn code. Domain: ở lại banking/fintech. Chốt: fit với [công ty X] vì [lý do research được].</div>
+</div>
+</section>
+
+<section id="reverse">
+<h2>Câu hỏi ngược (BẮT BUỘC có, thuộc 3 câu) <span class="k-tag core">CORE</span></h2>
+<div class="callout tip">
+  <div class="ctitle">💡 "Không có câu hỏi" = không interested</div>
+  <ol style="margin:6px 0 0 18px">
+    <li>"Thử thách kỹ thuật lớn nhất team đang giải quyết là gì?"</li>
+    <li>"Senior engineer ở đây được đánh giá/review thế nào?"</li>
+    <li>"Deploy production qua process nào? Có dual control không?" <em>(banking — ghi điểm)</em></li>
+  </ol>
+  <p style="margin-top:8px">Tránh hỏi lương/benefits/WFH ở câu đầu — để sau offer.</p>
+</div>
+</section>
+
+<section id="anti">
+<h2>Anti-patterns — red flags phải tránh <span class="k-tag core">CORE</span></h2>
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">❌ Câu không được nói</div>
+    <div class="col-body">
+      <ul>
+        <li>"Em chưa bao giờ thất bại" → thiếu self-awareness</li>
+        <li>"Team em làm..." hoài → không rõ đóng góp cá nhân</li>
+        <li>"Sếp em ngu nên em làm khác" → immature</li>
+        <li>"Em không nhớ rõ..." → không chuẩn bị</li>
+        <li>"Nếu gặp tình huống đó em <em>sẽ</em>..." → behavioral hỏi quá khứ</li>
+        <li>Phàn nàn/tiết lộ confidential công ty cũ → red flag nặng (nhất là banking)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="col good">
+    <div class="col-head">✅ Nên nói</div>
+    <div class="col-body">
+      <ul>
+        <li>"Em đã fail X, học được Y, giờ làm khác Z"</li>
+        <li>"Em own phần A, teammate own B, collaborate ở C"</li>
+        <li>"Em không đồng ý vì X, nhưng sếp có context Y; sau khi discuss em hiểu và..."</li>
+        <li>"Em còn nhớ rõ — thứ 3 tuần đó..." (cụ thể = đáng tin)</li>
+        <li>Kể ở thì quá khứ, có số, có result</li>
+        <li>Pause 3-5s tự nhiên trước câu khó (show recall thật, không đọc script)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="build">
+<h2>🔨 Drill Exercises <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<div class="build-exercise">
+  <div class="be-head">🔨 Drill #1 — Record &amp; review (Beginner)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: thu âm bản thân kể 4 story ngẫu nhiên, nghe lại, ghi chú chỗ vấp/lan man/thiếu số.</div>
+  <div class="be-criteria"><strong>Acceptance</strong>: mỗi story ≤ 2 phút, có ≥1 con số thật, kết bằng result đo được, dùng "mình/em" ở Action.</div>
+</div>
+<div class="build-exercise">
+  <div class="be-head">🔨 Drill #2 — Random retrieval (Advanced)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: nhờ một người hỏi ngẫu nhiên 5 câu behavioral; bạn phải rút đúng story trong 5 giây và kể trôi.</div>
+  <div class="be-criteria"><strong>Acceptance</strong>: 5/5 lần rút đúng story trong 5s; không câu nào "ơ để em nghĩ" quá 5s.</div>
+</div>
+</section>
+
+<section id="schedule">
+<h2>Lịch luyện 5 ngày (trước interview) <span class="k-tag core">CORE</span></h2>
+<div class="roadmap">
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">D1</span> Thuộc bảng map câu→story. Luyện #1, #3, #4 (mỗi story nói to 3 lần, bấm giờ ≤2 phút).</div>
+    <div class="roadmap-item core"><span class="step">D2</span> Story #5, #2, #6 (3 lần mỗi story). Điền hết [placeholder] bằng số thật.</div>
+    <div class="roadmap-item supp"><span class="step">D3</span> Story #7 + template #8, #9 + 3 câu hỏi ngược. Tự giới thiệu 2 phút.</div>
+    <div class="roadmap-item supp"><span class="step">D4</span> Record bản thân kể 4 story ngẫu nhiên, nghe lại, sửa vấp/lan man.</div>
+    <div class="roadmap-item adv"><span class="step">D5</span> Mock toàn bộ: nhờ người hỏi ngẫu nhiên 5 câu → rút story trong 5s, kể trôi. Verify mọi fact khớp CV.</div>
+  </div>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>Closing — Feynman Check</h2>
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Check</div>
+  <div class="fy-prompt">"Không nhìn file: kể 3 story bất kỳ trong ≤2 phút mỗi story, đúng cấu trúc STAR, có số liệu, có result."</div>
+  <div class="fy-rule">Vấp ở Action (phần 60%) hoặc quên result = chưa thuộc. Quay lại story đó luyện thêm 3 lần.</div>
+</div>
+<div class="feynman">
+  <div class="fy-head">🎓 Calibration Check</div>
+  <div class="fy-prompt">Tự test: nghe 5 câu hỏi ngẫu nhiên → rút đúng story trong 5 giây? · Mọi [placeholder] đã thay bằng số thật? · Có dùng "mình/em" thay vì "team mình" ở Action? · Có ≥1 câu hỏi ngược cho mỗi vòng?</div>
+  <div class="fy-rule">Tất cả "có" = sẵn sàng vào phòng.</div>
+</div>
+<div class="verify-source">
+  <div class="vs-head">📚 Verify Against Source</div>
+  <ul>
+    <li>File gốc đầy đủ: <strong>#41 Behavioral STAR Bank</strong> (9 story + competency matrix + framework hypothetical).</li>
+    <li>FAANG variant: <strong>#46</strong> (Amazon 16 LPs, Google Googleyness, Meta values).</li>
+    <li>Senior signals: <strong>#56</strong> (soft skills, RFC/ADR/postmortem, influence).</li>
+    <li><strong>CV của bạn</strong> = nguồn sự thật: mọi story phải khớp timeline/tech stack/role, không mâu thuẫn.</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #59 Behavioral Rehearsal Drill · Nhóm P — Mock &amp; Rehearsal</div>
+<div>Quay lại: <a href="index.html">Trang chủ</a> · Nguồn: <a href="#">#41 Behavioral STAR Bank</a></div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#57 — Mock: Payment Gateway | Java Backend Interview Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle">☰</button>
+  <div class="crumb">
+    <strong>Java Backend Interview Prep</strong>
+    <span class="sep">/</span>
+    Nhóm P — Mock Interview &amp; Rehearsal
+    <span class="sep">/</span>
+    <strong>#57 Mock: Payment Gateway</strong>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách dùng mock này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#intro">Tổng quan</a>
+    <a href="#prompt">1. Đề bài (PROMPT)</a>
+    <a href="#self">2. Tự làm trước</a>
+    <a href="#s1">3. S1 — Clarify</a>
+    <a href="#s2">4. S2 — Capacity</a>
+    <a href="#hld">5. Service — HLD</a>
+    <a href="#storage">6. Storage + State machine</a>
+    <a href="#dd-idem">7. Deep dive: Idempotency</a>
+    <a href="#dd-outbox">8. Deep dive: Outbox webhook</a>
+    <a href="#dd-recon">9. Deep dive: Reconciliation</a>
+    <a href="#edge">10. Edge Cases</a>
+    <a href="#anti">11. Anti-patterns</a>
+    <a href="#build">12. Build Exercises</a>
+    <a href="#followup">13. Interviewer Follow-ups</a>
+    <a href="#rubric">14. Tự chấm</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">★ CORE mock · System Design · Banking</span>
+  <h1>#57 — Mock Interview: Design a Payment Gateway</h1>
+  <p class="lead">Một buổi mock 45 phút mô phỏng vòng system design senior cho fintech VN. Mục tiêu không phải "đọc cho biết" mà <strong>luyện nói thành tiếng dưới đồng hồ</strong>: clarify → capacity → HLD → deep dive → trade-off. Trọng tâm phân biệt mid vs senior nằm ở 3 chỗ: idempotency nhiều lớp, xử lý <em>timeout không xác định</em>, và reconciliation.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">P — Mock &amp; Rehearsal</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">45 phút (bấm giờ)</div></div>
+    <div class="meta-item"><div class="k">Liên quan</div><div class="v">#37, #45, #13, #33, #19, #39, #35</div></div>
+    <div class="meta-item"><div class="k">Level target</div><div class="v">Senior / L5</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách dùng mock này — đừng đọc như tài liệu</div>
+  <div class="sb-rules">
+    <p>Mock chỉ có giá trị khi bạn <strong>tự bí trước</strong>. Quy trình bắt buộc:</p>
+    <ol>
+      <li>Bật đồng hồ 45 phút. Đọc <strong>PROMPT</strong>, che toàn bộ phần dưới.</li>
+      <li>Làm phần <strong>"Tự làm trước"</strong> — nói ra to, vẽ tay 6-8 box, ước lượng số.</li>
+      <li>Tới mỗi <span class="pause-head" style="display:inline">⏸ Pause &amp; Predict</span> phải dừng và trả lời trước khi đọc tiếp.</li>
+      <li>Mở "Model walk-through" đối chiếu. Không cần giống từng chữ — cần trúng <em>beats</em> + có số + có trade-off.</li>
+      <li>Cuối cùng tự chấm theo <strong>rubric</strong>. Lặp lại sau 3 ngày, không nhìn file.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — học theo độ ưu tiên</h2>
+<div class="roadmap">
+  <div class="roadmap-head">Nếu chỉ có 1 giờ → chỉ luyện 4 mục CORE. Có nửa ngày → thêm SUPP. Trước vòng thật → chạy full + follow-ups.</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span> Clarify + phân biệt correctness &gt; availability — CORE: nền móng tư duy banking</div>
+    <div class="roadmap-item core"><span class="step">2</span> Idempotency 3 lớp — CORE: câu hỏi tâm điểm, fail là rớt</div>
+    <div class="roadmap-item core"><span class="step">3</span> State machine + TIMEOUT_UNKNOWN — CORE: nơi mid lộ rõ nhất</div>
+    <div class="roadmap-item core"><span class="step">4</span> Reconciliation — CORE: dấu hiệu hiểu banking thật</div>
+    <div class="roadmap-item supp"><span class="step">5</span> Outbox cho webhook — SUPP: reliable messaging</div>
+    <div class="roadmap-item supp"><span class="step">6</span> Capacity estimation — SUPP: chứng minh bottleneck không phải QPS</div>
+    <div class="roadmap-item adv"><span class="step">7</span> CP/AP khi DB down, partial capture — ADV: follow-up khó</div>
+  </div>
+</div>
+</section>
+
+<section id="intro">
+<h2>Tổng quan &amp; vì sao bài này phân loại được senior</h2>
+<p>Payment gateway là một trong những đề system design "tủ" cho backend banking/fintech, vì nó ép ứng viên đối mặt với thứ mà CRUD không bao giờ dạy: <strong>tiền không được tạo ra hay biến mất</strong>. Một mid-level sẽ vẽ được luồng happy path (nhận request → gọi bank → trả kết quả). Một senior sẽ dành phần lớn thời gian cho những gì xảy ra <em>khi mọi thứ hỏng</em>: bank timeout không biết thành hay bại, service crash giữa chừng, merchant retry, message bị giao 2 lần.</p>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử ra đời của "gateway" tách khỏi "acquirer"</div>
+  <div class="hist-timeline">
+    <strong>Trước ~2000</strong> — Merchant muốn nhận thẻ phải tích hợp trực tiếp với từng acquiring bank, mỗi bank một protocol (ISO 8583 biến thể riêng). Cực kỳ tốn kém, mỗi merchant một dự án tích hợp.<br><br>
+    <strong>2000s</strong> — Xuất hiện <em>payment gateway</em> (Authorize.Net, sau là Stripe/Braintree): một lớp trung gian chuẩn hoá API cho merchant, che giấu sự phức tạp của nhiều acquirer/scheme phía sau. Merchant tích hợp 1 API thay vì N.<br><br>
+    <strong>2004</strong> — PCI-DSS ra đời sau hàng loạt vụ lộ thẻ. Từ đó "đừng chạm vào số thẻ" trở thành nguyên tắc thiết kế: tokenization, gateway không lưu PAN/CVV.<br><br>
+    <strong>Insight</strong>: Gateway tồn tại để <strong>chuẩn hoá + cô lập rủi ro</strong>. Khi thiết kế, mọi adapter tới bank phải là anti-corruption layer — đó là lý do kiến trúc, không phải tuỳ tiện.
+  </div>
+</div>
+</section>
+
+<section id="prompt">
+<h2>1. Đề bài — PROMPT (interviewer đọc) <span class="k-tag core">CORE</span></h2>
+<div class="callout quote">
+  <div class="ctitle">📖 Interviewer</div>
+  <p>"Thiết kế một <strong>payment gateway</strong> cho một fintech ở VN. Merchant tích hợp API của bạn để nhận thanh toán từ khách hàng qua thẻ (Visa/Master) và VietQR. Bạn chịu trách nhiệm phần backend: nhận request thanh toán, gọi acquirer/bank, trả kết quả cho merchant, và đảm bảo tiền không bao giờ bị tính 2 lần hay thất lạc."</p>
+</div>
+<p><strong>Vì sao bài này khó:</strong> ràng buộc thật sự không phải throughput mà là <em>tính đúng đắn dưới điều kiện một phần thất bại</em> (partial failure). Bank là hệ thống bên ngoài, chậm và không tin cậy; bạn không kiểm soát nó nhưng phải đảm bảo nhất quán xuyên qua nó.</p>
+</section>
+
+<section id="self">
+<h2>2. ⏸ Tự làm trước (10 phút — đừng đọc tiếp) <span class="k-tag core">CORE</span></h2>
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+  <div class="pause-q">Nói ra to / viết ra giấy trước khi mở model:</div>
+  <ol style="margin:8px 0 0 22px">
+    <li>5 câu clarify đầu tiên bạn hỏi interviewer là gì? (gợi ý: PCI scope, settlement, multi-attempt)</li>
+    <li>TPS cao điểm? Read-heavy hay write-heavy? Tính ra QPS write cụ thể.</li>
+    <li>Một payment đi qua đúng những state nào? Vẽ state machine.</li>
+    <li>Bank trả timeout — bạn <em>không biết</em> đã trừ tiền chưa. Làm gì? (đây là câu ăn/rớt)</li>
+    <li>Làm sao đảm bảo merchant retry 5 lần vẫn chỉ trừ tiền 1 lần?</li>
+    <li>Reconciliation cuối ngày làm gì, và vì sao nó là "nguồn sự thật cuối"?</li>
+  </ol>
+  <div class="pause-hint">Trả lời được ≥4/6 không nhìn gợi ý → bạn đã ở ngưỡng senior cho bài này. Dưới 3 → đọc kỹ phần dưới.</div>
+</div>
+</section>
+
+<section id="s1">
+<h2>3. S1 — Scenario / Clarify (5 phút) <span class="k-tag core">CORE</span></h2>
+<p>Senior <strong>luôn clarify trước khi vẽ</strong>. Nhảy thẳng vào box = tín hiệu mid. Cấu trúc clarify thành functional / non-functional / out-of-scope.</p>
+
+<h3>Functional requirements</h3>
+<ul>
+  <li>Merchant tạo payment: <code>amount, currency, method, order_id, callback_url</code>.</li>
+  <li>Hỗ trợ card (qua acquirer + 3DS) và VietQR (qua NAPAS).</li>
+  <li>Trả kết quả đồng bộ nếu bank nhanh, + webhook bất đồng bộ cho merchant.</li>
+  <li>Refund (full/partial). Query trạng thái payment.</li>
+</ul>
+
+<h3>Non-functional (đây là chỗ phân loại)</h3>
+<div class="callout why">
+  <div class="ctitle">🎯 Câu phải nói ra: "correctness &gt; availability"</div>
+  <p>Với payment, thà <strong>từ chối</strong> còn hơn <strong>double-charge</strong>. Nguyên tắc bất biến: <em>no money lost, no money created</em>. Nói được câu này sớm là tín hiệu senior banking mạnh nhất trong cả buổi.</p>
+</div>
+<ul>
+  <li><strong>Idempotency bắt buộc</strong> — merchant chắc chắn sẽ retry.</li>
+  <li>P99 &lt; 1s cho phần mình kiểm soát (trừ thời gian chờ bank).</li>
+  <li>Audit trail đầy đủ — phục vụ regulator, dispute, toà án.</li>
+  <li>PCI-DSS: <strong>không lưu PAN/CVV</strong> ở hệ thống mình → tokenize.</li>
+</ul>
+
+<h3>Out of scope (nói rõ để giới hạn 45 phút)</h3>
+<p>KYC merchant, fraud ML, sổ cái kế toán nội bộ của merchant. Nói rõ out-of-scope giúp interviewer biết bạn quản trị được thời gian.</p>
+
+<div class="callout tip">
+  <div class="ctitle">💡 3 câu clarify đắt giá</div>
+  <p>"Mình có nằm trong PCI scope không, hay dùng tokenization vault bên thứ ba?" · "Settlement T+1 hay realtime?" · "Một order có cho nhiều lần thử thanh toán (multi-attempt) không?"</p>
+</div>
+</section>
+
+<section id="s2">
+<h2>4. S2 — Capacity Estimation (3 phút, nói số ra mồm) <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p>Mục tiêu của bước này <em>không phải</em> ra con số chính xác, mà để <strong>chứng minh bottleneck nằm ở đâu</strong>.</p>
+<div class="code-label">Ước lượng (giả định công khai với interviewer)</div>
+<pre><code class="language-text">Giả định: 5M payment/ngày, peak = 3x trung bình.
+Trung bình write QPS = 5,000,000 / 86,400 ≈ 58/s
+Peak write QPS       ≈ 175/s   → làm tròn 200 TPS thiết kế
+Read (status query + webhook retry) ≈ 5x write → ~1,000 QPS peak
+
+Dung lượng: mỗi payment record ~2KB → 5M * 2KB = 10GB/ngày
+Hot 90 ngày ≈ 900GB; archive sau đó.</code></pre>
+<div class="callout why">
+  <div class="ctitle">🎯 Kết luận phải rút ra</div>
+  <p>200 TPS là <strong>nhỏ</strong> — không phải bài "scale điên" như Twitter feed. Bottleneck thật là <strong>correctness + tích hợp bank chậm/flaky</strong>, không phải QPS. Nói thẳng điều này cho thấy bạn không máy móc áp công thức scale.</p>
+</div>
+</section>
+
+<section id="hld">
+<h2>5. S2 — Service / High-Level Design (10 phút) <span class="k-tag core">CORE</span></h2>
+<div class="code-label">Whiteboard (vẽ box + mũi tên, vừa vẽ vừa nói)</div>
+<pre><code class="language-text">                         ┌──────────────┐
+   Merchant ──HTTPS────▶ │  API Gateway │  (authN merchant, rate limit,
+   (server-to-server)    │ + Idempotency│   idempotency-key check)
+                         └──────┬───────┘
+                                │
+                         ┌──────▼────────┐      ┌────────────────┐
+                         │ Payment Service│────▶│ Payment DB      │ (Postgres/Oracle)
+                         │ (state machine)│     │ payments,       │
+                         └──┬─────────┬──┘      │ payment_attempts│
+                            │         │         │ outbox, ledger  │
+                  ┌─────────▼──┐  ┌───▼──────┐  └────────────────┘
+                  │ Card        │  │ VietQR    │
+                  │ Adapter(3DS)│  │ Adapter   │
+                  └─────┬───────┘  └────┬──────┘
+                        │               │
+                  ┌─────▼───────┐  ┌────▼──────┐
+                  │ Acquirer/    │  │  NAPAS     │   (external — chậm &amp; flaky)
+                  │ Card scheme  │  │            │
+                  └──────────────┘  └───────────┘
+
+   Outbox ──poll──▶ Kafka ──▶ Webhook Dispatcher ──▶ Merchant callback_url
+                              Reconciliation Job ──▶ đối soát với bank statement</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao tách Adapter riêng cho từng method?</div>
+  <p>Mỗi bank/scheme có protocol, timeout, mã lỗi khác nhau. Cô lập thành <strong>anti-corruption layer</strong> → thêm method mới không đụng core, test bằng mock dễ, và một bank flaky không kéo sập logic chung. Đây là quyết định kiến trúc có lý do, không phải vẽ cho đẹp.</p>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Gọi bank đồng bộ rồi trả luôn cho merchant là đủ"</div>
+  <div class="mc-wrong">"Nhận request → gọi bank chờ kết quả → trả về merchant. Đơn giản, đỡ phải làm webhook."</div>
+  <div class="mc-right">Bank có thể mất nhiều giây hoặc timeout. Nếu chỉ có đường đồng bộ: (1) connection của merchant bị giữ lâu → cạn thread pool; (2) khi timeout bạn <em>không có cách nào</em> báo kết quả cuối cho merchant. Vì vậy phải có <strong>2 đường trả kết quả</strong>: đồng bộ khi nhanh, webhook bất đồng bộ cho trạng thái cuối. Cơ chế: payment có thể kết thúc sau khi HTTP response đã đóng → webhook là bắt buộc, không phải tuỳ chọn.</div>
+</div>
+</section>
+
+<section id="storage">
+<h2>6. S3 — Storage + State Machine (8 phút) <span class="k-tag core">CORE</span></h2>
+<div class="code-label">Data model</div>
+<pre><code class="language-text">payments            (1 payment = 1 ý định trả tiền của 1 order)
+  id (UUID), merchant_id, order_id, amount, currency,
+  method, status, version (optimistic lock),
+  UNIQUE(merchant_id, idempotency_key), created_at, updated_at
+
+payment_attempts    (1 payment có thể nhiều attempt — retry / 3DS)
+  id, payment_id, acquirer_ref, status, raw_response, created_at
+
+outbox              (event reliable — ghi CÙNG TX với payment)
+  id, aggregate_id, event_type, payload, published_at NULL
+
+ledger_entries      (double-entry, append-only, immutable)
+  id, payment_id, account, debit, credit, balance_after, created_at</code></pre>
+
+<p><strong>State machine</strong> — vẽ ra và đặc biệt nhấn vào state <code>TIMEOUT_UNKNOWN</code>:</p>
+<div class="code-label">Payment state machine</div>
+<pre><code class="language-text">CREATED ──▶ AUTHORIZING ──▶ AUTHORIZED ──▶ CAPTURED ──▶ SETTLED
+   │             │                              │
+   └──▶ FAILED   └──▶ FAILED / TIMEOUT_UNKNOWN  └──▶ REFUNDED</code></pre>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 TIMEOUT_UNKNOWN là state quan trọng nhất cả bài</div>
+  <p>Khi bank timeout, bạn <strong>không biết</strong> tiền đã bị trừ hay chưa. Sai lầm chết người là <em>đoán</em> (coi như fail rồi cho retry, hoặc coi như success). State đúng là <code>TIMEOUT_UNKNOWN</code> — một trạng thái chờ phân định bởi inquiry hoặc reconciliation, <strong>không bao giờ tự ý retry capture</strong>.</p>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">💡 Vì sao <code>ledger</code> dùng double-entry + append-only?</div>
+  <p>Mỗi chuyển dịch tiền ghi 2 dòng (nợ/có) cân bằng nhau → bất biến "tổng nợ = tổng có" giúp phát hiện sai lệch. Append-only → không sửa lịch sử, phục vụ audit và đối soát. (Chi tiết: #35 payment concepts, #34 audit.)</p>
+</div>
+</section>
+
+<section id="dd-idem">
+<h2>7. Deep dive — Exactly-once / Idempotency (3 lớp) <span class="k-tag core">CORE</span></h2>
+<p>Đây là tâm điểm của bài. Dành nhiều thời gian nhất ở đây. Idempotency không phải 1 chỗ mà <strong>3 ranh giới</strong>, mỗi ranh giới một cơ chế.</p>
+
+<h3>Lớp 1 — Merchant ↔ Gateway</h3>
+<p>Merchant gửi header <code>Idempotency-Key</code>. Gateway INSERT record với <code>UNIQUE(merchant_id, key)</code> ở state <code>PROCESSING</code> <strong>trước khi</strong> gọi bank. Unique constraint của DB là cổng atomic — chỉ 1 thread thắng.</p>
+<div class="code-label">Idempotency gate (rút gọn — bản đầy đủ ở #33)</div>
+<pre><code class="language-java">@Transactional
+public PaymentResult create(String merchantId, String key, PaymentRequest req) {
+    try {
+        // INSERT trước với PROCESSING — unique constraint là gate atomic
+        repo.insert(new PaymentRecord(merchantId, key, Status.PROCESSING, req));
+        return callBankAndSave(merchantId, key, req);   // thread thắng race
+    } catch (DataIntegrityViolationException dup) {
+        // thread thua race (hoặc merchant retry) — đọc kết quả của winner
+        PaymentRecord existing = repo.findByMerchantAndKey(merchantId, key)
+            .orElseThrow(() -> new IllegalStateException("key vanished"));
+        return switch (existing.getStatus()) {
+            case COMPLETED -> PaymentResult.replay(existing);   // trả cache, KHÔNG gọi lại bank
+            case PROCESSING -> throw new ConflictException("đang xử lý, retry sau");
+            case FAILED -> existing.isRetryable()
+                ? callBankAndSave(merchantId, key, req)         // lỗi transient → cho thử lại
+                : PaymentResult.error(existing);                // lỗi vĩnh viễn → trả lỗi cũ
+        };
+    }
+}</code></pre>
+
+<h3>Lớp 2 — Gateway ↔ Bank</h3>
+<p>Gửi cho bank một <code>transaction_reference</code> duy nhất, idempotent của <em>mình</em> cho mỗi attempt. Nếu timeout → <strong>không retry mù</strong>. Gọi <em>inquiry/status API</em> của bank với cùng reference để biết kết quả thật, hoặc để reconciliation xử lý.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">❌ Retry mù khi timeout (nguồn gốc double-charge)</div>
+    <pre><code class="language-java">for (int i = 0; i &lt; 3; i++) {
+    try {
+        return bank.capture(ref, amount);
+    } catch (TimeoutException e) {
+        // KHÔNG biết bank đã trừ tiền chưa,
+        // vẫn gọi lại → có thể trừ 2-3 lần!
+    }
+}</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">✅ Timeout → inquiry, không retry capture</div>
+    <pre><code class="language-java">try {
+    return bank.capture(ref, amount);
+} catch (TimeoutException e) {
+    payment.setStatus(TIMEOUT_UNKNOWN);
+    repo.save(payment);
+    // hỏi lại bank bằng CÙNG ref (idempotent đọc)
+    inquiryQueue.enqueue(ref);
+    return PaymentResult.pending(payment);
+}</code></pre>
+  </div>
+</div>
+
+<h3>Lớp 3 — Gateway → Webhook → Merchant</h3>
+<p>Event có <code>event_id</code>; merchant phải là idempotent consumer. Webhook ký HMAC để merchant verify nguồn gốc. Nếu merchant không phản hồi → retry với backoff (xem deep dive Outbox).</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Câu chốt phải nói nguyên văn</div>
+  <p>"Bank timeout <strong>không phải</strong> thất bại. Tôi để payment ở <code>TIMEOUT_UNKNOWN</code>, không bao giờ tự ý retry capture, và để inquiry + reconciliation phân định — vì retry mù chính là nguồn gốc của double-charge."</p>
+</div>
+</section>
+
+<section id="dd-outbox">
+<h2>8. Deep dive — Reliable Webhook qua Outbox <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<p>Vấn đề "dual write": nếu ghi payment vào DB rồi gọi Kafka/webhook ở 2 thao tác tách rời, thao tác sau có thể fail → mất event → merchant không bao giờ biết kết quả. Outbox giải quyết bằng cách ghi <code>payment</code> + <code>outbox</code> trong <strong>cùng transaction</strong>.</p>
+<div class="code-label">Outbox — ghi cùng TX, poll publish riêng</div>
+<pre><code class="language-java">@Transactional
+public void capture(Payment p) {
+    p.setStatus(CAPTURED);
+    paymentRepo.save(p);
+    // cùng transaction → atomic: hoặc cả 2 cùng commit, hoặc cùng rollback
+    outboxRepo.save(OutboxEvent.of("PAYMENT_CAPTURED", p.getId(), toJson(p)));
+}
+// Poller riêng: đọc outbox chưa publish → Kafka → Webhook Dispatcher (retry+backoff)
+// Merchant không phản hồi sau N lần → dead-letter + cho merchant query/replay</code></pre>
+<div class="callout tip">
+  <div class="ctitle">💡 Liên hệ</div>
+  <p>Đây đúng pattern Outbox ở #13 (distributed transaction) và #21 (async). Nếu interviewer hỏi sâu, dẫn sang exactly-once consumer bằng idempotency key.</p>
+</div>
+</section>
+
+<section id="dd-recon">
+<h2>9. Deep dive — Reconciliation (banking bắt buộc) <span class="k-tag core">CORE</span></h2>
+<p>Cuối ngày bank gửi settlement file. Job đối soát từng dòng với bảng <code>payments</code>. Đây là cơ chế biến <code>TIMEOUT_UNKNOWN</code> thành trạng thái cuối một cách <em>an toàn</em>.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Tình huống</th><th>Hành động</th></tr></thead>
+  <tbody>
+    <tr><td>Bank có, mình không có / khác amount</td><td><strong>Alert, KHÔNG tự sửa tiền</strong> → con người xử lý</td></tr>
+    <tr><td>Mình <code>TIMEOUT_UNKNOWN</code>, bank báo success</td><td>Chuyển <code>CAPTURED</code>, bắn webhook cho merchant</td></tr>
+    <tr><td>Mình <code>TIMEOUT_UNKNOWN</code>, bank không có</td><td>Chuyển <code>FAILED</code>, nhả order</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout why">
+  <div class="ctitle">🎯 Câu ăn điểm hiểu banking</div>
+  <p>"Reconciliation là <strong>nguồn sự thật cuối cùng</strong>. Hệ thống của tôi có thể không chắc chắn tại thời điểm giao dịch, nhưng đến cuối ngày, đối soát với bank statement sẽ phân định mọi trạng thái treo." Nói được điều này = hiểu banking, không chỉ coding.</p>
+</div>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Reconciliation gặp lệch</div>
+  <p style="font-size:0.93rem;margin:8px 0">File settlement của bank báo có một giao dịch 5.000.000đ mà hệ thống bạn hoàn toàn không có record nào khớp. Tìm 3 nguyên nhân khả dĩ và cách bạn xử lý <em>mà không tự ý tạo/sửa tiền</em>.</p>
+  <details>
+    <summary>Click xem phân tích (sau khi đã nghĩ)</summary>
+    <div class="bi-answer">
+      <ol>
+        <li><strong>Giao dịch ở <code>TIMEOUT_UNKNOWN</code> chưa được inquiry kịp</strong>: thực ra bank đã trừ thành công, mình mất kết quả. → Khớp theo <code>transaction_reference</code>, chuyển <code>CAPTURED</code>, bắn webhook bù.</li>
+        <li><strong>Lệch do timezone / cut-off time</strong>: giao dịch nằm ở ranh giới ngày, file hôm nay chứa giao dịch của mình ở file hôm qua. → Đối soát theo cửa sổ ±1 ngày trước khi báo lệch thật.</li>
+        <li><strong>Gian lận / sai sót phía bank</strong>: không có ref nào khớp dù mở rộng cửa sổ. → <strong>KHÔNG tự tạo record</strong>; tạo "exception ticket", đẩy cho ops + compliance điều tra, giữ bằng chứng.</li>
+      </ol>
+      <p><strong>Insight</strong>: máy móc chỉ tự động hoá phần khớp được; phần lệch luôn cần con người + audit trail. Tự sửa tiền bằng code là điều cấm kỵ.</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="edge">
+<h2>10. 🎯 Edge Cases — Production Reality <span class="k-tag advanced">ADVANCED</span></h2>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — code happy path không cover</div>
+  <p class="ec-intro">Interviewer giỏi sẽ đào những case này. Chuẩn bị sẵn:</p>
+  <ul class="ec-list">
+    <li><strong>Race: 2 request cùng idempotency-key đồng thời</strong> — UNIQUE constraint là cổng atomic; 1 thắng xử lý, thread kia bắt <code>DuplicateKey</code> rồi đọc kết quả winner; winner còn PROCESSING → trả 409.</li>
+    <li><strong>Service crash giữa lúc gọi bank</strong> — idempotency-key đã persist trước khi gọi → sau restart đọc state, gọi inquiry để biết bank đã làm gì; outbox đảm bảo event không mất.</li>
+    <li><strong>Network partition Gateway ↔ Bank</strong> — coi như timeout → <code>TIMEOUT_UNKNOWN</code>, không retry mù.</li>
+    <li><strong>Clock skew giữa các service</strong> — dùng timestamp của 1 nguồn (DB) cho ordering/expiry; không tin clock từng node.</li>
+    <li><strong>Payment DB down</strong> — store correctness-critical → ưu tiên CP: fail fast 503, để merchant retry an toàn nhờ idempotency-key (xem follow-up #4).</li>
+    <li><strong>Partial capture / partial refund</strong> — mỗi refund là record riêng có idempotency-key; tổng refund ≤ captured, check bằng <code>SELECT ... FOR UPDATE</code> hoặc optimistic lock.</li>
+    <li><strong>Số tiền 0 / âm / sai currency</strong> — validate ở API gateway trước khi tạo payment; dùng <code>BigDecimal</code> đã chuẩn hoá scale theo currency.</li>
+    <li><strong>Webhook merchant chết kéo dài</strong> — retry backoff giới hạn → dead-letter; cung cấp API cho merchant chủ động query + replay.</li>
+    <li><strong>Scale hot-merchant</strong> — một merchant lớn dội request; rate-limit theo merchant, partition theo merchant_id, tránh 1 merchant làm nghẽn cả hệ thống.</li>
+  </ul>
+</div>
+</section>
+
+<section id="anti">
+<h2>11. Anti-Patterns <span class="k-tag core">CORE</span></h2>
+<div class="callout danger">
+  <div class="ctitle">🔥 Anti-pattern 1 — Retry capture khi timeout (severity: catastrophic, mất tiền)</div>
+  <p><strong>Symptom:</strong> báo cáo đối soát cuối ngày có khách bị trừ 2-3 lần cùng số tiền trong vài giây; log có nhiều <code>capture</code> cùng <code>ref</code>. <strong>Fix:</strong> timeout → <code>TIMEOUT_UNKNOWN</code> + inquiry, không bao giờ gọi lại capture.</p>
+</div>
+<div class="callout danger">
+  <div class="ctitle">🔥 Anti-pattern 2 — Dual write (ghi DB rồi publish event tách rời)</div>
+  <p><strong>Symptom:</strong> payment CAPTURED trong DB nhưng merchant không bao giờ nhận webhook; metric "events published" &lt; "payments captured". <strong>Fix:</strong> Outbox pattern (ghi cùng TX).</p>
+</div>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Anti-pattern 3 — Lưu PAN/CVV để "tiện refund" (severity: high, vi phạm PCI)</div>
+  <p><strong>Symptom:</strong> audit PCI fail; rủi ro lộ thẻ. <strong>Fix:</strong> tokenize, không bao giờ lưu số thẻ thật ở hệ thống mình.</p>
+</div>
+<div class="callout warn">
+  <div class="ctitle">⚠️ Anti-pattern 4 — Idempotency-key do server tự sinh</div>
+  <p><strong>Symptom:</strong> merchant retry tạo payment mới mỗi lần vì key khác nhau → trùng order. <strong>Fix:</strong> key do <em>merchant</em> cung cấp, gắn với order_id của họ.</p>
+</div>
+</section>
+
+<section id="build">
+<h2>12. 🔨 Build Exercises <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Idempotent payment endpoint (Intermediate)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: Spring Boot service với <code>POST /payments</code> nhận <code>Idempotency-Key</code>, mock bank adapter có thể inject delay/timeout/failure. Push GitHub.</div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>UNIQUE(merchant_id, key); xử lý đúng 3 nhánh COMPLETED/PROCESSING/FAILED.</li>
+    <li>Mock bank: cờ cấu hình để trả timeout → service phải đặt <code>TIMEOUT_UNKNOWN</code>.</li>
+    <li>Test đồng thời: 50 thread cùng key → đúng 1 lần gọi bank.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: chạy JMeter/k6 50 concurrent cùng key, assert bank adapter được gọi đúng 1 lần và 49 request nhận replay/409.</div>
+</div>
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Reconciliation job (Advanced)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: batch đọc CSV settlement giả lập, đối soát với bảng payments, sinh báo cáo: matched / timeout-resolved / exception.</div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Khớp theo <code>transaction_reference</code> với cửa sổ ±1 ngày.</li>
+    <li>Tự động chuyển <code>TIMEOUT_UNKNOWN</code> → <code>CAPTURED/FAILED</code> theo bank.</li>
+    <li>Dòng không khớp → tạo exception record, KHÔNG tự sửa tiền.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: input có sẵn 3 loại case → output report đếm đúng từng loại; idempotent khi chạy lại 2 lần.</div>
+</div>
+</section>
+
+<section id="followup">
+<h2>13. Interviewer Follow-ups (curveballs) <span class="k-tag core">CORE</span></h2>
+
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+  <div class="q">Q: "2 request cùng idempotency-key đến đồng thời thì sao?"</div>
+  <div class="a">"UNIQUE constraint là cổng atomic; 1 thắng INSERT PROCESSING và xử lý, thread kia bắt DuplicateKey → đọc kết quả winner; nếu winner còn PROCESSING → trả 409 'retry sau'."</div>
+</div>
+
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Tầng 2 — Deep dive</span><span class="tier-title">Senior gate</span></div>
+  <div class="q">Q: "Bank trả timeout. Bạn làm gì ngay lúc đó?"</div>
+  <div class="a">"Đặt <code>TIMEOUT_UNKNOWN</code>, trả merchant 'pending', KHÔNG retry capture. Bắn inquiry async với cùng ref; nếu inquiry vẫn không chắc → reconciliation cuối ngày quyết. Idempotency-key đảm bảo merchant retry không tạo payment mới."</div>
+  <div class="q">Q: "Refund một phần nhiều lần?"</div>
+  <div class="a">"Mỗi refund là record riêng với idempotency-key; tổng refund ≤ captured; kiểm tra bằng optimistic lock / SELECT FOR UPDATE trên payment để tránh refund vượt."</div>
+</div>
+
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Staff signal</span></div>
+  <div class="q">Q: "Postgres của payments down thì sao? CP hay AP?"</div>
+  <div class="a">"Đây là store correctness-critical → chọn CP: từ chối ghi (fail fast 503) hơn là chấp nhận ghi mất an toàn. Có replica để failover; idempotency-key giúp merchant retry an toàn sau khi phục hồi. Tôi sẽ không đánh đổi tính đúng đắn lấy availability cho luồng tiền — chỉ chấp nhận eventual consistency cho phần webhook/notification."</div>
+  <div class="q">Q: "Làm sao đảm bảo không double-charge khi chính service bạn crash giữa chừng?"</div>
+  <div class="a">"State machine + idempotency-key persist trước khi gọi bank; sau restart đọc state, gọi inquiry để biết bank đã làm gì; outbox đảm bảo event không mất. Không có bước nào dựa vào việc 'process sống tới khi xong'."</div>
+</div>
+</section>
+
+<section id="rubric">
+<h2>14. Tự chấm (rubric) <span class="k-tag core">CORE</span></h2>
+<div class="callout success">
+  <div class="ctitle">✅ Checklist sau khi tự nói xong</div>
+  <ul style="margin:6px 0 0 18px">
+    <li>Clarify trước khi vẽ — hỏi PCI scope, settlement, multi-attempt (≥3 câu).</li>
+    <li>Nói được "correctness &gt; availability" và lý do.</li>
+    <li>Capacity tính ra số, và nhận ra bottleneck là bank/correctness chứ không phải QPS.</li>
+    <li>State machine có <code>TIMEOUT_UNKNOWN</code> và xử lý đúng (không retry mù).</li>
+    <li>Idempotency 3 lớp rõ ràng.</li>
+    <li>Outbox cho webhook (chống dual-write).</li>
+    <li>Reconciliation như nguồn sự thật cuối.</li>
+    <li>Mỗi quyết định kèm 1 trade-off.</li>
+  </ul>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Level</th><th>Biểu hiện</th></tr></thead>
+  <tbody>
+    <tr><td><strong>L4 / Mid</strong></td><td>Vẽ đúng box + happy path + idempotency cơ bản.</td></tr>
+    <tr><td><strong>L5 / Senior</strong></td><td>Chủ động nói failure modes (timeout, crash, partition), reconciliation, trade-off CP/AP, PCI — <em>trước khi</em> được hỏi.</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section id="feynman-end">
+<h2>Closing — Feynman Check</h2>
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Check</div>
+  <div class="fy-prompt">"Giải thích cho 1 junior trong 5 phút: vì sao bank timeout không được phép retry capture, và reconciliation cứu mình thế nào?"</div>
+  <div class="fy-rule">Quy tắc: không xem file. Nói ra to. Nếu lắp bắp ở chỗ "TIMEOUT_UNKNOWN" → quay lại mục 6 &amp; 9.</div>
+</div>
+<div class="feynman">
+  <div class="fy-head">🎓 Calibration Check — 5 câu phải trả lời gọn</div>
+  <div class="fy-prompt">1) 3 lớp idempotency là gì? · 2) Vì sao Outbox thay cho publish trực tiếp? · 3) State nào là "không biết kết quả" và xử lý ra sao? · 4) Khi DB payment down chọn CP hay AP, vì sao? · 5) Reconciliation xử lý dòng lệch không khớp thế nào?</div>
+  <div class="fy-rule">Bí 1 câu = chưa sẵn sàng cho vòng thật.</div>
+</div>
+<div class="verify-source">
+  <div class="vs-head">📚 Verify Against Source — đừng tin mỗi mock</div>
+  <p>Cross-check với nguồn chuẩn:</p>
+  <ul>
+    <li><a href="https://stripe.com/docs/api/idempotent_requests">Stripe — Idempotent Requests</a> (cách industry thực sự làm)</li>
+    <li><a href="https://microservices.io/patterns/data/transactional-outbox.html">microservices.io — Transactional Outbox</a></li>
+    <li><a href="https://martinfowler.com/articles/patterns-of-distributed-systems/">Martin Fowler — Patterns of Distributed Systems</a></li>
+    <li>File nội bộ: <strong>#37</strong> (5-step framework + payment example), <strong>#33</strong> (idempotency code đầy đủ), <strong>#13</strong> (saga/outbox).</li>
+  </ul>
+</div>
+</section>
+
+<footer>
+<div>📁 #57 Mock: Payment Gateway · Nhóm P — Mock &amp; Rehearsal</div>
+<div>Tiếp theo: <a href="58-mock-e-contract-signing.html">#58 — Mock: E-Contract Signing</a></div>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

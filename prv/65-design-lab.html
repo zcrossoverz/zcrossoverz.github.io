@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#65 — Design Lab: Thiết kế hệ thống theo trade-off | Backend Engineering Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .dl-wrap { max-width: 920px; margin: 0 auto; padding: 0 4px 80px; }
+  .dl-grid { display: grid; gap: 12px; }
+  .dl-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); cursor: pointer; transition: border-color .14s; }
+  .dl-card:hover { border-color: var(--accent); }
+  .dl-card h3 { margin: 6px 0; font-size: 1.05rem; }
+  .dl-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-muted); }
+  .dl-lv { font-size: 10px; font-weight: 800; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; color: #fff; background: var(--purple); }
+  .dl-done { font-size: 11px; font-weight: 700; color: var(--success); }
+  .dl-brief { border: 1px solid var(--accent); border-left: 6px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); padding: 14px 16px; margin: 14px 0; font-size: .95rem; line-height: 1.65; }
+  .dl-brief .bh { font-family: var(--font-mono); font-weight: 700; color: var(--accent); font-size: 13px; margin-bottom: 6px; }
+  .dl-brief pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; overflow-x: auto; font-family: var(--font-mono); font-size: .8rem; line-height: 1.55; margin: 8px 0; }
+  .dl-q { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 18px 20px; margin-top: 16px; box-shadow: var(--shadow-sm); }
+  .dl-q .step { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--purple); }
+  .dl-q h3 { margin: 6px 0 4px; font-size: 1.02rem; line-height: 1.5; }
+  .dl-opts { display: grid; gap: 9px; margin-top: 12px; }
+  .dl-opt { text-align: left; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .93rem; line-height: 1.5; padding: 11px 13px; border-radius: var(--radius); cursor: pointer; }
+  .dl-opt:hover { border-color: var(--purple); }
+  .dl-opt:disabled { cursor: default; }
+  .dl-opt.s2 { border-color: var(--success); background: var(--success-soft); }
+  .dl-opt.s1 { border-color: var(--warning); background: var(--warning-soft); }
+  .dl-opt.s0 { border-color: var(--danger); background: var(--warning-soft); }
+  .dl-opt .fb { display: block; margin-top: 8px; font-size: .87rem; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+  .dl-next { margin-top: 14px; border: 1px solid var(--purple); background: var(--bg); color: var(--purple); font: inherit; font-weight: 700; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; }
+  .dl-next:hover { background: var(--purple); color: #fff; }
+  .dl-score { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+  .dl-debrief { border-left: 4px solid var(--success); }
+  .dl-debrief pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; overflow-x: auto; font-family: var(--font-mono); font-size: .78rem; line-height: 1.55; }
+  .dl-back { display: inline-block; margin-bottom: 12px; font-size: 13.5px; font-weight: 700; color: var(--accent); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">#65 Design Lab</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Điều hướng</div>
+  <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
+    <a href="63-diagnostic.html">Diagnostic</a>
+    <a href="64-incident-lab.html">Incident Lab</a>
+    <a href="index.html">Danh mục bài học</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content dl-wrap">
+
+<section class="hero">
+  <span class="meta-tag">Design Lab · Architecture Decisions</span>
+  <h1>Thiết kế hệ thống theo trade-off</h1>
+  <p class="lead">Mỗi bài là một hệ thống thật phải dựng, đi qua <strong>chuỗi quyết định kiến trúc</strong> — không có đáp án tuyệt đối, chỉ có trade-off được chấm. Mỗi lựa chọn đều có lời giải thích <em>vì sao nó thắng/thua trong bối cảnh này</em> — đúng cách một buổi design review diễn ra.</p>
+</section>
+
+<div class="study-banner">
+  <div class="sb-head">📐 Cách làm cho ra kỹ năng thật</div>
+  <ol class="sb-rules">
+    <li><strong>Đọc kỹ yêu cầu + con số</strong> (scale, latency, chi phí sai) — quyết định đúng ở scale này có thể sai ở scale khác.</li>
+    <li><strong>Tự phác thảo thiết kế ra giấy trước</strong> khi xem lựa chọn — rồi so với các phương án.</li>
+    <li>Đọc <strong>why của cả các phương án bạn KHÔNG chọn</strong> — trade-off nằm ở đó.</li>
+    <li>Cuối bài có <strong>kiến trúc tham chiếu + "điều gì đổi khi scale ×100"</strong> — thử tự trả lời trước khi đọc.</li>
+  </ol>
+</div>
+
+<div id="dlView"></div>
+
+<footer>
+  <span>#65 · dữ liệu: <code>design/data/*.js</code> · kết quả nuôi chiều "Thiết kế được" ở Learning Hub</span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
+<script src="design/manifest.js"></script>
+<script>
+window.DESIGNS = { list: [], register: function (x) { window.DESIGNS.list.push(x); } };
+(function load() {
+  var files = window.DSG_FILES || [], i = 0, errs = [];
+  function next() {
+    if (i >= files.length) { dlBoot(errs); return; }
+    var s = document.createElement("script");
+    s.src = "design/" + files[i++];
+    s.onload = next; s.onerror = function () { errs.push(s.src); next(); };
+    document.head.appendChild(s);
+  }
+  next();
+})();
+
+function dlBoot(errs) {
+  "use strict";
+  var view = document.getElementById("dlView");
+  var ALL = DESIGNS.list;
+  if (errs.length) view.insertAdjacentHTML("beforebegin", '<div class="callout warn">Không nạp được: ' + errs.join(", ") + "</div>");
+
+  function maxScore(d) {
+    var m = 0;
+    d.steps.forEach(function (s) { m += Math.max.apply(null, s.opts.map(function (o) { return o.s || 0; })); });
+    return m;
+  }
+
+  function listView() {
+    location.hash = "";
+    var done = BEP.dsgGet();
+    view.innerHTML = '<div class="dl-grid">' + ALL.map(function (d) {
+      var r = done[d.id];
+      return '<div class="dl-card" data-id="' + d.id + '">'
+        + '<div class="dl-meta"><span class="dl-lv">' + d.lv + "</span><span>" + d.domain + "</span><span>⏱ " + d.time + "</span>"
+        + (r ? '<span class="dl-done">✔ đã thiết kế · điểm ' + r.score + "/" + r.max + "</span>" : "")
+        + "</div><h3>" + d.title + "</h3>"
+        + '<div style="font-size:13px;color:var(--text-muted)">' + d.teaser + "</div></div>";
+    }).join("") + "</div>";
+    view.querySelectorAll(".dl-card").forEach(function (c) {
+      c.addEventListener("click", function () { openD(c.dataset.id); });
+    });
+  }
+
+  function openD(id) {
+    var d = null;
+    ALL.forEach(function (x) { if (x.id === id) d = x; });
+    if (!d) { listView(); return; }
+    location.hash = id;
+    var run = { score: 0, max: maxScore(d), phase: 0 };
+
+    function header() {
+      return '<span class="dl-back" id="dlBack">← Danh sách bài</span>'
+        + '<div class="dl-meta"><span class="dl-lv">' + d.lv + "</span><span>" + d.domain + '</span><span class="dl-score" id="dlScore">Điểm thiết kế: ' + run.score + "/" + run.max + "</span></div>"
+        + "<h2 style='margin:8px 0 4px'>" + d.title + "</h2>"
+        + '<div class="dl-brief"><div class="bh">📋 YÊU CẦU &amp; BỐI CẢNH</div>' + d.brief + "</div>";
+    }
+
+    function renderPhase() {
+      var st = d.steps[run.phase];
+      if (!st) { renderDebrief(); return; }
+      var opts = st.opts.map(function (o, i) { return { o: o, i: i }; });
+      for (var i = opts.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = opts[i]; opts[i] = opts[j]; opts[j] = t; }
+      view.innerHTML = header()
+        + '<div class="dl-q"><span class="step">Quyết định ' + (run.phase + 1) + "/" + d.steps.length + "</span><h3>" + st.q + "</h3>"
+        + '<div class="dl-opts">' + opts.map(function (w) { return '<button class="dl-opt" data-i="' + w.i + '">' + w.o.t + "</button>"; }).join("") + "</div>"
+        + '<div id="dlNextWrap"></div></div>';
+      document.getElementById("dlBack").onclick = listView;
+      view.querySelector(".dl-opts").addEventListener("click", function (e) {
+        var b = e.target.closest(".dl-opt"); if (!b || b.disabled) return;
+        var picked = +b.dataset.i, gain = 0;
+        view.querySelectorAll(".dl-opt").forEach(function (x) {
+          x.disabled = true;
+          var o = st.opts[+x.dataset.i];
+          if (+x.dataset.i === picked) gain = o.s || 0;
+          if (+x.dataset.i === picked || (o.s || 0) === 2) {
+            x.classList.add("s" + (o.s || 0));
+            if (o.why) x.insertAdjacentHTML("beforeend", '<span class="fb">' + (+x.dataset.i === picked ? "" : "<b>Phương án mạnh nhất:</b> ") + o.why + "</span>");
+          }
+        });
+        run.score += gain;
+        document.getElementById("dlScore").textContent = "Điểm thiết kế: " + run.score + "/" + run.max;
+        document.getElementById("dlNextWrap").innerHTML = '<button class="dl-next" id="dlNext">' + (run.phase + 1 < d.steps.length ? "Quyết định tiếp →" : "Xem kiến trúc tham chiếu →") + "</button>";
+        document.getElementById("dlNext").onclick = function () { run.phase++; renderPhase(); };
+      });
+      window.scrollTo(0, 0);
+    }
+
+    function renderDebrief() {
+      BEP.dsgSave(d.id, run.score, run.max);
+      var pct = Math.round(run.score / run.max * 100);
+      var verdict = pct >= 85 ? "🏆 Tư duy trade-off vững" : pct >= 60 ? "👍 Hướng đúng, cần cân nhắc bối cảnh kỹ hơn" : "🩹 Đọc kỹ debrief — chú ý CON SỐ trong yêu cầu";
+      view.innerHTML = header()
+        + '<div class="dl-q dl-debrief"><span class="step">Kiến trúc tham chiếu · ' + run.score + "/" + run.max + " điểm · " + verdict + "</span>"
+        + d.debrief
+        + (d.refs && d.refs.length ? '<div class="qb-refs" style="margin-top:10px"><span class="rlab">Đọc thêm</span>' + d.refs.map(function (r) { return '<a href="' + r[1] + '" target="_blank" rel="noopener">' + r[0] + "</a>"; }).join(" · ") + "</div>" : "")
+        + "</div>"
+        + '<button class="dl-next" id="dlAgain" style="margin-top:14px">↺ Làm lại</button> '
+        + '<button class="dl-next" id="dlList" style="margin-top:14px">Danh sách bài</button>';
+      document.getElementById("dlBack").onclick = listView;
+      document.getElementById("dlAgain").onclick = function () { openD(d.id); };
+      document.getElementById("dlList").onclick = listView;
+      window.scrollTo(0, 0);
+    }
+
+    renderPhase();
+  }
+
+  var h = (location.hash || "").replace("#", "");
+  if (h && ALL.some(function (x) { return x.id === h; })) openD(h); else listView();
+}
+</script>
+</body>
+</html>

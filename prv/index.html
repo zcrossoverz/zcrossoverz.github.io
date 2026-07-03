@@ -462,13 +462,25 @@
   <div>
     <span class="meta-tag">Index</span>
     <h1>Java Backend Interview Prep</h1>
-    <p class="lead">Trang chủ gom các file HTML hiện có trong thư mục này để mở nhanh từng bài học.</p>
+    <p class="lead">Danh mục bài học chuyên sâu. Hệ thống giờ có <strong>Learning Hub</strong> — nơi đo trình độ, tìm lỗ hổng và gợi ý học gì tiếp theo.</p>
   </div>
   <div class="home-actions">
-    <span class="phase-tag">51 bài</span>
+    <span class="phase-tag">58 bài</span>
     <span class="phase-tag">HTML offline</span>
   </div>
 </section>
+
+<div style="border:1px solid var(--accent); border-radius: var(--radius-lg); background: var(--accent-soft); padding: 16px 18px; margin: 0 0 18px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between">
+  <div style="min-width:260px; flex:1">
+    <b style="font-size:1.02rem">🧭 Learning Hub — trạm điều khiển việc học</b>
+    <div style="font-size:13px; color:var(--text-muted); margin-top:3px">Bạn đang ở đâu · yếu gì · học gì tiếp theo · cái gì đang bị quên. Kèm <b>Diagnostic</b> (đo trình độ, 44 câu tình huống) và <b>Incident Lab</b> (8 sự cố production để luyện debug).</div>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap">
+    <a href="learn.html" style="font-weight:700; font-size:13.5px; color:#fff; background:var(--accent); padding:9px 16px; border-radius:999px; text-decoration:none">Mở Hub →</a>
+    <a href="63-diagnostic.html" style="font-weight:700; font-size:13.5px; color:var(--accent); background:var(--bg-elev); border:1px solid var(--accent); padding:9px 16px; border-radius:999px; text-decoration:none">🎯 Đo trình độ</a>
+    <a href="64-incident-lab.html" style="font-weight:700; font-size:13.5px; color:var(--accent); background:var(--bg-elev); border:1px solid var(--accent); padding:9px 16px; border-radius:999px; text-decoration:none">🔥 Incident Lab</a>
+  </div>
+</div>
 
 <div class="home-tabs" role="tablist" aria-label="Cách xem tài liệu">
   <button class="tab-button active" id="modulesTab" type="button" role="tab" aria-selected="true" aria-controls="modulesPanel" data-tab-target="modulesPanel">Tất cả bài</button>
@@ -1060,6 +1072,72 @@
         <h3>Camunda &amp; BPMN</h3>
         <p>Process engine state/persistence, user task vs service task, timer/error, vì sao service task phải idempotent.</p></div>
       <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>31-camunda-bpmn.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="mock-rehearsal" class="module-section">
+  <h2>Mock Interview &amp; Rehearsal</h2>
+  <div class="module-grid">
+    <a class="module-card" href="57-mock-payment-gateway.html" data-search="57 mock payment gateway system design idempotency timeout reconciliation outbox webhook capacity state machine">
+      <div><div class="module-top"><span class="module-number">#57</span><span class="module-status">Mock · HLD</span></div>
+        <h3>Mock: Payment Gateway</h3>
+        <p>Mock 45 phút: clarify → capacity → HLD → deep dive. Trọng tâm idempotency 3 lớp, TIMEOUT_UNKNOWN, reconciliation. Có follow-up + rubric L4/L5.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>57-mock-payment-gateway.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="58-mock-e-contract-signing.html" data-search="58 mock e-contract signing digital signature pades integrity ltv hash chain audit hsm key custody incremental save">
+      <div><div class="module-top"><span class="module-number">#58</span><span class="module-status">Mock · HLD</span></div>
+        <h3>Mock: E-Contract Signing</h3>
+        <p>Sát CV của bạn: integrity bằng mật mã, long-term validity, key custody (HSM/hash-signing), multi-sign incremental save, audit tamper-evident.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>58-mock-e-contract-signing.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="59-behavioral-rehearsal-drill.html" data-search="59 behavioral rehearsal drill star story 90 seconds active recall interview question map red flags reverse questions">
+      <div><div class="module-top"><span class="module-number">#59</span><span class="module-status">Behavioral</span></div>
+        <h3>Behavioral Rehearsal Drill</h3>
+        <p>9 story STAR (CV thật) nén thành flashcard 90 giây, active recall (script ẩn). Bản đồ câu hỏi→story, red flags, lịch luyện 5 ngày.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>59-behavioral-rehearsal-drill.html</span><span>Open</span></div>
+    </a>
+  </div>
+</section>
+
+<section id="study-tools" class="module-section">
+  <h2>Học &amp; Ghi nhớ (Study Tools)</h2>
+  <div class="module-grid">
+    <a class="module-card" href="60-flashcards-quiz.html" data-search="60 flashcards quiz active recall spaced repetition leitner anki core memorize drill self test">
+      <div><div class="module-top"><span class="module-number">#60</span><span class="module-status">Flashcards</span></div>
+        <h3>Flashcards &amp; Quiz (CORE)</h3>
+        <p>94 thẻ active-recall cho ~20 topic CORE. Lật thẻ, tự chấm Again/Good/Easy (Leitner), filter theo topic, lưu tiến độ. Bản Anki CSV kèm theo trong study-tools/.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Drill</span><span>60-flashcards-quiz.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="61-cheat-sheets.html" data-search="61 cheat sheets summary compression one page recall must know quick review entry">
+      <div><div class="module-top"><span class="module-number">#61</span><span class="module-status">Cheat sheet</span></div>
+        <h3>Cheat Sheets (CORE)</h3>
+        <p>Bản nén 1 màn hình/topic: essence + must-know + Recall 5. Để "vào nhanh" và ôn cấp tốc; in ra PDF bỏ túi được.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Nén</span><span>61-cheat-sheets.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="62-interview-question-bank.html" data-search="62 interview question bank bo cau hoi phong van junior middle senior active recall spaced repetition leitner quiz flashcard xp streak tag">
+      <div><div class="module-top"><span class="module-number">#62</span><span class="module-status">Q&amp;A Bank</span></div>
+        <h3>Bộ Câu Hỏi Phỏng Vấn (Junior→Senior)</h3>
+        <p>217+ câu theo level và tag, dữ liệu tách theo nhóm trong <code>qbank/data/</code> — dễ mở rộng. 4 nhóm nền tảng đã viết lại bằng ngôn ngữ dễ hiểu cho junior. Active recall + Leitner + quiz.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Drill</span><span>62-interview-question-bank.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="63-diagnostic.html" data-search="63 diagnostic placement test do trinh do lo hong misconception du doan phan tich trade-off">
+      <div><div class="module-top"><span class="module-number">#63</span><span class="module-status">Assessment</span></div>
+        <h3>Diagnostic — Đo trình độ &amp; tìm lỗ hổng</h3>
+        <p>44 câu tình huống (dự đoán hành vi, phân tích nguyên nhân, chọn trade-off). Mỗi đáp án sai chẩn đoán đúng misconception bạn đang mắc + chỉ chỗ học lại. Kết quả nuôi lộ trình ở Learning Hub.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Assessment</span><span>63-diagnostic.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="64-incident-lab.html" data-search="64 incident lab su co production memory leak deadlock n+1 cache stampede retry storm kafka duplicate thread pool debug on-call">
+      <div><div class="module-top"><span class="module-number">#64</span><span class="module-status">On-call Sim</span></div>
+        <h3>Incident Lab — Trực chiến sự cố production</h3>
+        <p>8 sự cố thật: memory leak, DB deadlock, pool cạn, N+1, cache stampede, retry storm, duplicate message, thread starvation. Điều tra bằng log/thread dump/EXPLAIN, chấm chất lượng từng bước + lab tái hiện.</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Lab</span><span>64-incident-lab.html</span><span>Open</span></div>
+    </a>
+    <a class="module-card" href="65-design-lab.html" data-search="65 design lab thiet ke he thong trade-off rate limiter notification file upload system design review">
+      <div><div class="module-top"><span class="module-number">#65</span><span class="module-status">Design Sim</span></div>
+        <h3>Design Lab — Thiết kế hệ thống theo trade-off</h3>
+        <p>Đóng vai design review: rate limiter, hệ thống notification đa kênh, upload file 2GB. Mỗi quyết định kiến trúc được chấm theo trade-off trong đúng bối cảnh + kiến trúc tham chiếu và câu hỏi "scale ×100 thì đổi gì".</p></div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Lab</span><span>65-design-lab.html</span><span>Open</span></div>
     </a>
   </div>
 </section>

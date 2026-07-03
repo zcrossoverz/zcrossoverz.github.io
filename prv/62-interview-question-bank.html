@@ -217,6 +217,7 @@
 <div class="qb-toast" id="qbToast"></div>
 
 <script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
 <script src="qbank/manifest.js"></script>
 <script>
 /* =========================================================
@@ -399,6 +400,7 @@ function qbBoot(loadErrors) {
     if (stat.reviewDay !== t) { stat.reviewDay = t; stat.reviews = 0; }
     stat.reviews = (stat.reviews || 0) + 1;
     save(K_STAT, stat);
+    if (window.BEP) try { BEP.qbTouch(q.id); } catch (e) {}
     var msg = "+" + (XP_GAIN[r] || 0) + " XP";
     if (prevBox < MASTER_BOX && box >= MASTER_BOX) msg = "🎉 Thuộc rồi! " + msg;
     toast(msg); updateDash();
@@ -572,6 +574,41 @@ function qbBoot(loadErrors) {
 
   buildGroupSelect();
   buildTopicSelect();
+  /* Preset filter qua URL: 62-...html?q=<search>&group=<nhóm>&lv=<level> (hub dùng để trỏ thẳng) */
+  try {
+    var usp = new URLSearchParams(location.search);
+    var pq = usp.get("q"), pg = usp.get("group"), plv = usp.get("lv");
+    if (pg && groups.indexOf(pg) !== -1) { fGroup = pg; $("qbGroup").value = pg; buildTopicSelect(); }
+    if (pq) { $("qbSearch").value = pq; fSearch = norm(pq); }
+    if (plv && LV[plv]) {
+      fLevel = plv;
+      $("qbLevels").querySelectorAll(".qb-lvpill").forEach(function (x) { x.classList.toggle("active", x.dataset.lv === plv); });
+    }
+  } catch (e) {}
+  /* Phiên học hôm nay: 62-...html?session=today — câu đến hạn ôn + câu CORE chưa học, chạy ở quiz mode */
+  try {
+    if (new URLSearchParams(location.search).get("session") === "today") {
+      var lastMap = window.BEP ? BEP.qbLast() : {};
+      var due = [], fresh = [];
+      QUESTIONS.forEach(function (q) {
+        var b = boxes[q.id];
+        if (b == null) { if (q.core && q.lv !== "senior") fresh.push(q); return; }
+        var days = window.BEP ? BEP.daysAgo(lastMap[q.id]) : 9999;
+        var dueAt = [1, 2, 4, 8, 16, 30][Math.min(b, 5)];
+        if (!lastMap[q.id] || days >= dueAt) due.push(q);
+      });
+      due.sort(function (a, b) { return (boxes[a.id] || 0) - (boxes[b.id] || 0); });
+      fresh.sort(function (a, b) { return (LV_ORDER[a.lv] - LV_ORDER[b.lv]) || (a._i - b._i); });
+      var takeDue = due.slice(0, 15);
+      var queue = takeDue.concat(fresh.slice(0, Math.max(0, 25 - takeDue.length)));
+      if (queue.length) {
+        mode = "quiz";
+        document.querySelectorAll(".qb-mode").forEach(function (x) { x.classList.toggle("active", x.dataset.mode === "quiz"); });
+        quiz.queue = queue; quiz.idx = 0; quiz.flipped = false; quiz.score = 0; quiz.total = queue.length;
+        setTimeout(function () { toast("📅 Phiên hôm nay: " + takeDue.length + " câu đến hạn + " + (queue.length - takeDue.length) + " câu mới"); }, 300);
+      }
+    }
+  } catch (e) {}
   updateDash();
   render();
 }

@@ -1,6 +1,6 @@
 # Backend Engineering Lab — Kiến trúc hệ thống
 
-> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-03.
+> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-04.
 
 ## Hệ thống này là gì
 
@@ -21,7 +21,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
                    └────────┬──────────┴───────────┘
                             ▼
               learnmap/skillmap.js  (XƯƠNG SỐNG)
-        ~75 node · 18 domain · prerequisite graph
+        ~79 node · 18 domain · prerequisite graph
                             │ lesson
                             ▼
               58 bài học HTML (01→61, index.html)
@@ -38,7 +38,8 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 | `assets/progress.js` | `BEP` — store hợp nhất: đọc/ghi localStorage mọi module + công thức mastery + Leitner decay + 7 dimensions |
 | `62-interview-question-bank.html` + `qbank/` | Question bank 217+ câu, 12 nhóm. Xem `qbank/GUIDE.md` |
 | `63-diagnostic.html` + `diagnostic/` | 44 câu tình huống MCQ; mỗi đáp án sai = 1 misconception + remediation; chấm theo domain/dimension/node |
-| `64-incident-lab.html` + `incidents/` | 8 sự cố production: artifacts (log/dump/EXPLAIN) → điều tra từng bước → root cause → fix trade-off → lab tái hiện |
+| `64-incident-lab.html` + `incidents/` | 12 sự cố production: artifacts (log/dump/EXPLAIN) → điều tra từng bước → root cause → fix trade-off → lab tái hiện |
+| `65-design-lab.html` + `design/` | 3 bài thiết kế: yêu cầu → chọn kiến trúc từng bước → chấm trade-off |
 | `index.html` | Danh mục 58 bài học (giữ nguyên URL cũ) + banner Hub |
 | `_qa/validate.mjs` | QA tự động — chạy `node _qa/validate.mjs` từ `html/`, exit≠0 nếu lỗi |
 
@@ -52,7 +53,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 | Phân tích được | diagnostic dim `analyze` | ✅ 15 câu |
 | Quyết định trade-off | diagnostic dim `decide` + incident fix | ✅ 11 câu + 8 fix |
 | Debug được | điểm Incident Lab | ✅ 8 sự cố |
-| Thiết kế được | diagnostic dim `design` | 🟡 mỏng (2 câu) — xem Roadmap |
+| Thiết kế được | diagnostic dim `design` + Design Lab (65) | 🟡 2 câu diag + 3 đề Design Lab — cần thêm đề |
 
 **Công thức mastery một node** (trong `progress.js → nodeEvidence`): qbank 0.45 + diagnostic 0.3 + incident 0.25, chuẩn hoá theo phần có dữ liệu. Không có dữ liệu = `null` ("chưa đo"), không phải 0 — hệ thống không giả vờ biết.
 
@@ -81,8 +82,8 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 
 ## Roadmap (ưu tiên giảm dần)
 
-1. **Rewrite nốt qbank:** Spring còn 31 câu `partial`; 8 nhóm `legacy` (Distributed, Resilience, Architecture, DevOps, Security, Testing, Domain&AI, Interview) — rewrite theo chuẩn GUIDE.md, mỗi đợt một nhóm + bổ sung câu.
-2. **Design lab (chiều "Thiết kế được"):** module kiểu incident nhưng đề bài là thiết kế (yêu cầu → chọn kiến trúc từng bước, chấm trade-off). Tái dùng engine 64 với schema mới.
+1. **Rewrite nốt qbank:** ĐÃ rewrite theo chuẩn GUIDE.md: Spring, **Security (16)**, **Testing (16)**, **Distributed & Messaging (20 — CAP/PACELC, consensus/Raft, quorum, consistent hashing, clock, split-brain, distributed lock; +2 node dist-consensus/dist-hashing)**, **Architecture & Design (25 — đủ 5 SOLID gồm ISP, system-design method, estimation, caching/CDN, coupling&cohesion, CQRS, sync-vs-async)**, **Resilience & Reliability (16 — graceful degradation, cascading failure, load shedding/backpressure, health check, SLO/error budget, deadline budget, redundancy/SPOF)**, **DevOps & Cloud (18 — Docker layers/multi-stage, CI-vs-CD, 12-factor, IaC, K8s HPA, structured logging, metrics RED/USE)**, **Domain & AI (17 — payment: authorize/capture/settle, ledger, reconciliation, webhook, money-as-integer, refund-vs-chargeback, PCI/tokenization; AI/LLM: RAG, embeddings, prompt injection, function-calling safety, context/token, structured output, streaming; ĐÃ gỡ Camunda/BPMN khỏi hệ học — node dom-bpmn + card index, giữ file lesson 31)** — xong 2026-07-04. Còn **1 nhóm `legacy`**: Interview (Kỹ năng phỏng vấn) — rewrite tiếp mỗi đợt một nhóm + bổ sung câu.
+2. **Design lab (chiều "Thiết kế được"):** ✅ ĐÃ CÓ bản đầu — `65-design-lab.html` + `design/`, 3 đề (rate limiter, notification đa kênh, file upload lớn). Cần: thêm đề (URL shortener, feed, chat, payment) cho luyện FAANG.
 3. **Thêm sự cố:** consumer lag, GC pressure/high CPU, K8s OOMKilled/probe fail, deployment rollback, outbox relay chết, data inconsistency sau saga (đã có node/misconception nền trong diagnostic).
 4. **Node `planned` trong skillmap:** cs-os (OS cho backend), conc-vthreads (virtual threads — Java 21), ops-k8s-tshoot, car-soft — viết bài học + gỡ cờ `planned`.
 5. **Diagnostic mở rộng:** ngân hàng câu đủ lớn để mỗi lượt đo rút ngẫu nhiên (chống nhớ đề); thêm item cho các domain mỏng (test, api, dom).

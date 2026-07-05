@@ -13,7 +13,7 @@
    ============================================================ */
 window.SKILLMAP = {
   version: 1,
-  updated: "2026-07-03", /* sync */
+  updated: "2026-07-04", /* sync */
   domains: [
     { id: "cs",     t: "CS Foundation & Algorithms", icon: "🧮", order: 1 },
     { id: "web",    t: "Web & Networking",           icon: "🌐", order: 2 },
@@ -100,6 +100,8 @@ window.SKILLMAP = {
     /* ---------- Distributed ---------- */
     { id: "dist-basics", d: "dist", t: "CAP/PACELC, consistency model, thời gian & thứ tự", lv: "senior", pre: ["data-tx"], lesson: "39-database-consistency.html", tags: ["cap-theorem", "pacelc", "distributed"], inc: [] },
     { id: "dist-tx",     d: "dist", t: "Distributed transaction, saga, 2PC", lv: "senior", pre: ["dist-basics", "msg-eda"], lesson: "13-distributed-transaction.html", tags: ["distributed-tx"], inc: [] },
+    { id: "dist-consensus", d: "dist", t: "Consensus & replication: Raft, leader election, quorum", lv: "senior", pre: ["dist-basics"], lesson: null, tags: ["consensus", "raft", "quorum", "leader-election"], inc: [] },
+    { id: "dist-hashing",   d: "dist", t: "Consistent hashing & data partitioning", lv: "senior", pre: ["dist-basics"], lesson: null, tags: ["consistent-hashing", "partitioning"], inc: [] },
 
     /* ---------- Reliability & Performance ---------- */
     { id: "resil-idem",     d: "resil", t: "Idempotency đầu-cuối", lv: "middle", pre: ["web-http", "data-design"], lesson: "33-idempotency.html", tags: ["idempotent", "idempotency"], inc: ["inc-duplicate-message"] },
@@ -141,7 +143,6 @@ window.SKILLMAP = {
 
     /* ---------- Nghiệp vụ & AI ---------- */
     { id: "dom-payment", d: "dom", t: "Payment & banking concepts", lv: "middle", pre: ["data-tx", "resil-idem"], lesson: "35-payment-banking-concepts.html", tags: ["payment"], inc: [] },
-    { id: "dom-bpmn",    d: "dom", t: "Camunda/BPMN workflow", lv: "middle", pre: ["spr-boot"], lesson: "31-camunda-bpmn.html", tags: ["camunda-bpmn"], inc: [] },
     { id: "dom-ai",      d: "dom", t: "Tích hợp AI/LLM vào backend", lv: "middle", pre: ["api-rest"], lesson: "53-ai-llm-backend-integration.html", tags: ["ai-llm"], inc: [] },
 
     /* ---------- Interview & Senior skills ---------- */

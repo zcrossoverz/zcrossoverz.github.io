@@ -465,7 +465,7 @@
     <p class="lead">Danh mục bài học chuyên sâu. Hệ thống giờ có <strong>Learning Hub</strong> — nơi đo trình độ, tìm lỗ hổng và gợi ý học gì tiếp theo.</p>
   </div>
   <div class="home-actions">
-    <span class="phase-tag">58 bài</span>
+    <span class="phase-tag">60 bài</span>
     <span class="phase-tag">HTML offline</span>
   </div>
 </section>
@@ -669,6 +669,18 @@
         <p>2PC, Saga, Outbox pattern, eventual consistency và cách giữ dữ liệu đúng khi nhiều service cùng tham gia workflow.</p>
       </div>
       <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>13-distributed-transaction.html</span><span>Open</span></div>
+    </a>
+
+    <a class="module-card" href="67-consensus-consistent-hashing.html" data-search="67 consensus quorum raft leader election fencing token split brain consistent hashing ring virtual nodes vnodes redis cluster hash slots kafka partition cassandra sharding">
+      <div>
+        <div class="module-top">
+          <span class="module-number">#67</span>
+          <span class="module-status">Distributed</span>
+        </div>
+        <h3>Consensus, Quorum &amp; Consistent Hashing</h3>
+        <p>W+R&gt;N, leader election, fencing token chống split-brain, Raft đủ dùng, hash ring + virtual nodes, và vì sao Redis Cluster/Kafka KHÔNG dùng ring. Kèm 3 lab Java đo được.</p>
+      </div>
+      <div class="module-foot"><span class="depth-badge depth-ok">✅ Đạt chuẩn</span><span>67-consensus-consistent-hashing.html</span><span>Open</span></div>
     </a>
 
     <a class="module-card" href="14-redis.html" data-search="14 redis cache caching distributed lock pub sub data structures expiry strategy database">
@@ -1136,7 +1148,7 @@
     <a class="module-card" href="65-design-lab.html" data-search="65 design lab thiet ke he thong trade-off rate limiter notification file upload system design review">
       <div><div class="module-top"><span class="module-number">#65</span><span class="module-status">Design Sim</span></div>
         <h3>Design Lab — Thiết kế hệ thống theo trade-off</h3>
-        <p>Đóng vai design review: rate limiter, hệ thống notification đa kênh, upload file 2GB. Mỗi quyết định kiến trúc được chấm theo trade-off trong đúng bối cảnh + kiến trúc tham chiếu và câu hỏi "scale ×100 thì đổi gì".</p></div>
+        <p>Đóng vai design review: rate limiter, notification đa kênh, upload file 2GB, URL shortener. Mỗi quyết định kiến trúc được chấm theo trade-off trong đúng bối cảnh + kiến trúc tham chiếu và câu hỏi "scale ×100 thì đổi gì".</p></div>
       <div class="module-foot"><span class="depth-badge depth-ok">✅ Lab</span><span>65-design-lab.html</span><span>Open</span></div>
     </a>
   </div>
@@ -1296,7 +1308,7 @@
       },
       {
         title: '4. Database và data correctness',
-        tag: '7 bài',
+        tag: '8 bài',
         note: 'Đọc trước system design vì nhiều trade-off hệ thống nằm ở storage, consistency và retry safety.',
         items: [
           ['#11', 'SQL Nâng Cao', '11-sql-advanced.html', 'Index strategy, execution plan, query optimization và covering index.'],
@@ -1305,6 +1317,7 @@
           ['#39', 'Database Consistency', '39-database-consistency.html', 'CAP/PACELC, MVCC, isolation anomaly và optimistic/pessimistic lock.'],
           ['#40', 'Oracle Deep Dive', '40-oracle-deep-dive.html', 'SGA/PGA, UNDO/SCN, ORA-01555, index/partition và AWR/ASH.'],
           ['#13', 'Distributed Transaction', '13-distributed-transaction.html', '2PC, Saga, Outbox và eventual consistency.'],
+          ['#67', 'Consensus & Consistent Hashing', '67-consensus-consistent-hashing.html', 'Quorum W+R>N, leader election, fencing token, hash ring + vnodes.'],
           ['#33', 'Idempotency', '33-idempotency.html', 'Idempotency key, retry safety, duplicate request và payment double-charge.']
         ]
       },

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#67 — Consensus, Quorum &amp; Consistent Hashing | Java Backend Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span>Distributed Systems<span class="sep">/</span><strong>#67 Consensus &amp; Consistent Hashing</strong></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Mục lục</div>
+  <nav class="toc">
+    <a href="#how-to-read">Cách đọc file này</a>
+    <a href="#roadmap">🗺️ Roadmap</a>
+    <a href="#real-problem">1. Hai sự cố mở màn</a>
+    <a href="#replication">2. Replication sinh ra vấn đề gì</a>
+    <a href="#quorum">3. Quorum — W+R&gt;N</a>
+    <a href="#leader">4. Leader election &amp; fencing</a>
+    <a href="#raft">5. Raft dễ hiểu</a>
+    <a href="#chash">6. Consistent hashing</a>
+    <a href="#chash-real">7. Hashing ngoài đời thật</a>
+    <a href="#no-consensus">8. Khi nào KHÔNG cần consensus</a>
+    <a href="#antipatterns">9. Anti-patterns</a>
+    <a href="#edge">10. Edge cases</a>
+    <a href="#build">11. Build projects</a>
+    <a href="#interview">Interview Framework</a>
+    <a href="#feynman-end">Feynman Closing</a>
+  </nav>
+  <div class="toc-title" style="margin-top:14px">Liên quan</div>
+  <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
+    <a href="13-distributed-transaction.html">#13 Distributed TX</a>
+    <a href="39-database-consistency.html">#39 DB Consistency</a>
+    <a href="37-system-design-interview.html">#37 System Design</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content">
+
+<section class="hero">
+  <span class="meta-tag">Phase Distributed · dist-consensus + dist-hashing</span>
+  <h1>#67 — Consensus, Quorum &amp; Consistent Hashing</h1>
+  <p class="lead">Hai câu hỏi nền của mọi hệ phân tán: <strong>"nhiều máy, ai được quyết?"</strong> (consensus, quorum, leader election) và <strong>"nhiều máy, dữ liệu nằm đâu?"</strong> (partitioning, consistent hashing). Senior interview hỏi hai câu này dưới trăm lớp vỏ khác nhau — file này dạy phần lõi để bạn nhận ra chúng dưới mọi lớp vỏ.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Nhóm</div><div class="v">Distributed Systems</div></div>
+    <div class="meta-item"><div class="k">Thời lượng</div><div class="v">4–6 giờ (CORE ~2 giờ)</div></div>
+    <div class="meta-item"><div class="k">Cần trước</div><div class="v">#39 consistency, #13 distributed TX</div></div>
+    <div class="meta-item"><div class="k">Node skillmap</div><div class="v">dist-consensus · dist-hashing</div></div>
+  </div>
+</section>
+
+<div class="study-banner" id="how-to-read">
+  <div class="sb-head">📖 Cách đọc file này — Tránh "hiểu giả"</div>
+  <div class="sb-rules">
+    <p>Chủ đề này đặc biệt dễ "hiểu giả": ai cũng gật gù được "Raft bầu leader", "consistent hashing là cái vòng tròn" — rồi tắc tị khi bị hỏi "vì sao 2 node không làm HA được" hay "Redis Cluster có dùng consistent hashing không". Quy tắc:</p>
+    <ol>
+      <li><strong>Pause &amp; Predict</strong>: BẮT BUỘC dừng, viết dự đoán ra giấy trước khi đọc đáp án.</li>
+      <li><strong>Misconception Check</strong>: mỗi block, tự hỏi mình có đang nghĩ giống "cách hiểu sai" không.</li>
+      <li><strong>Thử Phá Vỡ</strong>: nghĩ đủ 3 cách break trước khi mở <em>details</em>.</li>
+      <li><strong>Build</strong>: bài này có 2 lab code Java chạy được — làm thật, số liệu in ra sẽ thay đổi trực giác của bạn.</li>
+      <li><strong>Feynman</strong>: cuối mỗi section lớn, đóng file, giải thích to trong 90 giây.</li>
+    </ol>
+  </div>
+</div>
+
+<section id="roadmap">
+<h2 class="no-border">🗺️ Roadmap — Theo độ ưu tiên</h2>
+<div class="roadmap">
+  <div class="roadmap-head">Nếu chỉ có <b>2 giờ</b>: đọc (1)(2)(3) + section 6 (consistent hashing) + làm Lab 1. Có <b>1 ngày</b>: thêm Raft, hashing ngoài đời thật, anti-patterns. Có <b>1 tuần</b>: toàn bộ + 3 build projects.</div>
+  <div class="roadmap-path">
+    <div class="roadmap-item core"><span class="step">1</span> Hai sự cố mở màn — CORE: thấy tận mắt vì sao hai chủ đề này tồn tại</div>
+    <div class="roadmap-item core"><span class="step">2</span> Quorum W+R&gt;N — CORE: công thức 1 dòng giải thích nửa thế giới NoSQL</div>
+    <div class="roadmap-item core"><span class="step">3</span> Leader election + fencing token — CORE: chống split-brain, câu senior kinh điển</div>
+    <div class="roadmap-item supp"><span class="step">4</span> Raft — SUPP: hiểu cơ chế để giải thích được etcd/Kafka KRaft, không cần thuộc chi tiết</div>
+    <div class="roadmap-item core"><span class="step">5</span> Consistent hashing + virtual nodes — CORE: thêm node không sập hệ</div>
+    <div class="roadmap-item adv"><span class="step">6</span> Hashing ngoài đời thật (Redis slots, Kafka, Cassandra) — ADV: phân biệt được các biến thể là điểm senior</div>
+    <div class="roadmap-item core"><span class="step">7</span> Khi nào KHÔNG cần consensus — CORE: biết lúc nào không dùng mới là hiểu</div>
+  </div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="real-problem">
+<h2><span class="section-tag a">Phần A</span>1. Hai sự cố mở màn — cùng một đêm khuyến mãi</h2>
+
+<p>Nền tảng e-commerce của bạn chuẩn bị mega sale. Kiến trúc: service <code>inventory</code> dùng PostgreSQL primary + 2 replica (replication bất đồng bộ), phía trước có cụm cache 3 node chia key bằng <code>hash(key) % 3</code>. Cả hai quyết định này trông hợp lý — và cả hai sẽ nổ trong cùng một đêm, theo hai cách khác nhau.</p>
+
+<h3>Sự cố 1 — "Hai kẻ đều nghĩ mình là vua" (split-brain)</h3>
+<div class="log-card">
+  <span class="ts">23:47:12</span> <span class="lvl-error">ALERT</span> pg-primary không phản hồi health check 3 lần liên tiếp (network switch rack A lỗi)<br>
+  <span class="ts">23:49:30</span> <span class="lvl-warn">OPS</span> promote replica-B thành primary mới, đổi DNS nội bộ<br>
+  <span class="ts">23:52:01</span> <span class="lvl-warn">?????</span> switch rack A hồi — pg-primary CŨ sống lại, vẫn tự coi mình là primary<br>
+  <span class="ts">23:52:01→00:07</span> <span class="lvl-error">15 PHÚT</span> app instance có connection pool cũ ghi vào primary CŨ; instance mới ghi vào primary MỚI<br>
+  <span class="ts">00:07:44</span> <span class="lvl-error">HẬU QUẢ</span> hai bản lịch sử tồn kho phân kỳ: item bán quá 300 đơn vị, 40k đơn phải đối chiếu tay
+</div>
+<p>Không ai viết code sai. Lỗi nằm ở chỗ <strong>không tồn tại một cơ chế nào để cả cụm THỐNG NHẤT "ai là primary"</strong> — quyết định nằm trong đầu ops (promote tay) và trong connection pool của từng app instance (mỗi kẻ một niềm tin). Khi mạng chập chờn, hai niềm tin cùng tồn tại = <strong>split-brain</strong>: hai node cùng nhận ghi, dữ liệu phân kỳ không cứu được bằng cách "merge lại sau".</p>
+
+<h3>Sự cố 2 — "Thêm máy để khoẻ hơn, và hệ sập vì thêm máy"</h3>
+<pre><code class="language-text">Trước:  node = hash(key) % 3     key "sku:8231" → hash 1000403 % 3 = 2 → cache-2  (HIT)
+Thêm 1 node cho Black Friday:
+Sau:    node = hash(key) % 4     key "sku:8231" → hash 1000403 % 4 = 3 → cache-3  (MISS!)
+
+Tỉ lệ key GIỮ NGUYÊN chỗ khi N → N+1 với modulo: chỉ ~1/(N+1)... còn lại đổi chỗ hết.
+3 → 4 node: ~75% key đột nhiên "sai chỗ" → miss storm → toàn bộ tải đọc dồn xuống DB.</code></pre>
+<p>23:30, đội bạn thêm cache node thứ 4 để "gánh Black Friday". Trong 10 phút sau đó, cache hit rate rơi từ 96% xuống 22%, DB nhận gấp 15 lần lượng đọc bình thường và quỵ. <strong>Hành động tăng công suất đã trở thành đòn tự đánh sập hệ</strong> — vì công thức đặt chỗ <code>% N</code> trói vị trí của MỌI key vào tổng số node: N đổi là gần như mọi key đổi chỗ.</p>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Hai sự cố, hai câu hỏi nền của hệ phân tán</div>
+  <p>Sự cố 1: nhiều máy — <strong>ai được quyết?</strong> (Khi các máy thấy thế giới khác nhau, cần cơ chế để cả cụm đồng ý về MỘT sự thật: ai là leader, giá trị nào được chốt → <em>consensus, quorum, leader election, fencing</em>.)</p>
+  <p>Sự cố 2: nhiều máy — <strong>dữ liệu nằm đâu?</strong> (Cách ánh xạ key → node quyết định chuyện thêm/bớt máy đau đớn đến mức nào → <em>partitioning, consistent hashing, virtual nodes</em>.)</p>
+  <p>Hai câu hỏi độc lập nhau — nhưng mọi hệ thật (Kafka, Redis Cluster, Cassandra, etcd) đều phải trả lời CẢ HAI, nên file này học chung.</p>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+  <div class="pause-q">Trước khi đọc tiếp, viết ra giấy:</div>
+  <ol style="margin:8px 0 0 22px">
+    <li>Ở sự cố 1: nếu cụm có <b>3 node</b> và quy tắc "chỉ kẻ được ĐA SỐ (≥2 node) công nhận mới là primary" — primary cũ sống lại có ghi tiếp được không? Vì sao?</li>
+    <li>Ở sự cố 2: đề xuất một cách ánh xạ key → node sao cho khi thêm node thứ 4, <b>chỉ ~1/4 số key</b> phải đổi chỗ (không phải 75%). Gợi ý: đừng để công thức chứa N.</li>
+    <li>Vì sao "2 node cho chắc" KHÔNG bao giờ đủ để tự động failover an toàn?</li>
+  </ol>
+  <div class="pause-hint">Trả lời trơn cả 3 → bạn đã có trực giác đúng, đọc lướt verify. Tắc câu nào → section tương ứng bên dưới trả lời đúng câu đó.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="replication">
+<h2><span class="section-tag b">Phần B</span>2. Replication sinh ra vấn đề gì <span class="k-tag core">CORE</span></h2>
+
+<div class="k-banner core"><strong>★ CORE — Bắt buộc nắm chắc</strong>: đây là "đề bài" mà quorum/consensus là lời giải. Không nắm đề thì lời giải chỉ là thuộc lòng.</div>
+
+<p>Bạn nhân bản dữ liệu ra nhiều node vì hai lý do chính đáng: <strong>chịu lỗi</strong> (một máy chết không mất dữ liệu, không ngừng phục vụ) và <strong>scale đọc</strong> (nhiều bản = nhiều chỗ đọc). Nhưng khoảnh khắc tồn tại bản thứ hai, bạn nhận về một câu hỏi triết học rất thực dụng: <strong>khi hai bản khác nhau, bản nào là sự thật?</strong></p>
+
+<p>Ba kiến trúc replication và cách mỗi kiến trúc "mua" câu trả lời:</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Mô hình</th><th>Ghi vào đâu</th><th>Sự thật là gì</th><th>Cái giá</th><th>Ví dụ</th></tr></thead>
+  <tbody>
+    <tr><td><b>Single-leader</b> (phổ biến nhất)</td><td>Chỉ leader nhận ghi, follower sao chép</td><td>Log của leader</td><td>Leader chết → phải BẦU leader mới an toàn (chính là bài consensus); follower trễ → đọc replica có thể thấy quá khứ</td><td>Postgres/MySQL replication, Kafka partition leader</td></tr>
+    <tr><td><b>Multi-leader</b></td><td>Nhiều node cùng nhận ghi</td><td>Không có sẵn — phải TỰ định nghĩa cách hoà giải xung đột</td><td>Conflict resolution là bài toán nghiệp vụ khó (LWW mất dữ liệu âm thầm); chỉ đáng cho multi-region/offline</td><td>Sync đa chi nhánh, CRDT app cộng tác</td></tr>
+    <tr><td><b>Leaderless</b></td><td>Client ghi thẳng nhiều replica</td><td>Do QUORUM đọc/ghi + version quyết định</td><td>Client/coordinator phải lo quorum, read repair; concurrent write vẫn cần version</td><td>Cassandra, DynamoDB (gốc Dynamo paper)</td></tr>
+  </tbody>
+</table></div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Thêm replica thì mọi mặt đều an toàn hơn"</div>
+  <div class="mc-wrong">"Cứ thêm replica là hệ an toàn hơn — 3 bản chắc chắn hơn 2 bản, 5 hơn 3."</div>
+  <div class="mc-right">Thêm replica <b>bất đồng bộ</b> tăng độ bền lưu trữ nhưng KHÔNG tự tăng an toàn khi failover: nếu leader ack cho client rồi mới sao chép (async), leader chết là mất mọi ghi chưa kịp sang follower — càng nhiều follower trễ, cửa sổ chọn nhầm "follower thiếu dữ liệu" khi promote càng rộng. An toàn đến từ <b>quy tắc ack</b> (ghi được coi là "chốt" khi bao nhiêu bản xác nhận — chính là W của quorum), không đến từ số bản. Và thêm node còn thêm chi phí: mỗi ghi phải đến nhiều nơi hơn, mạng nội bộ đông hơn, xác suất "có ít nhất một node đang ốm" cao hơn.</div>
+</div>
+
+<div class="callout warn">
+  <div class="ctitle">⚠️ Từ khó — đóng đinh trước khi đi tiếp</div>
+  <p><b>Replication lag</b>: độ trễ giữa lúc leader ghi và lúc follower có bản ghi đó — đọc follower trong cửa sổ này là đọc quá khứ. <b>Failover</b>: quá trình thay leader chết bằng leader mới. <b>Split-brain</b>: ≥2 node cùng tin mình là leader và cùng nhận ghi — dữ liệu phân kỳ. <b>Promote</b>: nâng một follower lên làm leader.</p>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="quorum">
+<h2><span class="section-tag b">Phần B</span>3. Quorum — công thức một dòng: W + R &gt; N <span class="k-tag core">CORE</span></h2>
+
+<p><strong>Vì sao ra đời:</strong> muốn hệ vẫn ĐỌC ĐƯỢC BẢN MỚI NHẤT và vẫn SỐNG khi vài node chết/chậm — mà không bắt mọi thao tác chờ đủ 100% node (chờ đủ N là node chậm nhất quyết định tốc độ cả hệ, và 1 node chết là tê liệt). Quorum là câu trả lời bằng số học:</p>
+
+<pre><code class="language-text">N = số bản sao của một mẩu dữ liệu   (thường 3 hoặc 5)
+W = số node phải XÁC NHẬN một lần GHI thì ghi mới tính là thành công
+R = số node phải TRẢ LỜI một lần ĐỌC
+
+Bảo đảm cốt lõi:   W + R > N   ⇒   tập-đọc và tập-ghi GIAO NHAU ít nhất 1 node
+                                    ⇒ mọi lần đọc chạm được ÍT NHẤT MỘT bản mới nhất</code></pre>
+
+<p>Trực giác hình học: N=3 cái hộp. Ghi bỏ thư vào W=2 hộp bất kỳ, đọc mở R=2 hộp bất kỳ. Vì 2+2 &gt; 3, hai tập hợp <em>bắt buộc</em> chồng lên nhau ít nhất 1 hộp — người đọc luôn mở trúng ít nhất một hộp có thư mới. Nhưng nó cầm về <em>nhiều bản khác nhau</em> (bản mới từ hộp giao nhau, bản cũ từ hộp còn lại) — nên mỗi bản ghi phải kèm <strong>version</strong> để người đọc biết bản nào thắng, và hệ tử tế sẽ tiện tay <strong>read repair</strong>: đẩy bản mới cho node đang giữ bản cũ.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Cấu hình (N=3)</th><th>Được gì</th><th>Mất gì</th><th>Dùng khi</th></tr></thead>
+  <tbody>
+    <tr><td><b>W=2, R=2</b> (chuẩn mực)</td><td>Đọc luôn chạm bản mới; chịu được 1 node chết cho cả đọc lẫn ghi</td><td>Mỗi thao tác chờ 2 node — latency = node chậm nhì</td><td>Cần đúng + cần sống — mặc định nên bắt đầu ở đây</td></tr>
+    <tr><td><b>W=3, R=1</b></td><td>Đọc siêu nhanh (1 node) mà vẫn đúng</td><td>MỘT node chết/chậm là toàn bộ GHI tắc</td><td>Đọc áp đảo và ghi hiếm — hiếm khi đáng</td></tr>
+    <tr><td><b>W=1, R=1</b> (W+R ≤ N!)</td><td>Nhanh nhất, sống khoẻ nhất</td><td><b>Mất bảo đảm</b>: đọc có thể ra bản cũ; leader nhận W=1 chết trước khi lan = mất ghi</td><td>Dữ liệu chịu được stale (view count, feed) — chọn CÓ Ý THỨC, đừng vô tình</td></tr>
+  </tbody>
+</table></div>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">❌ Đọc 1 replica bất kỳ rồi tin ngay</div>
+    <pre><code class="language-java">// "có 3 bản rồi, đọc bản nào chả được"
+StockLevel s = replicas.pickAny().read(sku);
+if (s.qty() > 0) allowOrder();   // bản này có thể
+// TRỄ 30 giây — cho đặt món đã hết từ lâu</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">✅ Quorum read + version</div>
+    <pre><code class="language-java">List&lt;Versioned&lt;StockLevel&gt;&gt; got =
+    replicas.readFrom(R);          // R=2 trong N=3
+Versioned&lt;StockLevel&gt; win =
+    got.stream().max(byVersion()).orElseThrow();
+readRepair(got, win);              // vá node cầm bản cũ
+if (win.value().qty() > 0) allowOrder();</code></pre>
+  </div>
+</div>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Counter-example — Quorum KHÔNG phải transaction, và không cứu được counter</div>
+  <p>W+R&gt;N chỉ hứa "đọc thấy bản mới nhất ĐÃ CHỐT". Nó <b>không</b> hứa gì về hai client GHI ĐỒNG THỜI: A đọc qty=5, B đọc qty=5, A ghi 4, B ghi 4 — hai lần trừ kho thành một, quorum tròn trịa suốt quá trình. Muốn "đọc-sửa-ghi" an toàn cần thứ khác: điều kiện khi ghi (compare-and-set / optimistic version check), khoá, hoặc đẩy phép toán về MỘT nơi tuần tự (single-writer). Tương tự, hoà giải bằng <b>last-write-wins theo timestamp</b> là chấp nhận <em>lặng lẽ vứt</em> một trong hai ghi đồng thời — chấp nhận được cho "ảnh đại diện mới nhất", thảm hoạ cho số dư/tồn kho. Đây là ranh giới quorum ↔ consensus/transaction mà interviewer senior rất thích khều.</p>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">💡 OPTIONAL — Sloppy quorum: chữ W trên hợp đồng bị đổi nghĩa</div>
+  <p>Dynamo-style DB có chế độ "sloppy quorum": khi node "chính chủ" của key không với tới được, hệ tạm ghi vào node KHÁC (hinted handoff — kèm lời nhắn "của nhà bên cạnh, lúc nào nó dậy thì trả"). Được availability, nhưng W node xác nhận lúc này <em>không còn chắc giao với R node "chính chủ"</em> — bảo đảm đọc-thấy-mới yếu đi. Bài học phỏng vấn: nghe "chúng tôi dùng quorum" thì hỏi tiếp "strict hay sloppy?" — cùng một chữ, hai hợp đồng khác nhau.</p>
+</div>
+
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman Check</div>
+  <div class="fy-prompt">"Giải thích cho junior trong 90 giây: vì sao W+R&gt;N bảo đảm đọc thấy bản mới nhất, và vì sao nó vẫn KHÔNG đủ để làm phép trừ tồn kho an toàn?"</div>
+  <div class="fy-rule">Không nhìn file. Phải dùng được từ "giao nhau" và một ví dụ hai-client-cùng-ghi. Lắp bắp = đọc lại section này.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="leader">
+<h2><span class="section-tag b">Phần B</span>4. Leader election, term &amp; fencing token <span class="k-tag core">CORE</span></h2>
+
+<p><strong>Vì sao ra đời:</strong> single-leader là mô hình dễ sống nhất (mọi ghi qua một cửa — khỏi hoà giải xung đột), nhưng nó đẻ ra hai câu hỏi chết người: <em>leader chết thì ai lên thay — và làm sao chắc chắn CHỈ MỘT kẻ lên?</em> Sự cố 1 ở đầu file chính là trả lời sai câu này. "Bầu leader" nghe đơn giản cho tới khi bạn nhớ ra: trong hệ phân tán, <strong>"node chết" và "node chậm/mất mạng tạm thời" trông GIỐNG HỆT NHAU</strong> từ bên ngoài. Promote nhầm kẻ chỉ-đang-chậm là có hai leader.</p>
+
+<h3>Ba mảnh ghép của election an toàn</h3>
+<p><strong>Mảnh 1 — Đa số (majority):</strong> ứng viên phải được <b>quá nửa</b> cụm bỏ phiếu mới thành leader. Vì hai tập-quá-nửa của cùng một cụm LUÔN giao nhau ≥1 node, không thể tồn tại hai leader được bầu hợp lệ cùng lúc — node giao nhau đã bỏ phiếu cho một bên rồi thì từ chối bên kia. Đây cũng là lời giải câu đố "vì sao cụm 3/5 node, không phải 2/4": <em>2 node mất 1 là không còn 'quá nửa' để bầu bất kỳ ai — cụm chẵn không tăng khả năng chịu lỗi, chỉ tăng chi phí</em> (4 node chịu 1 chết, y như 3 node; 5 mới chịu được 2).</p>
+<p><strong>Mảnh 2 — Term (nhiệm kỳ):</strong> mỗi lần bầu cử tăng một số nguyên đơn điệu — "triều đại thứ mấy". Leader cũ sống dậy mang term 7 gặp cụm đang ở term 8 → mọi node từ chối lệnh của nó, nó tự giáng làm follower. Term biến "ai mới, ai cũ" từ chuyện cảm giác thành phép so số.</p>
+<p><strong>Mảnh 3 — Fencing token:</strong> term giải quyết chuyện trong cụm, nhưng leader còn tác động ra NGOÀI cụm (ghi storage, gọi API). Fencing = đem term ra ngoài: mọi lệnh leader gửi đi kèm token (chính là term/epoch), và <b>hệ đích từ chối token nhỏ hơn token lớn nhất từng thấy</b>. Giờ dù leader cũ có "tưởng bở" đến đâu, cánh cửa cuối cùng cũng đóng.</p>
+
+<div class="break-it">
+  <div class="bi-head">🔬 Thử Phá Vỡ — Distributed lock bằng Redis: SETNX + TTL 30s, xong chưa?</div>
+  <p style="font-size:0.93rem;margin:8px 0">Job "gửi email tổng kết đơn hàng" chỉ được chạy trên 1 instance. Bạn khoá bằng Redis: <code>SET lock:report me NX EX 30</code>, xong việc thì DEL. Tìm ít nhất 3 kịch bản job vẫn chạy ĐÔI.</p>
+  <details>
+    <summary>Click để xem analysis (sau khi đã nghĩ đủ 3)</summary>
+    <div class="bi-answer">
+      <ol>
+        <li><b>GC pause / thread treo dài hơn TTL:</b> instance A lấy lock, dính stop-the-world pause 40s (hoặc chỉ đơn giản là việc chạy lâu hơn dự kiến). TTL 30s hết → Redis xoá lock → instance B lấy được và chạy. A tỉnh dậy, <em>không hề biết lock đã mất</em>, chạy tiếp — HAI kẻ cùng chạy. TTL dài hơn cũng không cứu: chỉ đổi xác suất, không đổi bản chất.</li>
+        <li><b>Xoá nhầm lock của người khác:</b> A hết TTL, B đang giữ lock; A xong việc gọi DEL — xoá lock CỦA B. Phải DEL có điều kiện (Lua: chỉ xoá nếu value là của mình) — nhưng cái này chỉ vá chuyện xoá nhầm, không vá (1).</li>
+        <li><b>Redis failover:</b> lock nằm trên Redis primary chưa kịp replicate thì primary chết — replica lên thay KHÔNG có lock → B acquire thành công trong khi A vẫn đang chạy.</li>
+      </ol>
+      <p><strong>Insight:</strong> lock có TTL mà không có <b>fencing token</b> chỉ là "lock xác suất". Vá đúng: nguồn cấp lock phát kèm <b>số tăng đơn điệu</b> (Redis INCR, DB sequence, epoch của ZooKeeper/etcd), và <em>hệ ĐÍCH</em> (DB nhận kết quả job, storage) lưu token lớn nhất đã thấy + từ chối token cũ: <code>UPDATE report SET ... WHERE fencing_token &lt; :myToken</code> kiểu điều kiện. Việc chống-chạy-đôi cuối cùng phải được enforce ở nơi có DỮ LIỆU, không phải ở nơi phát lock. (Đây là tranh luận Kleppmann vs Redlock kinh điển — đọc link cuối bài.)</p>
+    </div>
+  </details>
+</div>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Đặt timeout hợp lý là phân biệt được node chết"</div>
+  <div class="mc-wrong">"Node không trả lời sau 5 giây nghĩa là nó chết, cứ thế promote node khác."</div>
+  <div class="mc-right">Trong mạng bất đồng bộ, <b>không tồn tại</b> giá trị timeout phân biệt được "chết" với "chậm/nghẽn mạng/GC pause". Timeout chỉ là <em>nghi ngờ</em>, không phải <em>chẩn đoán</em>. Hệ đúng đắn không cố trả lời "nó chết thật chưa" — nó đổi câu hỏi thành "đa số còn thấy ai?" (majority + term) và "kẻ cũ còn phá được không?" (fencing). Chấp nhận không thể biết, rồi thiết kế để không-cần-biết — đó là bước trưởng thành đầu tiên về distributed systems.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="raft">
+<h2><span class="section-tag b">Phần B</span>5. Raft — consensus đủ hiểu để đi phỏng vấn <span class="k-tag supplementary">SUPPLEMENTARY</span></h2>
+
+<div class="k-banner supp"><strong>SUPPLEMENTARY</strong>: bạn sẽ không cài Raft tay (và KHÔNG NÊN — dùng etcd/ZooKeeper). Nhưng hiểu cơ chế giúp bạn giải thích được vì sao etcd cần số lẻ node, vì sao Kafka bỏ ZooKeeper, và trả lời "consensus hoạt động thế nào" không bị hớ.</div>
+
+<div class="history-block">
+  <div class="hist-head">📜 Lịch sử ra đời — từ Paxos khó hiểu tới Raft "để hiểu được"</div>
+  <div class="hist-timeline">
+    <strong>1989–1998</strong> — Leslie Lamport công bố Paxos: chứng minh consensus làm được trong hệ bất đồng bộ có node chết. Đúng về toán, nổi tiếng về... không ai hiểu nổi bài báo (viết dưới dạng ngụ ngôn nghị viện đảo Paxos). Suốt 20 năm, cài Paxos đúng là chuyện của vài đội trên thế giới (Google Chubby).<br><br>
+    <strong>2013–2014</strong> — Diego Ongaro &amp; John Ousterhout (Stanford) công bố Raft với mục tiêu ghi thẳng trong tên bài báo: <em>"In Search of an Understandable Consensus Algorithm"</em>. Cùng bảo đảm như Paxos, nhưng chẻ thành 3 bài toán con tách bạch: leader election, log replication, safety. Kèm visualization tương tác — thứ giúp cả một thế hệ engineer hiểu consensus.<br><br>
+    <strong>Hiện đại</strong> — Raft thành mặc định de-facto: etcd (trái tim của Kubernetes), Consul, TiKV, CockroachDB, RabbitMQ quorum queues, và Kafka KRaft (bỏ hẳn ZooKeeper). ZooKeeper dùng ZAB — họ hàng cùng tư tưởng, khác chi tiết.<br><br>
+    <strong>Insight</strong>: một thuật toán "kém thanh lịch hơn nhưng hiểu được" đánh bại thuật toán "tối ưu nhưng bí hiểm" — trong kỹ thuật, understandability là một tính năng an toàn, vì code người ta không hiểu là code người ta cài sai.
+  </div>
+</div>
+
+<h3>Cỗ máy Raft trong 5 gạch đầu dòng</h3>
+<ul>
+  <li><b>Ba vai:</b> mỗi node là <em>follower</em> (mặc định), <em>candidate</em> (đang tranh cử) hoặc <em>leader</em> (duy nhất mỗi term). Mọi ghi đi qua leader.</li>
+  <li><b>Election timeout NGẪU NHIÊN:</b> follower không nghe được nhịp tim (heartbeat) của leader sau ~150–300ms (random mỗi node) → tự ứng cử: tăng term, xin phiếu. Random để hai node không tranh cử mãi cùng lúc chia phiếu vĩnh viễn — giải pháp cho livelock đơn giản đến bất ngờ: <em>xổ số thời gian</em>.</li>
+  <li><b>Phiếu có điều kiện:</b> node chỉ bầu cho ứng viên có log <em>ít nhất mới bằng</em> log của mình — kẻ thiếu dữ liệu đã-chốt không bao giờ đắc cử → dữ liệu committed không bao giờ bị leader mới "viết lại lịch sử".</li>
+  <li><b>Log replication:</b> client ghi → leader append vào log của mình → gửi cho followers → khi <b>đa số</b> đã ghi, entry được <em>commit</em> → leader trả lời client và báo followers apply. Con số "đa số" này chính là W của quorum áp lên log.</li>
+  <li><b>An toàn khi đổi triều:</b> term đóng dấu mọi message; node gặp term cao hơn thì tự cập nhật và lùi về follower. Leader cũ hồi sinh = bị số học từ chối, đúng như mảnh ghép 2 ở section 4.</li>
+</ul>
+
+<pre><code class="language-text">Ghi "x=5" vào cụm Raft 5 node (term 8):
+
+client ──▶ Leader(A)   log: [.., x=5@8]        ── AppendEntries ──▶ B, C, D, E
+                B ok ✓   C ok ✓   (D chậm)  (E partition)
+                đa số (A,B,C = 3/5) đã ghi  ⇒  COMMIT index tăng
+client ◀── OK ──┘        D, E sẽ được "kèm bài" đuổi kịp log sau
+
+Mất 2 node bất kỳ: cụm 5 vẫn còn 3 = đa số ⇒ sống. Mất 3: dừng nhận ghi (chọn C thay vì chọn sai).</code></pre>
+
+<div class="callout why">
+  <div class="ctitle">🎯 Vì sao consensus ĐẮT — và vì sao vẫn trả tiền</div>
+  <p>Mỗi ghi = 1 round-trip tới đa số node (thêm ~vài ms latency), throughput trần bằng sức một leader, cụm dưới đa số là <em>ngừng ghi có chủ đích</em> (chọn Consistency thay Availability khi partition — CP trong CAP, nối về #39). Vì thế hệ thật KHÔNG chạy consensus cho dữ liệu nghiệp vụ khối lượng lớn — nó chạy consensus cho <b>metadata nhỏ mà sai là chết cả cụm</b>: ai là leader, cấu hình cụm, ai giữ lock, partition nằm đâu. Kafka là ví dụ hoàn hảo: KRaft (consensus) quản metadata cluster, còn dữ liệu message chảy theo cơ chế ISR replication riêng — hai tầng, hai công cụ, đúng việc.</p>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="chash">
+<h2><span class="section-tag c">Phần C</span>6. Consistent hashing — thêm node không sập hệ <span class="k-tag core">CORE</span></h2>
+
+<p>Quay lại sự cố 2. <strong>Gốc bệnh của <code>hash(key) % N</code>:</strong> vị trí của MỌI key là hàm của N — N nhích một cái, gần như toàn bộ phép chia lấy dư đổi kết quả. Mục tiêu thiết kế phát biểu được thành một câu: <em>tìm cách ánh xạ key → node sao cho khi thêm/bớt 1 node, chỉ ~K/N key (phần chia công bằng) phải dời chỗ — phần còn lại đứng yên.</em></p>
+
+<h3>Ý tưởng cái vòng (hash ring)</h3>
+<p>Bỏ N ra khỏi công thức: hash cả key LẪN node vào cùng một không gian số khổng lồ cố định (0 → 2³²−1), uốn không gian đó thành vòng tròn. <strong>Key thuộc về node đầu tiên gặp được khi đi thuận chiều kim đồng hồ từ vị trí của key.</strong></p>
+
+<div class="diagram">
+<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" style="max-width:640px;width:100%">
+  <circle cx="160" cy="150" r="105" fill="none" stroke="var(--border-strong)" stroke-width="2"/>
+  <circle cx="160" cy="45"  r="14" fill="var(--accent)"/><text x="160" y="50" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">A</text>
+  <circle cx="258" cy="200" r="14" fill="var(--accent)"/><text x="258" y="205" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">B</text>
+  <circle cx="72"  cy="215" r="14" fill="var(--accent)"/><text x="72" y="220" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">C</text>
+  <circle cx="245" cy="85"  r="7"  fill="var(--warning)"/><text x="262" y="80" font-size="11" fill="var(--text)">k1 → B</text>
+  <circle cx="160" cy="255" r="7"  fill="var(--warning)"/><text x="150" y="278" font-size="11" fill="var(--text)">k2 → C</text>
+  <circle cx="60"  cy="115" r="7"  fill="var(--warning)"/><text x="8"  y="108" font-size="11" fill="var(--text)">k3 → A</text>
+  <text x="160" y="150" text-anchor="middle" font-size="11" fill="var(--text-muted)">đi thuận chiều kim</text>
+  <text x="160" y="164" text-anchor="middle" font-size="11" fill="var(--text-muted)">đồng hồ tới node gần nhất</text>
+
+  <text x="440" y="40" font-size="12.5" fill="var(--text)" font-weight="700">Thêm node D (giữa A và B):</text>
+  <text x="440" y="62" font-size="12" fill="var(--text)">• CHỈ các key nằm trong cung (A → D]</text>
+  <text x="440" y="80" font-size="12" fill="var(--text)">  đổi chủ từ B sang D</text>
+  <text x="440" y="98" font-size="12" fill="var(--text)">• k2, k3 và mọi key khác: ĐỨNG YÊN</text>
+  <text x="440" y="124" font-size="12" fill="var(--success)" font-weight="700">Kỳ vọng chỉ ~K/N key phải dời</text>
+  <text x="440" y="142" font-size="12" fill="var(--text-muted)">(3→4 node: ~25% dời, so với ~75% của modulo)</text>
+  <text x="440" y="176" font-size="12.5" fill="var(--text)" font-weight="700">Bớt node B (chết/scale-in):</text>
+  <text x="440" y="198" font-size="12" fill="var(--text)">• Key của B trôi sang node kế tiếp (C)</text>
+  <text x="440" y="216" font-size="12" fill="var(--text)">• Phần còn lại của vòng: không nhúc nhích</text>
+</svg>
+</div>
+
+<p><strong>Vấn đề còn lại — vòng "lệch":</strong> vài node hash trúng chỗ xấu là một node ôm nửa vòng (nửa dữ liệu, nửa tải), và khi một node rời đi, TOÀN BỘ gánh nặng của nó đổ lên đúng MỘT node kế tiếp. Lời giải chuẩn: <strong>virtual nodes (vnodes)</strong> — mỗi node vật lý xuất hiện trên vòng ở hàng trăm điểm (<code>hash("nodeA#1"), hash("nodeA#2")...</code>). Nhiều điểm → luật số lớn san phẳng phân phối; node rời đi → gánh nặng vỡ thành trăm mảnh rải đều cho TẤT CẢ node còn lại thay vì đè một nạn nhân. Bonus thực dụng: máy mạnh gấp đôi thì cho gấp đôi số vnode — cân tải theo sức máy bằng đúng một con số.</p>
+
+<div class="compare">
+  <div class="col bad">
+    <div class="col-head">❌ Modulo — placement trói vào N</div>
+    <pre><code class="language-java">int node = Math.abs(key.hashCode()) % nodes.size();
+// nodes.size() đổi ⇒ gần như MỌI key đổi node
+// scale-out = tự gây miss storm / re-shard toàn bộ</code></pre>
+  </div>
+  <div class="col good">
+    <div class="col-head">✅ Ring + vnodes (TreeMap = vòng tròn sắp thứ tự)</div>
+    <pre><code class="language-java">TreeMap&lt;Long, String&gt; ring = new TreeMap&lt;&gt;();
+void addNode(String n) {
+    for (int i = 0; i &lt; 200; i++)            // 200 vnodes
+        ring.put(hash(n + "#" + i), n);
+}
+String route(String key) {
+    var e = ring.ceilingEntry(hash(key));     // đi "thuận chiều"
+    return e != null ? e.getValue()
+                     : ring.firstEntry().getValue(); // vòng qua 0
+}
+// thêm/bớt node: chỉ cung liên quan đổi chủ (~K/N key)</code></pre>
+  </div>
+</div>
+
+<div class="pause-block">
+  <div class="pause-head">⏸ Pause &amp; Predict (BẮT BUỘC dừng)</div>
+  <div class="pause-q">Trước khi đọc section tiếp theo:</div>
+  <ol style="margin:8px 0 0 22px">
+    <li>Redis Cluster chia dữ liệu bằng cách nào — có phải consistent hashing ring như trên không? Nếu bạn không chắc: nó dùng con số 16384 để làm gì?</li>
+    <li>Kafka partition một topic có dùng ring không? Khi thêm broker, message cũ có "trôi" sang broker mới không?</li>
+    <li>Consistent hashing giải quyết placement — nhưng nó có giải quyết "hot key" (1 key bị gọi 100k lần/giây) không? Vì sao?</li>
+  </ol>
+  <div class="pause-hint">Câu 1–2 là bẫy phân loại kinh điển của senior interview. Nghĩ thật trước khi cuộn xuống.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="chash-real">
+<h2><span class="section-tag c">Phần C</span>7. Hashing ngoài đời thật — cùng bài toán, ba lời giải <span class="k-tag advanced">ADVANCED</span></h2>
+
+<div class="misconception">
+  <div class="mc-head">🧠 Misconception Check — "Redis Cluster / Kafka dùng consistent hashing"</div>
+  <div class="mc-wrong">"Mấy hệ phân tán chia key kiểu gì chẳng là consistent hashing."</div>
+  <div class="mc-right"><b>Redis Cluster KHÔNG dùng ring</b> — nó dùng <b>16384 hash slots cố định</b>: <code>slot = CRC16(key) mod 16384</code>, và mỗi node SỞ HỮU một dải slot. Vì tổng số slot không bao giờ đổi, công thức không phụ thuộc số node — thêm node là <em>chuyển giao quyền sở hữu một số slot</em> (migration có kiểm soát, admin quyết slot nào đi đâu), không phải remap công thức. Cùng đạt mục tiêu "thêm node chỉ dời phần nhỏ dữ liệu" nhưng bằng <b>pre-sharding</b> (chia sẵn thật nhiều bucket nhỏ rồi phân bucket cho node). <b>Kafka cũng vậy</b>: số partition của topic là cố định do bạn khai; producer hash key % số-partition (số này không đổi khi thêm broker) — thêm broker là dời NGUYÊN partition sang broker mới, message không bao giờ tự trôi. Còn <b>Cassandra/DynamoDB</b> mới là consistent hashing ring + vnodes chính hiệu. Phân biệt được 3 kiểu này = tín hiệu senior rất mạnh.</div>
+</div>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Chiến lược</th><th>Cơ chế</th><th>Thêm node thì sao</th><th>Ai dùng</th><th>Điểm yếu chính</th></tr></thead>
+  <tbody>
+    <tr><td><b>Hash ring + vnodes</b></td><td>Node và key cùng hash lên vòng</td><td>Tự động: ~K/N key trôi sang node mới</td><td>Cassandra, DynamoDB, nhiều CDN/LB</td><td>Rebalance là dòng chảy ngầm khó quan sát; cần vnodes đủ nhiều mới đều</td></tr>
+    <tr><td><b>Fixed slots (pre-sharding)</b></td><td>Chia sẵn nhiều bucket cố định; node sở hữu dải bucket</td><td>Chuyển giao slot TƯỜNG MINH, kiểm soát được tốc độ</td><td>Redis Cluster (16384), Elasticsearch (số shard cố định của index), Kafka partitions</td><td>Chọn số bucket từ đầu — chọn ít quá là trần scale (Kafka topic 3 partition = tối đa 3 consumer song song)</td></tr>
+    <tr><td><b>Range partitioning</b></td><td>Chia theo KHOẢNG giá trị key (a–f → node 1...)</td><td>Split/merge range theo độ nóng</td><td>HBase, TiKV, Spanner, index của RDBMS shard theo tenant</td><td>Key tuần tự (timestamp!) dồn hết vào MỘT range — hot spot bẩm sinh; đổi lại được range scan mà hash mất</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout danger">
+  <div class="ctitle">🔥 Hot key — thứ consistent hashing KHÔNG giải được</div>
+  <p>Ring/slots chia ĐỀU KEY, không chia đều TẢI: một celebrity key (sản phẩm viral, phiên livestream) vẫn nằm trên đúng một node và nướng node đó. Placement đúng không cứu được phân phối truy cập lệch. Vá bằng tầng khác: cache local trước cluster cho key nóng, nhân bản key nóng ra nhiều bản đọc (<code>key#1..key#k</code> — client tự random), hoặc tách hẳn key nóng ra đường riêng. Nhận diện trong phỏng vấn: nghe "một key/một tenant chiếm phần lớn traffic" → câu trả lời KHÔNG nằm ở thuật toán hashing.</p>
+</div>
+
+<div class="callout tip">
+  <div class="ctitle">💡 OPTIONAL — Jump consistent hash</div>
+  <p>Google công bố thuật toán ~5 dòng code, không cần lưu vòng, không cần vnodes: <code>jumpHash(key, N)</code> trả thẳng bucket, bảo đảm chỉ ~1/N key đổi chỗ khi N→N+1. Trade-off: node chỉ là số thứ tự 0..N-1 — chỉ thêm/bớt ở CUỐI dãy, không gỡ được node giữa chừng tuỳ ý → hợp cho pool đồng nhất (connection pool, chọn shard tính toán), không hợp cho cluster node vào-ra thất thường.</p>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="no-consensus">
+<h2><span class="section-tag d">Phần D</span>8. Khi nào KHÔNG cần consensus — biết lúc không dùng mới là hiểu <span class="k-tag core">CORE</span></h2>
+
+<p>Consensus là món đắt nhất trong menu distributed systems (latency đa số-ack, throughput trần một leader, vận hành cụm lẻ node, và độ phức tạp nhận thức của cả đội). Người mới học xong Raft nhìn đâu cũng thấy chỗ cần Raft — người hiểu Raft biết <strong>90% bài toán hằng ngày né được nó</strong>:</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Bài toán trông-cần-consensus</th><th>Lời giải rẻ hơn</th><th>Vì sao đủ</th></tr></thead>
+  <tbody>
+    <tr><td>"Job này chỉ được xử lý một lần dù nhiều worker"</td><td><b>Idempotency</b>: UNIQUE constraint + insert-claim trước khi làm (bài #33)</td><td>Không cần cả cụm đồng ý ai làm — chỉ cần hệ ĐÍCH từ chối kẻ đến sau. DB một node làm trọng tài là đủ.</td></tr>
+    <tr><td>"Nhiều instance cần thống nhất cấu hình/feature flag"</td><td>Đọc từ MỘT nguồn (DB/config service) + cache TTL ngắn, chấp nhận vài giây lệch</td><td>Flag lệch 5 giây giữa các instance hiếm khi là sự cố — đừng trả giá consensus cho thứ eventual đủ tốt.</td></tr>
+    <tr><td>"Đếm view/like toàn cụm chính xác"</td><td>Đếm cục bộ + gộp định kỳ (hoặc CRDT counter nếu muốn sang)</td><td>Phép CỘNG giao hoán — thứ tự không quan trọng thì không cần ai quyết thứ tự. Consensus là để quyết THỨ TỰ/GIÁ TRỊ duy nhất.</td></tr>
+    <tr><td>"Chỉ một scheduler được chạy trong cụm"</td><td>Lease từ hệ CÓ SẴN consensus/trọng tài (khoá trong Postgres, lease của K8s) + fencing token</td><td>Mượn consensus người khác đã trả tiền (etcd dưới K8s, WAL của Postgres) thay vì tự nuôi một cụm mới.</td></tr>
+    <tr><td>"Ghi phải ra lệnh tuyệt đối theo thời gian thực giữa các region"</td><td>Xem lại yêu cầu — thường là KHÔNG cần thật</td><td>Ordering toàn cục xuyên region đắt khủng khiếp (Spanner phải chế đồng hồ nguyên tử). Đa số nghiệp vụ chỉ cần ordering TRONG một khoá (per-user, per-order) — partition theo khoá đó là mỗi dòng tự tuần tự.</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout success">
+  <div class="ctitle">✅ Quy tắc bỏ túi</div>
+  <p>Cần cả cụm đồng ý về MỘT giá trị/thứ tự mà sai là hỏng cấu trúc (ai là leader, cấu hình cụm, ai giữ lease) → consensus, và <b>dùng đồ có sẵn</b>: etcd, ZooKeeper, khoá + sequence trong RDBMS. Còn lại: idempotency, single-writer theo partition, eventual + gộp, CRDT. Câu "đừng tự viết Raft" nghiêm túc ngang "đừng tự viết thư viện crypto".</p>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="antipatterns">
+<h2><span class="section-tag d">Phần D</span>9. Anti-patterns — kèm triệu chứng để nhận diện <span class="k-tag core">CORE</span></h2>
+
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">AP-1 · Catastrophic</span><span class="tier-title">Lock TTL không fencing → job chạy đôi</span></div>
+  <div class="q">Triệu chứng: report/email gửi trùng "ngẫu nhiên vài tuần một lần"; log hai instance cùng ghi "acquired lock" cách nhau đúng ~TTL; hay trùng vào giờ GC nặng/deploy.</div>
+  <div class="a">Debug: grep log hai phía theo lock key, so timestamp acquire với GC log (pause dài hơn TTL?). Fix: fencing token tăng đơn điệu + hệ đích từ chối token cũ (section 4). TTL chỉ là dọn rác, KHÔNG phải cơ chế an toàn.</div>
+</div>
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">AP-2 · Catastrophic</span><span class="tier-title">Cụm chẵn node / 2 node "cho tiết kiệm"</span></div>
+  <div class="q">Triệu chứng: etcd/Consul 2 node — một node bảo trì là cụm read-only, log "lost leader", "no quorum"; cụm 4 node chịu lỗi y như 3 node nhưng tốn hơn.</div>
+  <div class="a">Đa số của 2 là 2 — mất 1 là không bầu nổi ai. Đa số của 4 là 3 — vẫn chỉ chịu được 1 chết. Luôn 3 hoặc 5. (Số chẵn còn tăng nguy cơ chia phiếu ở mạng phân đôi đối xứng.)</div>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">AP-3 · Nặng</span><span class="tier-title">hash % N cho cache/shard</span></div>
+  <div class="q">Triệu chứng: đúng lúc scale-out/scale-in, cache hit rate rơi tự do, DB latency spike — "thêm máy xong hệ chậm hơn"; incident lặp lại mỗi lần autoscale đổi số instance.</div>
+  <div class="a">Sự cố 2 của file này. Fix: ring + vnodes (tự làm cho cache client) hoặc dùng hệ có pre-sharding (Redis Cluster). Nếu buộc phải %N: chỉ đổi N kèm kế hoạch warm-up cache và cửa sổ traffic thấp.</div>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">AP-4 · Nặng</span><span class="tier-title">Đọc replica ngay sau khi ghi (read-your-writes gãy)</span></div>
+  <div class="q">Triệu chứng: user tạo xong bấm F5 thì "mất"; bug "chỉ tái hiện lúc tải cao" (lag phình); support nhận ticket "dữ liệu lúc có lúc không".</div>
+  <div class="a">Ghi vào leader, đọc rơi vào follower đang lag. Fix theo ngân sách: đọc leader cho chính user vừa ghi (session pinning vài giây), hoặc client gửi kèm LSN/version tối thiểu, hoặc chấp nhận + thiết kế UI (optimistic update). Đây là consistency THEO PHIÊN — rẻ hơn nhiều so với kéo cả hệ lên strong.</div>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">AP-5 · Âm ỉ</span><span class="tier-title">LWW (last-write-wins) cho dữ liệu không-giao-hoán</span></div>
+  <div class="q">Triệu chứng: "thỉnh thoảng mất update" không ai giải thích được; hai user cùng sửa, một bản bốc hơi không log lỗi; số liệu tổng không khớp khi đối chiếu.</div>
+  <div class="a">LWW = chọn thắng theo timestamp — nghĩa là THUA thì bị vứt im lặng, và đồng hồ giữa các máy còn lệch (clock skew) nên "last" chưa chắc last thật. Được phép cho giá trị thay-thế-toàn-phần ít va chạm (avatar); cấm cho counter, giỏ hàng, số dư — chỗ đó cần version vector/CRDT/single-writer.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="edge">
+<h2><span class="section-tag d">Phần D</span>10. Edge Cases — Production Reality <span class="k-tag advanced">ADVANCED</span></h2>
+<div class="edge-cases">
+  <div class="ec-head">🎯 Edge Cases — những chỗ hệ thật khác sách</div>
+  <p class="ec-intro">Cơ chế ở trên đúng cho happy path. Production sẽ tặng bạn các món sau:</p>
+  <ul class="ec-list">
+    <li><strong>Partition BẤT ĐỐI XỨNG</strong>: A thấy B nhưng B không thấy A (lỗi một chiều NIC/firewall) — thuật toán chỉ nghĩ đến "thấy/không thấy" đối xứng sẽ lú. Raft chịu được nhờ term, nhưng hệ tự chế thường không.</li>
+    <li><strong>GC pause dài hơn lease/heartbeat</strong>: leader "biến mất" 30 giây rồi quay lại vẫn tưởng mình là leader — nguồn số 1 của split-brain ứng dụng Java. Fencing là lưới cuối; nhìn GC log khi điều tra mọi sự cố "hai kẻ cùng chạy".</li>
+    <li><strong>Clock skew</strong>: lease "còn 5 giây nữa hết hạn" theo đồng hồ node A có thể ĐÃ hết theo node B. Mọi cơ chế dựa wall-clock (lease, LWW, token TTL) phải cộng biên an toàn và không được coi timestamp giữa hai máy là so sánh được tuyệt đối.</li>
+    <li><strong>Membership change giữa lúc election</strong>: thêm node vào cụm đúng lúc đang bầu cử — "đa số" của cấu hình cũ và mới khác nhau. Raft có joint consensus/single-server change cho việc này; bài học vận hành: thay node TUẦN TỰ từng con, đợi ổn mới con tiếp.</li>
+    <li><strong>Node hồi sinh với đĩa cũ</strong> (restore từ backup/snapshot): mang log/term cổ đại quay lại cụm — hệ đúng sẽ từ chối và kèm bài; hệ tự chế có thể coi nó là nguồn hợp lệ. Không bao giờ restore một node consensus từ backup mà không xoá state cũ theo runbook.</li>
+    <li><strong>Vnode nóng vì key nóng</strong>: một celebrity key rơi vào vnode nào thì node vật lý ấy gánh — nhìn dashboard theo NODE thấy lệch mà theo THUẬT TOÁN thì "đều". Đo cả hai tầng: phân phối key và phân phối request.</li>
+    <li><strong>Hash function/seed lệch version giữa các instance</strong> khi rolling deploy thư viện hashing — nửa cụm route key kiểu cũ, nửa kiểu mới: cùng key hai chỗ, cache trùng/ghi chia đôi trong vài phút deploy. Hash cho placement phải ổn định theo HỢP ĐỒNG (murmur3 seed cố định...), không phải "hashCode() của JDK hôm nay".</li>
+    <li><strong>Scale-in nhiều node cùng lúc</strong>: mỗi node rời đi đổ tải sang hàng xóm — rời 3 con cùng lúc có thể domino OOM node kế. Rebalance là dòng chảy có lưu lượng — drain từng node, theo dõi, rồi con tiếp theo.</li>
+    <li><strong>Security</strong>: node giả mạo xin join cụm consensus = đọc/ghi được metadata thiêng liêng nhất. Cụm etcd/ZK phải mTLS + network policy riêng — nó là két sắt, đừng để chung mạng với app.</li>
+  </ul>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="build">
+<h2><span class="section-tag d">Phần D</span>11. Build Projects — số liệu tự in ra sẽ dạy bạn <span class="k-tag core">CORE</span></h2>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #1 — Consistent Hash Ring + đo đạc (Beginner, ~2 giờ)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: class Java <code>ConsistentHashRing</code> (TreeMap, murmur3 hoặc MD5) + test JUnit in bảng số liệu. Push GitHub.</div>
+  <p style="font-size:0.93rem;margin:8px 0">Requirements:</p>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li><code>addNode/removeNode/route(key)</code>; tham số số vnodes mỗi node.</li>
+    <li>Test 1: nạp 1 triệu key vào 5 node — in phân phối key/node với vnodes = 1, 10, 200.</li>
+    <li>Test 2: thêm node thứ 6 — đếm % key đổi chủ; so với modulo %5→%6 trên cùng bộ key.</li>
+    <li>Test 3: gỡ 1 node — chứng minh key của nó rải ĐỀU cho các node còn lại (khi vnodes=200), thay vì đổ hết cho một node (vnodes=1).</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: vnodes=200 cho độ lệch phân phối (max-min)/mean &lt; 15%; thêm node dời ~1/6 ±3% key trong khi modulo dời ≥75%; kết quả Test 3 nhìn thấy bằng số.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #2 — Quorum KV simulator (Intermediate, ~3 giờ)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: mô phỏng N=3 replica in-memory (mỗi replica một Map + version), client ghi W bản / đọc R bản, inject độ trễ replicate.</div>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Ghi: gửi (key, value, version++) tới N, coi thành công khi ≥W ack; option "node X lag 5 giây".</li>
+    <li>Đọc: hỏi R replica, lấy version cao nhất; option read-repair.</li>
+    <li>Kịch bản test A: W=2,R=2 + 1 node lag → 1000 vòng ghi-rồi-đọc-ngay: PHẢI 100% đọc ra bản vừa ghi.</li>
+    <li>Kịch bản test B: W=1,R=1 cùng điều kiện → đếm % lần đọc ra bản CŨ, in ra.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: test A pass tuyệt đối; test B cho tỉ lệ stale &gt; 0 nhìn thấy được (in con số) — bạn vừa TỰ chứng minh W+R&gt;N bằng thực nghiệm thay vì tin sách.</div>
+</div>
+
+<div class="build-exercise">
+  <div class="be-head">🔨 Build #3 — Fencing token bằng Postgres (Advanced, ~3 giờ)</div>
+  <div class="be-deliverable"><strong>Deliverable</strong>: 2 process Java tranh một "job lock"; nguồn token là sequence Postgres; bảng kết quả có cột <code>fencing_token</code>.</div>
+  <ul style="margin:0 0 0 22px;font-size:0.92rem">
+    <li>Acquire: <code>nextval('fence_seq')</code> + ghi holder. Ghi kết quả job: <code>UPDATE job_result SET data=?, fencing_token=? WHERE job_id=? AND fencing_token &lt; ?</code>.</li>
+    <li>Mô phỏng GC pause: process A acquire rồi <code>Thread.sleep(15s)</code>; process B acquire (token mới) và ghi; A tỉnh dậy ghi.</li>
+    <li>In log hai phía chứng minh: ghi của A (token cũ) bị WHERE chặn — 0 row updated.</li>
+  </ul>
+  <div class="be-criteria"><strong>Acceptance</strong>: chạy 20 lần kịch bản pause, kết quả cuối LUÔN là của token cao nhất; không lần nào token thấp ghi đè token cao. Viết README giải thích vì sao TTL-only fail cùng kịch bản.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="interview">
+<h2>Interview Framework — 3 tầng câu hỏi thật</h2>
+
+<div class="tier t1">
+  <div class="tier-head"><span class="badge">Tầng 1 — Surface</span><span class="tier-title">Mid gate</span></div>
+  <div class="q">Q: "Quorum là gì? Vì sao cụm etcd/ZooKeeper luôn 3 hoặc 5 node?" · "Consistent hashing giải bài toán gì?"</div>
+  <div class="a">Trả lời chuẩn phải có: W+R&gt;N và hình ảnh "hai tập giao nhau ít nhất 1 node"; đa số của 2n và 2n+1 chịu lỗi như nhau nên số chẵn phí tiền; consistent hashing = gỡ N khỏi công thức placement để thêm/bớt node chỉ dời ~K/N key (kể được sự cố modulo remap là điểm cộng thực chiến).</div>
+</div>
+<div class="tier t2">
+  <div class="tier-head"><span class="badge">Tầng 2 — Deep dive</span><span class="tier-title">Senior gate</span></div>
+  <div class="q">Q: "Distributed lock bằng Redis SETNX+TTL có an toàn tuyệt đối không?" · "Redis Cluster có dùng consistent hashing không?" · "W+R&gt;N rồi thì còn gì có thể sai?"</div>
+  <div class="a">Ba câu này là ba cái bẫy phân loại: (1) không — GC pause/failover phá TTL, cần fencing token và enforce ở hệ đích; (2) không — 16384 fixed slots (pre-sharding), khác ring, và giải thích được vì sao cùng đạt mục tiêu; (3) concurrent write vẫn conflict (cần version/CAS), sloppy quorum đổi hợp đồng, và quorum không phải transaction. Trả lời có cơ chế + biết ranh giới = đậu tầng này.</div>
+</div>
+<div class="tier t3">
+  <div class="tier-head"><span class="badge">Tầng 3 — Architecture</span><span class="tier-title">Senior+ / Design round</span></div>
+  <div class="q">Q: "Thiết kế metadata service HA cho hệ file storage (ai giữ file nào, node nào sống)" · "Cụm cache đang %N, 40 node, phải migrate sang scheme mới không downtime — kế hoạch?"</div>
+  <div class="a">Khung trả lời: metadata = nhỏ + thiêng → consensus có sẵn (etcd/ZK hoặc RDBMS+lease) cho leader/membership, KHÔNG tự viết; data placement → ring/slots tuỳ nhu cầu kiểm soát rebalance; migration %N→ring: dual-read (đọc scheme mới, miss thì đọc scheme cũ rồi backfill) + dual-write một thời gian + đo hit rate hai bảng trước khi cắt — kế hoạch có bước LÙI được là thứ interviewer tầng này tìm.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="feynman-end">
+<h2>Closing — Feynman Check</h2>
+<div class="feynman">
+  <div class="fy-head">🎓 Feynman 5 câu — nói to, không nhìn file</div>
+  <div class="fy-prompt">
+    1. Vì sao trong hệ phân tán không thể phân biệt chắc chắn "node chết" với "node chậm" — và thiết kế đúng né câu hỏi đó thế nào?<br>
+    2. W+R&gt;N bảo đảm điều gì, KHÔNG bảo đảm điều gì? Cho ví dụ mỗi bên.<br>
+    3. Fencing token là gì, vì sao TTL không thay được nó? Kể kịch bản GC pause.<br>
+    4. Vẽ (bằng lời) cái ring: thêm node D thì key nào dời, key nào đứng yên, vnodes để làm gì?<br>
+    5. Redis Cluster, Kafka, Cassandra — mỗi hệ chia dữ liệu kiểu gì và vì sao khác nhau vẫn hợp lý?
+  </div>
+  <div class="fy-rule">Bí ≥1 câu = quay lại section tương ứng. Trả lời được cả 5 trong ~7 phút nói liên tục = bạn thật sự sở hữu bài này.</div>
+</div>
+<div class="feynman">
+  <div class="fy-head">🎯 Calibration Check — tự chấm mức</div>
+  <div class="fy-prompt">L1 (biết tên): kể được Raft/ring là gì · L2 (giải thích): làm được Feynman 5 câu · L3 (áp dụng): làm xong Build #1 và #2, ĐỌC ĐƯỢC số liệu tự in ra và giải thích cho người khác. Interview senior cần L2 chắc + L3 cho ít nhất consistent hashing.</div>
+  <div class="fy-rule">Đánh dấu node dist-consensus / dist-hashing trong Hub sau khi đạt L2 — và để qbank/diagnostic xác nhận thay cảm giác.</div>
+</div>
+<div class="verify-source">
+  <div class="vs-head">📚 Verify Against Source — đừng tin file này mô tả đúng</div>
+  <p>Cross-check các khẳng định quan trọng:</p>
+  <ul>
+    <li><a href="https://raft.github.io/">raft.github.io</a> — visualization tương tác + paper "In Search of an Understandable Consensus Algorithm" (Ongaro &amp; Ousterhout, 2014)</li>
+    <li>Martin Kleppmann — <em>Designing Data-Intensive Applications</em>: Ch.5 (Replication &amp; quorum), Ch.8 (đồng hồ, GC pause, fencing), Ch.9 (consensus)</li>
+    <li><a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">Kleppmann – How to do distributed locking</a> (tranh luận Redlock + fencing token nguyên gốc)</li>
+    <li><a href="https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/">Redis Cluster spec</a> — xác nhận 16384 slots, KHÔNG phải ring</li>
+    <li><a href="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf">Amazon Dynamo paper (SOSP 2007)</a> — ring + vnodes + sloppy quorum nguyên bản</li>
+    <li>Karger et al. (1997) — paper gốc consistent hashing (web caching); Kafka KIP-500 — vì sao bỏ ZooKeeper sang KRaft</li>
+  </ul>
+</div>
+
+<footer>
+<div>📁 #67 Consensus, Quorum &amp; Consistent Hashing · Distributed Systems · node: dist-consensus + dist-hashing</div>
+<div>Ôn tiếp: <a href="62-interview-question-bank.html?q=consensus">qbank tag consensus/quorum</a> · <a href="65-design-lab.html">Design Lab</a> (đề URL shortener có nhánh sharding) · <a href="13-distributed-transaction.html">#13 Distributed TX</a></div>
+</footer>
+</section>
+
+</div>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="assets/scripts.js"></script>
+</body>
+</html>

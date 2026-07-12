@@ -100,8 +100,8 @@ window.SKILLMAP = {
     /* ---------- Distributed ---------- */
     { id: "dist-basics", d: "dist", t: "CAP/PACELC, consistency model, thời gian & thứ tự", lv: "senior", pre: ["data-tx"], lesson: "39-database-consistency.html", tags: ["cap-theorem", "pacelc", "distributed"], inc: [] },
     { id: "dist-tx",     d: "dist", t: "Distributed transaction, saga, 2PC", lv: "senior", pre: ["dist-basics", "msg-eda"], lesson: "13-distributed-transaction.html", tags: ["distributed-tx"], inc: [] },
-    { id: "dist-consensus", d: "dist", t: "Consensus & replication: Raft, leader election, quorum", lv: "senior", pre: ["dist-basics"], lesson: null, tags: ["consensus", "raft", "quorum", "leader-election"], inc: [] },
-    { id: "dist-hashing",   d: "dist", t: "Consistent hashing & data partitioning", lv: "senior", pre: ["dist-basics"], lesson: null, tags: ["consistent-hashing", "partitioning"], inc: [] },
+    { id: "dist-consensus", d: "dist", t: "Consensus & replication: Raft, leader election, quorum", lv: "senior", pre: ["dist-basics"], lesson: "67-consensus-consistent-hashing.html", tags: ["consensus", "raft", "quorum", "leader-election"], inc: [] },
+    { id: "dist-hashing",   d: "dist", t: "Consistent hashing & data partitioning", lv: "senior", pre: ["dist-basics"], lesson: "67-consensus-consistent-hashing.html", tags: ["consistent-hashing", "partitioning"], inc: [] },
 
     /* ---------- Reliability & Performance ---------- */
     { id: "resil-idem",     d: "resil", t: "Idempotency đầu-cuối", lv: "middle", pre: ["web-http", "data-design"], lesson: "33-idempotency.html", tags: ["idempotent", "idempotency"], inc: ["inc-duplicate-message"] },

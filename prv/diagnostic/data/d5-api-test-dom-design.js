@@ -65,7 +65,7 @@ DIAG.register({ items: [
   why:"Coverage cao + assertion nghèo = ảo giác an toàn. Giá trị của test nằm ở PHÁT BIỂU HÀNH VI: với input này phải ra kết quả này, case biên này phải xử thế này. Kỹ thuật kiểm nhanh: đổi 1 dòng logic nghiệp vụ (mutation) — nếu không test nào đỏ, bộ test đang gác cổng hờ.",
   fix:{ lesson:"27-testing-strategy.html", qb:"testing-strategy", inc:null } },
 
-{ id:"dg-test-05", node:"test-perf", d:"test", lv:"middle", dim:"analyze",
+{ id:"dg-test-04", node:"test-perf", d:"test", lv:"middle", dim:"analyze",
   q:"Load test API: latency trung bình (avg) 80ms rất đẹp, nhưng team nhận phàn nàn 'thỉnh thoảng chậm'. Nhìn thêm: p50=45ms, p99=2.400ms. Kết luận đúng?",
   opts:[
     { t:"Hệ có vấn đề thật: 1% request chậm gấp ~50 lần trung vị — avg bị số đông che, p99 mới phản ánh trải nghiệm tệ nhất mà user gặp đều đặn", ok:true },
@@ -168,7 +168,7 @@ DIAG.register({ items: [
   why:"Nguyên tắc lõi: tầng trong không biết gì về tầng ngoài. Domain thuần → dễ test bằng unit thuần, nghiệp vụ không bị bẻ theo hình cái bảng/JSON. Trade-off thành thật: thêm class + mapper là chi phí thật — đáng ở lõi nghiệp vụ phức tạp, quá tay với CRUD đơn giản (nói được KHI NÀO không cần tách là điểm senior).",
   fix:{ lesson:"15-clean-architecture-ddd.html", qb:"clean-arch-ddd", inc:null } },
 
-{ id:"dg-data-07", node:"data-scale", d:"data", lv:"senior", dim:"design",
+{ id:"dg-db-07", node:"data-scale", d:"data", lv:"senior", dim:"design",
   q:"SaaS bán hàng multi-tenant, bảng <code>orders</code> 2 tỉ dòng cần shard. Có tenant khổng lồ chiếm ~20% toàn bộ dữ liệu. Query chủ đạo: theo tenant + khoảng thời gian. Chọn shard key?",
   opts:[
     { t:"Shard theo tenant_id NHƯNG có chiến lược riêng cho tenant khổng lồ (tách shard riêng / sub-shard theo tenant_id + tháng) — key khớp query pattern, xử lý riêng outlier", ok:true },

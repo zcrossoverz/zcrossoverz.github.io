@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ôn tập phỏng vấn — HR & Dự án ACH | Nguyễn Trung Nhân</title>
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212e; --panel2:#1c2a3a; --ink:#e8eef5; --muted:#93a4b8;
+    --line:#26384c; --accent:#3ba3a0; --accent2:#4f8cff; --gold:#e0b872; --vi:#7fd4c1; --en:#8fb4ff;
+    --ok:#2e7d5b; --warn:#8a5a2b; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:linear-gradient(180deg,#0c131b,#0f1720);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.55;font-size:16px}
+  a{color:var(--accent2)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+
+  header.top{position:sticky;top:0;z-index:50;background:rgba(12,19,27,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  .topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 18px;max-width:1120px;margin:0 auto}
+  .brand{font-weight:700;letter-spacing:.2px}
+  .brand small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border:0;padding:7px 12px;cursor:pointer;font-size:13px}
+  .seg button.active{background:var(--accent);color:#04241f;font-weight:700}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:13px}
+  .btn:hover{border-color:var(--accent)}
+
+  .hero{padding:34px 0 10px}
+  .hero h1{margin:0 0 6px;font-size:26px}
+  .hero p{color:var(--muted);margin:6px 0;max-width:820px}
+  .tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .tag{font-size:12px;color:var(--vi);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:#12202a}
+
+  .layout{display:grid;grid-template-columns:230px 1fr;gap:26px;padding:22px 0 60px}
+  nav.toc{position:sticky;top:74px;align-self:start;font-size:14px}
+  nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{color:var(--ink);background:var(--panel)}
+  nav.toc .grp{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin:14px 8px 4px}
+
+  section{margin-bottom:34px;scroll-margin-top:80px}
+  h2.sec{font-size:20px;border-left:4px solid var(--accent);padding-left:12px;margin:0 0 6px}
+  .lead{color:var(--muted);margin:2px 0 16px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin:12px 0;overflow:hidden}
+  .qa .q{width:100%;text-align:left;background:var(--panel2);border:0;color:var(--ink);
+    padding:14px 16px;cursor:pointer;font-size:15px;font-weight:600;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+  .qa .q .num{color:var(--accent);font-weight:800;margin-right:4px}
+  .qa .q .chev{color:var(--muted);transition:transform .2s;flex:none;margin-left:8px}
+  .qa.open .q .chev{transform:rotate(90deg)}
+  .qa .a{display:none;padding:6px 16px 16px}
+  .qa.open .a{display:block}
+
+  .approach{border:1px dashed var(--line);background:#12202a;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
+  .approach b{color:var(--gold)}
+  .styles{font-size:13.5px;color:var(--muted);margin:8px 0}
+  .styles .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin:3px 5px 0 0;color:var(--ink);background:#122231}
+
+  .ans{margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .ans .row{padding:12px 14px}
+  .ans .vi{background:#12201d;border-left:3px solid var(--vi)}
+  .ans .en{background:#121b2b;border-left:3px solid var(--en)}
+  .ans .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+  .ans .vi .lbl{color:var(--vi)} .ans .en .lbl{color:var(--en)}
+
+  .lang-vi,.lang-en{display:block}
+  body.show-vi .lang-en,body.show-vi .ans .en{display:none}
+  body.show-en .lang-vi,body.show-en .ans .vi{display:none}
+
+  .inc{border:1px solid var(--line);border-radius:var(--radius);margin:14px 0;overflow:hidden}
+  .inc h4{margin:0;padding:12px 15px;background:#1d2836;font-size:15px;display:flex;gap:8px;align-items:center}
+  .inc h4 .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex:none}
+  .inc .body{padding:6px 15px 14px}
+  .kv{margin:9px 0}
+  .kv .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:2px}
+  .kv .k.hard{color:var(--warn)} .kv .k.fix{color:var(--vi)} .kv .k.say{color:var(--en)}
+  .say-box{background:#101a17;border:1px solid var(--line);border-left:3px solid var(--en);border-radius:8px;padding:8px 12px;margin-top:4px;font-size:14px}
+
+  table.gloss{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  table.gloss th,table.gloss td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  table.gloss th{background:#1d2836;color:var(--gold);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  table.gloss td:first-child{color:var(--en);font-weight:600;white-space:nowrap}
+
+  ul.tight{margin:6px 0 6px 2px;padding-left:18px} ul.tight li{margin:5px 0}
+  .note{color:var(--muted);font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0;font-size:13px}
+  .flow .step{background:#122231;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .flow .arw{color:var(--accent)}
+  footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:22px 0 50px}
+  .callout{background:#13232f;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}nav.toc{display:none}}
+  @media print{header.top,nav.toc,.controls{display:none}.qa .a{display:block!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body class="show-both">
+<header class="top">
+  <div class="topbar">
+    <div class="brand">Ôn tập phỏng vấn — HR &amp; Dự án ACH
+      <small>Nguyễn Trung Nhân · Backend Developer · song ngữ Việt–Anh</small></div>
+    <div class="controls">
+      <a class="btn" href="learn.html" style="text-decoration:none">← Hub</a>
+      <a class="btn" href="59-behavioral-rehearsal-drill.html" style="text-decoration:none">#59 STAR Drill</a>
+      <div class="seg" id="langSeg">
+        <button data-lang="both" class="active">Song ngữ</button>
+        <button data-lang="vi">VI</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <button class="btn" id="expandAll">Mở hết</button>
+      <button class="btn" id="collapseAll">Thu gọn</button>
+      <button class="btn" id="practice">Chế độ luyện</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Bộ ôn phỏng vấn: HR &amp; đào sâu dự án ACH</h1>
+    <p>Học thuộc phần <b>tiếng Việt</b> để nắm ý, rồi luyện phần <b>tiếng Anh</b> để ứng biến khi bị bắt nói English. Bấm vào câu hỏi để mở đáp án. Nút <b>Chế độ luyện</b> thu gọn hết để bạn tự trả lời trước khi xem.</p>
+    <div class="tagrow">
+      <span class="tag">NAPAS ACH</span><span class="tag">ISO 20022 · pacs.008 · camt.033</span>
+      <span class="tag">Reconciliation (bạn sở hữu)</span><span class="tag">Idempotency</span>
+      <span class="tag">Core Banking</span><span class="tag">Java · Spring Boot</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc">
+      <div class="grp">HR &amp; Behavioral</div>
+      <a href="#how">Cách trả lời HR đúng</a>
+      <a href="#hr">12 câu HR hay gặp</a>
+      <div class="grp">Dự án ACH</div>
+      <a href="#pitch">Giới thiệu dự án ACH</a>
+      <a href="#recon">Luồng đối soát (của bạn)</a>
+      <a href="#incidents">Tình huống khó thực tế</a>
+      <div class="grp">Tiếng Anh</div>
+      <a href="#gloss">Từ vựng EN↔VI</a>
+      <a href="#phrases">Mẫu câu ứng biến</a>
+    </nav>
+
+    <main>
+      <!-- ============ HOW TO ANSWER HR ============ -->
+      <section id="how">
+        <h2 class="sec">Nguyên tắc trả lời câu HR cho đúng</h2>
+        <p class="lead">Nhà tuyển dụng HR không kiểm tra kỹ thuật — họ đánh giá thái độ, độ phù hợp, khả năng giao tiếp và mức độ ổn định. Trả lời theo 4 nguyên tắc dưới đây là "đúng bài".</p>
+        <div class="approach">
+          <b>1. Ngắn – Cấu trúc – Có ví dụ.</b>
+          <span class="lang-vi"> Mỗi câu 30–90 giây. Luôn có 1 dẫn chứng thật (tên hệ thống, con số) thay vì nói chung chung.</span>
+          <span class="lang-en"> 30–90 seconds each. Always back it with one real example (a system name, a number) instead of generic claims.</span>
+        </div>
+        <div class="approach">
+          <b>2. Tích cực, không chê công ty cũ.</b>
+          <span class="lang-vi"> Mọi câu "tại sao nghỉ / điểm yếu / khó khăn" đều xoay về hướng phát triển, không đổ lỗi.</span>
+          <span class="lang-en"> Frame every "why leaving / weakness / difficulty" question toward growth, never blame.</span>
+        </div>
+        <div class="approach">
+          <b>3. Câu behavioral → dùng STAR.</b>
+          <span class="lang-vi"> Situation (bối cảnh) → Task (nhiệm vụ của bạn) → Action (bạn làm gì) → Result (kết quả, có số càng tốt).</span>
+          <span class="lang-en"> Situation → Task → Action → Result (quantify the result if you can).</span>
+        </div>
+        <div class="approach">
+          <b>4. Có nhiều "kiểu" trả lời — chọn theo công ty.</b>
+          <span class="lang-vi"> Công ty product/FDI: nhấn scale, ownership, tiếng Anh. Ngân hàng/outsourcing: nhấn domain, quy trình, sự cẩn thận. Bên dưới mỗi câu có gợi ý các kiểu.</span>
+          <span class="lang-en"> Product/FDI: emphasize scale, ownership, English. Bank/outsourcing: emphasize domain, process, carefulness. Each question below lists usable styles.</span>
+        </div>
+      </section>
+
+      <!-- ============ HR QUESTIONS ============ -->
+      <section id="hr">
+        <h2 class="sec">12 câu HR hay gặp — cách trả lời + mẫu song ngữ</h2>
+        <p class="lead">Bấm từng câu để mở. Học ý tiếng Việt trước, rồi tập nói bản tiếng Anh.</p>
+
+        <!-- Q1 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">1.</span> "Giới thiệu về bản thân bạn." / <i>Tell me about yourself.</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Công thức 4 bước: hiện tại → chuyên môn lõi → 1–2 điểm nhấn (đẩy ACH) → lý do ứng tuyển. Đừng đọc lại CV theo dòng thời gian.</span>
+              <span class="lang-en"> 4-beat formula: present → core expertise → 1–2 highlights (push ACH) → why this role. Don't recite your CV chronologically.</span>
+            </div>
+            <div class="styles">Kiểu có thể dùng:
+              <span class="pill">Bản đầy đủ 90s (mở màn)</span><span class="pill">Bản ngắn 30s (khi họ vội)</span><span class="pill">Bản "đẩy domain" (khi PV ngân hàng)</span>
+            </div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt (bản đầy đủ)</span>
+                Em là Nhân, backend developer 3 năm chuyên Java và Spring Boot trong mảng ngân hàng – fintech tại UNIT Technology. Hiện em đang phát triển module <b>NAPAS ACH Payment Gateway</b> — xử lý luồng chuyển tiền liên ngân hàng theo chuẩn ISO 20022, và em trực tiếp làm <b>luồng đối soát</b> giữa dữ liệu nội bộ với NAPAS và Core Banking. Trước đó em từng tự làm chủ end-to-end một module xác thực chữ ký số theo Nghị định 130. Thế mạnh của em là thiết kế API, xử lý nghiệp vụ tài chính đòi hỏi độ chính xác cao và tối ưu hiệu năng. Em ứng tuyển vì muốn làm hệ thống ở quy mô lớn hơn và đi sâu hơn về lĩnh vực của công ty mình.
+              </div>
+              <div class="row en"><span class="lbl">English (full)</span>
+                I'm Nhan, a backend developer with 3 years of experience in Java and Spring Boot, focused on the banking and fintech domain at UNIT Technology. Right now I'm building the <b>NAPAS ACH Payment Gateway</b> — it handles interbank transfer flows based on the ISO 20022 standard, and I personally own the <b>reconciliation flow</b> that matches our internal transaction data against NAPAS and Core Banking records. Before that, I independently delivered a digital-signature verification module end to end, compliant with Vietnamese Decree 130. My strengths are API design, handling financial logic that demands high accuracy, and performance tuning. I'm applying because I want to work on larger-scale systems and go deeper into your company's domain.
+              </div>
+              <div class="row vi"><span class="lbl">Tiếng Việt (bản ngắn 30s)</span>
+                Em là Nhân, 3 năm backend Java/Spring trong mảng ngân hàng – fintech. Mạnh nhất là payment và chữ ký số: hiện em làm cổng thanh toán NAPAS ACH và sở hữu luồng đối soát. Em muốn tìm môi trường quy mô lớn hơn để phát triển lên senior.
+              </div>
+              <div class="row en"><span class="lbl">English (short 30s)</span>
+                I'm Nhan, a backend developer with 3 years in Java/Spring in banking and fintech. My strongest areas are payments and digital signatures — I currently work on the NAPAS ACH gateway and own the reconciliation flow. I'm looking for a larger-scale environment to grow toward a senior role.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">2.</span> "Vì sao bạn muốn nghỉ / chuyển việc?" / <i>Why do you want to leave?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Hướng tới cái mình muốn (scale, product, senior), không nói xấu công ty/sếp cũ, không nói "vì lương thấp".</span>
+              <span class="lang-en"> Point toward what you want (scale, product, seniority). Never bad-mouth your current company or say "the pay is low".</span></div>
+            <div class="styles">Kiểu: <span class="pill">Hướng phát triển</span><span class="pill">Hướng công nghệ mới</span><span class="pill">Hướng quy mô hệ thống</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em học được rất nhiều ở UNIT, đặc biệt là banking core và payment. Giờ em muốn thử thách ở hệ thống quy mô lớn hơn và môi trường product-based, nơi em có thể đi sâu về system design và tiến lên vai trò senior — đó là lý do em quan tâm vị trí này.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                I've learned a lot at UNIT, especially around banking core and payments. Now I'm looking for a bigger-scale challenge in a more product-driven environment, where I can go deeper into system design and grow into a senior role — that's exactly why this position interests me.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">3.</span> "Vì sao 3 năm chỉ ở 1 công ty?" / <i>Why only one company in 3 years?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Biến thành điểm mạnh: được giao việc khó dần + tinh thần ownership. Chứng minh bằng chuỗi dự án tăng độ khó.</span>
+              <span class="lang-en"> Turn it into a strength: progressively harder work + ownership. Prove it with a chain of increasingly difficult projects.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em ở lại vì liên tục được giao việc khó dần: từ maintain master data, đến tự làm chủ cả module xác thực chữ ký số, và giờ là payment gateway NAPAS ACH. Em ưu tiên chiều sâu và tinh thần sở hữu công việc hơn là nhảy việc liên tục. Đến giờ em thấy mình đã sẵn sàng cho một thử thách lớn hơn.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                I stayed because I kept getting progressively harder work — from maintaining master data, to owning a full digital-signature verification module, to now the NAPAS ACH payment gateway. I value depth and ownership over frequent job-hopping. At this point I feel ready for a bigger challenge.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">4.</span> "Mức lương mong muốn của bạn?" / <i>What's your salary expectation?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Đưa một <b>khoảng</b>, neo bằng premium fintech, để ngỏ thương lượng. Nếu được, hỏi scope/tổng package trước. Tránh nói một con số cứng.</span>
+              <span class="lang-en"> Give a <b>range</b>, anchor it with the fintech premium, keep negotiation open. If possible, ask about scope/total package first. Avoid a single hard number.</span></div>
+            <div class="styles">Kiểu: <span class="pill">Đưa range + linh hoạt</span><span class="pill">Hỏi ngược scope trước</span><span class="pill">Neo theo thị trường</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em tham khảo thị trường senior mảng fintech hiện khoảng 30–45 triệu. Với kinh nghiệm payment và chữ ký số của em, em kỳ vọng vùng khoảng <b>32–40 triệu</b>, nhưng em khá linh hoạt tùy tổng package và cơ hội phát triển. Anh/chị có thể chia sẻ thêm về khung lương của vị trí này không ạ?
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                Based on the current market for senior fintech roles, the range is around 30–45 million VND. Given my payments and digital-signature experience, I'm looking at roughly <b>32–40 million</b>, but I'm flexible depending on the total package and growth opportunity. Could you share the salary band you have in mind for this role?
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">5.</span> "Điểm mạnh lớn nhất của bạn?" / <i>What's your greatest strength?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Chọn 1 điểm mạnh phù hợp job + chứng minh ngay bằng ví dụ ACH.</span>
+              <span class="lang-en"> Pick one job-relevant strength and immediately prove it with an ACH example.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Thế mạnh lớn nhất của em là xử lý nghiệp vụ tài chính phức tạp đòi hỏi độ chính xác tuyệt đối. Ví dụ ở ACH, em làm luồng đối soát — phải phát hiện chênh lệch giữa dữ liệu nội bộ với NAPAS/Core và xử lý các giao dịch nghi ngờ, nơi mà sai một đồng cũng không được phép. Em có tư duy cẩn thận và luôn nghĩ tới các case lỗi trước khi code.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                My biggest strength is handling complex financial logic that requires absolute accuracy. On ACH, for example, I built the reconciliation flow — detecting mismatches between our internal data and NAPAS/Core and handling in-doubt transactions, where being off by a single cent is not acceptable. I think carefully and always consider failure cases before I write code.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q6 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">6.</span> "Điểm yếu lớn nhất của bạn?" / <i>What's your greatest weakness?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Nêu điểm yếu <b>thật nhưng không chí mạng</b>, kèm việc bạn đang làm để cải thiện. Đừng dùng "điểm yếu giả" kiểu "em quá cầu toàn".</span>
+              <span class="lang-en"> State a <b>real but non-fatal</b> weakness plus what you're doing to fix it. Avoid fake ones like "I'm too much of a perfectionist".</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em làm nhiều với stack nội bộ của công ty như JCanary và MirageSQL, nên có giai đoạn em ít va chạm với công nghệ chuẩn thị trường. Em nhận ra điều đó và đang chủ động học lại JPA/Hibernate, Kafka và cloud để kiến thức của em không bị bó vào một framework. Em cũng luyện thêm system design và thuật toán vào buổi tối.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                I've worked heavily with the company's in-house stack like JCanary and MirageSQL, so at one point I had less exposure to mainstream tools. I recognized that and I'm actively relearning JPA/Hibernate, Kafka, and cloud so my knowledge isn't tied to one framework. I'm also practicing system design and algorithms in the evenings.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q7 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">7.</span> "Kể về một sự cố / bug khó bạn từng xử lý." / <i>Tell me about a hard bug or incident.</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng (STAR):</b>
+              <span class="lang-vi"> Dùng ngay một incident ACH — vừa cho thấy domain banking, vừa cho thấy tư duy xử lý. (Xem thêm mục "Tình huống khó thực tế" bên dưới để có nhiều lựa chọn.)</span>
+              <span class="lang-en"> Use an ACH incident — it shows both banking domain and problem-solving. (See "Real hard cases" below for more options.)</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt (STAR)</span>
+                <b>Tình huống:</b> Ở ACH có lần một số giao dịch inward deposit bị ghi có hai lần, do NAPAS gửi lại message khi bên em phản hồi chậm/timeout. <b>Nhiệm vụ:</b> em phụ trách đảm bảo tính đúng đắn của luồng và phần đối soát. <b>Hành động:</b> em thêm cơ chế idempotency dựa trên mã định danh giao dịch (end-to-end ID) cộng ràng buộc unique ở database để chặn xử lý trùng, đồng thời bổ sung luồng đối soát tự động phát hiện các bản ghi lệch để xử lý bù. <b>Kết quả:</b> hết tình trạng ghi trùng, và các ca nghi ngờ được phát hiện ngay trong ngày thay vì tồn đọng nhiều ngày.
+              </div>
+              <div class="row en"><span class="lbl">English (STAR)</span>
+                <b>Situation:</b> On ACH, some inward-deposit transactions were being credited twice, because NAPAS resent the message when our side responded slowly or timed out. <b>Task:</b> I was responsible for the correctness of the flow and the reconciliation part. <b>Action:</b> I added idempotency based on the end-to-end transaction ID plus a unique constraint at the database level to block duplicate processing, and I added a reconciliation routine that automatically detects mismatched records for correction. <b>Result:</b> the double-crediting stopped, and in-doubt cases were caught the same day instead of piling up for days.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q8 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">8.</span> "Kể về lúc bạn tự chịu trách nhiệm / dẫn dắt việc gì đó." / <i>Tell me about a time you took ownership.</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Dùng module Verify Esign (bạn tự design – build – deliver) hoặc chính luồng reconciliation của ACH. Nhấn "tự làm chủ end-to-end".</span>
+              <span class="lang-en"> Use the Verify Esign module (you designed, built, delivered it) or the ACH reconciliation flow you own. Emphasize "end-to-end ownership".</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Ở dự án nâng cấp Paperless, em được giao tự làm chủ toàn bộ module xác thực chữ ký số — từ thiết kế, code đến bàn giao, phải tuân thủ Nghị định 130 và Thông tư 16. Em tự thiết kế engine kiểm tra đa tiêu chí (trạng thái CA, hiệu lực chứng thư, OCSP/CRL, chuỗi tin cậy tới root CA) bằng Apache PDFBox và Bouncy Castle, và thiết kế luôn cả cơ sở dữ liệu và audit trail. Em cũng tự viết sequence diagram làm tài liệu kỹ thuật. Đây là lần em thấy mình làm việc ở tầm gần senior nhất.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                On the Paperless upgrade, I was given full ownership of the digital-signature verification module — from design and coding to delivery — compliant with Decree 130 and Circular 16. I designed a multi-criteria validation engine myself (CA trust status, certificate validity, OCSP/CRL revocation, trust chain up to the root CA) using Apache PDFBox and Bouncy Castle, and I designed the database schema and audit trail too. I even wrote the sequence diagrams as technical documentation. That's the closest to senior-level work I've done.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q9 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">9.</span> "Bạn xử lý áp lực / deadline gấp thế nào?" / <i>How do you handle pressure and tight deadlines?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Cho thấy bạn ưu tiên việc theo rủi ro và <b>giao tiếp sớm</b> khi có nguy cơ trễ, thay vì âm thầm ôm việc.</span>
+              <span class="lang-en"> Show you prioritize by risk and <b>communicate early</b> when a slip is likely, rather than silently overloading.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em chia việc theo mức độ rủi ro và ưu tiên phần lõi/nghiệp vụ quan trọng trước. Khi thấy có nguy cơ trễ, em báo sớm cho PM cùng phương án thay vì để đến hạn mới nói. Ví dụ ở eContract, timeline chỉ khoảng 2 tháng, em tập trung làm chắc luồng phân quyền dữ liệu và trạng thái hợp đồng trước, còn phần phụ thì trao đổi để giãn tiến độ hợp lý — nhờ vậy vẫn kịp bàn giao đúng hạn.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                I break work down by risk and tackle the critical business-logic parts first. When I see a risk of slipping, I flag it to the PM early with options, instead of waiting until the deadline. On eContract, for example, the timeline was only about two months, so I nailed the data-authorization and contract-status logic first and negotiated a reasonable schedule for the minor parts — which is how we still delivered on time.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q10 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">10.</span> "Bạn muốn phát triển thế nào trong 3–5 năm tới?" / <i>Where do you see yourself in 3–5 years?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Định hướng rõ ràng, gắn với con đường kỹ thuật (senior/architect) trong đúng domain của công ty — cho thấy sự ổn định.</span>
+              <span class="lang-en"> Show a clear technical path (senior/architect) within the company's domain — signals stability.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Trong 3–5 năm tới em muốn trở thành senior backend vững về system design, đặc biệt trong mảng payment/fintech, và có thể dẫn dắt về mặt kỹ thuật cho một mảng sản phẩm. Em muốn đi sâu về hệ thống phân tán và độ tin cậy cao — đúng hướng mà công việc ở đây đang cần.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                In the next 3–5 years I want to become a senior backend engineer strong in system design, especially in payments and fintech, and eventually provide technical leadership for a product area. I want to go deep into distributed systems and high reliability — which aligns well with what this role needs.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q11 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">11.</span> "Vì sao chúng tôi nên chọn bạn?" / <i>Why should we hire you?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Nêu tổ hợp hiếm mà bạn có: domain banking payment + chữ ký số/PKI + tự chủ. Nhấn "onboard nhanh vì đã làm hệ thống thật".</span>
+              <span class="lang-en"> Name your rare combination: banking-payment domain + digital signature/PKI + ownership. Emphasize fast onboarding from real systems.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt</span>
+                Em có một tổ hợp khá hiếm: vừa làm payment liên ngân hàng theo chuẩn NAPAS/ISO 20022, vừa làm sâu về chữ ký số và PKI, lại quen với yêu cầu tuân thủ của ngành. Em đã làm trên hệ thống thật với dữ liệu nhạy cảm nên onboard nhanh và hiểu ngay các ràng buộc về độ chính xác, bảo mật, audit. Với vị trí này em tin mình đóng góp được ngay từ sớm.
+              </div>
+              <div class="row en"><span class="lbl">English</span>
+                I bring a fairly rare combination: interbank payments on the NAPAS/ISO 20022 standard, deep work on digital signatures and PKI, and familiarity with the industry's compliance requirements. I've worked on real systems with sensitive data, so I onboard quickly and immediately understand the constraints around accuracy, security, and auditability. For this role, I'm confident I can contribute early.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q12 -->
+        <div class="card qa">
+          <button class="q"><span><span class="num">12.</span> "Bạn có câu hỏi gì cho chúng tôi không?" / <i>Do you have any questions for us?</i></span><span class="chev">▶</span></button>
+          <div class="a">
+            <div class="approach"><b>Cách đúng:</b>
+              <span class="lang-vi"> Luôn hỏi 2–3 câu (không hỏi = mất điểm). Hỏi về kỹ thuật/đội ngũ, tránh hỏi lương/nghỉ phép ngay vòng đầu.</span>
+              <span class="lang-en"> Always ask 2–3 questions (asking none looks bad). Ask about tech/team; avoid pay/leave in the first round.</span></div>
+            <div class="ans">
+              <div class="row vi"><span class="lbl">Tiếng Việt — câu nên hỏi</span>
+                <ul class="tight">
+                  <li>Quy mô hệ thống / lượng giao dịch team đang xử lý cỡ nào ạ?</li>
+                  <li>Tech stack thực tế và quy trình review, CI/CD của team thế nào?</li>
+                  <li>Team làm theo hướng product hay outsourcing, và lộ trình lên senior ra sao?</li>
+                  <li>Thử thách kỹ thuật lớn nhất của team trong 6–12 tháng tới là gì?</li>
+                </ul>
+              </div>
+              <div class="row en"><span class="lbl">English — questions to ask</span>
+                <ul class="tight">
+                  <li>What's the scale of the system / transaction volume the team handles?</li>
+                  <li>What's the real tech stack, and how do code review and CI/CD work here?</li>
+                  <li>Is the team product-focused or services-based, and what's the path to senior?</li>
+                  <li>What's the team's biggest technical challenge in the next 6–12 months?</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ACH PITCH ============ -->
+      <section id="pitch">
+        <h2 class="sec">Giới thiệu dự án ACH — bản mô tả mạnh</h2>
+        <p class="lead">Đây là "vũ khí" chính của bạn: nặng kỹ thuật + đúng domain banking. Học thuộc bản pitch 60–90 giây này, rồi sẵn sàng đào sâu bất kỳ nhánh nào.</p>
+        <div class="ans">
+          <div class="row vi"><span class="lbl">Tiếng Việt (pitch)</span>
+            ACH Gateway là module cổng thanh toán ngân hàng xử lý các luồng chuyển tiền liên ngân hàng qua NAPAS theo chuẩn ISO 20022, gồm: tra cứu tài khoản, ghi có đến (inward deposit theo <b>pacs.008</b>), sao chép/tra soát giao dịch (theo <b>camt.033</b>) và <b>đối soát (reconciliation)</b>. Em tích hợp gateway với các API của Core Banking để kiểm tra tài khoản, xác thực ghi có, theo dõi trạng thái giao dịch; phát triển xử lý inward deposit gồm validate, quản lý trạng thái, áp business rule và ghi log; và <b>đặc biệt em sở hữu toàn bộ luồng đối soát</b> — so khớp dữ liệu giao dịch nội bộ với bản ghi của NAPAS/Core, phát hiện lệch và hỗ trợ xử lý chênh lệch. Hệ thống dùng Java, Spring Boot, kiến trúc microservices, Redis để cache và ActiveMQ Artemis để xử lý bất đồng bộ. Điểm khó nhất là đảm bảo <b>tính chính xác của tiền</b> trong môi trường bất đồng bộ, nhiều điểm có thể lỗi.
+          </div>
+          <div class="row en"><span class="lbl">English (pitch)</span>
+            ACH Gateway is a banking payment-gateway module that handles interbank transfer flows through NAPAS on the ISO 20022 standard: account inquiry, inward deposit (based on <b>pacs.008</b>), copy/re-check transactions (based on <b>camt.033</b>), and <b>reconciliation</b>. I integrated the gateway with Core Banking APIs for account inquiry, inward-deposit validation, and transaction status tracking; I built the inward-deposit processing — validation, status management, business-rule handling, and logging; and <b>I specifically own the entire reconciliation flow</b> — matching our internal transaction data against NAPAS/Core records, detecting mismatches, and supporting discrepancy handling. The system uses Java, Spring Boot, a microservices architecture, Redis for caching, and ActiveMQ Artemis for asynchronous processing. The hardest part is guaranteeing <b>money-level accuracy</b> in an asynchronous environment with many points of failure.
+          </div>
+        </div>
+        <div class="callout">
+          <span class="lang-vi"><b>Mẹo:</b> khi nói "em sở hữu luồng đối soát", chắc chắn interviewer sẽ đào sâu vào đó. Học kỹ mục kế tiếp để trả lời trơn tru.</span>
+          <span class="lang-en"><b>Tip:</b> the moment you say "I own the reconciliation flow", the interviewer will drill into it. Master the next section so you can answer smoothly.</span>
+        </div>
+      </section>
+
+      <!-- ============ RECONCILIATION DEEP DIVE ============ -->
+      <section id="recon">
+        <h2 class="sec">Luồng đối soát (reconciliation) — phần bạn sở hữu</h2>
+        <p class="lead">Đây là nơi bạn "ăn điểm". Nắm chắc: mục tiêu, cách khớp, các loại lệch, cách xử lý, và cách tối ưu.</p>
+
+        <div class="flow">
+          <span class="step">Thu thập bản ghi nội bộ</span><span class="arw">→</span>
+          <span class="step">Lấy bản ghi NAPAS / Core</span><span class="arw">→</span>
+          <span class="step">Khớp theo ref + business date</span><span class="arw">→</span>
+          <span class="step">Phát hiện lệch</span><span class="arw">→</span>
+          <span class="step">Phân loại &amp; xử lý bù</span><span class="arw">→</span>
+          <span class="step">Ghi audit</span>
+        </div>
+
+        <div class="card"><div style="padding:14px 16px">
+          <div class="kv"><span class="k">Mục tiêu / Goal</span>
+            <span class="lang-vi">Đảm bảo mọi giao dịch nội bộ khớp đúng với NAPAS và Core Banking — không thừa, không thiếu, không sai số tiền.</span>
+            <span class="lang-en">Guarantee every internal transaction matches NAPAS and Core Banking exactly — nothing extra, nothing missing, no amount errors.</span>
+          </div>
+          <div class="kv"><span class="k">Cách khớp / Matching key</span>
+            <span class="lang-vi">Khớp theo mã tham chiếu giao dịch (end-to-end / transaction reference) + ngày làm việc (business date) + số tiền + trạng thái.</span>
+            <span class="lang-en">Match on transaction reference (end-to-end ID) + business date + amount + status.</span>
+          </div>
+          <div class="kv"><span class="k">Các loại lệch / Mismatch types</span>
+            <ul class="tight">
+              <li><span class="lang-vi"><b>Thiếu (missing):</b> có ở bên này nhưng không có ở bên kia.</span><span class="lang-en"><b>Missing:</b> present on one side, absent on the other.</span></li>
+              <li><span class="lang-vi"><b>Lệch trạng thái:</b> nội bộ SUCCESS nhưng NAPAS/Core khác.</span><span class="lang-en"><b>Status mismatch:</b> internal SUCCESS but NAPAS/Core differs.</span></li>
+              <li><span class="lang-vi"><b>Lệch số tiền:</b> cùng giao dịch nhưng amount khác.</span><span class="lang-en"><b>Amount mismatch:</b> same transaction, different amount.</span></li>
+              <li><span class="lang-vi"><b>Trùng (duplicate):</b> một giao dịch xuất hiện hai lần.</span><span class="lang-en"><b>Duplicate:</b> one transaction appearing twice.</span></li>
+            </ul>
+          </div>
+          <div class="kv"><span class="k">Xử lý / Handling</span>
+            <span class="lang-vi">Đánh dấu discrepancy → đưa vào hàng chờ tra soát → hỗ trợ điều chỉnh (tự động với case rõ ràng, thủ công với case cần nghiệp vụ) → ghi audit trail đầy đủ. Có cả đối soát <b>batch cuối ngày</b> và tra soát <b>gần thời gian thực</b>.</span>
+            <span class="lang-en">Flag the discrepancy → queue it for investigation → support corrections (automatic for clear cases, manual where business input is needed) → write a full audit trail. There's both <b>end-of-day batch</b> reconciliation and <b>near-real-time</b> checking.</span>
+          </div>
+          <div class="kv"><span class="k">Tối ưu / Optimization (đúng dòng trên CV)</span>
+            <span class="lang-vi">Tối ưu SQL cho tra cứu trạng thái mới nhất, lọc theo business date và truy vết audit trên bảng log giao dịch lớn: thêm/điều chỉnh index phù hợp, viết lại truy vấn tránh full scan, dùng covering index cho lookup nóng. (Chuẩn bị nói được bạn giảm bao nhiêu %/ms nếu nhớ số.)</span>
+            <span class="lang-en">Optimized SQL for latest-status lookups, business-date filtering, and audit tracking on a large transaction-log table: added/tuned the right indexes, rewrote queries to avoid full scans, used covering indexes for hot lookups. (Be ready to state the % / ms improvement if you recall it.)</span>
+          </div>
+        </div></div>
+
+        <div class="callout">
+          <span class="lang-vi"><b>Nói cho "pro":</b> nếu interviewer rành ISO 20022, bạn có thể nhắc thêm các message chuẩn — <b>pacs.008</b> (ghi có/credit transfer), <b>pacs.002</b> (báo trạng thái interbank), <b>pacs.004</b> (hoàn trả/return), <b>camt.054</b> (thông báo ghi nợ/có), <b>camt.056</b> (yêu cầu hủy) — nhưng chỉ nói phần bạn thực sự đụng tới để tránh bị "đào" sâu quá.</span>
+          <span class="lang-en"><b>To sound sharp:</b> if the interviewer knows ISO 20022, you can mention the standard messages — <b>pacs.008</b> (credit transfer), <b>pacs.002</b> (interbank status report), <b>pacs.004</b> (return), <b>camt.054</b> (debit/credit notification), <b>camt.056</b> (cancellation request) — but only mention what you actually touched so you don't get over-drilled.</span>
+        </div>
+      </section>
+
+      <!-- ============ REAL INCIDENTS ============ -->
+      <section id="incidents">
+        <h2 class="sec">Tình huống / incident khó thực tế của ACH — để ôn</h2>
+        <p class="lead">Mỗi tình huống là một "kho đạn": dùng được cho câu behavioral (STAR) lẫn câu technical. Đọc kỹ <b>Vì sao khó</b> và <b>Cách xử lý</b> để tự tin khi bị hỏi sâu.</p>
+
+        <!-- INC 1 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">1. Giao dịch "treo" — timeout không rõ kết quả (in-doubt)</span><span class="lang-en">1. In-doubt transaction — timeout with unknown result</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Gửi lệnh sang NAPAS/Core nhưng timeout, không biết tiền đã chạy hay chưa. Nếu coi là fail và cho làm lại → nguy cơ chuyển tiền hai lần; nếu coi là thành công → nguy cơ mất tiền.</span>
+              <span class="lang-en">A request is sent to NAPAS/Core but times out — you don't know if the money moved. Treat it as failed and retry → risk double payment; treat it as success → risk losing money.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Đây là bài toán kinh điển của payment: không được đoán. Trạng thái phải là "chưa xác định" cho tới khi xác minh.</span>
+              <span class="lang-en">It's the classic payment problem: you must not guess. The state must be "unknown" until verified.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Để giao dịch ở trạng thái PENDING/UNKNOWN, không auto-retry mù. Dùng luồng tra soát/sao chép giao dịch (camt.033) hoặc truy vấn trạng thái để xác minh với NAPAS, sau đó đối soát mới chốt kết quả. Mọi thao tác đều idempotent.</span>
+              <span class="lang-en">Keep the transaction PENDING/UNKNOWN, no blind auto-retry. Use the copy/re-check flow (camt.033) or a status inquiry to verify with NAPAS, then let reconciliation finalize it. Every operation is idempotent.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Với giao dịch treo, nguyên tắc của em là không đoán — giữ trạng thái chưa xác định, xác minh lại với NAPAS qua luồng tra soát rồi mới chốt bằng đối soát."</span>
+              <span class="lang-en">"For in-doubt transactions, my rule is never guess — keep it unknown, re-verify with NAPAS via the re-check flow, and only finalize through reconciliation."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 2 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">2. Ghi có trùng — double credit do message lặp</span><span class="lang-en">2. Double credit — duplicate message</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">NAPAS gửi lại cùng một message inward deposit (do timeout/retry của họ), hệ thống xử lý hai lần → khách được ghi có hai lần.</span>
+              <span class="lang-en">NAPAS resends the same inward-deposit message (their timeout/retry), the system processes it twice → the customer is credited twice.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Message trùng là chuyện bình thường trong hệ phân tán; không thể tin "mỗi message = một lần".</span>
+              <span class="lang-en">Duplicate messages are normal in distributed systems; you can't assume "one message = one occurrence".</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Idempotency theo end-to-end ID: lưu key đã xử lý, gặp lại thì trả kết quả cũ thay vì xử lý mới. Thêm ràng buộc unique ở DB làm "lưới an toàn" cuối cùng. Đối soát bắt các case lọt lưới.</span>
+              <span class="lang-en">Idempotency by end-to-end ID: store processed keys and return the original result on repeats instead of reprocessing. Add a DB unique constraint as the final safety net. Reconciliation catches anything that slips through.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Em chống ghi trùng bằng idempotency theo mã giao dịch, và có ràng buộc unique ở DB làm lớp bảo vệ cuối. Đối soát là lớp phát hiện dự phòng."</span>
+              <span class="lang-en">"I prevent double credits with idempotency on the transaction ID, plus a DB unique constraint as the last line of defense, and reconciliation as the backup detector."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 3 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">3. Lệch khi đối soát — status/amount không khớp NAPAS</span><span class="lang-en">3. Reconciliation break — status/amount mismatch vs NAPAS</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Nội bộ ghi SUCCESS nhưng bản ghi NAPAS/Core lại khác (hoặc số tiền lệch), phát hiện khi chạy đối soát cuối ngày.</span>
+              <span class="lang-en">Internally marked SUCCESS but the NAPAS/Core record differs (or the amount is off), found during end-of-day reconciliation.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Phải truy ngược nguồn gốc lệch giữa nhiều hệ thống, và quyết định bên nào là "nguồn chân lý".</span>
+              <span class="lang-en">You must trace the root of the mismatch across systems and decide which side is the source of truth.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Phân loại lệch, đưa vào hàng chờ tra soát; xác định source of truth (thường là bản ghi bù trừ của NAPAS/Core); điều chỉnh và ghi audit trail. Các case rõ ràng thì tự động, còn lại chuyển nghiệp vụ.</span>
+              <span class="lang-en">Classify the break, queue it for investigation; determine the source of truth (usually NAPAS/Core settlement records); adjust and record an audit trail. Automate clear cases, escalate the rest to operations.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Luồng đối soát của em phân loại lệch, xác định nguồn chân lý từ bản ghi NAPAS/Core, rồi điều chỉnh có audit đầy đủ."</span>
+              <span class="lang-en">"My reconciliation flow classifies the break, establishes the source of truth from NAPAS/Core records, then adjusts with a full audit trail."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 4 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">4. Message đến trễ / sai thứ tự (out-of-order)</span><span class="lang-en">4. Late / out-of-order messages</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Cập nhật trạng thái đến trước cả bản ghi tạo giao dịch, hoặc thông báo bù trừ về trễ vài giờ → xử lý sai nếu code giả định đúng thứ tự.</span>
+              <span class="lang-en">A status update arrives before the create record, or a settlement notice comes hours late → wrong handling if the code assumes ordering.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Queue và mạng không đảm bảo thứ tự; giả định "đến đúng thứ tự" là bẫy phổ biến.</span>
+              <span class="lang-en">Queues and networks don't guarantee order; assuming in-order delivery is a common trap.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Dùng state machine chịu được out-of-order: chỉ chuyển trạng thái hợp lệ, bỏ qua/hoãn update không hợp lệ, lưu event để xử lý lại. Không ghi đè trạng thái cuối bằng update cũ hơn (so theo timestamp/version).</span>
+              <span class="lang-en">Use an order-tolerant state machine: only apply valid transitions, ignore/defer invalid updates, store events for reprocessing. Never overwrite a final state with an older update (compare by timestamp/version).</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Em không giả định message đến đúng thứ tự — em dùng máy trạng thái chỉ cho phép chuyển hợp lệ và so version để không bị update cũ ghi đè."</span>
+              <span class="lang-en">"I never assume ordered delivery — I use a state machine that only allows valid transitions and version checks so stale updates can't overwrite a final state."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 5 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">5. Lỗi một phần giữa các service (partial failure)</span><span class="lang-en">5. Partial failure across services</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Đã validate và trừ/giữ tiền một bên, nhưng bước ghi sổ ở Core Banking fail giữa chừng → hệ thống ở trạng thái không nhất quán.</span>
+              <span class="lang-en">Validation and a hold/debit succeed on one side, but the Core Banking posting fails midway → the system is left inconsistent.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Không có transaction phân tán "một phát ăn ngay" giữa các hệ thống; phải tự đảm bảo nhất quán cuối cùng.</span>
+              <span class="lang-en">There's no single distributed transaction across systems; you must ensure eventual consistency yourself.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Saga + bước bù (compensation): nếu bước sau fail thì hoàn tác bước trước; retry idempotent có backoff; dùng outbox để không mất event; đối soát chốt lại cuối ngày.</span>
+              <span class="lang-en">Saga with compensation: if a later step fails, roll back the earlier one; idempotent retries with backoff; an outbox so events aren't lost; reconciliation reconciles at end of day.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Giữa các service em xử lý theo saga có bước bù, retry idempotent, và dùng outbox để không mất event — nhất quán cuối cùng được chốt lại bằng đối soát."</span>
+              <span class="lang-en">"Across services I use a saga with compensation, idempotent retries, and an outbox so no event is lost — eventual consistency is finalized by reconciliation."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 6 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">6. Nghẽn hàng đợi / "poison message" (ActiveMQ)</span><span class="lang-en">6. Queue backlog / poison message (ActiveMQ)</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Giờ cao điểm hàng đợi ActiveMQ Artemis bị dồn ứ, hoặc một message lỗi cứ retry mãi làm nghẽn cả consumer.</span>
+              <span class="lang-en">At peak, the ActiveMQ Artemis queue backs up, or one bad message keeps retrying and blocks the consumer.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Một message hỏng có thể chặn cả luồng; cao điểm dễ vỡ nếu không có cơ chế thoát.</span>
+              <span class="lang-en">A single bad message can stall the whole flow; peaks break things without an escape valve.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Giới hạn số lần retry rồi đẩy sang dead-letter queue để không chặn luồng; retry có backoff; tăng consumer/song song hóa; giám sát độ trễ hàng đợi và cảnh báo sớm.</span>
+              <span class="lang-en">Cap retries then route to a dead-letter queue so the flow isn't blocked; backoff on retries; scale consumers/parallelism; monitor queue lag and alert early.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Message lỗi sau vài lần retry sẽ vào dead-letter queue để không nghẽn luồng chính, và em giám sát độ trễ hàng đợi để scale consumer kịp thời."</span>
+              <span class="lang-en">"After a few retries a bad message goes to a dead-letter queue so it can't block the main flow, and I monitor queue lag to scale consumers in time."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 7 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">7. Vấn đề ngày làm việc / giờ cut-off (business date)</span><span class="lang-en">7. Business-date / cut-off issues</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Giao dịch phát sinh sát giờ cut-off cuối ngày: thuộc business date hôm nay hay hôm sau? Ảnh hưởng trực tiếp tới batch đối soát.</span>
+              <span class="lang-en">A transaction near the end-of-day cut-off: does it belong to today's or tomorrow's business date? It directly affects the reconciliation batch.</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Business date ≠ giờ hệ thống; hiểu sai là đối soát lệch hàng loạt.</span>
+              <span class="lang-en">Business date ≠ system clock; getting it wrong causes mass reconciliation breaks.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Gán business date theo quy tắc cut-off của NAPAS/ngân hàng chứ không theo giờ máy; xử lý nhất quán timezone; đối soát theo đúng business date đó.</span>
+              <span class="lang-en">Assign business date by the NAPAS/bank cut-off rule, not the machine clock; handle timezone consistently; reconcile against that exact business date.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Em gán business date theo quy tắc cut-off của hệ thống bù trừ, không theo giờ server, để batch đối soát không bị lệch ngày."</span>
+              <span class="lang-en">"I assign the business date by the clearing system's cut-off rule, not the server clock, so the reconciliation batch doesn't drift across days."</span></div></div>
+          </div>
+        </div>
+
+        <!-- INC 8 -->
+        <div class="inc">
+          <h4><span class="dot"></span><span class="lang-vi">8. Tra cứu trạng thái / audit chậm trên bảng log lớn</span><span class="lang-en">8. Slow status/audit lookup on a huge log table</span></h4>
+          <div class="body">
+            <div class="kv"><span class="k">Vấn đề / Problem</span>
+              <span class="lang-vi">Bảng log giao dịch ACH rất lớn; truy vấn "trạng thái mới nhất", lọc theo business date hay truy vết audit ngày càng chậm. (Đúng dòng "Optimized SQL queries" trên CV — họ sẽ hỏi bạn làm cách nào.)</span>
+              <span class="lang-en">The ACH transaction-log table is huge; "latest status", business-date filtering, and audit tracking queries get slow. (This is exactly your CV's "Optimized SQL queries" — expect "how?".)</span></div>
+            <div class="kv"><span class="k hard">Vì sao khó / Why hard</span>
+              <span class="lang-vi">Dữ liệu tăng liên tục; query nóng chạy full scan sẽ đội latency và ảnh hưởng cả hệ thống.</span>
+              <span class="lang-en">Data grows constantly; hot queries doing full scans spike latency and hurt the whole system.</span></div>
+            <div class="kv"><span class="k fix">Cách xử lý / Fix</span>
+              <span class="lang-vi">Thêm/điều chỉnh index đúng cột lọc (transaction id, business date, status); dùng composite/covering index cho lookup nóng; viết lại truy vấn tránh full scan; cân nhắc bảng "latest status" tách riêng để tra cứu nhanh. Đo trước–sau bằng execution plan.</span>
+              <span class="lang-en">Add/tune indexes on the filter columns (transaction id, business date, status); use composite/covering indexes for hot lookups; rewrite queries to avoid full scans; consider a separate "latest status" table for fast reads. Measure before/after with the execution plan.</span></div>
+            <div class="kv"><span class="k say">Câu nói mẫu / Say this</span>
+              <div class="say-box"><span class="lang-vi">"Em phân tích execution plan, thêm composite index cho các cột lọc nóng và viết lại truy vấn tránh full scan; kết quả tra cứu trạng thái nhanh hơn rõ rệt." (thêm số nếu nhớ)</span>
+              <span class="lang-en">"I analyzed the execution plan, added composite indexes on the hot filter columns, and rewrote queries to avoid full scans; status lookups got significantly faster." (add a number if you recall one)</span></div></div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <span class="lang-vi"><b>Ôn thông minh:</b> chọn 2 tình huống bạn nhớ rõ nhất (gợi ý: #1 in-doubt và #3 lệch đối soát) và luyện kể trọn vẹn theo STAR bằng cả hai thứ tiếng. Các case còn lại chỉ cần nắm ý để phản xạ khi bị hỏi bất ngờ.</span>
+          <span class="lang-en"><b>Study smart:</b> pick the 2 cases you remember best (suggested: #1 in-doubt and #3 reconciliation break) and rehearse a full STAR story in both languages. For the rest, just hold the key points so you can react if asked unexpectedly.</span>
+        </div>
+      </section>
+
+      <!-- ============ GLOSSARY ============ -->
+      <section id="gloss">
+        <h2 class="sec">Từ vựng sống còn khi nói tiếng Anh (EN ↔ VI)</h2>
+        <p class="lead">Khi bị bắt nói English, đây là các từ bạn chắc chắn cần. Học thuộc để không "khựng".</p>
+        <table class="gloss">
+          <tr><th>English</th><th>Tiếng Việt</th><th>Dùng khi</th></tr>
+          <tr><td>inward deposit</td><td>ghi có đến / nhận tiền vào</td><td>mô tả luồng nhận tiền pacs.008</td></tr>
+          <tr><td>credit transfer</td><td>lệnh chuyển có</td><td>loại giao dịch chuyển tiền</td></tr>
+          <tr><td>interbank</td><td>liên ngân hàng</td><td>mô tả NAPAS ACH</td></tr>
+          <tr><td>reconciliation</td><td>đối soát</td><td>phần bạn sở hữu</td></tr>
+          <tr><td>discrepancy / mismatch</td><td>chênh lệch / lệch</td><td>khi nói về sai khác dữ liệu</td></tr>
+          <tr><td>settlement / clearing</td><td>quyết toán / bù trừ</td><td>bản ghi gốc để đối soát</td></tr>
+          <tr><td>idempotency</td><td>xử lý một lần dù gọi lặp</td><td>chống ghi trùng</td></tr>
+          <tr><td>in-doubt transaction</td><td>giao dịch nghi ngờ / chưa rõ kết quả</td><td>case timeout</td></tr>
+          <tr><td>end-to-end ID</td><td>mã định danh giao dịch xuyên suốt</td><td>khóa để khớp/idempotent</td></tr>
+          <tr><td>audit trail</td><td>vết kiểm toán / nhật ký</td><td>tuân thủ, truy vết</td></tr>
+          <tr><td>retry / backoff</td><td>thử lại / giãn thời gian thử lại</td><td>xử lý lỗi</td></tr>
+          <tr><td>dead-letter queue</td><td>hàng đợi thư lỗi</td><td>poison message</td></tr>
+          <tr><td>compensation / rollback</td><td>bù trừ / hoàn tác</td><td>saga, partial failure</td></tr>
+          <tr><td>eventual consistency</td><td>nhất quán cuối cùng</td><td>hệ phân tán</td></tr>
+          <tr><td>throughput / latency</td><td>thông lượng / độ trễ</td><td>hiệu năng</td></tr>
+          <tr><td>state machine</td><td>máy trạng thái</td><td>quản lý trạng thái giao dịch</td></tr>
+          <tr><td>source of truth</td><td>nguồn dữ liệu chuẩn</td><td>quyết định khi lệch</td></tr>
+        </table>
+      </section>
+
+      <!-- ============ PHRASES ============ -->
+      <section id="phrases">
+        <h2 class="sec">Mẫu câu ứng biến khi nói tiếng Anh</h2>
+        <p class="lead">Học thuộc mấy "khung câu" này để nối ý trôi chảy và mua thời gian khi bí.</p>
+
+        <div class="card"><div style="padding:14px 16px">
+          <div class="kv"><span class="k">Mở đầu &amp; dẫn dắt / Openers</span>
+            <ul class="tight">
+              <li>"Let me walk you through it." — <span class="note">Để em trình bày từng bước.</span></li>
+              <li>"At a high level, the system does X." — <span class="note">Nói tổng quan trước.</span></li>
+              <li>"The part I specifically owned was..." — <span class="note">Nhấn phần bạn tự làm.</span></li>
+            </ul>
+          </div>
+          <div class="kv"><span class="k">Kể vấn đề &amp; cách giải / Problem–solution</span>
+            <ul class="tight">
+              <li>"The main challenge was..." — <span class="note">Thử thách chính là...</span></li>
+              <li>"To handle that, we / I..." — <span class="note">Để xử lý, bọn em/em...</span></li>
+              <li>"The trade-off there was A versus B." — <span class="note">Đánh đổi giữa A và B.</span></li>
+              <li>"As a result, ..." — <span class="note">Kết quả là...</span></li>
+            </ul>
+          </div>
+          <div class="kv"><span class="k">Mua thời gian khi bí / Buy time</span>
+            <ul class="tight">
+              <li>"That's a good question — let me think for a moment." — <span class="note">Câu hỏi hay, cho em suy nghĩ chút.</span></li>
+              <li>"Just to make sure I understand, are you asking about...?" — <span class="note">Hỏi lại cho chắc / câu giờ.</span></li>
+              <li>"Let me give you a concrete example." — <span class="note">Chuyển sang ví dụ cụ thể (dễ nói hơn).</span></li>
+            </ul>
+          </div>
+          <div class="kv"><span class="k">Khi chưa chắc / When unsure</span>
+            <ul class="tight">
+              <li>"I haven't used X directly, but the concept is similar to Y, which I've done." — <span class="note">Thành thật + quy về cái đã biết.</span></li>
+              <li>"If I had to design it, I'd start by..." — <span class="note">Chưa làm nhưng biết cách tiếp cận.</span></li>
+            </ul>
+          </div>
+        </div></div>
+        <div class="callout">
+          <span class="lang-vi"><b>Chiến thuật tiếng Anh:</b> nói chậm, câu ngắn, đúng thuật ngữ còn hơn nói nhanh mà sai. Khi bí từ, mô tả vòng ("the record that matches the transaction") thay vì im lặng.</span>
+          <span class="lang-en"><b>English tactic:</b> speak slowly in short sentences with the right terms — better than fast and wrong. When a word escapes you, describe around it ("the record that matches the transaction") instead of going silent.</span>
+        </div>
+      </section>
+
+      <footer class="wrap">
+        <p><b>Ưu tiên ôn:</b> <span class="lang-vi">(1) Pitch ACH + luồng đối soát → (2) 2 incident kể theo STAR → (3) 12 câu HR (thuộc bản ngắn trước) → (4) từ vựng &amp; mẫu câu tiếng Anh.</span><span class="lang-en">(1) ACH pitch + reconciliation → (2) 2 STAR incidents → (3) 12 HR answers (short versions first) → (4) English glossary &amp; phrases.</span></p>
+        <p class="note">Các vòng khác trong hệ thống: Technical → <a href="62-interview-question-bank.html">Question Bank</a> · Behavioral STAR → <a href="59-behavioral-rehearsal-drill.html">#59 Drill</a> · System Design → <a href="57-mock-payment-gateway.html">Mock #57</a> &amp; <a href="65-design-lab.html">Design Lab</a> · <a href="learn.html">← Learning Hub</a>. Tài liệu ôn tập cá nhân của Nguyễn Trung Nhân.</p>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script src="assets/progress.js"></script>
+<script>
+  // Language toggle
+  const body = document.body;
+  document.querySelectorAll('#langSeg button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#langSeg button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      body.classList.remove('show-both','show-vi','show-en');
+      body.classList.add('show-'+b.dataset.lang);
+    });
+  });
+  // Accordion
+  document.querySelectorAll('.qa .q').forEach(q=>{
+    q.addEventListener('click',()=>q.parentElement.classList.toggle('open'));
+  });
+  document.getElementById('expandAll').onclick=()=>document.querySelectorAll('.qa').forEach(c=>c.classList.add('open'));
+  document.getElementById('collapseAll').onclick=()=>document.querySelectorAll('.qa').forEach(c=>c.classList.remove('open'));
+  // Practice mode: collapse everything + highlight
+  const pbtn=document.getElementById('practice');
+  pbtn.onclick=()=>{
+    body.classList.toggle('practice-on');
+    document.querySelectorAll('.qa').forEach(c=>c.classList.remove('open'));
+    pbtn.textContent = body.classList.contains('practice-on') ? 'Đang luyện ✓' : 'Chế độ luyện';
+  };
+  // ── Speaking tracker: phỏng vấn là NÓI — mỗi lượt nói to trọn vẹn một mục thì bấm ghi nhận.
+  //    Lưu vào hồ sơ học chung (localStorage be_speak_v1 qua assets/progress.js) — Hub đọc được.
+  (function(){
+    if (!window.BEP || !BEP.speakGet) return; // mở file lẻ ngoài html/ thì bỏ qua êm
+    const items = [];
+    document.querySelectorAll('#hr .qa').forEach((c,i)=>{ const h=c.querySelector('.a'); if(h) items.push({id:'hr-q'+(i+1), host:h}); });
+    const pitch = document.querySelector('#pitch');   if (pitch) items.push({id:'ach-pitch', host:pitch});
+    const recon = document.querySelector('#recon');   if (recon) items.push({id:'ach-recon', host:recon});
+    document.querySelectorAll('#incidents .inc').forEach((c,i)=>{ const h=c.querySelector('.body'); if(h) items.push({id:'ach-inc'+(i+1), host:h}); });
+    const total = items.length;
+    const chip = document.createElement('span');
+    chip.className='btn'; chip.style.cursor='default';
+    document.querySelector('.controls').appendChild(chip);
+    const refresh = ()=>{ const m=BEP.speakGet(); let d=0; items.forEach(it=>{ if(m[it.id]) d++; }); chip.textContent='🎙 Đã luyện nói '+d+'/'+total; };
+    const label = r => r ? ('🎙 Đã luyện nói '+r.n+' lần · gần nhất '+r.ts+' — luyện thêm' ) : '🎙 Nói to trọn mục này xong → bấm ghi nhận';
+    items.forEach(it=>{
+      const b=document.createElement('button');
+      b.className='btn'; b.style.cssText='display:block;margin:10px 0 4px;border-color:var(--accent)';
+      b.textContent=label(BEP.speakGet()[it.id]);
+      b.addEventListener('click',()=>{ b.textContent=label(BEP.speakMark(it.id)); refresh(); });
+      it.host.appendChild(b);
+    });
+    refresh();
+  })();
+
+  // TOC active highlight
+  const links=[...document.querySelectorAll('nav.toc a')];
+  const secs=links.map(l=>document.querySelector(l.getAttribute('href')));
+  addEventListener('scroll',()=>{
+    let i=secs.findIndex((s,idx)=> s && s.getBoundingClientRect().top>90 );
+    if(i===-1) i=secs.length; i=Math.max(0,i-1);
+    links.forEach(l=>l.style.color=''); if(links[i]) links[i].style.color='var(--vi)';
+  });
+</script>
+</body>
+</html>

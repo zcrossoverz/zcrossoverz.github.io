@@ -13,7 +13,7 @@
    ============================================================ */
 window.SKILLMAP = {
   version: 1,
-  updated: "2026-07-04", /* sync */
+  updated: "2026-07-12", /* sync */
   domains: [
     { id: "cs",     t: "CS Foundation & Algorithms", icon: "🧮", order: 1 },
     { id: "web",    t: "Web & Networking",           icon: "🌐", order: 2 },
@@ -147,6 +147,7 @@ window.SKILLMAP = {
 
     /* ---------- Interview & Senior skills ---------- */
     { id: "car-behavioral", d: "career", t: "Behavioral & STAR stories", lv: "junior", pre: [], lesson: "59-behavioral-rehearsal-drill.html", tags: ["behavioral"], inc: [] },
+    { id: "car-hr-ach",     d: "career", t: "HR pack & ACH project deep-dive (song ngữ VI-EN)", lv: "junior", pre: [], lesson: "66-hr-ach-interview-pack.html", tags: [], inc: [] },
     { id: "car-mock",       d: "career", t: "Mock interview end-to-end", lv: "middle", pre: ["car-behavioral"], lesson: "57-mock-payment-gateway.html", tags: [], inc: [] },
     { id: "car-soft",       d: "career", t: "Senior soft skills: ảnh hưởng, mentoring, quyết định", lv: "senior", pre: [], lesson: null, planned: true, tags: [], inc: [] }
   ]

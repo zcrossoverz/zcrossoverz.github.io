@@ -4,4 +4,5 @@ window.DIAG_FILES = [
   "data/d2-spring-web-sec.js",
   "data/d3-data-cache.js",
   "data/d4-dist-resil-ops.js",
+  "data/d5-api-test-dom-design.js",
 ];

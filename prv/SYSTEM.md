@@ -1,6 +1,6 @@
 # Backend Engineering Lab — Kiến trúc hệ thống
 
-> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-04.
+> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-12.
 
 ## Hệ thống này là gì
 
@@ -40,6 +40,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 | `63-diagnostic.html` + `diagnostic/` | 44 câu tình huống MCQ; mỗi đáp án sai = 1 misconception + remediation; chấm theo domain/dimension/node |
 | `64-incident-lab.html` + `incidents/` | 12 sự cố production: artifacts (log/dump/EXPLAIN) → điều tra từng bước → root cause → fix trade-off → lab tái hiện |
 | `65-design-lab.html` + `design/` | 3 bài thiết kế: yêu cầu → chọn kiến trúc từng bước → chấm trade-off |
+| `66-hr-ach-interview-pack.html` | HR pack cá nhân song ngữ VI-EN: 12 câu HR mẫu, pitch ACH, luồng đối soát, 8 incident STAR, glossary + mẫu câu EN. File standalone (CSS/JS riêng, có lang-toggle & practice mode) — node `car-hr-ach` trong skillmap |
 | `index.html` | Danh mục 58 bài học (giữ nguyên URL cũ) + banner Hub |
 | `_qa/validate.mjs` | QA tự động — chạy `node _qa/validate.mjs` từ `html/`, exit≠0 nếu lỗi |
 
@@ -70,7 +71,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 3. Khẳng định quan trọng có nguồn (`refs`). Kiến thức theo phiên bản → ghi rõ (skillmap dùng field `vnote`).
 4. Diagnostic: mỗi option sai BẮT BUỘC có `why` = chẩn đoán misconception + hướng sửa. Không có "sai vì sai".
 5. Incident: artifacts phải giống thật (log format thật, thread dump thật, số liệu khớp nhau trong timeline); mục `prove` phải chạy được trên máy học viên kèm expected output.
-6. Không ví dụ banking (trừ mock 57/58).
+6. Không ví dụ banking (trừ nhóm Mock & Rehearsal: 57/58/59/66 — cố ý dùng CV/dự án thật).
 
 ## Cách mở rộng (việc thường gặp)
 
@@ -82,12 +83,12 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 
 ## Roadmap (ưu tiên giảm dần)
 
-1. **Rewrite nốt qbank:** ĐÃ rewrite theo chuẩn GUIDE.md: Spring, **Security (16)**, **Testing (16)**, **Distributed & Messaging (20 — CAP/PACELC, consensus/Raft, quorum, consistent hashing, clock, split-brain, distributed lock; +2 node dist-consensus/dist-hashing)**, **Architecture & Design (25 — đủ 5 SOLID gồm ISP, system-design method, estimation, caching/CDN, coupling&cohesion, CQRS, sync-vs-async)**, **Resilience & Reliability (16 — graceful degradation, cascading failure, load shedding/backpressure, health check, SLO/error budget, deadline budget, redundancy/SPOF)**, **DevOps & Cloud (18 — Docker layers/multi-stage, CI-vs-CD, 12-factor, IaC, K8s HPA, structured logging, metrics RED/USE)**, **Domain & AI (17 — payment: authorize/capture/settle, ledger, reconciliation, webhook, money-as-integer, refund-vs-chargeback, PCI/tokenization; AI/LLM: RAG, embeddings, prompt injection, function-calling safety, context/token, structured output, streaming; ĐÃ gỡ Camunda/BPMN khỏi hệ học — node dom-bpmn + card index, giữ file lesson 31)** — xong 2026-07-04. Còn **1 nhóm `legacy`**: Interview (Kỹ năng phỏng vấn) — rewrite tiếp mỗi đợt một nhóm + bổ sung câu.
+1. **Rewrite nốt qbank:** ĐÃ rewrite theo chuẩn GUIDE.md: Spring, **Security (16)**, **Testing (16)**, **Distributed & Messaging (20 — CAP/PACELC, consensus/Raft, quorum, consistent hashing, clock, split-brain, distributed lock; +2 node dist-consensus/dist-hashing)**, **Architecture & Design (25 — đủ 5 SOLID gồm ISP, system-design method, estimation, caching/CDN, coupling&cohesion, CQRS, sync-vs-async)**, **Resilience & Reliability (16 — graceful degradation, cascading failure, load shedding/backpressure, health check, SLO/error budget, deadline budget, redundancy/SPOF)**, **DevOps & Cloud (18 — Docker layers/multi-stage, CI-vs-CD, 12-factor, IaC, K8s HPA, structured logging, metrics RED/USE)**, **Domain & AI (17 — payment: authorize/capture/settle, ledger, reconciliation, webhook, money-as-integer, refund-vs-chargeback, PCI/tokenization; AI/LLM: RAG, embeddings, prompt injection, function-calling safety, context/token, structured output, streaming; ĐÃ gỡ Camunda/BPMN khỏi hệ học — node dom-bpmn + card index, giữ file lesson 31)** — xong 2026-07-04. **Interview (Kỹ năng phỏng vấn, 18 câu) cũng đã rewritten 2026-07-04 → 12/12 nhóm xong.** Việc còn lại: bổ sung câu mới theo lỗ hổng (node tags chưa có câu).
 2. **Design lab (chiều "Thiết kế được"):** ✅ ĐÃ CÓ bản đầu — `65-design-lab.html` + `design/`, 3 đề (rate limiter, notification đa kênh, file upload lớn). Cần: thêm đề (URL shortener, feed, chat, payment) cho luyện FAANG.
 3. **Thêm sự cố:** consumer lag, GC pressure/high CPU, K8s OOMKilled/probe fail, deployment rollback, outbox relay chết, data inconsistency sau saga (đã có node/misconception nền trong diagnostic).
 4. **Node `planned` trong skillmap:** cs-os (OS cho backend), conc-vthreads (virtual threads — Java 21), ops-k8s-tshoot, car-soft — viết bài học + gỡ cờ `planned`.
 5. **Diagnostic mở rộng:** ngân hàng câu đủ lớn để mỗi lượt đo rút ngẫu nhiên (chống nhớ đề); thêm item cho các domain mỏng (test, api, dom).
-6. **Xuất/nhập tiến độ:** nút export/import JSON localStorage (đổi máy không mất hồ sơ).
+6. **Xuất/nhập tiến độ:** ✅ ĐÃ CÓ trong learn.html (mục "Hồ sơ học" — export/import JSON qua `BEP.exportAll/importAll`).
 
 ## Ghi chú môi trường dev
 

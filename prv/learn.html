@@ -226,7 +226,21 @@ function hubBoot() {
       + dueAll.length + ' câu đến hạn ôn lại + câu mới từ phần CORE chưa học — trộn sẵn thành một lượt quiz, bấm là chạy.</div>'
       + '<div class="acts"><a href="62-interview-question-bank.html?session=today"><b>Bắt đầu phiên →</b></a></div></div>' });
   }
-  if (!diag) recs.push({ special: true, html: '<div class="next-card"><b>🎯 Làm bài Diagnostic đầu tiên</b><div class="why">Chưa đo thì mọi lộ trình chỉ là đoán. 44 câu tình huống, ~30 phút, ra thẳng bản đồ lỗ hổng.</div><div class="acts"><a href="63-diagnostic.html">Bắt đầu đo →</a></div></div>' });
+  if (!diag) recs.push({ special: true, html: '<div class="next-card"><b>🎯 Làm bài Diagnostic đầu tiên</b><div class="why">Chưa đo thì mọi lộ trình chỉ là đoán. Lượt Chuẩn 40 câu tình huống (~30 phút) rút ngẫu nhiên từ ngân hàng, ra thẳng bản đồ lỗ hổng.</div><div class="acts"><a href="63-diagnostic.html">Bắt đầu đo →</a></div></div>' });
+  /* Kỹ năng cũng mục theo thời gian — nhắc đo lại / làm lại (không tự trừ điểm, chỉ nhắc) */
+  if (diag && BEP.daysAgo(diag.ts) >= 30) {
+    recs.push({ html: '<div class="next-card" style="border-left-color:var(--warning)"><b>🎯 Đo lại Diagnostic</b><div class="why">Lần đo gần nhất cách đây ' + BEP.daysAgo(diag.ts) + ' ngày — bản đồ có thể đã lệch so với thực lực. Mỗi lượt rút đề ngẫu nhiên + tránh câu đã gặp, nên đo lại vẫn có ý nghĩa.</div><div class="acts"><a href="63-diagnostic.html">Đo lại (~30 phút) →</a></div></div>' });
+  }
+  var staleInc = BEP.staleSkills(incMap, 28).slice(0, 3);
+  var staleDsg = BEP.staleSkills(dsgMap, 28).slice(0, 2);
+  if (staleInc.length || staleDsg.length) {
+    var staleLinks = staleInc.map(function (s) {
+      return '<a href="64-incident-lab.html#' + s.id + '">🔥 ' + s.id.replace(/^inc-/, "").replace(/-/g, " ") + " (" + s.days + " ngày)</a>";
+    }).concat(staleDsg.map(function (s) {
+      return '<a href="65-design-lab.html#' + s.id + '">📐 ' + s.id.replace(/^dsg-/, "").replace(/-/g, " ") + " (" + s.days + " ngày)</a>";
+    }));
+    recs.push({ html: '<div class="next-card" style="border-left-color:var(--warning)"><b>🛠 Kỹ năng cũng bị quên — làm lại để giữ</b><div class="why">Sự cố/bài thiết kế đã xử lý hơn 4 tuần trước. Kỹ năng debug và trade-off cũng mục như trí nhớ — làm lại nhanh hơn nhiều so với học mới, và điểm cao hơn sẽ được ghi nhận.</div><div class="acts">' + staleLinks.join("") + "</div></div>" });
+  }
   var lvOrder = { junior: 0, middle: 1, senior: 2 };
   var cands = SM.nodes.filter(function (n) { return !n.planned && ST[n.id] !== "solid" && prereqReady(n); });
   cands.sort(function (a, b) {
@@ -289,7 +303,8 @@ function hubBoot() {
     + '<a class="mod-card" href="62-interview-question-bank.html"><span class="ic">🃏</span><b>Question Bank</b><span class="st">' + totalQ + " câu · " + mastered + " đã thuộc · " + ratedCount + ' đã ôn</span></a>'
     + '<a class="mod-card" href="63-diagnostic.html"><span class="ic">🎯</span><b>Diagnostic</b><span class="st">' + (diag ? "Gần nhất: " + diag.pct + "% (" + diag.ts + ")" : "Chưa đo lần nào — bắt đầu ở đây") + "</span></a>"
     + '<a class="mod-card" href="64-incident-lab.html"><span class="ic">🔥</span><b>Incident Lab</b><span class="st">' + incDone + " sự cố đã xử lý</span></a>"
-    + '<a class="mod-card" href="65-design-lab.html"><span class="ic">📐</span><b>Design Lab</b><span class="st">' + Object.keys(dsgMap).length + ' bài thiết kế đã làm — nuôi chiều "Thiết kế được"</span></a>';
+    + '<a class="mod-card" href="65-design-lab.html"><span class="ic">📐</span><b>Design Lab</b><span class="st">' + Object.keys(dsgMap).length + ' bài thiết kế đã làm — nuôi chiều "Thiết kế được"</span></a>'
+    + '<a class="mod-card" href="66-hr-ach-interview-pack.html"><span class="ic">🎤</span><b>HR Pack &amp; ACH Deep-dive</b><span class="st">12 câu HR song ngữ · pitch ACH · 8 incident STAR · đã luyện nói ' + Object.keys(BEP.speakGet()).length + '/22 mục</span></a>';
 
   /* ---- skillmap explorer ---- */
   var lessons = BEP.lessons();

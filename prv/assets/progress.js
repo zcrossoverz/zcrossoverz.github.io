@@ -54,8 +54,29 @@
       S("be_dsg_v1", m);
     },
 
+    /* ---------- Luyện nói (66 HR pack, 59 drill) ---------- */
+    speakGet: function () { return L("be_speak_v1", {}); },
+    speakMark: function (id) {
+      var m = L("be_speak_v1", {});
+      var r = m[id] || { n: 0 };
+      r.n++; r.ts = today();
+      m[id] = r; S("be_speak_v1", m);
+      return r;
+    },
+
+    /* ---------- Kỹ năng cũng "mục": incident/design làm lâu chưa ôn lại ---------- */
+    staleSkills: function (map, days) {
+      var out = [];
+      Object.keys(map || {}).forEach(function (id) {
+        var d = daysAgo(map[id].ts);
+        if (d >= days) out.push({ id: id, days: d, score: map[id].score, max: map[id].max });
+      });
+      out.sort(function (a, b) { return b.days - a.days; });
+      return out;
+    },
+
     /* ---------- Export / Import toàn bộ hồ sơ học ---------- */
-    KEYS: ["qb_box_v2", "qb_star_v2", "qb_stat_v1", "qb_last_v1", "be_diag_v1", "be_inc_v1", "be_lessons_v1", "be_dsg_v1"],
+    KEYS: ["qb_box_v2", "qb_star_v2", "qb_stat_v1", "qb_last_v1", "be_diag_v1", "be_inc_v1", "be_lessons_v1", "be_dsg_v1", "be_speak_v1"],
     exportAll: function () {
       var out = { _v: 1, _app: "backend-lab", _ts: today() };
       BEP.KEYS.forEach(function (k) {

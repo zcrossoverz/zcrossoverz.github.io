@@ -119,6 +119,37 @@ function dgBoot(errs) {
 
   function esc(s) { return (s || "").replace(/"/g, "&quot;"); }
 
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+
+  /* Rút đề ngẫu nhiên phân tầng theo domain (giữ tỉ lệ pool), ưu tiên câu CHƯA gặp
+     ở lượt trước (avoidIds = qids đã lưu trong hồ sơ) — chống nhớ đề khi đo lại. */
+  function drawQueue(pool, target, avoidIds) {
+    if (target >= pool.length) return pool.slice();
+    var avoid = {}; (avoidIds || []).forEach(function (x) { avoid[x] = 1; });
+    var byD = {}; pool.forEach(function (it) { (byD[it.d] = byD[it.d] || []).push(it); });
+    var out = [], rest = [];
+    Object.keys(byD).forEach(function (d) {
+      var arr = byD[d];
+      var ordered = shuffle(arr.filter(function (x) { return !avoid[x.id]; }))
+        .concat(shuffle(arr.filter(function (x) { return avoid[x.id]; })));
+      var quota = Math.max(1, Math.round(target * arr.length / pool.length));
+      out = out.concat(ordered.slice(0, quota));
+      rest = rest.concat(ordered.slice(quota));
+    });
+    shuffle(rest);
+    while (out.length < target && rest.length) out.push(rest.pop());
+    while (out.length > target) {
+      // cắt bớt từ domain đang đóng góp nhiều nhất để không xoá domain chỉ có 1 câu
+      var cnt = {}; out.forEach(function (it) { cnt[it.d] = (cnt[it.d] || 0) + 1; });
+      var maxD = null; Object.keys(cnt).forEach(function (d) { if (maxD == null || cnt[d] > cnt[maxD]) maxD = d; });
+      for (var k = out.length - 1; k >= 0; k--) { if (out[k].d === maxD) { out.splice(k, 1); break; } }
+    }
+    return out;
+  }
+
   function intro() {
     var doms = [];
     ITEMS.forEach(function (it) { if (doms.indexOf(it.d) === -1) doms.push(it.d); });
@@ -126,21 +157,37 @@ function dgBoot(errs) {
     view.innerHTML =
       '<div class="dg-card">'
       + '<h2 style="margin-top:0">Bắt đầu một lượt đo</h2>'
-      + '<p>Chọn phạm vi (mặc định: tất cả — khoảng ' + ITEMS.length + ' câu, 25–40 phút). Trả lời <em>thật</em>, đừng tra cứu — đo sai thì lộ trình gợi ý cũng sai. Sai ở đây là <strong>thông tin quý</strong>, không phải điểm kém.</p>'
+      + '<p>Trả lời <em>thật</em>, đừng tra cứu — đo sai thì lộ trình gợi ý cũng sai. Sai ở đây là <strong>thông tin quý</strong>, không phải điểm kém.</p>'
+      + '<p style="font-size:13px;color:var(--text-muted);margin:4px 0 2px"><b>Phạm vi</b> (mặc định: tất cả):</p>'
       + '<div class="dg-chips" id="dgDoms">' + doms.map(function (d) {
           var n = ITEMS.filter(function (x) { return x.d === d; }).length;
           return '<button class="dg-chip on" data-d="' + d + '">' + (DOMAINS[d] ? DOMAINS[d].icon + " " + DOMAINS[d].t : d) + " (" + n + ")</button>";
         }).join("") + "</div>"
+      + '<p style="font-size:13px;color:var(--text-muted);margin:10px 0 2px"><b>Cỡ lượt đo</b> — mỗi lượt <b>rút đề ngẫu nhiên</b> từ ngân hàng ' + ITEMS.length + ' câu, ưu tiên câu bạn <b>chưa gặp lượt trước</b> (chống nhớ đề, đo lại vẫn có ý nghĩa):</p>'
+      + '<div class="dg-chips" id="dgSizes">'
+      + '<button class="dg-chip" data-n="20">⚡ Nhanh · 20 câu (~15 phút)</button>'
+      + '<button class="dg-chip on" data-n="40">🎯 Chuẩn · 40 câu (~30 phút)</button>'
+      + '<button class="dg-chip" data-n="all">🌐 Toàn bộ ' + ITEMS.length + ' câu</button>'
+      + "</div>"
       + '<button class="dg-start" id="dgStart">🚀 Bắt đầu</button>'
       + (prev ? '<p style="margin-top:14px;font-size:13.5px;color:var(--text-muted)">Lần đo gần nhất: <b>' + prev.ts + "</b> — " + prev.pct + "% (" + prev.total + " câu). Đo lại sẽ cập nhật hồ sơ.</p>" : "")
       + "</div>";
     $("dgDoms").addEventListener("click", function (e) {
       var b = e.target.closest(".dg-chip"); if (b) b.classList.toggle("on");
     });
+    $("dgSizes").addEventListener("click", function (e) {
+      var b = e.target.closest(".dg-chip"); if (!b) return;
+      document.querySelectorAll("#dgSizes .dg-chip").forEach(function (x) { x.classList.remove("on"); });
+      b.classList.add("on");
+    });
     $("dgStart").onclick = function () {
       var on = Array.prototype.map.call(document.querySelectorAll("#dgDoms .dg-chip.on"), function (b) { return b.dataset.d; });
-      var queue = ITEMS.filter(function (it) { return on.indexOf(it.d) !== -1; });
-      if (!queue.length) return;
+      var pool = ITEMS.filter(function (it) { return on.indexOf(it.d) !== -1; });
+      if (!pool.length) return;
+      var sizeBtn = document.querySelector("#dgSizes .dg-chip.on");
+      var n = sizeBtn ? sizeBtn.dataset.n : "40";
+      var prevIds = (BEP.diagGet() || {}).qids || [];
+      var queue = (n === "all" || +n >= pool.length) ? pool.slice() : drawQueue(pool, +n, prevIds);
       // xáo trong từng domain nhưng giữ domain liền khối để đỡ nhảy ngữ cảnh
       queue.sort(function (a, b) { return a.d === b.d ? (LVW[a.lv] - LVW[b.lv] || Math.random() - .5) : (DOMAINS[a.d].order - DOMAINS[b.d].order); });
       run = { queue: queue, idx: 0, answers: {} };
@@ -240,7 +287,8 @@ function dgBoot(errs) {
     }).join("");
 
     var result = { pct: pct, total: run.queue.length, ok: okCount, byDomain: byDomain, byDim: byDim, byNode: byNode,
-      wrong: wrongs.map(function (w) { return w.it.id; }) };
+      wrong: wrongs.map(function (w) { return w.it.id; }),
+      qids: run.queue.map(function (it) { return it.id; }) };
     BEP.diagSave(result);
 
     view.innerHTML =

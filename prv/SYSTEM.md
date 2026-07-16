@@ -1,6 +1,6 @@
 # Backend Engineering Lab — Kiến trúc hệ thống
 
-> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-12.
+> Tài liệu cho developer/AI tiếp tục phát triển. Cập nhật: 2026-07-16.
 
 ## Hệ thống này là gì
 
@@ -36,7 +36,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 | `learn.html` | Hub: mastery theo domain, radar 7 năng lực, path engine "học gì tiếp", mục đang quên, bản đồ kiến thức · nhắc đo lại diagnostic (>30 ngày) & làm lại incident/design cũ (>28 ngày) — kỹ năng cũng mục |
 | `learnmap/skillmap.js` | Knowledge graph: node {id, d, lv, pre[], lesson, tags[], inc[], vnote, planned} |
 | `assets/progress.js` | `BEP` — store hợp nhất: đọc/ghi localStorage mọi module + công thức mastery + Leitner decay + 7 dimensions |
-| `62-interview-question-bank.html` + `qbank/` | Question bank 217+ câu, 12 nhóm. Xem `qbank/GUIDE.md` |
+| `62-interview-question-bank.html` + `qbank/` | Question bank 290 câu, 12 nhóm. Xem `qbank/GUIDE.md` |
 | `63-diagnostic.html` + `diagnostic/` | Pool 62 câu tình huống MCQ (d1–d5); mỗi lượt đo RÚT NGẪU NHIÊN (Nhanh 20 / Chuẩn 40 / Toàn bộ) stratified theo domain, ưu tiên câu chưa gặp lượt trước (lưu `qids` trong be_diag_v1) — chống nhớ đề; mỗi đáp án sai = 1 misconception + remediation; chấm theo domain/dimension/node |
 | `64-incident-lab.html` + `incidents/` | 12 sự cố production: artifacts (log/dump/EXPLAIN) → điều tra từng bước → root cause → fix trade-off → lab tái hiện |
 | `65-design-lab.html` + `design/` | 4 bài thiết kế (rate limiter, notification đa kênh, file upload 2GB, URL shortener): yêu cầu → chọn kiến trúc từng bước → chấm trade-off |
@@ -83,6 +83,8 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 - **Sau MỌI thay đổi:** `cd html && node _qa/validate.mjs` phải PASS.
 
 ## Roadmap (ưu tiên giảm dần)
+
+**Thứ tự ưu tiên CONTENT (Nhân chốt 2026-07-16) — mọi đợt thêm câu qbank/diagnostic/bài học bám theo:** 1. Java core → 2. Spring → 3. Database → 4. Distributed & Messaging → 5. Architecture & Design → 6. Security. (Đợt 2026-07-16 đã thêm 7 câu từ tài liệu cá nhân jvm.md theo đúng thứ tự này: java-035 JavaBean/Spring Bean, java-036 this/super, spr-046 JPA/Hibernate/SpringDataJPA/JDBC layering, spr-047 transaction ngầm của save() + TransactionRequiredException, spr-048 @Async, dist-021 queue-model vs log-model + ACK/redelivery, arch-026 Builder. ~42 câu còn lại trong jvm.md đã có sẵn trong bank sâu hơn — không duplicate. Bỏ qua có chủ đích: BPMN/Camunda (đã gỡ khỏi hệ học), OpenShift (ngoài 6 ưu tiên).)
 
 1. **Rewrite nốt qbank:** ĐÃ rewrite theo chuẩn GUIDE.md: Spring, **Security (16)**, **Testing (16)**, **Distributed & Messaging (20 — CAP/PACELC, consensus/Raft, quorum, consistent hashing, clock, split-brain, distributed lock; +2 node dist-consensus/dist-hashing)**, **Architecture & Design (25 — đủ 5 SOLID gồm ISP, system-design method, estimation, caching/CDN, coupling&cohesion, CQRS, sync-vs-async)**, **Resilience & Reliability (16 — graceful degradation, cascading failure, load shedding/backpressure, health check, SLO/error budget, deadline budget, redundancy/SPOF)**, **DevOps & Cloud (18 — Docker layers/multi-stage, CI-vs-CD, 12-factor, IaC, K8s HPA, structured logging, metrics RED/USE)**, **Domain & AI (17 — payment: authorize/capture/settle, ledger, reconciliation, webhook, money-as-integer, refund-vs-chargeback, PCI/tokenization; AI/LLM: RAG, embeddings, prompt injection, function-calling safety, context/token, structured output, streaming; ĐÃ gỡ Camunda/BPMN khỏi hệ học — node dom-bpmn + card index, giữ file lesson 31)** — xong 2026-07-04. **Interview (Kỹ năng phỏng vấn, 18 câu) cũng đã rewritten 2026-07-04 → 12/12 nhóm xong.** Việc còn lại: bổ sung câu mới theo lỗ hổng (node tags chưa có câu).
 2. **Design lab (chiều "Thiết kế được"):** ✅ 4 đề — rate limiter, notification đa kênh, file upload lớn, **URL shortener (thêm 2026-07-12)**. Cần: thêm đề feed, chat, payment cho luyện FAANG.

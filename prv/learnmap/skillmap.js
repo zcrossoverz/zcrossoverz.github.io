@@ -67,7 +67,7 @@ window.SKILLMAP = {
     { id: "conc-async",  d: "conc", t: "CompletableFuture & async patterns", lv: "senior", pre: ["conc-pools"], lesson: "21-async-patterns.html", tags: ["completablefuture", "async", "async-patterns"], inc: ["inc-thread-starvation"] },
     { id: "conc-jmm",    d: "conc", t: "Java Memory Model & happens-before", lv: "senior", pre: ["conc-sync"], lesson: "04-java-memory-model.html", tags: ["happens-before", "memory-model", "reordering", "singleton"], inc: [] },
     { id: "conc-dist-lock", d: "conc", t: "Khoá xuyên instance & chống double-processing", lv: "senior", pre: ["conc-sync", "cache-redis"], lesson: "33-idempotency.html", tags: ["distributed-lock", "scale-out"], inc: ["inc-duplicate-message"] },
-    { id: "conc-vthreads", d: "conc", t: "Virtual threads (Project Loom)", lv: "senior", pre: ["conc-pools"], lesson: null, planned: true, tags: [], inc: [], vnote: "Java 21+ — thay đổi cách nghĩ về blocking IO" },
+    { id: "conc-vthreads", d: "conc", t: "Virtual threads (Project Loom)", lv: "senior", pre: ["conc-pools"], lesson: null, planned: true, tags: ["virtual-threads"], inc: [], vnote: "Java 21+ — thay đổi cách nghĩ về blocking IO; JEP 491 (Java 24) gỡ pinning của synchronized" },
 
     /* ---------- Spring ---------- */
     { id: "spr-core", d: "spring", t: "IoC, DI, bean & lifecycle", lv: "junior", pre: ["java-oop"], lesson: "05-spring-core.html", tags: ["ioc", "dependency-injection", "bean", "spring-core", "qualifier"], inc: [] },

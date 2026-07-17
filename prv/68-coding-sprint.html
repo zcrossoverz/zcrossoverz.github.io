@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#68 — Coding Sprint: nước rút vòng LeetCode | Backend Engineering Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .cs-wrap { max-width: 980px; margin: 0 auto; padding: 0 4px 80px; }
+  .cs-box { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); margin: 16px 0; }
+  .cs-box h2 { margin: 0 0 6px; font-size: 1.08rem; }
+  .cs-sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px; }
+  .cs-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .cs-stat { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); padding: 10px 12px; }
+  .cs-stat .v { font-size: 1.3rem; font-weight: 700; }
+  .cs-stat .l { font-size: 11.5px; color: var(--text-muted); }
+  .cs-day { border-left: 4px solid var(--accent); border: 1px solid var(--border); border-left-width: 4px; border-radius: var(--radius); background: var(--bg); padding: 12px 14px; margin: 10px 0; font-size: 13.5px; }
+  .cs-day b { font-size: 14px; }
+  .cs-pat { margin: 18px 0 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cs-pat h3 { margin: 0; font-size: 15px; }
+  .cs-pat .sig { font-size: 12px; color: var(--text-muted); }
+  .cs-pat .pc { font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; }
+  .cs-row { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-bottom: 1px dashed var(--border); font-size: 13.5px; flex-wrap: wrap; }
+  .cs-row:hover { background: var(--bg); }
+  .cs-st { flex: none; width: 118px; text-align: left; font: inherit; font-size: 12px; font-weight: 700; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer; background: var(--bg); color: var(--text-muted); }
+  .cs-st.s1 { border-color: var(--success); color: var(--success); background: var(--success-soft); }
+  .cs-st.s2 { border-color: var(--warning); color: var(--warning); background: var(--warning-soft); }
+  .cs-row .diff { flex: none; font-size: 10.5px; font-weight: 800; border-radius: 4px; padding: 2px 6px; }
+  .cs-row .diff.E { background: var(--success-soft); color: var(--success); }
+  .cs-row .diff.M { background: var(--warning-soft); color: var(--warning); }
+  .cs-row a { color: var(--text); text-decoration: none; font-weight: 600; }
+  .cs-row a:hover { color: var(--accent); }
+  .cs-row .core-mark { color: var(--danger); font-weight: 800; font-size: 11px; }
+  .cs-row .note { width: 100%; padding-left: 128px; font-size: 12px; color: var(--text-faint); }
+  .cs-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+  .cs-btn { font: inherit; font-weight: 700; font-size: 13px; border-radius: 999px; padding: 8px 16px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+  .cs-btn.ghost { background: var(--bg); color: var(--accent); }
+  .cs-pick { border: 1px dashed var(--accent); border-radius: var(--radius); background: var(--accent-soft); padding: 10px 14px; margin-top: 10px; font-size: 13.5px; display: none; }
+  .cs-timer { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; }
+  .cs-timer.warn { color: var(--danger); }
+  table.cs-sig { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.cs-sig th, table.cs-sig td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; }
+  table.cs-sig th { background: var(--bg); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">#68 Coding Sprint</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="toc-title">Điều hướng</div>
+  <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
+    <a href="42-leetcode-patterns-mastery.html">📖 #42 Patterns (template)</a>
+    <a href="43-algorithm-mental-model.html">📖 #43 UMPIRE</a>
+    <a href="44-faang-coding-playbook.html">📖 #44 Playbook (rubric)</a>
+  </nav>
+  <div class="toc-title">Trang này</div>
+  <nav class="toc">
+    <a href="#plan">Lịch 3 ngày</a>
+    <a href="#stats">Tiến độ</a>
+    <a href="#signals">Signal → Pattern</a>
+    <a href="#drill">Danh sách bài</a>
+    <a href="#mock">Mock 45 phút</a>
+    <a href="#rules">Quy tắc phòng thi</a>
+  </nav>
+</aside>
+
+<main>
+<div class="content cs-wrap">
+
+<section class="hero">
+  <span class="meta-tag">Coding Sprint · Easy-Medium · nước rút 2-3 ngày</span>
+  <h1>#68 — Nước rút vòng LeetCode</h1>
+  <p class="lead">Tracker cho <strong>2-3 ngày trước vòng code Easy-Medium</strong>. Nguyên tắc nước rút: KHÔNG học pattern mới giờ chót — <em>làm lại cho trơn</em> những pattern quen, thuộc tín hiệu nhận diện, và nói to khi giải (interviewer chấm quá trình). Template từng pattern nằm ở <a href="42-leetcode-patterns-mastery.html">#42</a>; trang này là chỗ LUYỆN và ĐÁNH DẤU.</p>
+</section>
+
+<div class="cs-box" id="plan">
+  <h2>📅 Lịch 3 ngày (chỉnh theo ngày thi của bạn)</h2>
+  <div class="cs-day"><b>Ngày 1 — Ba pattern ăn tiền nhất:</b> Hash Map · Two Pointers · Sliding Window. Trước mỗi cụm: mở #42 đọc lại template 10 phút, rồi làm drill bên dưới (mục tiêu ≥ 8 bài, ưu tiên bài đỏ ★). Mỗi bài tự nói to UMPIRE — kể cả khi làm một mình.</div>
+  <div class="cs-day"><b>Ngày 2 — Phủ phần còn lại + mock:</b> Binary Search · Stack · Linked List · Tree BFS/DFS (mục tiêu ≥ 8 bài ★). Chiều: <b>một lượt mock 45'</b> bằng timer bên dưới — bốc 1 bài Medium CHƯA làm, chấm theo rubric #44.</div>
+  <div class="cs-day"><b>Ngày 3 / buổi trước thi — KHÔNG HỌC MỚI:</b> làm lại toàn bộ bài đang gắn 👀 (xem lời giải → phải tự giải lại được), lướt bảng Signal 5 phút, 1 mock nhẹ 30' bài Easy cho nóng máy. Xong thì ĐÓNG MÁY — ngủ đủ đáng giá hơn 5 bài cuối.</div>
+</div>
+
+<div class="cs-box" id="stats">
+  <h2>📊 Tiến độ</h2>
+  <div class="cs-sub">Trạng thái mỗi bài bấm để xoay vòng: <b>Chưa làm → ✅ Tự giải được → 👀 Xem lời giải (cần làm lại) → Chưa làm</b>. Lưu vào hồ sơ học (export/import được ở Hub).</div>
+  <div class="cs-stats" id="csStats"></div>
+  <div class="cs-actions">
+    <button class="cs-btn" id="csPickWeak">🎲 Rút 1 bài từ pattern yếu nhất</button>
+    <button class="cs-btn ghost" id="csPickCore">★ Rút 1 bài CORE chưa làm</button>
+  </div>
+  <div class="cs-pick" id="csPick"></div>
+</div>
+
+<div class="cs-box" id="signals">
+  <h2>⚡ Signal → Pattern (thuộc bảng này là nửa trận đánh)</h2>
+  <div class="table-wrap"><table class="cs-sig">
+    <tr><th>Nghe thấy trong đề</th><th>Nghĩ ngay tới</th></tr>
+    <tr><td>"tìm cặp / đếm tần suất / đã tồn tại chưa / khử trùng"</td><td><b>Hash Map/Set</b> — đổi bộ nhớ lấy O(1) lookup</td></tr>
+    <tr><td>"mảng ĐÃ SORT + tìm cặp/thu hẹp" · "đảo/di chuyển tại chỗ"</td><td><b>Two Pointers</b> — hai đầu hoặc nhanh-chậm</td></tr>
+    <tr><td>"đoạn con LIÊN TIẾP dài nhất/ngắn nhất/tổng..."</td><td><b>Sliding Window</b> — mở phải, co trái khi vi phạm</td></tr>
+    <tr><td>"đã sort + tìm kiếm" · "tìm giá trị nhỏ nhất thoả điều kiện đơn điệu"</td><td><b>Binary Search</b> — loại nửa mỗi bước</td></tr>
+    <tr><td>"đúng ngoặc / undo / phần tử gần nhất lớn hơn"</td><td><b>Stack</b> — vào sau ra trước</td></tr>
+    <tr><td>"linked list: đảo, chu trình, node thứ k từ cuối"</td><td><b>LL kỹ thuật</b> — dummy head, fast/slow</td></tr>
+    <tr><td>"cây: độ sâu / duyệt theo tầng / đối xứng"</td><td><b>DFS đệ quy / BFS queue</b></td></tr>
+    <tr><td>"lưới ô / vùng liên thông / lan toả"</td><td><b>Flood fill BFS/DFS</b> — đánh dấu visited</td></tr>
+    <tr><td>"tổng đoạn con hỏi nhiều lần"</td><td><b>Prefix Sum</b> — tính trước một lần</td></tr>
+    <tr><td>"khoảng [start,end] chồng lấn / gộp"</td><td><b>Sort + Intervals</b> — sort theo start rồi quét</td></tr>
+    <tr><td>"top K / K lớn nhất / thứ k"</td><td><b>Heap cỡ K</b> (hoặc sort nếu một lần)</td></tr>
+  </table></div>
+</div>
+
+<div class="cs-box" id="drill">
+  <h2>💪 Danh sách luyện — 36 bài Easy-Medium kinh điển VN</h2>
+  <div class="cs-sub">★ đỏ = CORE, phải tự giải được trước ngày thi. Không ★ = làm nếu còn thời gian. Click tên bài mở LeetCode. Đây là các bài xuất hiện dày đặc nhất trong vòng code Easy-Medium ở VN — trùng với drill list của #42.</div>
+  <div id="csList"></div>
+</div>
+
+<div class="cs-box" id="mock">
+  <h2>⏱ Mock 45 phút — tự dựng phòng thi</h2>
+  <div class="cs-sub">Kịch bản: 5' đọc đề + clarify (nói to giả định) → 5' nêu brute force + hướng tối ưu → 25' code (vừa code vừa nói) → 5' tự trace bằng ví dụ → 5' nêu Big-O + edge cases. Chấm mình theo rubric 5 trục trong <a href="44-faang-coding-playbook.html">#44</a>.</div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span class="cs-timer" id="csTimer">45:00</span>
+    <button class="cs-btn" id="csTimerBtn">▶ Bắt đầu</button>
+    <button class="cs-btn ghost" id="csTimerReset">↺ Reset</button>
+    <span class="cs-sub" style="margin:0">Chuông 5 phút cuối đổi màu — tập phản xạ chốt bài khi sắp hết giờ.</span>
+  </div>
+</div>
+
+<div class="cs-box" id="rules">
+  <h2>🎯 Quy tắc phòng thi (dán lên trán)</h2>
+  <div class="cs-day" style="border-left-color:var(--danger)"><b>1. Không im lặng quá 20 giây.</b> Bí thì nói đang cân nhắc gì — interviewer chấm QUÁ TRÌNH và chỉ gợi ý được khi nghe bạn nghĩ.</div>
+  <div class="cs-day"><b>2. Brute force TRƯỚC, xin phép tối ưu SAU.</b> "Em có cách O(n²) chạy được ngay, em nêu rồi tối ưu tiếp nhé?" — có điểm sàn rồi mới leo.</div>
+  <div class="cs-day"><b>3. Clarify 3 câu tối thiểu:</b> mảng rỗng? có số âm/trùng? kích thước tối đa (để đoán độ phức tạp kỳ vọng)?</div>
+  <div class="cs-day"><b>4. Trace tay một ví dụ nhỏ TRƯỚC khi tuyên bố xong.</b> Tự bắt bug trước interviewer = điểm cộng lớn; để họ bắt = điểm trừ kép.</div>
+  <div class="cs-day"><b>5. Bí hoàn toàn → chạy bảng Signal trong đầu:</b> sort được không? hash đổi được vòng lồng không? đoạn liên tiếp → window? Nói to từng ứng viên pattern — thường trúng ở cái thứ hai.</div>
+</div>
+
+<footer>
+  <span>#68 · tiến độ lưu <code>be_code_v1</code> (localStorage — export/import ở Hub) · template pattern: <a href="42-leetcode-patterns-mastery.html">#42</a></span>
+</footer>
+
+</div>
+</main>
+</div>
+
+<script src="assets/scripts.js"></script>
+<script src="assets/progress.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* ---- Data: 36 bài — {id, lc, t, d(E/M), p(pattern), core, sig} ---- */
+  var PATTERNS = [
+    { id: "hash",  t: "Hash Map / Set",      sig: "tần suất · tồn tại · cặp bổ sung" },
+    { id: "tp",    t: "Two Pointers",         sig: "mảng sort · hai đầu · nhanh-chậm" },
+    { id: "sw",    t: "Sliding Window",       sig: "đoạn con liên tiếp dài/ngắn nhất" },
+    { id: "bs",    t: "Binary Search",        sig: "đã sort · loại nửa mỗi bước" },
+    { id: "stack", t: "Stack",                sig: "đúng ngoặc · gần nhất lớn hơn" },
+    { id: "ll",    t: "Linked List",          sig: "dummy head · fast/slow" },
+    { id: "tree",  t: "Tree BFS/DFS",         sig: "độ sâu · theo tầng · đệ quy" },
+    { id: "grid",  t: "Grid / Graph",         sig: "vùng liên thông · flood fill" },
+    { id: "pre",   t: "Prefix / Intervals",   sig: "tổng đoạn · gộp khoảng" },
+    { id: "heap",  t: "Heap / Top-K",         sig: "top K · thứ k lớn nhất" }
+  ];
+  var PROBLEMS = [
+    { id: "lc1",   lc: 1,   t: "Two Sum",                          d: "E", p: "hash",  core: 1 },
+    { id: "lc217", lc: 217, t: "Contains Duplicate",               d: "E", p: "hash",  core: 1 },
+    { id: "lc242", lc: 242, t: "Valid Anagram",                    d: "E", p: "hash",  core: 1 },
+    { id: "lc49",  lc: 49,  t: "Group Anagrams",                   d: "M", p: "hash",  core: 1 },
+    { id: "lc128", lc: 128, t: "Longest Consecutive Sequence",     d: "M", p: "hash",  core: 0 },
+    { id: "lc125", lc: 125, t: "Valid Palindrome",                 d: "E", p: "tp",    core: 1 },
+    { id: "lc283", lc: 283, t: "Move Zeroes",                      d: "E", p: "tp",    core: 1 },
+    { id: "lc167", lc: 167, t: "Two Sum II (sorted)",              d: "M", p: "tp",    core: 1 },
+    { id: "lc15",  lc: 15,  t: "3Sum",                             d: "M", p: "tp",    core: 0 },
+    { id: "lc11",  lc: 11,  t: "Container With Most Water",        d: "M", p: "tp",    core: 0 },
+    { id: "lc121", lc: 121, t: "Best Time to Buy and Sell Stock",  d: "E", p: "sw",    core: 1 },
+    { id: "lc643", lc: 643, t: "Max Average Subarray I",           d: "E", p: "sw",    core: 1 },
+    { id: "lc3",   lc: 3,   t: "Longest Substring No Repeat",      d: "M", p: "sw",    core: 1 },
+    { id: "lc424", lc: 424, t: "Longest Repeating Char Replace",   d: "M", p: "sw",    core: 0 },
+    { id: "lc704", lc: 704, t: "Binary Search",                    d: "E", p: "bs",    core: 1 },
+    { id: "lc35",  lc: 35,  t: "Search Insert Position",           d: "E", p: "bs",    core: 1 },
+    { id: "lc278", lc: 278, t: "First Bad Version",                d: "E", p: "bs",    core: 0 },
+    { id: "lc33",  lc: 33,  t: "Search in Rotated Sorted Array",   d: "M", p: "bs",    core: 0 },
+    { id: "lc20",  lc: 20,  t: "Valid Parentheses",                d: "E", p: "stack", core: 1 },
+    { id: "lc155", lc: 155, t: "Min Stack",                        d: "M", p: "stack", core: 1 },
+    { id: "lc739", lc: 739, t: "Daily Temperatures",               d: "M", p: "stack", core: 0 },
+    { id: "lc206", lc: 206, t: "Reverse Linked List",              d: "E", p: "ll",    core: 1 },
+    { id: "lc141", lc: 141, t: "Linked List Cycle",                d: "E", p: "ll",    core: 1 },
+    { id: "lc21",  lc: 21,  t: "Merge Two Sorted Lists",           d: "E", p: "ll",    core: 1 },
+    { id: "lc19",  lc: 19,  t: "Remove Nth Node From End",         d: "M", p: "ll",    core: 0 },
+    { id: "lc104", lc: 104, t: "Maximum Depth of Binary Tree",     d: "E", p: "tree",  core: 1 },
+    { id: "lc226", lc: 226, t: "Invert Binary Tree",               d: "E", p: "tree",  core: 1 },
+    { id: "lc100", lc: 100, t: "Same Tree",                        d: "E", p: "tree",  core: 0 },
+    { id: "lc102", lc: 102, t: "Level Order Traversal",            d: "M", p: "tree",  core: 1 },
+    { id: "lc235", lc: 235, t: "LCA of BST",                       d: "M", p: "tree",  core: 0 },
+    { id: "lc733", lc: 733, t: "Flood Fill",                       d: "E", p: "grid",  core: 1 },
+    { id: "lc200", lc: 200, t: "Number of Islands",                d: "M", p: "grid",  core: 1 },
+    { id: "lc303", lc: 303, t: "Range Sum Query - Immutable",      d: "E", p: "pre",   core: 0 },
+    { id: "lc56",  lc: 56,  t: "Merge Intervals",                  d: "M", p: "pre",   core: 1 },
+    { id: "lc88",  lc: 88,  t: "Merge Sorted Array",               d: "E", p: "pre",   core: 1 },
+    { id: "lc347", lc: 347, t: "Top K Frequent Elements",          d: "M", p: "heap",  core: 1 }
+  ];
+  var ST_LABEL = { 0: "Chưa làm", 1: "✅ Tự giải được", 2: "👀 Cần làm lại" };
+  var $ = function (id) { return document.getElementById(id); };
+  var hasBEP = !!(window.BEP && BEP.codeGet);
+  var mem = {}; // fallback khi mở file lẻ
+  function getAll() { return hasBEP ? BEP.codeGet() : mem; }
+  function setSt(id, st) {
+    if (hasBEP) BEP.codeSet(id, st === 0 ? null : st);
+    else { if (st === 0) delete mem[id]; else mem[id] = { st: st }; }
+  }
+  function stOf(id) { var r = getAll()[id]; return r ? r.st : 0; }
+
+  /* Slug THẬT của LeetCode (tên rút gọn ở trên không map 1-1 sang slug) */
+  var SLUG = {
+    1: "two-sum", 217: "contains-duplicate", 242: "valid-anagram", 49: "group-anagrams",
+    128: "longest-consecutive-sequence", 125: "valid-palindrome", 283: "move-zeroes",
+    167: "two-sum-ii-input-array-is-sorted", 15: "3sum", 11: "container-with-most-water",
+    121: "best-time-to-buy-and-sell-stock", 643: "maximum-average-subarray-i",
+    3: "longest-substring-without-repeating-characters", 424: "longest-repeating-character-replacement",
+    704: "binary-search", 35: "search-insert-position", 278: "first-bad-version",
+    33: "search-in-rotated-sorted-array", 20: "valid-parentheses", 155: "min-stack",
+    739: "daily-temperatures", 206: "reverse-linked-list", 141: "linked-list-cycle",
+    21: "merge-two-sorted-lists", 19: "remove-nth-node-from-end-of-list",
+    104: "maximum-depth-of-binary-tree", 226: "invert-binary-tree", 100: "same-tree",
+    102: "binary-tree-level-order-traversal", 235: "lowest-common-ancestor-of-a-binary-search-tree",
+    733: "flood-fill", 200: "number-of-islands", 303: "range-sum-query-immutable",
+    56: "merge-intervals", 88: "merge-sorted-array", 347: "top-k-frequent-elements"
+  };
+  function lcUrl(p) { return "https://leetcode.com/problems/" + (SLUG[p.lc] || "") + "/"; }
+
+  function render() {
+    var byP = {};
+    PROBLEMS.forEach(function (p) { (byP[p.p] = byP[p.p] || []).push(p); });
+    $("csList").innerHTML = PATTERNS.map(function (pat) {
+      var arr = byP[pat.id] || [];
+      var done = arr.filter(function (p) { return stOf(p.id) === 1; }).length;
+      var rows = arr.map(function (p) {
+        var st = stOf(p.id);
+        return '<div class="cs-row" data-id="' + p.id + '">'
+          + '<button class="cs-st s' + st + '" data-id="' + p.id + '">' + ST_LABEL[st] + "</button>"
+          + '<span class="diff ' + p.d + '">' + p.d + "</span>"
+          + (p.core ? '<span class="core-mark">★</span>' : '<span style="width:11px"></span>')
+          + '<a href="' + lcUrl(p) + '" target="_blank" rel="noopener">LC ' + p.lc + " · " + p.t + "</a>"
+          + "</div>";
+      }).join("");
+      return '<div class="cs-pat"><h3>' + pat.t + '</h3><span class="pc">' + done + "/" + arr.length + ' tự giải</span><span class="sig">' + pat.sig + "</span></div>" + rows;
+    }).join("");
+    $("csList").querySelectorAll(".cs-st").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.dataset.id;
+        setSt(id, (stOf(id) + 1) % 3);
+        render(); stats();
+      });
+    });
+  }
+
+  function stats() {
+    var all = PROBLEMS.length, solved = 0, review = 0, coreLeft = 0;
+    PROBLEMS.forEach(function (p) {
+      var st = stOf(p.id);
+      if (st === 1) solved++;
+      if (st === 2) review++;
+      if (p.core && st !== 1) coreLeft++;
+    });
+    $("csStats").innerHTML =
+      '<div class="cs-stat"><div class="v">' + solved + "/" + all + '</div><div class="l">tự giải được</div></div>'
+      + '<div class="cs-stat"><div class="v" style="color:var(--warning)">' + review + '</div><div class="l">👀 cần làm lại (ưu tiên ngày cuối)</div></div>'
+      + '<div class="cs-stat"><div class="v" style="color:' + (coreLeft ? "var(--danger)" : "var(--success)") + '">' + coreLeft + '</div><div class="l">bài CORE ★ chưa tự giải</div></div>';
+  }
+
+  function pick(cands, msg) {
+    if (!cands.length) { $("csPick").style.display = "block"; $("csPick").innerHTML = msg; return; }
+    var p = cands[Math.floor(Math.random() * cands.length)];
+    var pat = PATTERNS.filter(function (x) { return x.id === p.p; })[0];
+    $("csPick").style.display = "block";
+    $("csPick").innerHTML = "🎯 <b>LC " + p.lc + " · " + p.t + "</b> (" + p.d + " · " + pat.t + ") — signal: " + pat.sig
+      + ' · <a href="' + lcUrl(p) + '" target="_blank" rel="noopener"><b>Mở bài →</b></a>'
+      + ' <span style="color:var(--text-muted)">Trước khi code: nói to pattern + plan trong 60 giây.</span>';
+  }
+  $("csPickWeak").onclick = function () {
+    // pattern yếu = tỉ lệ tự-giải thấp nhất (ưu tiên có bài 👀 hoặc chưa làm)
+    var best = null;
+    PATTERNS.forEach(function (pat) {
+      var arr = PROBLEMS.filter(function (p) { return p.p === pat.id; });
+      var open = arr.filter(function (p) { return stOf(p.id) !== 1; });
+      if (!open.length) return;
+      var ratio = (arr.length - open.length) / arr.length;
+      if (!best || ratio < best.ratio) best = { ratio: ratio, open: open };
+    });
+    pick(best ? best.open : [], "Mọi pattern đã xanh — làm lại vài bài 👀 hoặc nghỉ ngơi cho tỉnh táo. 💪");
+  };
+  $("csPickCore").onclick = function () {
+    pick(PROBLEMS.filter(function (p) { return p.core && stOf(p.id) !== 1; }),
+      "Toàn bộ bài CORE ★ đã tự giải được — bạn sẵn sàng cho vòng này rồi. 🎉");
+  };
+
+  /* ---- Timer 45' ---- */
+  var total = 45 * 60, left = total, tick = null;
+  function show() {
+    var m = Math.floor(left / 60), s = left % 60;
+    var el = $("csTimer");
+    el.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+    el.className = "cs-timer" + (left <= 300 ? " warn" : "");
+  }
+  $("csTimerBtn").onclick = function () {
+    if (tick) { clearInterval(tick); tick = null; $("csTimerBtn").textContent = "▶ Tiếp tục"; return; }
+    $("csTimerBtn").textContent = "⏸ Tạm dừng";
+    tick = setInterval(function () {
+      left--; show();
+      if (left <= 0) { clearInterval(tick); tick = null; $("csTimer").textContent = "HẾT GIỜ"; $("csTimerBtn").textContent = "▶ Bắt đầu"; left = total; }
+    }, 1000);
+  };
+  $("csTimerReset").onclick = function () { if (tick) { clearInterval(tick); tick = null; } left = total; show(); $("csTimerBtn").textContent = "▶ Bắt đầu"; };
+
+  render(); stats(); show();
+})();
+</script>
+</body>
+</html>

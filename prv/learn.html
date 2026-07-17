@@ -304,7 +304,8 @@ function hubBoot() {
     + '<a class="mod-card" href="63-diagnostic.html"><span class="ic">🎯</span><b>Diagnostic</b><span class="st">' + (diag ? "Gần nhất: " + diag.pct + "% (" + diag.ts + ")" : "Chưa đo lần nào — bắt đầu ở đây") + "</span></a>"
     + '<a class="mod-card" href="64-incident-lab.html"><span class="ic">🔥</span><b>Incident Lab</b><span class="st">' + incDone + " sự cố đã xử lý</span></a>"
     + '<a class="mod-card" href="65-design-lab.html"><span class="ic">📐</span><b>Design Lab</b><span class="st">' + Object.keys(dsgMap).length + ' bài thiết kế đã làm — nuôi chiều "Thiết kế được"</span></a>'
-    + '<a class="mod-card" href="66-hr-ach-interview-pack.html"><span class="ic">🎤</span><b>HR Pack &amp; ACH Deep-dive</b><span class="st">12 câu HR song ngữ · pitch ACH · 8 incident STAR · đã luyện nói ' + Object.keys(BEP.speakGet()).length + '/22 mục</span></a>';
+    + '<a class="mod-card" href="66-hr-ach-interview-pack.html"><span class="ic">🎤</span><b>HR Pack &amp; ACH Deep-dive</b><span class="st">12 câu HR song ngữ · pitch ACH · 8 incident STAR · đã luyện nói ' + Object.keys(BEP.speakGet()).length + '/22 mục</span></a>'
+    + '<a class="mod-card" href="68-coding-sprint.html"><span class="ic">🧗</span><b>Coding Sprint</b><span class="st">' + Object.keys(BEP.codeGet ? BEP.codeGet() : {}).length + '/36 bài đã đụng — nước rút vòng LeetCode</span></a>';
 
   /* ---- skillmap explorer ---- */
   var lessons = BEP.lessons();

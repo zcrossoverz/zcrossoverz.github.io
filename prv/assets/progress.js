@@ -54,6 +54,15 @@
       S("be_dsg_v1", m);
     },
 
+    /* ---------- Coding sprint (68) ---------- */
+    codeGet: function () { return L("be_code_v1", {}); },
+    codeSet: function (id, st) {
+      var m = L("be_code_v1", {});
+      if (st == null) delete m[id]; else m[id] = { st: st, ts: today() };
+      S("be_code_v1", m);
+      return m;
+    },
+
     /* ---------- Luyện nói (66 HR pack, 59 drill) ---------- */
     speakGet: function () { return L("be_speak_v1", {}); },
     speakMark: function (id) {
@@ -76,7 +85,7 @@
     },
 
     /* ---------- Export / Import toàn bộ hồ sơ học ---------- */
-    KEYS: ["qb_box_v2", "qb_star_v2", "qb_stat_v1", "qb_last_v1", "be_diag_v1", "be_inc_v1", "be_lessons_v1", "be_dsg_v1", "be_speak_v1"],
+    KEYS: ["qb_box_v2", "qb_star_v2", "qb_stat_v1", "qb_last_v1", "be_diag_v1", "be_inc_v1", "be_lessons_v1", "be_dsg_v1", "be_speak_v1", "be_code_v1"],
     exportAll: function () {
       var out = { _v: 1, _app: "backend-lab", _ts: today() };
       BEP.KEYS.forEach(function (k) {

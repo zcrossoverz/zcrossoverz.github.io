@@ -13,19 +13,17 @@ function toggleTheme() {
   try { localStorage.setItem('theme', next); } catch (e) {}
 }
 
-// Restore saved theme on load
+// Restore saved theme on load (mặc định: dark)
 (function() {
   try {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      document.documentElement.setAttribute('data-theme', saved);
-      window.addEventListener('DOMContentLoaded', () => {
-        const icon = document.getElementById('themeIcon');
-        const text = document.getElementById('themeText');
-        if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
-        if (text) text.textContent = saved === 'dark' ? 'Light' : 'Dark';
-      });
-    }
+    const saved = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    window.addEventListener('DOMContentLoaded', () => {
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+      if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
+      if (text) text.textContent = saved === 'dark' ? 'Light' : 'Dark';
+    });
   } catch (e) {}
 })();
 

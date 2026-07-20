@@ -1,68 +1,162 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
+<html lang="vi" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learning Hub | Backend Engineering Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .hub-wrap { max-width: 1020px; margin: 0 auto; padding: 0 4px 80px; }
-  .hub-cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: start; }
+  .hub-wrap { max-width: 1000px; margin: 0 auto; padding: 0 4px 72px; }
+
+  /* ---- masthead ---- */
+  .mast { border-bottom: 1px solid var(--border-strong); padding: 8px 0 30px; margin-bottom: 8px; }
+  .mast .kicker { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .mast h1 { font-family: var(--font-serif); font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 600; line-height: 1.15; letter-spacing: -.005em; margin: 0 0 14px; max-width: 21ch; }
+  .mast .verdict { font-family: var(--font-serif); font-style: italic; font-size: 1.06rem; line-height: 1.65; color: var(--text-muted); max-width: 62ch; margin: 0; }
+  .mast .verdict b { color: var(--text); font-weight: 600; }
+  .statrow { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 28px; }
+  .hstat { border-left: 1px solid var(--border-strong); padding: 2px 16px 0; }
+  .hstat:first-child { border-left: 0; padding-left: 0; }
+  .hstat .v { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; }
+  .hstat .l { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-faint); margin-top: 4px; }
+  @media (max-width: 700px) { .statrow { grid-template-columns: 1fr 1fr; row-gap: 18px; } .hstat:nth-child(3) { border-left: 0; padding-left: 0; } }
+
+  /* ---- section scaffolding ---- */
+  .hub-cols { display: grid; grid-template-columns: 1.3fr 1fr; column-gap: 44px; align-items: start; }
   @media (max-width: 860px) { .hub-cols { grid-template-columns: 1fr; } }
-  .hub-box { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
-  .hub-box h2 { margin: 0 0 4px; font-size: 1.08rem; }
-  .hub-box .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
-  .next-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; background: var(--bg); }
-  .next-card .why { font-size: 12.5px; color: var(--text-muted); margin: 4px 0 8px; }
-  .next-card .acts { display: flex; flex-wrap: wrap; gap: 7px; }
-  .next-card .acts a { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 11px; text-decoration: none; }
-  .next-card.weak { border-left-color: var(--danger); }
-  .next-card.untouched { border-left-color: var(--border-strong); }
-  .dbar { display: grid; grid-template-columns: 150px 1fr 78px; gap: 10px; align-items: center; margin: 7px 0; font-size: 13px; }
-  .dbar .tr { height: 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+  .sect { margin-top: 40px; }
+  .sect-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .sect-head .idx { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: .08em; }
+  .sect-head h2 { font-family: var(--font-serif); font-size: 1.22rem; font-weight: 600; margin: 0; border: 0; padding: 0; letter-spacing: 0; }
+  .sect-head .rule { flex: 1; border-top: 1px solid var(--border); transform: translateY(-4px); }
+  .sect .sub { font-size: 12.5px; color: var(--text-faint); margin: 0 0 14px; max-width: 60ch; }
+
+  /* ---- next: ledger ---- */
+  .next-card { border-top: 1px solid var(--border); padding: 13px 0 14px; }
+  .next-card:first-child { border-top: 0; }
+  .next-card .head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .next-card .head b { font-family: var(--font-serif); font-size: 1.02rem; font-weight: 600; }
+  .tag { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; padding: 2px 7px; border-radius: 2px; border: 1px solid; white-space: nowrap; }
+  .tag.t-danger { color: var(--danger); border-color: var(--danger); }
+  .tag.t-info { color: var(--info); border-color: var(--info); }
+  .tag.t-warn { color: var(--warning); border-color: var(--warning); }
+  .tag.t-purple { color: var(--purple); border-color: var(--purple); }
+  .tag.t-accent { color: var(--accent); border-color: var(--accent); }
+  .tag.t-mute { color: var(--text-faint); border-color: var(--border-strong); }
+  .mono-chip { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; color: var(--text-faint); }
+  .next-card .lv { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-faint); }
+  .next-card .why { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin: 5px 0 7px; }
+  .next-card .acts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .next-card .acts a { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; }
+  .next-card .acts a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---- decay ---- */
+  .decay-item { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; padding: 8px 0; border-top: 1px solid var(--border); }
+  .decay-item:first-child { border-top: 0; }
+  .decay-item > span { color: var(--text-muted); }
+  .decay-item a { font-family: var(--font-mono); font-size: 11.5px; white-space: nowrap; color: var(--accent); text-decoration: none; }
+  .decay-item a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---- mastery bars ---- */
+  .dbar { display: grid; grid-template-columns: 148px 1fr 70px; gap: 12px; align-items: center; padding: 7px 0; font-size: 12.5px; border-top: 1px solid var(--border); }
+  .dbar:first-child { border-top: 0; }
+  .dbar .tr { height: 3px; background: var(--border); overflow: hidden; }
   .dbar .tr > span { display: block; height: 100%; background: var(--accent); }
-  .dbar .pc { font-weight: 700; text-align: right; white-space: nowrap; }
-  .decay-item { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 7px 0; border-bottom: 1px dashed var(--border); }
-  .mod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-  .mod-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 14px 16px; text-decoration: none; color: var(--text); transition: border-color .14s; display: block; }
-  .mod-card:hover { border-color: var(--accent); }
-  .mod-card .ic { font-size: 1.4rem; }
-  .mod-card b { display: block; margin: 4px 0 2px; }
-  .mod-card .st { font-size: 12px; color: var(--text-muted); }
-  .sm-dom { margin: 14px 0 4px; font-weight: 700; font-size: 14px; cursor: pointer; user-select: none; }
-  .sm-node { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0 5px 14px; border-left: 2px solid var(--border); margin-left: 6px; flex-wrap: wrap; }
-  .sm-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .sm-node .lv { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-faint); }
-  .sm-node .links a { font-size: 11.5px; margin-right: 7px; color: var(--accent); text-decoration: none; }
-  .sm-node .pre { font-size: 11px; color: var(--text-faint); width: 100%; padding-left: 18px; }
-  .hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 14px; }
-  .hstat { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 12px 14px; }
-  .hstat .v { font-size: 1.4rem; font-weight: 700; }
-  .hstat .l { font-size: 11.5px; color: var(--text-muted); }
-  .legend { font-size: 11.5px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
-  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dbar .pc { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; text-align: right; white-space: nowrap; }
+  .dbar .pc .n { color: var(--text-faint); font-weight: 400; }
+
+  /* ---- radar ---- */
+  #hubRadar text { font-family: var(--font-mono); }
+  #hubRadar .note { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); text-align: center; margin-top: 4px; }
+
+  /* ---- modules: ruled index ---- */
+  .mod-card { display: flex; align-items: center; gap: 14px; padding: 13px 2px; border-top: 1px solid var(--border); text-decoration: none; color: var(--text); transition: background .12s; }
+  .mod-card:first-child { border-top: 0; }
+  .mod-card:hover { background: var(--bg-elev); }
+  .mod-card .mi { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); width: 18px; flex: none; }
+  .mod-card svg { width: 19px; height: 19px; flex: none; color: var(--text-muted); }
+  .mod-card:hover svg, .mod-card:hover b { color: var(--accent); }
+  .mod-card b { font-family: var(--font-serif); font-size: 1.04rem; font-weight: 600; transition: color .12s; }
+  .mod-card .st { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); text-align: right; max-width: 46%; line-height: 1.5; }
+  @media (max-width: 700px) { .mod-card .st { display: none; } }
+
+  /* ---- skillmap ---- */
+  .legend { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); display: flex; gap: 16px; flex-wrap: wrap; margin: 10px 0 2px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sm-dot { width: 8px; height: 8px; border-radius: 1px; flex: none; }
+  .sm-dom { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-top: 1px solid var(--border); cursor: pointer; user-select: none; }
+  .sm-dom:hover { background: var(--bg-elev); }
+  .sm-dom .dm { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; color: var(--text-muted); border: 1px solid var(--border-strong); border-radius: 2px; padding: 2px 6px; min-width: 44px; text-align: center; }
+  .sm-dom .dt { font-family: var(--font-serif); font-size: 1rem; font-weight: 600; }
+  .sm-dom .dc { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); }
+  .sm-dom .car { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); transition: transform .15s; }
+  .sm-dom.open .car { transform: rotate(90deg); }
+  .sm-body { margin: 0 0 8px 14px; border-left: 1px solid var(--border); padding-left: 16px; }
+  .sm-node { display: flex; align-items: center; gap: 9px; font-size: 13px; padding: 6px 0; flex-wrap: wrap; }
+  .sm-node .lv { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); }
+  .sm-node .links { display: inline-flex; gap: 12px; }
+  .sm-node .links a { font-family: var(--font-mono); font-size: 11px; color: var(--accent); text-decoration: none; }
+  .sm-node .links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .sm-node .pre { font-size: 11px; color: var(--text-faint); width: 100%; padding-left: 17px; }
+
+  /* ---- profile buttons ---- */
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; padding: 9px 18px; border-radius: 2px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .btn-primary { color: var(--bg); background: var(--text); border: 1px solid var(--text); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .btn-ghost { color: var(--text-muted); background: transparent; border: 1px solid var(--border-strong); }
+  .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+  #ioMsg { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
 </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6.2C9.8 4.9 6.9 4.4 3 4.5v14c3.9-.1 6.8.4 9 1.7 2.2-1.3 5.1-1.8 9-1.7v-14c-3.9-.1-6.8.4-9 1.7z"/><path d="M12 6.2v14"/>
+    </symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.5" y="7.5" width="13" height="13" rx="1"/><path d="M7.5 4h13v13"/>
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.5c.5 2.8-.7 4.4-2.1 5.8C8.4 10.7 7 12.2 7 14.4a5 5 0 0 0 10 0c0-1.3-.4-2.5-1.2-3.6-.4.9-1 1.5-1.8 1.9.5-2.8-.4-6.4-2-9.2z"/>
+    </symbol>
+    <symbol id="i-rule" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 16.7 14.9 5.3a2 2 0 0 1 2.8 0l1 1a2 2 0 0 1 0 2.8L7.3 20.5H3.5v-3.8z"/><path d="m13.4 6.8 3.8 3.8"/>
+    </symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/>
+    </symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m8.5 7.5-4.5 4.5 4.5 4.5"/><path d="m15.5 7.5 4.5 4.5-4.5 4.5"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="topbar">
   <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
   <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">Learning Hub</span></div>
-  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Light</span></button>
 </div>
 
 <div class="layout">
 <aside class="sidebar">
   <div class="toc-title">Modules</div>
   <nav class="toc">
-    <a href="index.html">📚 Danh mục bài học</a>
-    <a href="62-interview-question-bank.html">🃏 Question Bank</a>
-    <a href="63-diagnostic.html">🎯 Diagnostic</a>
-    <a href="64-incident-lab.html">🔥 Incident Lab</a>
-    <a href="65-design-lab.html">📐 Design Lab</a>
+    <a href="index.html">Danh mục bài học</a>
+    <a href="62-interview-question-bank.html">Question Bank</a>
+    <a href="63-diagnostic.html">Diagnostic</a>
+    <a href="64-incident-lab.html">Incident Lab</a>
+    <a href="65-design-lab.html">Design Lab</a>
+    <a href="66-hr-ach-interview-pack.html">HR Pack &amp; ACH</a>
+    <a href="68-coding-sprint.html">Coding Sprint</a>
   </nav>
   <div class="toc-title">Trang này</div>
   <nav class="toc">
@@ -75,68 +169,68 @@
 <main>
 <div class="content hub-wrap">
 
-<section class="hero">
-  <span class="meta-tag">Learning Hub · Backend Engineering</span>
-  <h1>Trạm điều khiển việc học của bạn</h1>
-  <p class="lead" id="hubVerdict">Đang tổng hợp hồ sơ học…</p>
-  <div class="hero-stats" id="hubStats"></div>
-</section>
+<header class="mast">
+  <div class="kicker">Backend Engineering Lab · Learning Hub</div>
+  <h1>Bạn đang ở đâu, và học gì tiếp theo</h1>
+  <p class="verdict" id="hubVerdict">Đang tổng hợp hồ sơ học…</p>
+  <div class="statrow" id="hubStats"></div>
+</header>
 
 <div class="hub-cols">
   <div>
-    <div class="hub-box" id="next">
-      <h2>🧭 Làm gì tiếp theo</h2>
-      <div class="sub">Gợi ý từ bản đồ kiến thức + mọi bằng chứng học tập (qbank, diagnostic, incident). Node chỉ được gợi ý khi phần nền của nó đã ổn.</div>
+    <section class="sect" id="next">
+      <div class="sect-head"><span class="idx">01</span><h2>Làm gì tiếp theo</h2><span class="rule"></span></div>
+      <p class="sub">Gợi ý từ bản đồ kiến thức + mọi bằng chứng học tập (qbank, diagnostic, incident). Node chỉ được gợi ý khi phần nền của nó đã ổn.</p>
       <div id="hubNext"></div>
-    </div>
-    <div class="hub-box">
-      <h2>📉 Đang bị quên (ôn ngay cho rẻ)</h2>
-      <div class="sub">Câu đã từng ôn nhưng quá hạn chu kỳ Leitner — để lâu sẽ phải học lại từ đầu.</div>
+    </section>
+    <section class="sect">
+      <div class="sect-head"><span class="idx">02</span><h2>Đang bị quên</h2><span class="rule"></span></div>
+      <p class="sub">Câu đã từng ôn nhưng quá hạn chu kỳ Leitner — ôn ngay cho rẻ, để lâu phải học lại từ đầu.</p>
       <div id="hubDecay"></div>
-    </div>
+    </section>
   </div>
   <div>
-    <div class="hub-box" id="state">
-      <h2>📊 Mastery theo mảng</h2>
-      <div class="sub">Gộp từ Leitner box (qbank) + diagnostic + incident. Chưa có dữ liệu = chưa đo, không phải kém.</div>
+    <section class="sect" id="state">
+      <div class="sect-head"><span class="idx">03</span><h2>Mastery theo mảng</h2><span class="rule"></span></div>
+      <p class="sub">Gộp từ Leitner box (qbank) + diagnostic + incident. Chưa có dữ liệu = chưa đo, không phải kém.</p>
       <div id="hubDomains"></div>
-    </div>
-    <div class="hub-box">
-      <h2>🕸 7 chiều năng lực</h2>
-      <div class="sub">Nhớ & giải thích từ qbank · dự đoán/phân tích/trade-off/thiết kế từ diagnostic · debug từ incident.</div>
+    </section>
+    <section class="sect">
+      <div class="sect-head"><span class="idx">04</span><h2>Bảy chiều năng lực</h2><span class="rule"></span></div>
+      <p class="sub">Nhớ &amp; giải thích từ qbank · dự đoán / phân tích / trade-off / thiết kế từ diagnostic · debug từ incident.</p>
       <div id="hubRadar"></div>
-    </div>
+    </section>
   </div>
 </div>
 
-<div class="hub-box">
-  <h2>🧩 Các module</h2>
-  <div class="mod-grid" id="hubMods"></div>
-</div>
+<section class="sect">
+  <div class="sect-head"><span class="idx">05</span><h2>Các module</h2><span class="rule"></span></div>
+  <div id="hubMods"></div>
+</section>
 
-<div class="hub-box" id="map">
-  <h2>🗺 Bản đồ kiến thức (prerequisite rõ ràng)</h2>
+<section class="sect" id="map">
+  <div class="sect-head"><span class="idx">06</span><h2>Bản đồ kiến thức</h2><span class="rule"></span></div>
+  <p class="sub">Prerequisite rõ ràng. Bấm tên domain để mở/đóng. Mỗi node: bài học · lọc qbank đúng tag · sự cố liên quan.</p>
   <div class="legend">
-    <span><span class="sm-dot" style="background:var(--success)"></span> vững (≥75%)</span>
-    <span><span class="sm-dot" style="background:var(--info)"></span> đang học (45–75%)</span>
-    <span><span class="sm-dot" style="background:var(--danger)"></span> yếu (&lt;45%)</span>
+    <span><span class="sm-dot" style="background:var(--success)"></span> vững ≥75%</span>
+    <span><span class="sm-dot" style="background:var(--info)"></span> đang học 45–75%</span>
+    <span><span class="sm-dot" style="background:var(--danger)"></span> yếu &lt;45%</span>
     <span><span class="sm-dot" style="background:var(--border-strong)"></span> chưa có dữ liệu</span>
-    <span>⏳ = nội dung sẽ bổ sung</span>
+    <span>planned = nội dung sẽ bổ sung</span>
   </div>
-  <div class="sub">Bấm tên domain để mở/đóng. Mỗi node: bài học · lọc qbank đúng tag · sự cố liên quan.</div>
   <div id="hubMap"></div>
-</div>
+</section>
 
-<div class="hub-box">
-  <h2>💾 Hồ sơ học</h2>
-  <div class="sub">Tiến độ nằm trong localStorage của trình duyệt này. Xuất file để backup hoặc chuyển máy.</div>
-  <div style="display:flex; gap:10px; flex-wrap:wrap">
-    <button id="btnExport" style="font:inherit;font-weight:700;font-size:13.5px;color:#fff;background:var(--accent);border:none;padding:9px 16px;border-radius:999px;cursor:pointer">⬇ Xuất hồ sơ (JSON)</button>
-    <button id="btnImport" style="font:inherit;font-weight:700;font-size:13.5px;color:var(--accent);background:var(--bg);border:1px solid var(--accent);padding:9px 16px;border-radius:999px;cursor:pointer">⬆ Nhập hồ sơ</button>
+<section class="sect">
+  <div class="sect-head"><span class="idx">07</span><h2>Hồ sơ học</h2><span class="rule"></span></div>
+  <p class="sub">Tiến độ nằm trong localStorage của trình duyệt này. Xuất file để backup hoặc chuyển máy.</p>
+  <div class="btnrow">
+    <button id="btnExport" class="btn btn-primary" type="button">Xuất hồ sơ (JSON)</button>
+    <button id="btnImport" class="btn btn-ghost" type="button">Nhập hồ sơ</button>
     <input type="file" id="fileImport" accept="application/json" hidden>
-    <span id="ioMsg" style="font-size:12.5px;color:var(--text-muted);align-self:center"></span>
+    <span id="ioMsg"></span>
   </div>
-</div>
+</section>
 
 <footer>
   <span>Learning Hub · dữ liệu bản đồ: <code>learnmap/skillmap.js</code> · kiến trúc hệ thống: <code>SYSTEM.md</code></span>
@@ -182,6 +276,7 @@ function hubBoot() {
     ST[n.id] = BEP.nodeState(EV[n.id]);
   });
   var stateCol = { solid: "var(--success)", progress: "var(--info)", weak: "var(--danger)", untouched: "var(--border-strong)" };
+  function chip(domId) { return '<span class="mono-chip">' + domId.toUpperCase() + '</span>'; }
 
   /* ---- hero ---- */
   var ratedCount = Object.keys(boxes).length;
@@ -197,14 +292,15 @@ function hubBoot() {
     var pct = diag ? diag.pct : null;
     verdict = (diag ? "Diagnostic gần nhất: <b>" + pct + "%</b> (" + diag.ts + "). " : "")
       + "Bản đồ: <b>" + solidN + "</b> node vững, <b>" + weakN + "</b> node yếu cần quay lại. "
-      + (weakN ? "Ưu tiên các thẻ đỏ bên dưới trước khi học cái mới." : "Nền sạch — tiến tiếp theo lộ trình bên dưới.");
+      + (weakN ? "Ưu tiên các mục gắn nhãn yếu bên dưới trước khi học cái mới." : "Nền sạch — tiến tiếp theo lộ trình bên dưới.");
   }
   $("hubVerdict").innerHTML = verdict;
+  function hstat(v, l) { return '<div class="hstat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
   $("hubStats").innerHTML =
-    '<div class="hstat"><div class="v">' + mastered + "/" + totalQ + '</div><div class="l">câu đã thuộc (box ≥ 4)</div></div>'
-    + '<div class="hstat"><div class="v">🔥 ' + (stat.streak || 0) + '</div><div class="l">ngày học liên tiếp</div></div>'
-    + '<div class="hstat"><div class="v">' + (diag ? diag.pct + "%" : "—") + '</div><div class="l">diagnostic gần nhất</div></div>'
-    + '<div class="hstat"><div class="v">' + incDone + "/12" + '</div><div class="l">sự cố đã xử lý</div></div>';
+    hstat(mastered + "<span style='color:var(--text-faint)'>/" + totalQ + "</span>", "câu đã thuộc · box ≥ 4")
+    + hstat(String(stat.streak || 0), "ngày học liên tiếp")
+    + hstat(diag ? diag.pct + "%" : "—", "diagnostic gần nhất")
+    + hstat(incDone + "<span style='color:var(--text-faint)'>/12</span>", "sự cố đã xử lý");
 
   /* ---- path engine: làm gì tiếp theo ---- */
   function prereqReady(n) {
@@ -212,34 +308,44 @@ function hubBoot() {
   }
   function nodeActions(n) {
     var a = [];
-    if (n.lesson) a.push('<a href="' + n.lesson + '">📖 Bài học</a>');
-    if (n.tags && n.tags.length) a.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">🃏 Ôn qbank</a>');
-    (n.inc || []).forEach(function (i) { a.push('<a href="64-incident-lab.html#' + i + '">🔥 Sự cố</a>'); });
+    if (n.lesson) a.push('<a href="' + n.lesson + '">Bài học →</a>');
+    if (n.tags && n.tags.length) a.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">Ôn qbank →</a>');
+    (n.inc || []).forEach(function (i) { a.push('<a href="64-incident-lab.html#' + i + '">Sự cố →</a>'); });
     return a.join("");
+  }
+  function card(tone, tag, title, why, acts) {
+    return '<div class="next-card"><div class="head"><span class="tag ' + tone + '">' + tag + '</span>' + title + '</div>'
+      + '<div class="why">' + why + '</div><div class="acts">' + acts + '</div></div>';
   }
   var recs = [];
   var dueAll = BEP.decayingQuestions(boxes, last, 0);
   var freshCount = 0;
   QB.packs.forEach(function (p) { p.questions.forEach(function (q) { if (boxes[q.id] == null && q.core && q.lv !== "senior") freshCount++; }); });
   if (dueAll.length || freshCount) {
-    recs.push({ html: '<div class="next-card" style="border-left-color:var(--purple)"><b>📅 Phiên học hôm nay (~20 phút)</b><div class="why">'
-      + dueAll.length + ' câu đến hạn ôn lại + câu mới từ phần CORE chưa học — trộn sẵn thành một lượt quiz, bấm là chạy.</div>'
-      + '<div class="acts"><a href="62-interview-question-bank.html?session=today"><b>Bắt đầu phiên →</b></a></div></div>' });
+    recs.push({ html: card("t-purple", "phiên hôm nay", "<b>Phiên học ~20 phút</b>",
+      dueAll.length + " câu đến hạn ôn lại + câu mới từ phần CORE chưa học — trộn sẵn thành một lượt quiz, bấm là chạy.",
+      '<a href="62-interview-question-bank.html?session=today">Bắt đầu phiên →</a>') });
   }
-  if (!diag) recs.push({ special: true, html: '<div class="next-card"><b>🎯 Làm bài Diagnostic đầu tiên</b><div class="why">Chưa đo thì mọi lộ trình chỉ là đoán. Lượt Chuẩn 40 câu tình huống (~30 phút) rút ngẫu nhiên từ ngân hàng, ra thẳng bản đồ lỗ hổng.</div><div class="acts"><a href="63-diagnostic.html">Bắt đầu đo →</a></div></div>' });
+  if (!diag) recs.push({ html: card("t-accent", "bước một", "<b>Làm bài Diagnostic đầu tiên</b>",
+    "Chưa đo thì mọi lộ trình chỉ là đoán. Lượt Chuẩn 40 câu tình huống (~30 phút) rút ngẫu nhiên từ ngân hàng, ra thẳng bản đồ lỗ hổng.",
+    '<a href="63-diagnostic.html">Bắt đầu đo →</a>') });
   /* Kỹ năng cũng mục theo thời gian — nhắc đo lại / làm lại (không tự trừ điểm, chỉ nhắc) */
   if (diag && BEP.daysAgo(diag.ts) >= 30) {
-    recs.push({ html: '<div class="next-card" style="border-left-color:var(--warning)"><b>🎯 Đo lại Diagnostic</b><div class="why">Lần đo gần nhất cách đây ' + BEP.daysAgo(diag.ts) + ' ngày — bản đồ có thể đã lệch so với thực lực. Mỗi lượt rút đề ngẫu nhiên + tránh câu đã gặp, nên đo lại vẫn có ý nghĩa.</div><div class="acts"><a href="63-diagnostic.html">Đo lại (~30 phút) →</a></div></div>' });
+    recs.push({ html: card("t-warn", "đo lại", "<b>Đo lại Diagnostic</b>",
+      "Lần đo gần nhất cách đây " + BEP.daysAgo(diag.ts) + " ngày — bản đồ có thể đã lệch so với thực lực. Mỗi lượt rút đề ngẫu nhiên + tránh câu đã gặp, nên đo lại vẫn có ý nghĩa.",
+      '<a href="63-diagnostic.html">Đo lại (~30 phút) →</a>') });
   }
   var staleInc = BEP.staleSkills(incMap, 28).slice(0, 3);
   var staleDsg = BEP.staleSkills(dsgMap, 28).slice(0, 2);
   if (staleInc.length || staleDsg.length) {
     var staleLinks = staleInc.map(function (s) {
-      return '<a href="64-incident-lab.html#' + s.id + '">🔥 ' + s.id.replace(/^inc-/, "").replace(/-/g, " ") + " (" + s.days + " ngày)</a>";
+      return '<a href="64-incident-lab.html#' + s.id + '">' + s.id.replace(/^inc-/, "").replace(/-/g, " ") + " · " + s.days + " ngày →</a>";
     }).concat(staleDsg.map(function (s) {
-      return '<a href="65-design-lab.html#' + s.id + '">📐 ' + s.id.replace(/^dsg-/, "").replace(/-/g, " ") + " (" + s.days + " ngày)</a>";
+      return '<a href="65-design-lab.html#' + s.id + '">' + s.id.replace(/^dsg-/, "").replace(/-/g, " ") + " · " + s.days + " ngày →</a>";
     }));
-    recs.push({ html: '<div class="next-card" style="border-left-color:var(--warning)"><b>🛠 Kỹ năng cũng bị quên — làm lại để giữ</b><div class="why">Sự cố/bài thiết kế đã xử lý hơn 4 tuần trước. Kỹ năng debug và trade-off cũng mục như trí nhớ — làm lại nhanh hơn nhiều so với học mới, và điểm cao hơn sẽ được ghi nhận.</div><div class="acts">' + staleLinks.join("") + "</div></div>" });
+    recs.push({ html: card("t-warn", "kỹ năng mục", "<b>Làm lại để giữ kỹ năng</b>",
+      "Sự cố/bài thiết kế đã xử lý hơn 4 tuần trước. Kỹ năng debug và trade-off cũng mục như trí nhớ — làm lại nhanh hơn nhiều so với học mới, và điểm cao hơn sẽ được ghi nhận.",
+      staleLinks.join("")) });
   }
   var lvOrder = { junior: 0, middle: 1, senior: 2 };
   var cands = SM.nodes.filter(function (n) { return !n.planned && ST[n.id] !== "solid" && prereqReady(n); });
@@ -248,13 +354,16 @@ function hubBoot() {
     var wb = (ST[b.id] === "weak" ? 0 : ST[b.id] === "progress" ? 1 : 2);
     return wa - wb || lvOrder[a.lv] - lvOrder[b.lv] || DOMS[a.d].order - DOMS[b.d].order;
   });
+  var stTone = { weak: "t-danger", progress: "t-info", untouched: "t-mute" };
+  var stTag = { weak: "đang yếu", progress: "dở dang", untouched: "mới" };
   cands.slice(0, 5).forEach(function (n) {
     var ev = EV[n.id], st = ST[n.id];
     var why = st === "weak" ? "Bằng chứng cho thấy đang yếu (" + Math.round(ev.mastery * 100) + "%) — học lại trước khi nó kéo các node phía sau."
       : st === "progress" ? "Đang học dở (" + Math.round(ev.mastery * 100) + "%) — kết thúc hẳn node này trước khi mở node mới."
       : "Nền phía trước đã ổn — đây là node " + n.lv + " tiếp theo theo bản đồ.";
     if (ev.qbIds.length) why += " · " + (ev.qbRated || 0) + "/" + ev.qbIds.length + " câu qbank đã ôn.";
-    recs.push({ html: '<div class="next-card ' + st + '"><b>' + DOMS[n.d].icon + " " + n.t + '</b> <span class="lv" style="font-size:10px;font-weight:800;color:var(--text-faint);text-transform:uppercase">' + n.lv + '</span><div class="why">' + why + '</div><div class="acts">' + nodeActions(n) + "</div></div>" });
+    recs.push({ html: card(stTone[st] || "t-mute", stTag[st] || st,
+      chip(n.d) + "<b>" + n.t + '</b><span class="lv">' + n.lv + '</span>', why, nodeActions(n)) });
   });
   $("hubNext").innerHTML = recs.map(function (r) { return r.html; }).join("") || "<p>Không còn gợi ý — bản đồ đã xanh. Thêm nội dung mới vào skillmap!</p>";
 
@@ -264,8 +373,8 @@ function hubBoot() {
   $("hubDecay").innerHTML = dec.length ? dec.map(function (d) {
     var q = QBYID[d.id];
     var txt = q ? q.q.replace(/<[^>]+>/g, "").slice(0, 64) : d.id;
-    return '<div class="decay-item"><span>' + txt + '…</span><a style="white-space:nowrap;font-weight:700;color:var(--accent)" href="62-interview-question-bank.html?q=' + encodeURIComponent(q && q.tags && q.tags[0] || d.id) + '">ôn (' + d.days + ' ngày) →</a></div>';
-  }).join("") : '<p style="font-size:13px;color:var(--text-muted)">Chưa có câu nào quá hạn — hoặc bạn chưa ôn câu nào. Chu kỳ tính từ lần chấm gần nhất của mỗi câu.</p>';
+    return '<div class="decay-item"><span>' + txt + '…</span><a href="62-interview-question-bank.html?q=' + encodeURIComponent(q && q.tags && q.tags[0] || d.id) + '">ôn · ' + d.days + ' ngày →</a></div>';
+  }).join("") : '<p style="font-size:13px;color:var(--text-faint)">Chưa có câu nào quá hạn — hoặc bạn chưa ôn câu nào. Chu kỳ tính từ lần chấm gần nhất của mỗi câu.</p>';
 
   /* ---- domain mastery ---- */
   $("hubDomains").innerHTML = SM.domains.map(function (d) {
@@ -275,7 +384,7 @@ function hubBoot() {
     var avg = withEv.length ? withEv.reduce(function (s, n) { return s + EV[n.id].mastery; }, 0) / withEv.length : null;
     var pc = avg == null ? "—" : Math.round(avg * 100) + "%";
     var w = avg == null ? 0 : Math.round(avg * 100);
-    return '<div class="dbar"><span>' + d.icon + " " + d.t + '</span><span class="tr"><span style="width:' + w + '%"></span></span><span class="pc">' + pc + (withEv.length < ns.length ? ' <span style="color:var(--text-faint);font-weight:400">(' + withEv.length + "/" + ns.length + ")</span>" : "") + "</span></div>";
+    return '<div class="dbar"><span>' + d.t + '</span><span class="tr"><span style="width:' + w + '%"></span></span><span class="pc">' + pc + (withEv.length < ns.length ? ' <span class="n">' + withEv.length + "/" + ns.length + "</span>" : "") + "</span></div>";
   }).join("");
 
   /* ---- radar 7 chiều ---- */
@@ -291,21 +400,25 @@ function hubBoot() {
     var a = -Math.PI / 2 + i * 2 * Math.PI / keys.length;
     var lx = cx + (R + 24) * Math.cos(a), ly = cy + (R + 20) * Math.sin(a);
     var v = dims[k].v;
-    return '<text x="' + lx + '" y="' + ly + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="' + (v == null ? "var(--text-faint)" : "var(--text)") + '">' + dims[k].label + (v == null ? " ?" : " " + Math.round(v * 100) + "%") + "</text>";
+    return '<text x="' + lx + '" y="' + ly + '" text-anchor="middle" font-size="10" font-weight="500" fill="' + (v == null ? "var(--text-faint)" : "var(--text-muted)") + '">' + dims[k].label + (v == null ? " ?" : " " + Math.round(v * 100) + "%") + "</text>";
   }).join("");
-  $("hubRadar").innerHTML = '<svg viewBox="0 0 300 265" style="width:100%;max-width:340px;display:block;margin:0 auto">' + grid
-    + '<polygon points="' + poly + '" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>' + labels + "</svg>"
-    + '<div style="font-size:11.5px;color:var(--text-muted);text-align:center">"?" = chưa có bằng chứng cho chiều này — làm diagnostic/incident để đo.</div>';
+  $("hubRadar").innerHTML = '<svg viewBox="0 0 300 265" style="width:100%;max-width:330px;display:block;margin:0 auto">' + grid
+    + '<polygon points="' + poly + '" fill="var(--accent-soft)" fill-opacity=".7" stroke="var(--accent)" stroke-width="1.5"/>' + labels + "</svg>"
+    + '<div class="note">? = chưa có bằng chứng cho chiều này — làm diagnostic/incident để đo.</div>';
 
   /* ---- modules ---- */
+  function mod(i, icon, href, title, st) {
+    return '<a class="mod-card" href="' + href + '"><span class="mi">' + i + '</span>'
+      + '<svg aria-hidden="true"><use href="#i-' + icon + '"/></svg><b>' + title + '</b><span class="st">' + st + '</span></a>';
+  }
   $("hubMods").innerHTML =
-    '<a class="mod-card" href="index.html"><span class="ic">📚</span><b>Bài học chuyên sâu</b><span class="st">60 chuyên đề — đọc theo gợi ý lộ trình</span></a>'
-    + '<a class="mod-card" href="62-interview-question-bank.html"><span class="ic">🃏</span><b>Question Bank</b><span class="st">' + totalQ + " câu · " + mastered + " đã thuộc · " + ratedCount + ' đã ôn</span></a>'
-    + '<a class="mod-card" href="63-diagnostic.html"><span class="ic">🎯</span><b>Diagnostic</b><span class="st">' + (diag ? "Gần nhất: " + diag.pct + "% (" + diag.ts + ")" : "Chưa đo lần nào — bắt đầu ở đây") + "</span></a>"
-    + '<a class="mod-card" href="64-incident-lab.html"><span class="ic">🔥</span><b>Incident Lab</b><span class="st">' + incDone + " sự cố đã xử lý</span></a>"
-    + '<a class="mod-card" href="65-design-lab.html"><span class="ic">📐</span><b>Design Lab</b><span class="st">' + Object.keys(dsgMap).length + ' bài thiết kế đã làm — nuôi chiều "Thiết kế được"</span></a>'
-    + '<a class="mod-card" href="66-hr-ach-interview-pack.html"><span class="ic">🎤</span><b>HR Pack &amp; ACH Deep-dive</b><span class="st">12 câu HR song ngữ · pitch ACH · 8 incident STAR · đã luyện nói ' + Object.keys(BEP.speakGet()).length + '/22 mục</span></a>'
-    + '<a class="mod-card" href="68-coding-sprint.html"><span class="ic">🧗</span><b>Coding Sprint</b><span class="st">' + Object.keys(BEP.codeGet ? BEP.codeGet() : {}).length + '/36 bài đã đụng — nước rút vòng LeetCode</span></a>';
+    mod("01", "book", "index.html", "Bài học chuyên sâu", "60 chuyên đề — đọc theo gợi ý lộ trình")
+    + mod("02", "cards", "62-interview-question-bank.html", "Question Bank", totalQ + " câu · " + mastered + " đã thuộc · " + ratedCount + " đã ôn")
+    + mod("03", "target", "63-diagnostic.html", "Diagnostic", diag ? "gần nhất " + diag.pct + "% · " + diag.ts : "chưa đo lần nào — bắt đầu ở đây")
+    + mod("04", "flame", "64-incident-lab.html", "Incident Lab", incDone + " sự cố đã xử lý")
+    + mod("05", "rule", "65-design-lab.html", "Design Lab", Object.keys(dsgMap).length + " bài thiết kế đã làm")
+    + mod("06", "mic", "66-hr-ach-interview-pack.html", "HR Pack &amp; ACH Deep-dive", "12 câu HR song ngữ · đã luyện nói " + Object.keys(BEP.speakGet()).length + "/22 mục")
+    + mod("07", "code", "68-coding-sprint.html", "Coding Sprint", Object.keys(BEP.codeGet ? BEP.codeGet() : {}).length + "/36 bài — nước rút vòng LeetCode");
 
   /* ---- skillmap explorer ---- */
   var lessons = BEP.lessons();
@@ -315,23 +428,23 @@ function hubBoot() {
     var rows = ns.map(function (n) {
       var st = ST[n.id], ev = EV[n.id];
       var links = [];
-      if (n.lesson) links.push('<a href="' + n.lesson + '">📖 bài học' + (lessons[n.lesson] ? " ✓" : "") + "</a>");
-      if (n.tags && n.tags.length) links.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">🃏 ' + (ev.qbIds.length || "") + " câu</a>");
-      (n.inc || []).forEach(function (i) { links.push('<a href="64-incident-lab.html#' + i + '">🔥 ' + (incMap[i] ? "✓" : "sự cố") + "</a>"); });
+      if (n.lesson) links.push('<a href="' + n.lesson + '">bài học' + (lessons[n.lesson] ? " ✓" : "") + "</a>");
+      if (n.tags && n.tags.length) links.push('<a href="62-interview-question-bank.html?q=' + encodeURIComponent(n.tags[0]) + '">qbank' + (ev.qbIds.length ? " · " + ev.qbIds.length : "") + "</a>");
+      (n.inc || []).forEach(function (i) { links.push('<a href="64-incident-lab.html#' + i + '">sự cố' + (incMap[i] ? " ✓" : "") + "</a>"); });
       var pre = (n.pre || []).map(function (p) { return NODE[p] ? NODE[p].t : p; }).join(" · ");
       return '<div class="sm-node"><span class="sm-dot" style="background:' + stateCol[st] + '" title="' + st + (ev.mastery != null ? " " + Math.round(ev.mastery * 100) + "%" : "") + '"></span>'
-        + "<span>" + n.t + (n.planned ? " ⏳" : "") + "</span><span class='lv'>" + n.lv + "</span>"
+        + "<span>" + n.t + "</span>" + (n.planned ? '<span class="tag t-mute">planned</span>' : "") + "<span class='lv'>" + n.lv + "</span>"
         + '<span class="links">' + links.join("") + "</span>"
-        + (n.vnote ? '<span class="pre">🏷 phiên bản: ' + n.vnote + "</span>" : "")
+        + (n.vnote ? '<span class="pre">phiên bản: ' + n.vnote + "</span>" : "")
         + (pre ? '<span class="pre">cần trước: ' + pre + "</span>" : "")
         + "</div>";
     }).join("");
-    return '<div class="sm-dom" data-d="' + d.id + '">' + d.icon + " " + d.t + ' <span style="color:var(--text-faint);font-weight:400">(' + ns.length + ')</span></div><div class="sm-body" data-b="' + d.id + '" hidden>' + rows + "</div>";
+    return '<div class="sm-dom" data-d="' + d.id + '"><span class="dm">' + d.id.toUpperCase() + '</span><span class="dt">' + d.t + '</span><span class="dc">' + ns.length + ' node</span><span class="car">▸</span></div><div class="sm-body" data-b="' + d.id + '" hidden>' + rows + "</div>";
   }).join("");
   document.querySelectorAll(".sm-dom").forEach(function (h) {
     h.addEventListener("click", function () {
       var b = document.querySelector('.sm-body[data-b="' + h.dataset.d + '"]');
-      if (b) b.hidden = !b.hidden;
+      if (b) { b.hidden = !b.hidden; h.classList.toggle("open", !b.hidden); }
     });
   });
 

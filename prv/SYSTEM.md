@@ -64,7 +64,7 @@ Một **môi trường tự học Backend Engineering** chạy hoàn toàn offli
 
 ## localStorage (KHÔNG đổi key — mất tiến độ người dùng)
 
-`qb_box_v2` (Leitner box theo id câu) · `qb_star_v2` · `qb_stat_v1` (XP/streak) · `qb_last_v1` (ngày ôn gần nhất/câu) · `be_diag_v1` (kết quả diagnostic, từ 2026-07-12 có thêm `qids` = câu đã rút lượt trước) · `be_inc_v1` (điểm incident) · `be_lessons_v1` · `be_dsg_v1` (điểm design lab) · `be_speak_v1` (lượt luyện nói theo mục — 66). Migration id cũ→mới của qbank đã chạy tự động qua field `legacy` (giữ vĩnh viễn trong data).
+`qb_box_v2` (Leitner box theo id câu) · `qb_star_v2` · `qb_stat_v1` (XP/streak) · `qb_last_v1` (ngày ôn gần nhất/câu) · `qb_ui_v1` (pref UI của 62: pageSize — thêm 2026-07-20, KHÔNG thuộc export tiến độ) · `be_diag_v1` (kết quả diagnostic, từ 2026-07-12 có thêm `qids` = câu đã rút lượt trước) · `be_inc_v1` (điểm incident) · `be_lessons_v1` · `be_dsg_v1` (điểm design lab) · `be_speak_v1` (lượt luyện nói theo mục — 66). Migration id cũ→mới của qbank đã chạy tự động qua field `legacy` (giữ vĩnh viễn trong data).
 
 ## Quy tắc nội dung (áp dụng cho MỌI content mới)
 

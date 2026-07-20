@@ -1,128 +1,168 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
+<html lang="vi" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>#62 — Bộ Câu Hỏi Phỏng Vấn Backend (Junior→Senior) | Java Backend Interview Prep</title>
+<title>#62 — Bộ Câu Hỏi Phỏng Vấn Backend (Junior→Senior) | Backend Engineering Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .qb-wrap { max-width: 960px; margin: 0 auto; padding: 0 4px 80px; }
-  .qb-dash { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 4px 0 20px; }
-  .qb-stat { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 14px 16px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
-  .qb-stat .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 700; }
-  .qb-stat .val { font-size: 1.55rem; font-weight: 700; margin-top: 4px; line-height: 1.1; }
-  .qb-stat .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-  .qb-stat.xp .val { color: var(--accent); }
-  .qb-stat.streak .val { color: var(--warning); }
-  .qb-stat.mastered .val { color: var(--success); }
-  .qb-stat.today .val { color: var(--purple); }
-  .qb-levelbar { height: 7px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-top: 9px; }
-  .qb-levelbar > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--purple)); transition: width .35s ease; }
-  .qb-modebar { display: flex; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
-  .qb-mode { appearance: none; border: 1px solid var(--border); background: var(--bg-elev); color: var(--text-muted); font: inherit; font-weight: 700; font-size: 14px; padding: 9px 18px; border-radius: 999px; cursor: pointer; transition: all .14s; }
-  .qb-mode:hover { color: var(--text); border-color: var(--accent); }
-  .qb-mode.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .qb-controls { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 14px 16px; margin-bottom: 18px; display: grid; gap: 12px; }
-  .qb-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .qb-search { flex: 1; min-width: 200px; min-height: 42px; border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 14px; background: var(--bg); color: var(--text); font: inherit; }
-  .qb-search:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
-  .qb-controls select { font: inherit; font-size: 14px; padding: 9px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; min-height: 42px; }
-  .qb-levels { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-  .qb-lvpill { appearance: none; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 13px; border-radius: 999px; cursor: pointer; transition: all .12s; }
-  .qb-lvpill:hover { border-color: var(--accent); color: var(--text); }
-  .qb-lvpill.active { color: #fff; border-color: transparent; }
-  .qb-lvpill.active[data-lv="__all"] { background: var(--accent); }
-  .qb-lvpill.active[data-lv="junior"] { background: var(--success); }
-  .qb-lvpill.active[data-lv="middle"] { background: var(--warning); }
-  .qb-lvpill.active[data-lv="senior"] { background: var(--purple); }
-  .qb-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; user-select: none; padding: 7px 11px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
-  .qb-toggle input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
-  .qb-toggle.on { color: var(--text); border-color: var(--accent); }
-  .qb-ghost { appearance: none; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 13px; border-radius: 999px; cursor: pointer; }
-  .qb-ghost:hover { color: var(--text); border-color: var(--accent); }
-  .qb-count { margin-left: auto; font-size: 13px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
-  .qb-list { display: grid; gap: 12px; }
-  .qb-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 16px 18px; box-shadow: var(--shadow-sm); transition: border-color .14s, box-shadow .14s; }
-  .qb-card:hover { border-color: var(--border-strong); }
-  .qb-card.is-mastered { border-left: 4px solid var(--success); }
-  .qb-cardhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .qb-lvbadge { font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; color: #fff; }
-  .qb-lvbadge.lv-junior { background: var(--success); }
-  .qb-lvbadge.lv-middle { background: var(--warning); }
-  .qb-lvbadge.lv-senior { background: var(--purple); }
-  .qb-topic { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 3px 9px; border-radius: 6px; }
-  .qb-core { font-size: 10px; font-weight: 800; letter-spacing: .05em; color: #fff; background: var(--danger); padding: 3px 8px; border-radius: 999px; }
-  .qb-boxtag { font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); }
-  .qb-star { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-faint); padding: 2px; }
+  .qb-wrap { max-width: 980px; margin: 0 auto; padding: 0 4px 72px; }
+
+  /* masthead + stats (đồng bộ hub) */
+  .mast { border-bottom: 1px solid var(--border-strong); padding: 8px 0 26px; margin-bottom: 22px; }
+  .mast .kicker { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .mast h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 600; line-height: 1.18; margin: 0 0 10px; }
+  .mast .lead { color: var(--text-muted); font-size: .98rem; line-height: 1.65; max-width: 68ch; margin: 0; }
+  .statrow { display: grid; grid-template-columns: repeat(4, 1fr); margin: 22px 0 0; }
+  .hstat { border-left: 1px solid var(--border-strong); padding: 2px 16px 0; }
+  .hstat:first-child { border-left: 0; padding-left: 0; }
+  .hstat .val { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; line-height: 1.2; }
+  .hstat .lab { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-faint); margin-top: 4px; }
+  .qb-levelbar { height: 3px; background: var(--border); overflow: hidden; margin-top: 8px; max-width: 140px; }
+  .qb-levelbar > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+  @media (max-width: 700px) { .statrow { grid-template-columns: 1fr 1fr; row-gap: 16px; } .hstat:nth-child(3) { border-left: 0; padding-left: 0; } }
+
+  /* how-to collapsible */
+  .how { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); margin: 0 0 22px; }
+  .how summary { cursor: pointer; padding: 11px 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); user-select: none; }
+  .how summary:hover { color: var(--accent); }
+  .how ol { margin: 0; padding: 2px 20px 14px 36px; font-size: .93rem; color: var(--text-muted); }
+  .how li { margin: 5px 0; }
+
+  /* mode segmented */
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 3px; overflow: hidden; margin-bottom: 14px; }
+  .seg button { appearance: none; border: 0; border-left: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; padding: 8px 18px; cursor: pointer; transition: background .12s, color .12s; }
+  .seg button:first-child { border-left: 0; }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: var(--text); color: var(--bg); }
+
+  /* controls */
+  .qb-controls { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 12px 14px; margin-bottom: 12px; display: grid; gap: 10px; }
+  .qb-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .qb-search { flex: 1; min-width: 200px; border: 1px solid var(--border); border-radius: 3px; padding: 8px 12px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; }
+  .qb-search:focus { outline: none; border-color: var(--accent); }
+  .qb-controls select { font-family: var(--font-mono); font-size: 12px; padding: 8px 10px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+  .qb-count { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); white-space: nowrap; }
+  .flab { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--text-faint); min-width: 52px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .chip { appearance: none; font-family: var(--font-mono); font-size: 11px; font-weight: 500; border: 1px solid var(--border); border-radius: 2px; background: transparent; color: var(--text-muted); padding: 4px 10px; cursor: pointer; transition: color .12s, border-color .12s, background .12s; }
+  .chip .n { color: var(--text-faint); margin-left: 4px; }
+  .chip:hover { color: var(--accent); border-color: var(--accent); }
+  .chip.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .chip.on .n { color: var(--accent); opacity: .7; }
+  .qb-lvpill { appearance: none; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 5px 12px; border-radius: 2px; cursor: pointer; transition: color .12s, border-color .12s, background .12s; }
+  .qb-lvpill:hover { border-color: var(--accent); color: var(--accent); }
+  .qb-lvpill.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .qb-toggle { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--text-muted); cursor: pointer; user-select: none; padding: 5px 10px; border: 1px solid var(--border); border-radius: 2px; background: transparent; }
+  .qb-toggle input { accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; }
+  .qb-toggle.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .qb-ghost { appearance: none; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 5px 12px; border-radius: 2px; cursor: pointer; }
+  .qb-ghost:hover { color: var(--accent); border-color: var(--accent); }
+  .qb-ghost.warn:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* pager */
+  .qb-pager { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 14px 0; font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); flex-wrap: wrap; }
+  .qb-pager .pg { appearance: none; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px; min-width: 30px; padding: 5px 9px; border-radius: 2px; cursor: pointer; transition: color .12s, border-color .12s; }
+  .qb-pager .pg:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+  .qb-pager .pg.cur { background: var(--text); color: var(--bg); border-color: var(--text); cursor: default; }
+  .qb-pager .pg:disabled { opacity: .35; cursor: default; }
+  .qb-pager .gap { padding: 0 2px; }
+
+  /* cards */
+  .qb-list { display: grid; gap: 10px; }
+  .qb-card { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-elev); padding: 14px 16px; }
+  .qb-card.is-mastered { border-left: 2px solid var(--success); }
+  .qb-cardhead { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 9px; }
+  .qb-lvbadge { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 1px 7px; border-radius: 2px; border: 1px solid currentColor; }
+  .qb-lvbadge.lv-junior { color: var(--success); }
+  .qb-lvbadge.lv-middle { color: var(--warning); }
+  .qb-lvbadge.lv-senior { color: var(--purple); }
+  .qb-topic { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); padding: 1px 8px; border-radius: 2px; }
+  .qb-core { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; color: var(--danger); border: 1px solid var(--danger); padding: 1px 7px; border-radius: 2px; }
+  .qb-boxtag { font-size: 10.5px; color: var(--text-faint); font-family: var(--font-mono); }
+  .qb-star { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 17px; line-height: 1; color: var(--text-faint); padding: 2px; }
+  .qb-star:hover { color: var(--warning); }
   .qb-star.on { color: var(--warning); }
-  .qb-tagchip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); padding: 2px 9px; border-radius: 999px; cursor: pointer; transition: all .12s; font-family: var(--font-mono); }
+  .qb-q { font-size: 1.02rem; font-weight: 600; line-height: 1.55; color: var(--text); }
+  .qb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .qb-tagchip { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--text-faint); background: transparent; border: 1px solid var(--border); padding: 1px 8px; border-radius: 2px; cursor: pointer; transition: color .12s, border-color .12s; }
   .qb-tagchip:hover { color: var(--accent); border-color: var(--accent); }
-  .qb-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .qb-q { font-size: 1.06rem; font-weight: 600; line-height: 1.5; color: var(--text); }
-  .qb-reveal { margin-top: 12px; appearance: none; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: var(--radius); cursor: pointer; transition: all .14s; }
-  .qb-reveal:hover { background: var(--accent); color: #fff; }
-  .qb-a { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 14px; animation: qbfade .22s ease; }
-  @keyframes qbfade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .qb-reveal { margin-top: 11px; appearance: none; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 7px 14px; border-radius: 2px; cursor: pointer; transition: background .12s, color .12s; }
+  .qb-reveal:hover { background: var(--accent); color: var(--bg); }
+  .qb-a { margin-top: 13px; border-top: 1px dashed var(--border-strong); padding-top: 13px; animation: qbfade .18s ease; }
+  @keyframes qbfade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
   .qb-a p { margin: 0 0 10px; line-height: 1.68; }
   .qb-a ul, .qb-a ol { margin: 6px 0 12px; padding-left: 22px; }
   .qb-a li { margin-bottom: 5px; line-height: 1.6; }
   .qb-a strong { color: var(--text); }
-  .qb-a code:not([class*="language-"]) { background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: .86em; color: var(--accent); }
+  .qb-a code:not([class*="language-"]) { background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 3px; font-family: var(--font-mono); font-size: .86em; color: var(--accent); }
   .qb-a table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 8px 0 12px; }
   .qb-a th, .qb-a td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
-  .qb-a th { background: var(--bg); font-weight: 700; }
-  .qb-eli5 { background: var(--success-soft); border-left: 3px solid var(--success); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
+  .qb-a th { background: var(--bg); font-weight: 600; }
+  .qb-eli5 { background: var(--success-soft); border-left: 2px solid var(--success); border-radius: 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
   .qb-eli5 b { color: var(--success); }
-  .qb-gotcha { background: var(--warning-soft); border-left: 3px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
+  .qb-gotcha { background: var(--warning-soft); border-left: 2px solid var(--warning); border-radius: 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
   .qb-gotcha b { color: var(--warning); }
-  .qb-term { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
+  .qb-term { background: var(--accent-soft); border-left: 2px solid var(--accent); border-radius: 0; padding: 10px 14px; margin: 4px 0 12px; font-size: .95rem; }
   .qb-term b { color: var(--accent); }
   .qb-refs { margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
-  .qb-refs .rlab { font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em; font-size: 11px; margin-right: 4px; }
+  .qb-refs .rlab { font-family: var(--font-mono); font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: .08em; font-size: 10px; margin-right: 4px; }
   .qb-refs a { color: var(--info); }
-  .qb-rate { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-  .qb-rate button { flex: 1; min-width: 92px; border: none; color: #fff; font: inherit; font-weight: 700; font-size: .92rem; padding: 11px 8px; border-radius: var(--radius); cursor: pointer; transition: transform .08s, filter .12s; }
-  .qb-rate button:hover { filter: brightness(1.08); }
-  .qb-rate button:active { transform: scale(.97); }
-  .qb-rate .r-again { background: #dc2626; }
-  .qb-rate .r-hard  { background: #d97706; }
-  .qb-rate .r-good  { background: #2563eb; }
-  .qb-rate .r-easy  { background: #059669; }
-  .qb-rate button small { display: block; font-weight: 500; font-size: 10px; opacity: .85; margin-top: 2px; }
+  .qb-rate { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .qb-rate button { flex: 1; min-width: 92px; border: 1px solid; background: transparent; font: inherit; font-weight: 600; font-size: .88rem; padding: 9px 8px; border-radius: 3px; cursor: pointer; transition: background .12s, color .12s; }
+  .qb-rate button small { display: block; font-weight: 400; font-size: 10px; opacity: .75; margin-top: 2px; }
+  .qb-rate .r-again { color: var(--danger); border-color: var(--danger); }
+  .qb-rate .r-hard  { color: var(--warning); border-color: var(--warning); }
+  .qb-rate .r-good  { color: var(--accent); border-color: var(--accent); }
+  .qb-rate .r-easy  { color: var(--success); border-color: var(--success); }
+  .qb-rate .r-again:hover { background: var(--danger); color: var(--bg); }
+  .qb-rate .r-hard:hover  { background: var(--warning); color: var(--bg); }
+  .qb-rate .r-good:hover  { background: var(--accent); color: var(--bg); }
+  .qb-rate .r-easy:hover  { background: var(--success); color: var(--bg); }
+
+  /* quiz */
   .qb-quiz { max-width: 720px; margin: 0 auto; }
-  .qb-quizprog { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
-  .qb-quizbar { height: 8px; border-radius: 999px; background: var(--bg-elev); border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
-  .qb-quizbar > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--success)); transition: width .3s ease; }
-  .qb-qcard { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); padding: 26px 24px; box-shadow: var(--shadow-md); min-height: 220px; }
+  .qb-quizprog { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); margin-bottom: 8px; }
+  .qb-quizbar { height: 3px; background: var(--border); overflow: hidden; margin-bottom: 16px; }
+  .qb-quizbar > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+  .qb-qcard { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-elev); padding: 26px 24px; min-height: 220px; }
   .qb-qcard .qb-cardhead { margin-bottom: 14px; }
-  .qb-qcard .q { font-size: 1.24rem; font-weight: 600; line-height: 1.5; }
+  .qb-qcard .q { font-family: var(--font-serif); font-size: 1.22rem; font-weight: 600; line-height: 1.5; }
   .qb-qcard .qb-reveal { margin-top: 18px; }
   .qb-done { text-align: center; padding: 44px 20px; }
-  .qb-done .big { font-size: 2rem; font-weight: 700; }
+  .qb-done .big { font-family: var(--font-serif); font-size: 1.7rem; font-weight: 600; }
   .qb-done .sc { color: var(--accent); }
-  .qb-toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-weight: 700; font-size: 15px; padding: 11px 22px; border-radius: 999px; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; }
+  .qb-done .qb-reveal { margin-top: 16px; }
+
+  .qb-toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-family: var(--font-mono); font-weight: 500; font-size: 13px; padding: 10px 20px; border-radius: 3px; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; }
   .qb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .qb-empty { text-align: center; color: var(--text-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 40px 20px; }
-  .qb-loaderr { border: 1px solid var(--danger); background: var(--warning-soft); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
-  .toc .qb-old { font-size: 9px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px; }
-  @media (max-width: 620px) { .qb-count { margin-left: 0; width: 100%; } .qb-qcard { padding: 20px 16px; } }
+  .qb-empty { text-align: center; color: var(--text-muted); border: 1px dashed var(--border-strong); border-radius: 4px; padding: 40px 20px; }
+  .qb-loaderr { border: 1px solid var(--danger); background: var(--danger-soft); border-radius: 3px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+  .toc .qb-old { font-family: var(--font-mono); font-size: 9px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 2px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; }
+  @media (max-width: 620px) { .qb-count { margin-left: 0; width: 100%; } .qb-qcard { padding: 20px 16px; } .flab { min-width: 100%; } }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <button class="menu-toggle" aria-label="Mở mục lục">Menu</button>
-  <div class="crumb"><strong>Java Backend Interview Prep</strong><span class="sep">/</span><span class="current">#62 Bộ câu hỏi phỏng vấn</span></div>
-  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Dark</span></button>
+  <div class="crumb"><strong>Backend Engineering Lab</strong><span class="sep">/</span><span class="current">#62 Question Bank</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span id="themeText">Light</span></button>
 </div>
 
 <div class="layout">
 <aside class="sidebar">
-  <div class="toc-title">Cách dùng</div>
+  <div class="toc-title">Điều hướng</div>
   <nav class="toc">
+    <a href="learn.html">← Learning Hub</a>
     <a href="#how">Học sao cho vào</a>
     <a href="#dash">Bảng tiến độ</a>
     <a href="#app">Bộ câu hỏi</a>
@@ -134,76 +174,86 @@
 <main>
 <div class="content qb-wrap">
 
-<section class="hero">
-  <span class="meta-tag">Question Bank · Active Recall</span>
-  <h1>Bộ Câu Hỏi Phỏng Vấn Backend</h1>
-  <p class="lead">Ngân hàng câu hỏi phỏng vấn backend phân theo <strong>Junior → Middle → Senior</strong>, đáp án giảng giải bằng ngôn ngữ đơn giản cho người mới, kèm reference. Mỗi câu có <strong>tag</strong> — bấm tag để lọc các câu cùng chủ đề nhỏ. Học bằng <strong>active recall</strong> (tự nghĩ trước khi xem đáp án) và <strong>spaced repetition</strong> (lặp lại ngắt quãng).</p>
-</section>
+<header class="mast">
+  <div class="kicker">Question Bank · Active Recall</div>
+  <h1>Bộ câu hỏi phỏng vấn backend</h1>
+  <p class="lead">Phân theo <strong>Junior → Middle → Senior</strong>, đáp án giảng bằng ngôn ngữ đơn giản kèm reference. Học bằng active recall: tự nghĩ trước, xem đáp án sau, chấm thật lòng.</p>
+  <div class="statrow" id="dash">
+    <div class="hstat">
+      <div class="val" id="dLevel">Lv 1</div>
+      <div class="lab" id="dXp">0 XP</div>
+      <div class="qb-levelbar"><span id="dLevelbar"></span></div>
+    </div>
+    <div class="hstat">
+      <div class="val" id="dStreak">0</div>
+      <div class="lab">ngày học liên tiếp</div>
+    </div>
+    <div class="hstat">
+      <div class="val" id="dMastered">0</div>
+      <div class="lab" id="dMasteredSub">/ 0 câu đã thuộc</div>
+    </div>
+    <div class="hstat">
+      <div class="val" id="dToday">0</div>
+      <div class="lab">lượt ôn hôm nay</div>
+    </div>
+  </div>
+</header>
 
-<div class="study-banner" id="how">
-  <div class="sb-head">🧠 Học sao cho "vào" và nhớ lâu (đọc 30 giây)</div>
-  <ol class="sb-rules">
+<details class="how" id="how">
+  <summary>Học sao cho "vào" và nhớ lâu — đọc 30 giây</summary>
+  <ol>
     <li><strong>Đọc câu hỏi → tự trả lời trong đầu TRƯỚC</strong>, rồi mới bấm "Xem đáp án". Việc cố nhớ lại (retrieval) khắc sâu hơn đọc lại 10 lần.</li>
     <li><strong>Tự chấm thật lòng</strong> (Again / Hard / Good / Easy). Chấm "Again" câu bạn ấp úng — hệ thống sẽ đẩy nó quay lại sớm (Leitner).</li>
     <li><strong>Học xen kẽ chủ đề</strong> (interleaving) thay vì cày một topic đến chán — não phân biệt khái niệm tốt hơn.</li>
-    <li><strong>Mỗi ngày một ít</strong> để giữ 🔥 streak. Đều đặn 20 phút thắng "cày trâu" 5 tiếng rồi bỏ.</li>
-    <li>Dùng <strong>chế độ Quiz</strong> để tự kiểm tra ngẫu nhiên trước ngày phỏng vấn.</li>
+    <li><strong>Mỗi ngày một ít</strong> để giữ streak. Đều đặn 20 phút thắng "cày trâu" 5 tiếng rồi bỏ.</li>
+    <li>Dùng <strong>chế độ Quiz</strong> để tự kiểm tra ngẫu nhiên trước ngày phỏng vấn. Lọc <strong>Đến hạn ôn</strong> để trả nợ Leitner trước.</li>
   </ol>
-</div>
+</details>
 
-<section id="dash">
-  <div class="qb-dash">
-    <div class="qb-stat xp">
-      <div class="lab">Level &amp; XP</div>
-      <div class="val" id="dLevel">Lv 1</div>
-      <div class="sub" id="dXp">0 XP</div>
-      <div class="qb-levelbar"><span id="dLevelbar"></span></div>
-    </div>
-    <div class="qb-stat streak">
-      <div class="lab">Streak</div>
-      <div class="val" id="dStreak">🔥 0</div>
-      <div class="sub">ngày học liên tiếp</div>
-    </div>
-    <div class="qb-stat mastered">
-      <div class="lab">Đã thuộc</div>
-      <div class="val" id="dMastered">0</div>
-      <div class="sub" id="dMasteredSub">/ 0 câu (box ≥ 4)</div>
-    </div>
-    <div class="qb-stat today">
-      <div class="lab">Hôm nay</div>
-      <div class="val" id="dToday">0</div>
-      <div class="sub">lượt ôn hôm nay</div>
-    </div>
-  </div>
-</section>
-
-<div class="qb-modebar" id="app">
-  <button class="qb-mode active" data-mode="learn" type="button">📚 Học (Learn)</button>
-  <button class="qb-mode" data-mode="quiz" type="button">⚡ Quiz (tự kiểm tra)</button>
+<div class="seg" id="app" role="tablist">
+  <button class="active" data-mode="learn" type="button">Học</button>
+  <button data-mode="quiz" type="button">Quiz</button>
 </div>
 
 <div class="qb-controls">
   <div class="qb-row">
     <input class="qb-search" id="qbSearch" type="search" placeholder="Tìm câu hỏi, chủ đề, tag..." autocomplete="off">
-    <select id="qbGroup"><option value="__all">Tất cả nhóm</option></select>
-    <select id="qbTopic"><option value="__all">Tất cả chủ đề</option></select>
+    <select id="qbStatus" title="Lọc theo trạng thái học">
+      <option value="__all">Mọi trạng thái</option>
+      <option value="new">Chưa học</option>
+      <option value="due">Đến hạn ôn</option>
+      <option value="learning">Đang học (box 1–3)</option>
+      <option value="mastered">Đã thuộc (box ≥ 4)</option>
+    </select>
+    <span class="qb-count" id="qbCount">0 câu</span>
   </div>
   <div class="qb-row">
-    <div class="qb-levels" id="qbLevels">
+    <span class="flab">Level</span>
+    <div class="chips" id="qbLevels">
       <button class="qb-lvpill active" data-lv="__all" type="button">Mọi level</button>
       <button class="qb-lvpill" data-lv="junior" type="button">Junior</button>
       <button class="qb-lvpill" data-lv="middle" type="button">Middle</button>
       <button class="qb-lvpill" data-lv="senior" type="button">Senior</button>
     </div>
-    <label class="qb-toggle" id="qbCoreWrap"><input type="checkbox" id="qbCore">★ Chỉ CORE</label>
-    <label class="qb-toggle" id="qbStarWrap"><input type="checkbox" id="qbStar">⭐ Đã đánh dấu</label>
-    <button class="qb-ghost" id="qbShuffle" type="button">🔀 Trộn</button>
-    <button class="qb-ghost" id="qbReset" type="button">↺ Reset tiến độ</button>
-    <span class="qb-count" id="qbCount">0 câu</span>
+    <label class="qb-toggle" id="qbCoreWrap"><input type="checkbox" id="qbCore">Chỉ CORE</label>
+    <label class="qb-toggle" id="qbStarWrap"><input type="checkbox" id="qbStar">★ Đã đánh dấu</label>
+    <button class="qb-ghost" id="qbShuffle" type="button">Trộn</button>
+    <button class="qb-ghost warn" id="qbReset" type="button">Reset tiến độ</button>
+    <button class="qb-ghost" id="qbClear" type="button" hidden>✕ Xoá lọc</button>
+  </div>
+  <div class="qb-row">
+    <span class="flab">Nhóm</span>
+    <div class="chips" id="qbGroups"></div>
+  </div>
+  <div class="qb-row" id="qbTopicsRow" hidden>
+    <span class="flab">Chủ đề</span>
+    <div class="chips" id="qbTopics"></div>
   </div>
 </div>
 
+<div class="qb-pager" id="qbPagerTop"></div>
 <div id="qbView"><div class="qb-empty">Đang nạp ngân hàng câu hỏi…</div></div>
+<div class="qb-pager" id="qbPagerBot"></div>
 
 <footer>
   <span>#62 · dữ liệu tách theo nhóm trong <code>html/qbank/data/</code> · muốn thêm câu xem <code>qbank/GUIDE.md</code></span>
@@ -221,10 +271,12 @@
 <script src="qbank/manifest.js"></script>
 <script>
 /* =========================================================
-   QUESTION BANK ENGINE v2
-   - Dữ liệu KHÔNG nằm ở đây nữa. Mỗi nhóm 1 file: qbank/data/*.js
+   QUESTION BANK ENGINE v3
+   - Dữ liệu KHÔNG nằm ở đây. Mỗi nhóm 1 file: qbank/data/*.js
    - Mỗi file gọi QB.register({group, order, prefix, status, questions})
    - Câu hỏi: { id:"web-001", legacy:1, t, lv, core, tags:[], q, a, refs }
+   - v3 (2026-07-20): pagination + multi-select filter (nhóm/chủ đề)
+     + filter trạng thái Leitner + reveal toggle/tự thu gọn khi chấm.
    - Thêm câu / thêm nhóm: xem qbank/GUIDE.md
    ========================================================= */
 window.QB = { packs: [], register: function (p) { window.QB.packs.push(p); } };
@@ -265,8 +317,9 @@ function qbBoot(loadErrors) {
   var XP_GAIN = { again: 2, hard: 5, good: 8, easy: 12 };
   var XP_PER_LEVEL = 120;
   var MASTER_BOX = 4;
+  var DUE_AT = [1, 2, 4, 8, 16, 30];
 
-  var K_BOX = "qb_box_v2", K_STAR = "qb_star_v2", K_STAT = "qb_stat_v1";
+  var K_BOX = "qb_box_v2", K_STAR = "qb_star_v2", K_STAT = "qb_stat_v1", K_UI = "qb_ui_v1";
   var load = function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   var save = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 
@@ -289,9 +342,13 @@ function qbBoot(loadErrors) {
   var boxes = load(K_BOX, {});
   var stat = load(K_STAT, { xp: 0, streak: 0, last: null, reviews: 0, reviewDay: null });
   var stars = new Set(load(K_STAR, []));
+  var ui = load(K_UI, {});
 
-  var fGroup = "__all", fTopic = "__all", fLevel = "__all", fCore = false, fStar = false, fSearch = "";
+  var fGroups = new Set(), fTopics = new Set();
+  var fLevel = "__all", fStatus = "__all", fCore = false, fStar = false, fSearch = "";
   var mode = "learn";
+  var page = 1;
+  var pageSize = [10, 20, 50, 100].indexOf(ui.ps) !== -1 ? ui.ps : 20;
   var shuffleOrder = null;
   var quiz = { queue: [], idx: 0, flipped: false, score: 0, total: 0 };
 
@@ -305,7 +362,7 @@ function qbBoot(loadErrors) {
   if (loadErrors && loadErrors.length) {
     var warn = document.createElement("div");
     warn.className = "qb-loaderr";
-    warn.innerHTML = "⚠ Không nạp được file dữ liệu: <b>" + loadErrors.join(", ") + "</b> — kiểm tra tên file trong <code>qbank/manifest.js</code>.";
+    warn.innerHTML = "Không nạp được file dữ liệu: <b>" + loadErrors.join(", ") + "</b> — kiểm tra tên file trong <code>qbank/manifest.js</code>.";
     view.parentNode.insertBefore(warn, view);
   }
 
@@ -315,45 +372,85 @@ function qbBoot(loadErrors) {
     if (!topicsByGroup[q.g]) { topicsByGroup[q.g] = []; groups.push(q.g); }
     if (topicsByGroup[q.g].indexOf(q.t) === -1) topicsByGroup[q.g].push(q.t);
   });
+  var groupCount = {};
+  groups.forEach(function (g) { groupCount[g] = QUESTIONS.filter(function (x) { return x.g === g; }).length; });
 
-  function buildGroupSelect() {
-    var gs = $("qbGroup");
-    groups.forEach(function (g) {
-      var o = document.createElement("option");
-      o.value = g;
-      o.textContent = g + " (" + QUESTIONS.filter(function (x) { return x.g === g; }).length + ")";
-      gs.appendChild(o);
-    });
+  /* ---- filter UI: chips đa chọn ---- */
+  function buildGroupChips() {
+    $("qbGroups").innerHTML = groups.map(function (g) {
+      return '<button class="chip' + (fGroups.has(g) ? " on" : "") + '" data-g="' + g.replace(/"/g, "") + '" type="button">'
+        + g + '<span class="n">' + groupCount[g] + "</span></button>";
+    }).join("");
+  }
+  function topicPool() {
+    var gs = fGroups.size ? Array.from(fGroups) : [];
+    var list = [];
+    gs.forEach(function (g) { (topicsByGroup[g] || []).forEach(function (t) { if (list.indexOf(t) === -1) list.push(t); }); });
+    return list;
+  }
+  function buildTopicChips() {
+    var row = $("qbTopicsRow");
+    if (!fGroups.size) { row.hidden = true; fTopics.clear(); return; }
+    var list = topicPool();
+    /* bỏ topic đã chọn nhưng không còn thuộc nhóm đang chọn */
+    Array.from(fTopics).forEach(function (t) { if (list.indexOf(t) === -1) fTopics.delete(t); });
+    row.hidden = false;
+    $("qbTopics").innerHTML = list.map(function (t) {
+      var c = QUESTIONS.filter(function (x) { return fGroups.has(x.g) && x.t === t; }).length;
+      return '<button class="chip' + (fTopics.has(t) ? " on" : "") + '" data-t="' + t.replace(/"/g, "") + '" type="button">'
+        + t + '<span class="n">' + c + "</span></button>";
+    }).join("");
+  }
+  function anyFilter() {
+    return fGroups.size || fTopics.size || fLevel !== "__all" || fStatus !== "__all" || fCore || fStar || fSearch;
+  }
+  function syncClearBtn() { $("qbClear").hidden = !anyFilter(); }
+
+  function buildToc() {
     var toc = $("tocGroups");
     toc.innerHTML = groups.map(function (g) {
       var old = packStatus[g] === "legacy" ? ' <span class="qb-old" title="Nội dung nhóm này chưa được viết lại kiểu dễ hiểu — sẽ cập nhật ở đợt sau">cũ</span>' : "";
-      return '<a href="#app" data-group="' + g.replace(/"/g, "") + '">' + g + ' <span style="color:var(--text-faint)">' + QUESTIONS.filter(function (x) { return x.g === g; }).length + "</span>" + old + "</a>";
+      return '<a href="#app" data-group="' + g.replace(/"/g, "") + '">' + g + ' <span style="color:var(--text-faint)">' + groupCount[g] + "</span>" + old + "</a>";
     }).join("");
     toc.querySelectorAll("a").forEach(function (a) {
       a.addEventListener("click", function () {
-        fGroup = a.dataset.group; $("qbGroup").value = fGroup;
-        buildTopicSelect(); fTopic = "__all"; $("qbTopic").value = "__all";
-        if (mode === "quiz") buildQuizQueue();
-        render();
+        fGroups = new Set([a.dataset.group]);
+        fTopics.clear();
+        buildGroupChips(); buildTopicChips(); syncClearBtn();
+        onFilterChange();
       });
     });
   }
-  function buildTopicSelect() {
-    var ts = $("qbTopic");
-    ts.innerHTML = '<option value="__all">Tất cả chủ đề</option>';
-    var list = fGroup === "__all"
-      ? Object.keys(topicsByGroup).reduce(function (a, g) { return a.concat(topicsByGroup[g]); }, [])
-      : (topicsByGroup[fGroup] || []);
-    list.forEach(function (t) { var o = document.createElement("option"); o.value = t; o.textContent = t; ts.appendChild(o); });
-  }
 
+  /* ---- pool: lọc đa tiêu chí ---- */
+  function isDue(q) {
+    var b = boxes[q.id];
+    if (b == null) return false;
+    var lastMap = window.BEP ? BEP.qbLast() : {};
+    if (!lastMap[q.id]) return true;
+    var days = window.BEP ? BEP.daysAgo(lastMap[q.id]) : 9999;
+    return days >= DUE_AT[Math.min(b, 5)];
+  }
   function pool() {
+    var lastMap = (fStatus === "due" && window.BEP) ? BEP.qbLast() : null;
     var arr = QUESTIONS.filter(function (q) {
-      if (fGroup !== "__all" && q.g !== fGroup) return false;
-      if (fTopic !== "__all" && q.t !== fTopic) return false;
+      if (fGroups.size && !fGroups.has(q.g)) return false;
+      if (fTopics.size && !fTopics.has(q.t)) return false;
       if (fLevel !== "__all" && q.lv !== fLevel) return false;
       if (fCore && !q.core) return false;
       if (fStar && !stars.has(q.id)) return false;
+      if (fStatus !== "__all") {
+        var b = boxes[q.id];
+        if (fStatus === "new" && b != null) return false;
+        if (fStatus === "learning" && !(b != null && b < MASTER_BOX)) return false;
+        if (fStatus === "mastered" && !(b != null && b >= MASTER_BOX)) return false;
+        if (fStatus === "due") {
+          if (b == null) return false;
+          if (lastMap && lastMap[q.id]) {
+            if (BEP.daysAgo(lastMap[q.id]) < DUE_AT[Math.min(b, 5)]) return false;
+          }
+        }
+      }
       if (fSearch) {
         var hay = norm(q.q + " " + q.a + " " + q.t + " " + q.g + " " + (q.tags || []).join(" "));
         if (hay.indexOf(fSearch) === -1) return false;
@@ -377,7 +474,7 @@ function qbBoot(loadErrors) {
     $("dLevel").textContent = "Lv " + lvl;
     $("dXp").textContent = stat.xp + " XP · còn " + (XP_PER_LEVEL - inLvl) + " lên Lv " + (lvl + 1);
     $("dLevelbar").style.width = (inLvl / XP_PER_LEVEL * 100) + "%";
-    $("dStreak").textContent = "🔥 " + (stat.streak || 0);
+    $("dStreak").textContent = stat.streak || 0;
     $("dMastered").textContent = masteredCount();
     $("dMasteredSub").textContent = "/ " + QUESTIONS.length + " câu (box ≥ " + MASTER_BOX + ")";
     $("dToday").textContent = (stat.reviewDay === todayStr()) ? (stat.reviews || 0) : 0;
@@ -402,7 +499,7 @@ function qbBoot(loadErrors) {
     save(K_STAT, stat);
     if (window.BEP) try { BEP.qbTouch(q.id); } catch (e) {}
     var msg = "+" + (XP_GAIN[r] || 0) + " XP";
-    if (prevBox < MASTER_BOX && box >= MASTER_BOX) msg = "🎉 Thuộc rồi! " + msg;
+    if (prevBox < MASTER_BOX && box >= MASTER_BOX) msg = "Thuộc rồi! " + msg;
     toast(msg); updateDash();
   }
 
@@ -411,7 +508,7 @@ function qbBoot(loadErrors) {
     return '<div class="qb-cardhead">'
       + '<span class="qb-lvbadge lv-' + q.lv + '">' + LV[q.lv].label + "</span>"
       + '<span class="qb-topic">' + q.t + "</span>"
-      + (q.core ? '<span class="qb-core">★ CORE</span>' : "")
+      + (q.core ? '<span class="qb-core">CORE</span>' : "")
       + '<span class="qb-boxtag">box ' + box + "</span>"
       + '<button class="qb-star ' + (stars.has(q.id) ? "on" : "") + '" data-star="' + q.id + '" title="Đánh dấu để ôn lại">' + (stars.has(q.id) ? "★" : "☆") + "</button>"
       + "</div>";
@@ -436,11 +533,65 @@ function qbBoot(loadErrors) {
       + "</div>";
   }
 
+  /* ---- pagination ---- */
+  function pageWindow(cur, total) {
+    var out = [], seen = {};
+    [1, 2, cur - 1, cur, cur + 1, total - 1, total].forEach(function (p) {
+      if (p >= 1 && p <= total && !seen[p]) { seen[p] = 1; out.push(p); }
+    });
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+  function pagerHtml(cur, total) {
+    if (total <= 1) return "";
+    var h = '<button class="pg" data-page="' + (cur - 1) + '"' + (cur === 1 ? " disabled" : "") + '>‹</button>';
+    var win = pageWindow(cur, total), prev = 0;
+    win.forEach(function (p) {
+      if (p - prev > 1) h += '<span class="gap">…</span>';
+      h += '<button class="pg' + (p === cur ? " cur" : "") + '" data-page="' + p + '">' + p + "</button>";
+      prev = p;
+    });
+    h += '<button class="pg" data-page="' + (cur + 1) + '"' + (cur === total ? " disabled" : "") + '>›</button>';
+    h += '<select class="pgsize" title="Số câu mỗi trang">' + [10, 20, 50, 100].map(function (n) {
+      return '<option value="' + n + '"' + (n === pageSize ? " selected" : "") + ">" + n + "/trang</option>";
+    }).join("") + "</select>";
+    return h;
+  }
+  function renderPagers(cur, total) {
+    $("qbPagerTop").innerHTML = pagerHtml(cur, total);
+    $("qbPagerBot").innerHTML = pagerHtml(cur, total);
+  }
+  function bindPagers() {
+    ["qbPagerTop", "qbPagerBot"].forEach(function (pid) {
+      $(pid).addEventListener("click", function (e) {
+        var b = e.target.closest(".pg[data-page]");
+        if (!b || b.disabled || b.classList.contains("cur")) return;
+        page = parseInt(b.dataset.page, 10) || 1;
+        renderLearn();
+        $("app").scrollIntoView({ block: "start" });
+      });
+      $(pid).addEventListener("change", function (e) {
+        if (!e.target.classList.contains("pgsize")) return;
+        pageSize = parseInt(e.target.value, 10) || 20;
+        ui.ps = pageSize; save(K_UI, ui);
+        page = 1; renderLearn();
+      });
+    });
+  }
+
   function renderLearn() {
     var arr = pool();
-    $("qbCount").textContent = arr.length + " câu";
-    if (!arr.length) { view.innerHTML = '<div class="qb-empty">Không có câu nào khớp bộ lọc. Thử bỏ bớt filter hoặc đổi nhóm chủ đề.</div>'; return; }
-    view.innerHTML = '<div class="qb-list">' + arr.map(function (q) {
+    var total = Math.max(1, Math.ceil(arr.length / pageSize));
+    if (page > total) page = total;
+    if (page < 1) page = 1;
+    $("qbCount").textContent = arr.length + " câu" + (total > 1 ? " · trang " + page + "/" + total : "");
+    if (!arr.length) {
+      view.innerHTML = '<div class="qb-empty">Không có câu nào khớp bộ lọc. Thử bỏ bớt filter hoặc bấm "Xoá lọc".</div>';
+      renderPagers(1, 1);
+      return;
+    }
+    var slice = arr.slice((page - 1) * pageSize, page * pageSize);
+    view.innerHTML = '<div class="qb-list">' + slice.map(function (q) {
       var mastered = (boxes[q.id] || 0) >= MASTER_BOX;
       return '<div class="qb-card ' + (mastered ? "is-mastered" : "") + '" data-id="' + q.id + '">'
         + headHtml(q)
@@ -450,6 +601,8 @@ function qbBoot(loadErrors) {
         + '<div class="qb-a" data-answer="' + q.id + '" hidden>' + answerHtml(q) + rateRowHtml(q.id) + "</div>"
         + "</div>";
     }).join("") + "</div>";
+    renderPagers(page, total);
+    if (window.Prism) try { Prism.highlightAllUnder(view); } catch (e) {}
   }
 
   function buildQuizQueue() {
@@ -459,9 +612,10 @@ function qbBoot(loadErrors) {
   }
   function renderQuiz() {
     $("qbCount").textContent = pool().length + " câu";
+    renderPagers(1, 1);
     if (!quiz.queue.length) { view.innerHTML = '<div class="qb-empty">Không có câu nào khớp bộ lọc để quiz.</div>'; return; }
     if (quiz.idx >= quiz.queue.length) {
-      view.innerHTML = '<div class="qb-quiz"><div class="qb-qcard qb-done"><div class="big">✅ Xong lượt!</div><p class="sub">Bạn đã ôn <b class="sc">' + quiz.total + '</b> câu. Câu chấm "Again/Hard" sẽ ưu tiên hiện trước ở lượt sau.</p><button class="qb-mode active" id="qbAgain" type="button" style="margin-top:14px">🔁 Ôn lại lượt mới</button></div></div>';
+      view.innerHTML = '<div class="qb-quiz"><div class="qb-qcard qb-done"><div class="big">Xong lượt!</div><p class="sub">Bạn đã ôn <b class="sc">' + quiz.total + '</b> câu. Câu chấm "Again/Hard" sẽ ưu tiên hiện trước ở lượt sau.</p><button class="qb-reveal" id="qbAgain" type="button">Ôn lại lượt mới</button></div></div>';
       $("qbAgain").onclick = function () { buildQuizQueue(); renderQuiz(); };
       return;
     }
@@ -471,11 +625,18 @@ function qbBoot(loadErrors) {
       + '<div class="qb-quizprog"><span>Câu ' + (quiz.idx + 1) + " / " + quiz.total + "</span><span>" + q.g + "</span></div>"
       + '<div class="qb-quizbar"><span style="width:' + pct + '%"></span></div>'
       + '<div class="qb-qcard">' + headHtml(q) + '<div class="q">' + q.q + "</div>"
-      + (quiz.flipped ? '<div class="qb-a">' + answerHtml(q) + rateRowHtml(q.id) + "</div>" : '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾  (Space)</button>')
+      + (quiz.flipped ? '<div class="qb-a">' + answerHtml(q) + rateRowHtml(q.id) + "</div>" : '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾ (Space)</button>')
       + "</div></div>";
+    if (window.Prism) try { Prism.highlightAllUnder(view); } catch (e) {}
   }
 
   function render() { if (mode === "learn") renderLearn(); else renderQuiz(); }
+  function onFilterChange() {
+    page = 1; shuffleOrder = null;
+    syncClearBtn();
+    if (mode === "quiz") buildQuizQueue();
+    render();
+  }
 
   view.addEventListener("click", function (e) {
     var tagBtn = e.target.closest("[data-tag]");
@@ -483,15 +644,20 @@ function qbBoot(loadErrors) {
       var tg = tagBtn.dataset.tag;
       $("qbSearch").value = tg;
       fSearch = norm(tg);
-      if (mode === "quiz") buildQuizQueue();
-      render();
-      toast("🔎 Lọc tag: #" + tg);
+      onFilterChange();
+      toast("Lọc tag: #" + tg);
       return;
     }
     var rev = e.target.closest("[data-reveal]");
     if (rev) {
       var id = rev.dataset.reveal;
-      if (mode === "learn") { var a = view.querySelector('[data-answer="' + id + '"]'); if (a) { a.hidden = false; rev.style.display = "none"; } }
+      if (mode === "learn") {
+        var a = view.querySelector('[data-answer="' + id + '"]');
+        if (a) {
+          a.hidden = !a.hidden;
+          rev.textContent = a.hidden ? "Xem đáp án ▾" : "Thu gọn ▴";
+        }
+      }
       else { quiz.flipped = true; renderQuiz(); }
       return;
     }
@@ -516,8 +682,12 @@ function qbBoot(loadErrors) {
           var tag = card.querySelector(".qb-boxtag");
           if (tag) tag.textContent = "box " + (boxes[rid] || 0);
           card.classList.toggle("is-mastered", (boxes[rid] || 0) >= MASTER_BOX);
+          /* chấm xong tự thu gọn đáp án — card gọn lại ngay */
+          var ans = card.querySelector('[data-answer="' + rid + '"]');
+          var rbtn = card.querySelector('[data-reveal="' + rid + '"]');
+          if (ans) ans.hidden = true;
+          if (rbtn) rbtn.textContent = "Xem đáp án ▾";
         }
-        if (rateBtn.dataset.r === "again" || rateBtn.dataset.r === "hard") wrap.parentElement.style.opacity = ".6";
       } else {
         if (rateBtn.dataset.r === "again") quiz.queue.push(q);
         quiz.idx++; quiz.flipped = false; renderQuiz();
@@ -536,54 +706,81 @@ function qbBoot(loadErrors) {
     }
   });
 
-  $("qbGroup").addEventListener("change", function (e) { fGroup = e.target.value; buildTopicSelect(); fTopic = "__all"; shuffleOrder = null; if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbTopic").addEventListener("change", function (e) { fTopic = e.target.value; shuffleOrder = null; if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbSearch").addEventListener("input", function (e) { fSearch = norm(e.target.value.trim()); if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbCore").addEventListener("change", function (e) { fCore = e.target.checked; $("qbCoreWrap").classList.toggle("on", fCore); if (mode === "quiz") buildQuizQueue(); render(); });
-  $("qbStar").addEventListener("change", function (e) { fStar = e.target.checked; $("qbStarWrap").classList.toggle("on", fStar); if (mode === "quiz") buildQuizQueue(); render(); });
+  /* ---- filter events ---- */
+  $("qbGroups").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip[data-g]"); if (!b) return;
+    var g = b.dataset.g;
+    if (fGroups.has(g)) fGroups.delete(g); else fGroups.add(g);
+    buildGroupChips(); buildTopicChips();
+    onFilterChange();
+  });
+  $("qbTopics").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip[data-t]"); if (!b) return;
+    var t = b.dataset.t;
+    if (fTopics.has(t)) fTopics.delete(t); else fTopics.add(t);
+    buildTopicChips();
+    onFilterChange();
+  });
+  $("qbStatus").addEventListener("change", function (e) { fStatus = e.target.value; onFilterChange(); });
+  $("qbSearch").addEventListener("input", function (e) { fSearch = norm(e.target.value.trim()); onFilterChange(); });
+  $("qbCore").addEventListener("change", function (e) { fCore = e.target.checked; $("qbCoreWrap").classList.toggle("on", fCore); onFilterChange(); });
+  $("qbStar").addEventListener("change", function (e) { fStar = e.target.checked; $("qbStarWrap").classList.toggle("on", fStar); onFilterChange(); });
 
   $("qbLevels").addEventListener("click", function (e) {
     var b = e.target.closest(".qb-lvpill"); if (!b) return;
-    fLevel = b.dataset.lv; shuffleOrder = null;
+    fLevel = b.dataset.lv;
     $("qbLevels").querySelectorAll(".qb-lvpill").forEach(function (x) { x.classList.toggle("active", x === b); });
-    if (mode === "quiz") buildQuizQueue();
-    render();
+    onFilterChange();
+  });
+
+  $("qbClear").addEventListener("click", function () {
+    fGroups.clear(); fTopics.clear(); fLevel = "__all"; fStatus = "__all"; fCore = false; fStar = false; fSearch = "";
+    $("qbSearch").value = ""; $("qbStatus").value = "__all";
+    $("qbCore").checked = false; $("qbCoreWrap").classList.remove("on");
+    $("qbStar").checked = false; $("qbStarWrap").classList.remove("on");
+    $("qbLevels").querySelectorAll(".qb-lvpill").forEach(function (x) { x.classList.toggle("active", x.dataset.lv === "__all"); });
+    buildGroupChips(); buildTopicChips();
+    onFilterChange();
+    toast("Đã xoá toàn bộ filter");
   });
 
   $("qbShuffle").addEventListener("click", function () {
     if (mode === "quiz") { buildQuizQueue(); renderQuiz(); return; }
     var ids = pool().map(function (q) { return q.id; });
     for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp; }
-    shuffleOrder = ids; render(); toast("🔀 Đã trộn thứ tự");
+    shuffleOrder = ids; page = 1; render(); toast("Đã trộn thứ tự");
   });
 
   $("qbReset").addEventListener("click", function () {
     if (!confirm("Xoá toàn bộ tiến độ (box, XP, streak, đánh dấu)?")) return;
     boxes = {}; stars = new Set(); stat = { xp: 0, streak: 0, last: null, reviews: 0, reviewDay: null };
     save(K_BOX, boxes); save(K_STAR, []); save(K_STAT, stat);
-    shuffleOrder = null; updateDash(); if (mode === "quiz") buildQuizQueue(); render();
+    shuffleOrder = null; page = 1; updateDash(); if (mode === "quiz") buildQuizQueue(); render();
   });
 
-  document.querySelector(".qb-modebar").addEventListener("click", function (e) {
-    var b = e.target.closest(".qb-mode"); if (!b) return;
+  document.querySelector(".seg").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mode]"); if (!b) return;
     mode = b.dataset.mode;
-    document.querySelectorAll(".qb-mode").forEach(function (x) { x.classList.toggle("active", x === b); });
+    document.querySelectorAll(".seg [data-mode]").forEach(function (x) { x.classList.toggle("active", x === b); });
     if (mode === "quiz") buildQuizQueue();
     render();
   });
 
-  buildGroupSelect();
-  buildTopicSelect();
+  buildGroupChips();
+  buildTopicChips();
+  buildToc();
+  bindPagers();
   /* Preset filter qua URL: 62-...html?q=<search>&group=<nhóm>&lv=<level> (hub dùng để trỏ thẳng) */
   try {
     var usp = new URLSearchParams(location.search);
     var pq = usp.get("q"), pg = usp.get("group"), plv = usp.get("lv");
-    if (pg && groups.indexOf(pg) !== -1) { fGroup = pg; $("qbGroup").value = pg; buildTopicSelect(); }
+    if (pg && groups.indexOf(pg) !== -1) { fGroups = new Set([pg]); buildGroupChips(); buildTopicChips(); }
     if (pq) { $("qbSearch").value = pq; fSearch = norm(pq); }
     if (plv && LV[plv]) {
       fLevel = plv;
       $("qbLevels").querySelectorAll(".qb-lvpill").forEach(function (x) { x.classList.toggle("active", x.dataset.lv === plv); });
     }
+    syncClearBtn();
   } catch (e) {}
   /* Phiên học hôm nay: 62-...html?session=today — câu đến hạn ôn + câu CORE chưa học, chạy ở quiz mode */
   try {
@@ -594,7 +791,7 @@ function qbBoot(loadErrors) {
         var b = boxes[q.id];
         if (b == null) { if (q.core && q.lv !== "senior") fresh.push(q); return; }
         var days = window.BEP ? BEP.daysAgo(lastMap[q.id]) : 9999;
-        var dueAt = [1, 2, 4, 8, 16, 30][Math.min(b, 5)];
+        var dueAt = DUE_AT[Math.min(b, 5)];
         if (!lastMap[q.id] || days >= dueAt) due.push(q);
       });
       due.sort(function (a, b) { return (boxes[a.id] || 0) - (boxes[b.id] || 0); });
@@ -603,9 +800,9 @@ function qbBoot(loadErrors) {
       var queue = takeDue.concat(fresh.slice(0, Math.max(0, 25 - takeDue.length)));
       if (queue.length) {
         mode = "quiz";
-        document.querySelectorAll(".qb-mode").forEach(function (x) { x.classList.toggle("active", x.dataset.mode === "quiz"); });
+        document.querySelectorAll(".seg [data-mode]").forEach(function (x) { x.classList.toggle("active", x.dataset.mode === "quiz"); });
         quiz.queue = queue; quiz.idx = 0; quiz.flipped = false; quiz.score = 0; quiz.total = queue.length;
-        setTimeout(function () { toast("📅 Phiên hôm nay: " + takeDue.length + " câu đến hạn + " + (queue.length - takeDue.length) + " câu mới"); }, 300);
+        setTimeout(function () { toast("Phiên hôm nay: " + takeDue.length + " câu đến hạn + " + (queue.length - takeDue.length) + " câu mới"); }, 300);
       }
     }
   } catch (e) {}

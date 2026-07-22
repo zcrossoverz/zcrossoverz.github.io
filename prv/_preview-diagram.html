@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xem trước diagram — Circuit Breaker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700&family=IBM+Plex+Sans:wght@0,400;0,500;0,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pv-wrap { max-width: 780px; margin: 0 auto; padding: 24px 16px 60px; }
+  .pv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .pv-head h1 { font-family: var(--font-serif); font-weight: 600; font-size: 1.4rem; margin: 0; }
+  .pv-note { color: var(--text-faint); font-size: 12.5px; font-family: var(--font-mono); margin: 0 0 22px; }
+  .qb-card { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-elev); padding: 18px 20px; min-width: 0; }
+  .qb-a p { margin: 0 0 10px; line-height: 1.68; }
+  .qb-a strong { color: var(--text); }
+  .fig { margin: 6px 0 4px; }
+  .fig svg { width: 100%; max-width: 620px; height: auto; display: block; margin: 0 auto; }
+  .figcap { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 8px 2px 0; font-style: italic; font-family: var(--font-serif); }
+  .pv-toggle { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; padding: 7px 14px; border-radius: 2px; cursor: pointer; color: var(--text-muted); background: transparent; border: 1px solid var(--border-strong); }
+  .pv-toggle:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="pv-wrap">
+  <div class="pv-head">
+    <h1>Xem trước diagram</h1>
+    <button class="pv-toggle" id="tg" type="button">Đổi Light / Dark</button>
+  </div>
+  <p class="pv-note">Đúng cách sơ đồ hiển thị TRONG thẻ câu hỏi thật (theme + màu + font thật). Bấm đổi Light/Dark để xem cả hai.</p>
+
+  <div class="qb-card">
+    <div class="qb-a">
+      <p><strong>Circuit breaker có ba trạng thái</strong> — và cả cơ chế tự phục hồi nằm ở vòng chuyển giữa chúng:</p>
+      <div class="fig">
+        <svg viewBox="0 0 620 322" role="img" aria-labelledby="cbT cbD" xmlns="http://www.w3.org/2000/svg">
+          <title id="cbT">Máy trạng thái circuit breaker</title>
+          <desc id="cbD">CLOSED cho request qua và đếm lỗi; vượt ngưỡng chuyển sang OPEN chặn mọi call; sau cooldown sang HALF-OPEN cho vài request thử; thử thành công quay lại CLOSED, thử lỗi quay lại OPEN.</desc>
+          <style>
+            .cb-arrow { fill: none; stroke: var(--text-faint); stroke-width: 1.4; }
+            .cb-fail { fill: none; stroke: var(--danger); stroke-width: 1.3; stroke-dasharray: 4 3; }
+            #cbah path { fill: var(--text-faint); }
+            .cb-lbl { font-family: var(--font-mono); font-size: 11.5px; fill: var(--text-muted); text-anchor: middle; }
+            .cb-lbl.bad { fill: var(--danger); }
+            .cb-lblbg { fill: var(--bg-elev); }
+            .cb-name { font-family: var(--font-mono); font-weight: 600; font-size: 15px; text-anchor: middle; }
+            .cb-sub { font-family: var(--font-mono); font-size: 11px; fill: var(--text-faint); text-anchor: middle; }
+            .box-ok { fill: var(--success-soft); stroke: var(--success); stroke-width: 1.5; }
+            .box-bad { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.5; }
+            .box-warn { fill: var(--warning-soft); stroke: var(--warning); stroke-width: 1.5; }
+            .t-ok { fill: var(--success); } .t-bad { fill: var(--danger); } .t-warn { fill: var(--warning); }
+          </style>
+          <defs>
+            <marker id="cbah" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 z"/></marker>
+          </defs>
+
+          <path class="cb-arrow" d="M196,67 L418,67" marker-end="url(#cbah)"/>
+          <path class="cb-arrow" d="M486,96 L378,228" marker-end="url(#cbah)"/>
+          <path class="cb-arrow" d="M256,228 L150,96" marker-end="url(#cbah)"/>
+          <path class="cb-fail" d="M398,242 Q566,176 520,98" marker-end="url(#cbah)"/>
+
+          <rect class="cb-lblbg" x="250" y="46" width="120" height="17"/><text class="cb-lbl" x="310" y="58">lỗi vượt ngưỡng</text>
+          <rect class="cb-lblbg" x="450" y="150" width="86" height="17"/><text class="cb-lbl" x="493" y="162">hết cooldown</text>
+          <rect class="cb-lblbg" x="118" y="150" width="66" height="17"/><text class="cb-lbl" x="151" y="162">thử OK</text>
+          <rect class="cb-lblbg" x="522" y="176" width="62" height="17"/><text class="cb-lbl bad" x="553" y="188">thử lỗi</text>
+
+          <rect class="box-ok" x="36" y="40" width="160" height="54" rx="6"/>
+          <text class="cb-name t-ok" x="116" y="63">CLOSED</text>
+          <text class="cb-sub" x="116" y="81">cho qua · đếm lỗi</text>
+
+          <rect class="box-bad" x="424" y="40" width="160" height="54" rx="6"/>
+          <text class="cb-name t-bad" x="504" y="63">OPEN</text>
+          <text class="cb-sub" x="504" y="81">chặn · fail nhanh</text>
+
+          <rect class="box-warn" x="228" y="228" width="168" height="54" rx="6"/>
+          <text class="cb-name t-warn" x="312" y="251" font-size="14.5">HALF-OPEN</text>
+          <text class="cb-sub" x="312" y="269">cho vài request thử</text>
+        </svg>
+      </div>
+      <p class="figcap">CLOSED cho request qua và đếm lỗi. Lỗi vượt ngưỡng → OPEN: fail nhanh, không dội xuống service đang chết. Hết cooldown → HALF-OPEN thả vài request thăm dò: thành công thì đóng lại (CLOSED), còn lỗi thì mở tiếp (OPEN).</p>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById("tg").onclick = function () {
+    var h = document.documentElement;
+    h.setAttribute("data-theme", h.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  };
+</script>
+</body>
+</html>

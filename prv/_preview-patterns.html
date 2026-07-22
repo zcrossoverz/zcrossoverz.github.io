@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xem trước — Sơ đồ Design Patterns (6 kiểu khác nhau)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700&family=IBM+Plex+Sans:wght@0,400;0,500;0,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pv-wrap { max-width: 820px; margin: 0 auto; padding: 24px 16px 60px; }
+  .pv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .pv-head h1 { font-family: var(--font-serif); font-weight: 600; font-size: 1.4rem; margin: 0; }
+  .pv-note { color: var(--text-faint); font-size: 12.5px; font-family: var(--font-mono); margin: 0 0 22px; }
+  .pv-toggle { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; padding: 7px 14px; border-radius: 2px; cursor: pointer; color: var(--text-muted); background: transparent; border: 1px solid var(--border-strong); }
+  .pv-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .qb-card { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-elev); padding: 16px 20px; margin-bottom: 16px; min-width: 0; }
+  .qb-card h3 { font-family: var(--font-serif); font-weight: 600; font-size: 1.05rem; margin: 0 0 2px; }
+  .qb-card .kind { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+  .fig { margin: 12px 0 4px; }
+  .fig svg { width: 100%; height: auto; display: block; margin: 0 auto; }
+  .figcap { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 8px 2px 0; font-style: italic; font-family: var(--font-serif); }
+  /* shared diagram language (bản data-file sẽ inline vào từng SVG) */
+  .d-arrow { fill: none; stroke: var(--text-faint); stroke-width: 1.4; }
+  .d-dash { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .d-box { fill: var(--bg); stroke: var(--border-strong); stroke-width: 1.4; }
+  .d-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+  .d-ok { fill: var(--success-soft); stroke: var(--success); stroke-width: 1.5; }
+  .d-warn { fill: var(--warning-soft); stroke: var(--warning); stroke-width: 1.5; }
+  .d-bad { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.5; }
+  .mk { fill: var(--text-faint); }
+  .mkA { fill: var(--accent); }
+  .d-name { font-family: var(--font-mono); font-weight: 600; font-size: 13px; fill: var(--text); text-anchor: middle; }
+  .d-name.acc { fill: var(--accent); } .d-name.ok { fill: var(--success); } .d-name.bad { fill: var(--danger); } .d-name.warn { fill: var(--warning); }
+  .d-sub { font-family: var(--font-mono); font-size: 10.5px; fill: var(--text-faint); text-anchor: middle; }
+  .d-lbl { font-family: var(--font-mono); font-size: 11px; fill: var(--text-muted); text-anchor: middle; }
+  .d-lbl.acc { fill: var(--accent); }
+  .d-lblbg { fill: var(--bg-elev); }
+</style>
+</head>
+<body>
+<div class="pv-wrap">
+  <div class="pv-head">
+    <h1>Sơ đồ Design Patterns — 6 kiểu trình bày khác nhau</h1>
+    <button class="pv-toggle" id="tg" type="button">Đổi Light / Dark</button>
+  </div>
+  <p class="pv-note">Mỗi pattern một HÌNH THỨC phù hợp bản chất, không ép chung một khuôn. Đây là bản trong thẻ câu hỏi thật.</p>
+
+  <div class="qb-card">
+    <span class="kind">fan-out · một→nhiều</span>
+    <h3>Observer</h3>
+    <div class="fig">
+      <svg viewBox="0 0 600 250" role="img" aria-label="Observer: một Subject phát sự kiện tới nhiều listener độc lập">
+        <defs><marker id="ah-obs" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path class="mk" d="M0,0 L6.5,3 L0,6 z"/></marker></defs>
+        <path class="d-arrow" d="M180,125 L392,50" marker-end="url(#ah-obs)"/>
+        <path class="d-arrow" d="M180,125 L392,125" marker-end="url(#ah-obs)"/>
+        <path class="d-arrow" d="M180,125 L392,200" marker-end="url(#ah-obs)"/>
+        <rect class="d-lblbg" x="238" y="98" width="132" height="16"/><text class="d-lbl" x="304" y="110">OrderCreatedEvent</text>
+        <rect class="d-acc" x="20" y="97" width="160" height="56" rx="6"/>
+        <text class="d-name acc" x="100" y="121">OrderService</text>
+        <text class="d-sub" x="100" y="139">publishEvent(…)</text>
+        <rect class="d-box" x="394" y="26" width="186" height="48" rx="6"/><text class="d-name" x="487" y="55">Email listener</text>
+        <rect class="d-box" x="394" y="101" width="186" height="48" rx="6"/><text class="d-name" x="487" y="130">Inventory listener</text>
+        <rect class="d-box" x="394" y="176" width="186" height="48" rx="6"/><text class="d-name" x="487" y="205">Analytics listener</text>
+      </svg>
+    </div>
+    <p class="figcap">Subject không biết ai đang nghe — thêm listener mới chỉ là thêm một hộp, không sửa OrderService.</p>
+  </div>
+
+  <div class="qb-card">
+    <span class="kind">concentric · bọc lớp</span>
+    <h3>Decorator</h3>
+    <div class="fig">
+      <svg viewBox="0 0 600 232" role="img" aria-label="Decorator: các lớp bọc lồng nhau quanh một stream lõi">
+        <rect class="d-box" x="70" y="24" width="460" height="184" rx="8"/>
+        <text class="d-name" x="300" y="46">BufferedInputStream</text>
+        <rect class="d-box" x="140" y="66" width="320" height="118" rx="8"/>
+        <text class="d-name" x="300" y="88">GZIPInputStream</text>
+        <rect class="d-acc" x="210" y="108" width="180" height="58" rx="6"/>
+        <text class="d-name acc" x="300" y="133">FileInputStream</text>
+        <text class="d-sub" x="300" y="151">lõi</text>
+      </svg>
+    </div>
+    <p class="figcap">Mỗi lớp bọc thêm một khả năng (giải nén, buffer) mà vẫn là <code>InputStream</code> — xếp chồng runtime thay vì đẻ ra 8 subclass.</p>
+  </div>
+
+  <div class="qb-card">
+    <span class="kind">bridge · ghép interface lệch</span>
+    <h3>Adapter</h3>
+    <div class="fig">
+      <svg viewBox="0 0 620 190" role="img" aria-label="Adapter: client gọi charge, adapter dịch sang createCharge của thư viện">
+        <defs><marker id="ah-ada" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path class="mk" d="M0,0 L6.5,3 L0,6 z"/></marker></defs>
+        <path class="d-arrow" d="M192,92 L228,92" marker-end="url(#ah-ada)"/>
+        <path class="d-arrow" d="M392,92 L428,92" marker-end="url(#ah-ada)"/>
+        <rect class="d-box" x="22" y="62" width="170" height="60" rx="6"/>
+        <text class="d-name" x="107" y="88">Client</text><text class="d-sub" x="107" y="106">cần charge()</text>
+        <rect class="d-warn" x="230" y="56" width="160" height="72" rx="6"/>
+        <text class="d-name warn" x="310" y="84">StripeAdapter</text><text class="d-sub" x="310" y="102">implements</text><text class="d-sub" x="310" y="116">PaymentGateway</text>
+        <rect class="d-box" x="430" y="62" width="168" height="60" rx="6"/>
+        <text class="d-name" x="514" y="88">Stripe lib</text><text class="d-sub" x="514" y="106">createCharge()</text>
+        <rect class="d-lblbg" x="180" y="66" width="60" height="15"/><text class="d-lbl" x="210" y="77">charge()</text>
+        <rect class="d-lblbg" x="378" y="66" width="94" height="15"/><text class="d-lbl" x="425" y="77">createCharge()</text>
+      </svg>
+    </div>
+    <p class="figcap">Hai interface không khớp — adapter đứng giữa dịch lời gọi, đổi nhà cung cấp chỉ cần thêm adapter mới.</p>
+  </div>
+
+  <div class="qb-card">
+    <span class="kind">skeleton + slot · khung cố định</span>
+    <h3>Template Method</h3>
+    <div class="fig">
+      <svg viewBox="0 0 600 262" role="img" aria-label="Template Method: khung cố định với một bước bạn tự cắm">
+        <rect class="d-box" x="150" y="20" width="300" height="224" rx="8"/>
+        <text class="d-name" x="300" y="44">JdbcTemplate.query()</text>
+        <rect class="d-box" x="176" y="60" width="248" height="34" rx="4"/><text class="d-lbl" x="300" y="82">1 · lấy connection · khung lo</text>
+        <rect class="d-box" x="176" y="102" width="248" height="34" rx="4"/><text class="d-lbl" x="300" y="124">2 · execute SQL · khung lo</text>
+        <rect class="d-dash" x="176" y="144" width="248" height="38" rx="4"/><text class="d-lbl acc" x="300" y="167">3 · map row ← BẠN cắm (RowMapper)</text>
+        <rect class="d-box" x="176" y="190" width="248" height="34" rx="4"/><text class="d-lbl" x="300" y="212">4 · đóng resource · khung lo</text>
+      </svg>
+    </div>
+    <p class="figcap">Khung giữ thứ tự các bước bất biến; chừa đúng một chỗ trống (viền đứt) để bạn điền phần biến thiên.</p>
+  </div>
+
+  <div class="qb-card">
+    <span class="kind">pipeline · chuyền &amp; chặn</span>
+    <h3>Chain of Responsibility</h3>
+    <div class="fig">
+      <svg viewBox="0 0 620 210" role="img" aria-label="Chain of Responsibility: request đi qua chuỗi filter, một mắt có thể chặn sớm">
+        <defs><marker id="ah-cor" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path class="mk" d="M0,0 L6.5,3 L0,6 z"/></marker>
+        <marker id="ah-cor2" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 z" fill="var(--danger)"/></marker></defs>
+        <path class="d-arrow" d="M92,60 L120,60" marker-end="url(#ah-cor)"/>
+        <path class="d-arrow" d="M212,60 L240,60" marker-end="url(#ah-cor)"/>
+        <path class="d-arrow" d="M332,60 L360,60" marker-end="url(#ah-cor)"/>
+        <path class="d-arrow" d="M452,60 L480,60" marker-end="url(#ah-cor)"/>
+        <path d="M170,84 L170,150" fill="none" stroke="var(--danger)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah-cor2)"/>
+        <text class="d-sub" x="30" y="64">Request</text>
+        <rect class="d-warn" x="122" y="36" width="90" height="48" rx="6"/><text class="d-name warn" x="167" y="65" font-size="12">Auth</text>
+        <rect class="d-box" x="242" y="36" width="90" height="48" rx="6"/><text class="d-name" x="287" y="65" font-size="12">RateLimit</text>
+        <rect class="d-box" x="362" y="36" width="90" height="48" rx="6"/><text class="d-name" x="407" y="65" font-size="12">Logging</text>
+        <rect class="d-acc" x="482" y="36" width="106" height="48" rx="6"/><text class="d-name acc" x="535" y="65" font-size="12">Handler</text>
+        <rect class="d-bad" x="128" y="152" width="86" height="40" rx="6"/><text class="d-name bad" x="171" y="177" font-size="12">401 · chặn</text>
+        <rect class="d-lblbg" x="120" y="96" width="104" height="15"/><text class="d-lbl" x="172" y="107">short-circuit</text>
+      </svg>
+    </div>
+    <p class="figcap">Mỗi mắt làm phần của mình rồi <code>doFilter()</code> chuyền tiếp — hoặc dừng chuỗi (Auth trả 401). Sai thứ tự hay quên chuyền là hai lỗi kinh điển.</p>
+  </div>
+
+  <div class="qb-card">
+    <span class="kind">state machine · vòng đời</span>
+    <h3>State</h3>
+    <div class="fig">
+      <svg viewBox="0 0 620 220" role="img" aria-label="State: vòng đời đơn hàng NEW PAID SHIPPED DELIVERED và nhánh CANCELLED">
+        <defs><marker id="ah-st" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path class="mk" d="M0,0 L6.5,3 L0,6 z"/></marker></defs>
+        <path class="d-arrow" d="M138,54 L188,54" marker-end="url(#ah-st)"/>
+        <path class="d-arrow" d="M328,54 L378,54" marker-end="url(#ah-st)"/>
+        <path class="d-arrow" d="M518,54 L568,54" marker-end="url(#ah-st)" transform="translate(-40,0)"/>
+        <path class="d-arrow" d="M70,78 L70,150 L250,150" marker-end="url(#ah-st)"/>
+        <path class="d-arrow" d="M260,78 L260,150" marker-end="url(#ah-st)"/>
+        <rect class="d-box" x="24" y="30" width="114" height="48" rx="6"/><text class="d-name" x="81" y="59" font-size="12.5">NEW</text>
+        <rect class="d-box" x="190" y="30" width="114" height="48" rx="6"/><text class="d-name" x="247" y="59" font-size="12.5">PAID</text>
+        <rect class="d-box" x="356" y="30" width="122" height="48" rx="6"/><text class="d-name" x="417" y="59" font-size="12.5">SHIPPED</text>
+        <rect class="d-ok" x="490" y="30" width="122" height="48" rx="6"/><text class="d-name ok" x="551" y="59" font-size="12.5">DELIVERED</text>
+        <rect class="d-bad" x="250" y="128" width="130" height="44" rx="6"/><text class="d-name bad" x="315" y="155" font-size="12.5">CANCELLED</text>
+        <rect class="d-lblbg" x="146" y="38" width="34" height="15"/><text class="d-lbl" x="163" y="49">pay()</text>
+        <rect class="d-lblbg" x="312" y="38" width="40" height="15"/><text class="d-lbl" x="332" y="49">ship()</text>
+        <rect class="d-lblbg" x="452" y="38" width="52" height="15"/><text class="d-lbl" x="478" y="49">deliver()</text>
+        <rect class="d-lblbg" x="150" y="142" width="56" height="15"/><text class="d-lbl" x="178" y="153">cancel()</text>
+      </svg>
+    </div>
+    <p class="figcap">Mỗi trạng thái gói hành vi hợp lệ của nó và biết chuyển đi đâu — thay cho khối <code>switch(status)</code> rải khắp mọi method (ship đơn đã huỷ = lỗi biên dịch, không phải bug runtime).</p>
+  </div>
+
+</div>
+<script>
+  document.getElementById("tg").onclick = function () {
+    var h = document.documentElement;
+    h.setAttribute("data-theme", h.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  };
+</script>
+</body>
+</html>

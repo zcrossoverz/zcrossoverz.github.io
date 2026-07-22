@@ -12,6 +12,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-properties.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .qb-wrap { max-width: 980px; margin: 0 auto; padding: 0 4px 72px; }
@@ -79,6 +82,13 @@
   /* cards */
   .qb-list { display: grid; gap: 10px; }
   .qb-card { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-elev); padding: 14px 16px; }
+
+  /* --- FIX responsive (mobile): <pre> code / token dài không được nong card vỡ layout rồi bị main overflow-x:hidden cắt mất chữ.
+     Grid/flex item mặc định min-width:auto (không co dưới bề rộng nội dung) → phải ép min-width:0 để <pre> tự cuộn ngang. --- */
+  .qb-list { grid-template-columns: minmax(0, 1fr); }
+  .qb-card, .qb-qcard { min-width: 0; }
+  .qb-a { overflow-wrap: break-word; }
+  .qb-a pre, .qb-qcard pre { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .qb-card.is-mastered { border-left: 2px solid var(--success); }
   .qb-cardhead { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 9px; }
   .qb-lvbadge { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 1px 7px; border-radius: 2px; border: 1px solid currentColor; }
@@ -602,8 +612,24 @@ function qbBoot(loadErrors) {
         + "</div>";
     }).join("") + "</div>";
     renderPagers(page, total);
-    if (window.Prism) try { Prism.highlightAllUnder(view); } catch (e) {}
+    hlUnder(view);
   }
+
+  // Tự nhận diện ngôn ngữ cho block 'language-text' (SQL/JSON/shell/properties/yaml) để Prism tô màu.
+  // Block chứa mũi tên / box-drawing / em-dash = sơ đồ ASCII → GIỮ NGUYÊN (không tô, tránh tô nhầm).
+  function autoLang(v) {
+    var nodes = v.querySelectorAll("code.language-text");
+    for (var i = 0; i < nodes.length; i++) {
+      var code = nodes[i], t = code.textContent, s = t.replace(/^\s+/, ""), lang = null;
+      if (/[─-╿]/.test(t)) continue; // box-drawing = sơ đồ ASCII → giữ nguyên (code thật không có ký tự này; mũi tên → trong comment SQL thì vẫn tô)
+      if (/^[\{\[]/.test(s) && /"[\w-]+"\s*:/.test(s)) lang = "json";
+      else if (/(^|\n)[A-Za-z_][\w.]*\s*=/.test(s) && !/[→←]/.test(t)) lang = "properties"; // key=value ở đầu dòng (config) — xét trước SQL để 'INSERT' trong comment không nhận nhầm
+      else if (/\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER)\b/i.test(t) && /\b(FROM|WHERE|SET|VALUES|JOIN|OVER|INTO|GROUP\s+BY|ORDER\s+BY)\b/i.test(t)) lang = "sql";
+      else if (/(^|\n)\s*(grep|tail|kill|ps|ss|top|cat|cd|ls|curl|wget|docker|kubectl|jstack|jmap|jps|netstat|awk|sed|export|sudo|chmod|systemctl)\b/.test(t)) lang = "bash";
+      if (lang) code.className = "language-" + lang;
+    }
+  }
+  function hlUnder(v) { autoLang(v); if (window.Prism) { try { Prism.highlightAllUnder(v); } catch (e) {} } }
 
   function buildQuizQueue() {
     var p = pool().slice();
@@ -627,7 +653,7 @@ function qbBoot(loadErrors) {
       + '<div class="qb-qcard">' + headHtml(q) + '<div class="q">' + q.q + "</div>"
       + (quiz.flipped ? '<div class="qb-a">' + answerHtml(q) + rateRowHtml(q.id) + "</div>" : '<button class="qb-reveal" data-reveal="' + q.id + '">Xem đáp án ▾ (Space)</button>')
       + "</div></div>";
-    if (window.Prism) try { Prism.highlightAllUnder(view); } catch (e) {}
+    hlUnder(view);
   }
 
   function render() { if (mode === "learn") renderLearn(); else renderQuiz(); }
